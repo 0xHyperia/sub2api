@@ -111,5 +111,10 @@ func RegisterPaymentRoutes(
 			providers.PUT("/:id", adminPaymentHandler.UpdateProvider)
 			providers.DELETE("/:id", adminPaymentHandler.DeleteProvider)
 		}
+
+		card := adminGroup.Group("/card")
+		{
+			card.PUT("/goods-overrides", adminPaymentHandler.UpdateCardGoodsOverride)
+		}
 	}
 }

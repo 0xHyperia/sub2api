@@ -252,6 +252,11 @@ export interface CardGoods {
   stock_count: number
   limit_count: number
   query_password_required: boolean
+  display_title?: string
+  display_description?: string
+  badge?: string
+  tags?: string[]
+  reference_price?: number
 }
 
 export interface CardChannel {
@@ -280,6 +285,9 @@ export interface CardPrice {
   original_amount: number
   total_amount: number
   fee: number
+  fee_payer?: number
+  coupon_available?: number
+  coupon_price?: number
 }
 
 export interface CardPriceRequest {

@@ -103,6 +103,7 @@ func (s *PaymentService) GetCardCheckoutInfo(ctx context.Context) (*CardCheckout
 			}
 			goods = append(goods, list...)
 		}
+		goods = s.applyCardGoodsOverrides(inst, goods)
 		out.Shops = append(out.Shops, CardCheckoutShop{
 			ProviderInstanceID: strconv.FormatInt(int64(inst.ID), 10),
 			Name:               inst.Name,
@@ -113,6 +114,46 @@ func (s *PaymentService) GetCardCheckoutInfo(ctx context.Context) (*CardCheckout
 		})
 	}
 	return out, nil
+}
+
+func (s *PaymentService) applyCardGoodsOverrides(inst *dbent.PaymentProviderInstance, goods []provider.LdxpGoods) []provider.LdxpGoods {
+	if len(goods) == 0 || inst == nil {
+		return goods
+	}
+	cfg, err := s.configService.decryptConfig(inst.Config)
+	if err != nil {
+		slog.Warn("读取链动小铺商品展示配置失败", "instance_id", inst.ID, "error", err)
+		return goods
+	}
+	overrides, err := parseCardGoodsOverrides(cfg["goodsOverrides"])
+	if err != nil {
+		slog.Warn("解析链动小铺商品展示配置失败", "instance_id", inst.ID, "error", err)
+		return goods
+	}
+	if len(overrides) == 0 {
+		return goods
+	}
+	out := make([]provider.LdxpGoods, len(goods))
+	copy(out, goods)
+	for i := range out {
+		override, ok := overrides[out[i].GoodsKey]
+		if !ok {
+			continue
+		}
+		if override.Title != "" {
+			out[i].DisplayTitle = override.Title
+		}
+		if override.Description != "" {
+			out[i].DisplayDescription = override.Description
+		}
+		if override.Badge != "" {
+			out[i].Badge = override.Badge
+		}
+		if len(override.Tags) > 0 {
+			out[i].Tags = append([]string(nil), override.Tags...)
+		}
+	}
+	return out
 }
 
 func (s *PaymentService) GetCardPrice(ctx context.Context, req CardPriceRequest) (*provider.LdxpPrice, error) {
@@ -180,6 +221,10 @@ func (s *PaymentService) CreateCardOrder(ctx context.Context, req CardOrderReque
 	if err != nil {
 		return nil, fmt.Errorf("update card order payment details: %w", err)
 	}
+	status := OrderStatusPending
+	if upstream.TotalAmount <= 0 {
+		status = s.tryCompleteZeroAmountCardOrder(ctx, order, ldxp, upstream.TradeNo, resolvedQueryPassword)
+	}
 	s.writeAuditLog(ctx, order.ID, "CARD_ORDER_CREATED", fmt.Sprintf("user:%d", req.UserID), map[string]any{
 		"providerInstanceID": req.ProviderInstanceID,
 		"goodsKey":           req.GoodsKey,
@@ -189,10 +234,31 @@ func (s *PaymentService) CreateCardOrder(ctx context.Context, req CardOrderReque
 	})
 	return &CreateOrderResponse{
 		OrderID: order.ID, Amount: order.Amount, PayAmount: upstream.TotalAmount, FeeRate: 0,
-		Status: OrderStatusPending, ResultType: payment.CreatePaymentResultOrderCreated,
+		Status: status, ResultType: payment.CreatePaymentResultOrderCreated,
 		PaymentType: payment.TypeLdxp, OutTradeNo: order.OutTradeNo, PayURL: upstream.PayURL,
 		ExpiresAt: order.ExpiresAt, PaymentMode: inst.PaymentMode,
 	}, nil
+}
+
+func (s *PaymentService) tryCompleteZeroAmountCardOrder(ctx context.Context, order *dbent.PaymentOrder, ldxp *provider.Ldxp, tradeNo string, queryPassword string) string {
+	status := OrderStatusPending
+	info, err := ldxp.GetOrderInfoWithCards(ctx, tradeNo, queryPassword)
+	if err != nil {
+		slog.Warn("链动小铺 0 元订单创建后查询订单详情失败，将等待后续状态查询兜底", "order_id", order.ID, "trade_no", tradeNo, "error", err)
+		return status
+	}
+	if info.Status != 1 && info.Sendout != 1 {
+		slog.Warn("链动小铺 0 元订单尚未发卡，将等待后续状态查询兜底", "order_id", order.ID, "trade_no", tradeNo, "status", info.Status, "sendout", info.Sendout)
+		return status
+	}
+	if err := s.toPaid(ctx, order, tradeNo, info.TotalAmount, payment.TypeLdxp); err != nil {
+		slog.Warn("链动小铺 0 元订单自动履约失败，将保留订单供后续重试", "order_id", order.ID, "trade_no", tradeNo, "error", err)
+	}
+	reloaded, err := s.entClient.PaymentOrder.Get(ctx, order.ID)
+	if err != nil {
+		return status
+	}
+	return reloaded.Status
 }
 
 func (s *PaymentService) ensureCardPaymentEnabled(ctx context.Context) error {

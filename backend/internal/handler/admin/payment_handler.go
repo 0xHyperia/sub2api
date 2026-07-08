@@ -402,6 +402,23 @@ func (h *PaymentHandler) DeleteProvider(c *gin.Context) {
 	response.Success(c, gin.H{"message": "deleted"})
 }
 
+// UpdateCardGoodsOverride 更新链动小铺商品在本地的展示信息。
+// PUT /api/v1/admin/payment/card/goods-overrides
+func (h *PaymentHandler) UpdateCardGoodsOverride(c *gin.Context) {
+	var req service.UpdateCardGoodsOverrideRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	override, err := h.configService.UpdateCardGoodsOverride(c.Request.Context(), req)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	h.paymentService.RefreshProviders(c.Request.Context())
+	response.Success(c, override)
+}
+
 // parseIDParam parses an int64 path parameter.
 // Returns the parsed ID and true on success; on failure it writes a BadRequest response and returns false.
 func parseIDParam(c *gin.Context, paramName string) (int64, bool) {

@@ -840,8 +840,11 @@ router.beforeEach(async (to, _from, next) => {
 
   // Check payment requirement (internal payment system only)
   if (to.meta.requiresPayment) {
+    if (!appStore.publicSettingsLoaded) {
+      await appStore.fetchPublicSettings()
+    }
     const paymentEnabled = appStore.cachedPublicSettings?.payment_enabled
-    if (!paymentEnabled) {
+    if (paymentEnabled === false) {
       next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
       return
     }

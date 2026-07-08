@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mx-auto max-w-4xl space-y-6">
+    <div :class="pageContainerClass">
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
       </div>
@@ -527,6 +527,14 @@ const showInstantHelp = computed(() =>
     && !selectedPlan.value
     && activeTab.value !== 'card'
 )
+
+const pageContainerClass = computed(() => {
+  const wideCardSelect = paymentPhase.value === 'select' && activeTab.value === 'card' && !selectedPlan.value
+  return [
+    'mx-auto space-y-6',
+    wideCardSelect ? 'max-w-[1500px]' : 'max-w-4xl',
+  ]
+})
 
 function ensureVisiblePurchaseTab(preferred?: PurchaseTab) {
   const available = tabs.value.map(tab => tab.key)

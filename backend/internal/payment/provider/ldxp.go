@@ -165,18 +165,23 @@ type LdxpCategory struct {
 }
 
 type LdxpGoods struct {
-	ProviderInstanceID    string  `json:"provider_instance_id"`
-	ShopToken             string  `json:"shop_token"`
-	GoodsKey              string  `json:"goods_key"`
-	Name                  string  `json:"name"`
-	Price                 float64 `json:"price"`
-	Description           string  `json:"description"`
-	Image                 string  `json:"image"`
-	CategoryID            int64   `json:"category_id"`
-	CategoryName          string  `json:"category_name"`
-	StockCount            int     `json:"stock_count"`
-	LimitCount            int     `json:"limit_count"`
-	QueryPasswordRequired bool    `json:"query_password_required"`
+	ProviderInstanceID    string   `json:"provider_instance_id"`
+	ShopToken             string   `json:"shop_token"`
+	GoodsKey              string   `json:"goods_key"`
+	Name                  string   `json:"name"`
+	Price                 float64  `json:"price"`
+	Description           string   `json:"description"`
+	Image                 string   `json:"image"`
+	CategoryID            int64    `json:"category_id"`
+	CategoryName          string   `json:"category_name"`
+	StockCount            int      `json:"stock_count"`
+	LimitCount            int      `json:"limit_count"`
+	QueryPasswordRequired bool     `json:"query_password_required"`
+	DisplayTitle          string   `json:"display_title,omitempty"`
+	DisplayDescription    string   `json:"display_description,omitempty"`
+	Badge                 string   `json:"badge,omitempty"`
+	Tags                  []string `json:"tags,omitempty"`
+	ReferencePrice        float64  `json:"reference_price,omitempty"`
 }
 
 type LdxpChannel struct {
@@ -189,9 +194,12 @@ type LdxpChannel struct {
 }
 
 type LdxpPrice struct {
-	OriginalAmount float64 `json:"original_amount"`
-	TotalAmount    float64 `json:"total_amount"`
-	Fee            float64 `json:"fee"`
+	OriginalAmount  float64 `json:"original_amount"`
+	TotalAmount     float64 `json:"total_amount"`
+	Fee             float64 `json:"fee"`
+	FeePayer        int     `json:"fee_payer,omitempty"`
+	CouponAvailable int     `json:"coupon_available,omitempty"`
+	CouponPrice     float64 `json:"coupon_price,omitempty"`
 }
 
 type LdxpCardOrderRequest struct {
@@ -276,12 +284,16 @@ func (l *Ldxp) ListGoods(ctx context.Context, categoryID int64) ([]LdxpGoods, er
 		Msg  string `json:"msg"`
 		Data struct {
 			List []struct {
-				GoodsKey    string  `json:"goods_key"`
-				Name        string  `json:"name"`
-				Price       float64 `json:"price"`
-				Description string  `json:"description"`
-				Image       string  `json:"image"`
-				Category    struct {
+				GoodsKey       string  `json:"goods_key"`
+				Name           string  `json:"name"`
+				Price          float64 `json:"price"`
+				OriginalPrice  float64 `json:"original_price"`
+				ReferencePrice float64 `json:"reference_price"`
+				MarketPrice    float64 `json:"market_price"`
+				LinePrice      float64 `json:"line_price"`
+				Description    string  `json:"description"`
+				Image          string  `json:"image"`
+				Category       struct {
 					ID   int64  `json:"id"`
 					Name string `json:"name"`
 				} `json:"category"`
@@ -301,6 +313,7 @@ func (l *Ldxp) ListGoods(ctx context.Context, categoryID int64) ([]LdxpGoods, er
 	}
 	out := make([]LdxpGoods, 0, len(resp.Data.List))
 	for _, item := range resp.Data.List {
+		referencePrice := firstPositiveFloat(item.ReferencePrice, item.OriginalPrice, item.MarketPrice, item.LinePrice)
 		out = append(out, LdxpGoods{
 			ProviderInstanceID:    l.instanceID,
 			ShopToken:             l.shopToken,
@@ -314,6 +327,7 @@ func (l *Ldxp) ListGoods(ctx context.Context, categoryID int64) ([]LdxpGoods, er
 			StockCount:            item.Extend.StockCount,
 			LimitCount:            item.Extend.LimitCount,
 			QueryPasswordRequired: item.Extend.QueryPasswordStatus == 1,
+			ReferencePrice:        referencePrice,
 		})
 	}
 	return out, nil
@@ -459,6 +473,15 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func firstPositiveFloat(values ...float64) float64 {
+	for _, value := range values {
+		if value > 0 {
+			return value
+		}
+	}
+	return 0
 }
 
 func ldxpContact(req payment.CreatePaymentRequest, cfg map[string]string) string {

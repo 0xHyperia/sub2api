@@ -50,6 +50,22 @@ type ProviderInstanceResponse struct {
 	PaymentMode     string            `json:"payment_mode"`
 }
 
+type CardGoodsOverride struct {
+	Title       string   `json:"title,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Badge       string   `json:"badge,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+}
+
+type UpdateCardGoodsOverrideRequest struct {
+	ProviderInstanceID string   `json:"provider_instance_id"`
+	GoodsKey           string   `json:"goods_key"`
+	Title              string   `json:"title"`
+	Description        string   `json:"description"`
+	Badge              string   `json:"badge"`
+	Tags               []string `json:"tags"`
+}
+
 // ListProviderInstancesWithConfig returns provider instances with decrypted config.
 func (s *PaymentConfigService) ListProviderInstancesWithConfig(ctx context.Context) ([]ProviderInstanceResponse, error) {
 	instances, err := s.entClient.PaymentProviderInstance.Query().
@@ -161,6 +177,98 @@ func providerConfigFieldValue(config map[string]string, fieldName string) string
 		}
 	}
 	return ""
+}
+
+func normalizeCardGoodsOverride(req UpdateCardGoodsOverrideRequest) CardGoodsOverride {
+	tags := make([]string, 0, len(req.Tags))
+	seen := make(map[string]struct{}, len(req.Tags))
+	for _, tag := range req.Tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		tags = append(tags, trimmed)
+	}
+	return CardGoodsOverride{
+		Title:       strings.TrimSpace(req.Title),
+		Description: strings.TrimSpace(req.Description),
+		Badge:       strings.TrimSpace(req.Badge),
+		Tags:        tags,
+	}
+}
+
+func cardGoodsOverrideEmpty(override CardGoodsOverride) bool {
+	return override.Title == "" && override.Description == "" && override.Badge == "" && len(override.Tags) == 0
+}
+
+func parseCardGoodsOverrides(raw string) (map[string]CardGoodsOverride, error) {
+	if strings.TrimSpace(raw) == "" {
+		return map[string]CardGoodsOverride{}, nil
+	}
+	var overrides map[string]CardGoodsOverride
+	if err := json.Unmarshal([]byte(raw), &overrides); err != nil {
+		return nil, fmt.Errorf("parse goodsOverrides: %w", err)
+	}
+	if overrides == nil {
+		overrides = map[string]CardGoodsOverride{}
+	}
+	return overrides, nil
+}
+
+func (s *PaymentConfigService) UpdateCardGoodsOverride(ctx context.Context, req UpdateCardGoodsOverrideRequest) (CardGoodsOverride, error) {
+	instanceID, err := strconv.ParseInt(strings.TrimSpace(req.ProviderInstanceID), 10, 64)
+	if err != nil || instanceID <= 0 {
+		return CardGoodsOverride{}, infraerrors.BadRequest("INVALID_PROVIDER_INSTANCE", "provider_instance_id is invalid")
+	}
+	goodsKey := strings.TrimSpace(req.GoodsKey)
+	if goodsKey == "" {
+		return CardGoodsOverride{}, infraerrors.BadRequest("INVALID_CARD_GOODS", "goods_key is required")
+	}
+	inst, err := s.entClient.PaymentProviderInstance.Get(ctx, instanceID)
+	if err != nil {
+		return CardGoodsOverride{}, fmt.Errorf("load provider instance: %w", err)
+	}
+	if inst.ProviderKey != payment.TypeLdxp {
+		return CardGoodsOverride{}, infraerrors.BadRequest("INVALID_PROVIDER_INSTANCE", "provider instance is not ldxp")
+	}
+	cfg, err := s.decryptConfig(inst.Config)
+	if err != nil {
+		return CardGoodsOverride{}, fmt.Errorf("decrypt provider config: %w", err)
+	}
+	if cfg == nil {
+		cfg = map[string]string{}
+	}
+	overrides, err := parseCardGoodsOverrides(cfg["goodsOverrides"])
+	if err != nil {
+		return CardGoodsOverride{}, err
+	}
+	normalized := normalizeCardGoodsOverride(req)
+	if cardGoodsOverrideEmpty(normalized) {
+		delete(overrides, goodsKey)
+	} else {
+		overrides[goodsKey] = normalized
+	}
+	if len(overrides) == 0 {
+		delete(cfg, "goodsOverrides")
+	} else {
+		raw, err := json.Marshal(overrides)
+		if err != nil {
+			return CardGoodsOverride{}, fmt.Errorf("marshal goodsOverrides: %w", err)
+		}
+		cfg["goodsOverrides"] = string(raw)
+	}
+	enc, err := s.encryptConfig(cfg)
+	if err != nil {
+		return CardGoodsOverride{}, err
+	}
+	if _, err := s.entClient.PaymentProviderInstance.UpdateOneID(instanceID).SetConfig(enc).Save(ctx); err != nil {
+		return CardGoodsOverride{}, fmt.Errorf("save goods override: %w", err)
+	}
+	return normalized, nil
 }
 
 func (s *PaymentConfigService) countPendingOrders(ctx context.Context, providerInstanceID int64) (int, error) {
