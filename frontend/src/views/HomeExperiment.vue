@@ -28,9 +28,18 @@
         <div class="hero-grid" aria-hidden="true"></div>
         <canvas class="code-flow" id="codeFlow" aria-hidden="true"></canvas>
         <div class="hero-content">
-          <p class="eyebrow">Unified Service API</p>
-          <h1 id="hero-title">{{ brandName }}</h1>
-          <p class="hero-copy">{{ subtitle }}</p>
+          <p class="eyebrow hero-type hero-type-eyebrow" :class="{ 'is-typing': typedEyebrow.length > 0 && typedEyebrow.length < heroEyebrowText.length }" :aria-label="heroEyebrowText">
+            <span class="type-reserve" aria-hidden="true">{{ heroEyebrowText }}</span>
+            <span class="type-text" aria-hidden="true">{{ typedEyebrow }}</span>
+          </p>
+          <h1 id="hero-title" class="hero-type hero-type-title" :class="{ 'is-typing': typedTitle.length > 0 && typedTitle.length < brandName.length }" :aria-label="brandName">
+            <span class="type-reserve" aria-hidden="true">{{ brandName }}</span>
+            <span class="type-text" aria-hidden="true">{{ typedTitle }}</span>
+          </h1>
+          <p class="hero-copy hero-type hero-type-copy" :class="{ 'is-typing': typedSubtitle.length > 0 && typedSubtitle.length < subtitle.length }" :aria-label="subtitle">
+            <span class="type-reserve" aria-hidden="true">{{ subtitle }}</span>
+            <span class="type-text" aria-hidden="true">{{ typedSubtitle }}</span>
+          </p>
           <div class="hero-actions" aria-label="主要操作">
             <RouterLink class="button primary" :to="entryPath">
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12.17l-5.58-5.59L13 5l8 8-8 8-1.41-1.41L17.17 14H5v-2Z" /></svg>
@@ -74,12 +83,7 @@
                 <span class="provider-chip gemini">Gemini</span>
               </div>
               <div class="gateway-core">
-                <span class="core-loader" aria-hidden="true">
-                  <span class="terminal-line">$ route ai</span>
-                  <span class="terminal-line">&gt; mux://ok</span>
-                  <span class="terminal-line">_</span>
-                </span>
-                <strong>USA-零 Router</strong>
+                <strong>USA-零 智能路由</strong>
               </div>
               <div class="metric-grid">
                 <div><span>99.98%</span><small>可用性</small></div>
@@ -215,7 +219,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
 const props = defineProps<{
@@ -226,6 +230,7 @@ const props = defineProps<{
 }>()
 
 const brandName = computed(() => props.siteName || 'USA-零')
+const heroEyebrowText = 'Unified Service API'
 const subtitle = computed(() => props.siteSubtitle || '统一 OpenAI、Claude、Gemini 等不同接口，把多模型调用规范成一个稳定、可计量、可治理的标准 API。')
 const entryPath = computed(() => props.isAuthenticated ? props.dashboardPath : '/login')
 const entryLabel = computed(() => props.isAuthenticated ? '进入控制台' : '开始接入')
@@ -237,6 +242,9 @@ const themeToggleRef = ref<HTMLButtonElement | null>(null)
 const homeTheme = ref<'light' | 'dark'>('light')
 const activeTab = ref('chat')
 const tokenBudget = ref(10)
+const typedEyebrow = ref('')
+const typedTitle = ref('')
+const typedSubtitle = ref('')
 let cleanupCallbacks: Array<() => void> = []
 
 const routeExamples: Record<string, string> = {
@@ -329,6 +337,38 @@ function setupCopyButtons() {
       window.setTimeout(() => button.classList.remove('copied'), 1200)
     })
   })
+}
+
+function typeText(source: string, target: { value: string }, delay: number, speed: number) {
+  const timer = window.setTimeout(() => {
+    const chars = Array.from(source)
+    let index = 0
+    target.value = ''
+    const tick = () => {
+      index += 1
+      target.value = chars.slice(0, index).join('')
+      if (index < chars.length) {
+        const pause = /[，。,.]/.test(chars[index - 1] || '') ? speed * 5 : speed
+        const timeout = window.setTimeout(tick, pause)
+        cleanupCallbacks.push(() => window.clearTimeout(timeout))
+      }
+    }
+    tick()
+  }, delay)
+  cleanupCallbacks.push(() => window.clearTimeout(timer))
+}
+
+function startHeroTyping() {
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (reducedMotion) {
+    typedEyebrow.value = heroEyebrowText
+    typedTitle.value = brandName.value
+    typedSubtitle.value = subtitle.value
+    return
+  }
+  typeText(heroEyebrowText, typedEyebrow, 180, 34)
+  typeText(brandName.value, typedTitle, 820, 90)
+  typeText(subtitle.value, typedSubtitle, 1420, 28)
 }
 
 function setupTheme() {
@@ -514,12 +554,18 @@ function startCtaDotMatrix(canvas: HTMLCanvasElement | null) {
 
 onMounted(() => {
   setupTheme()
+  startHeroTyping()
   setupHeader()
   setupTabs()
   setupPricingRange()
   setupCopyButtons()
   startCodeFlow(homeRoot.value?.querySelector<HTMLCanvasElement>('#codeFlow') || null)
   startCtaDotMatrix(homeRoot.value?.querySelector<HTMLCanvasElement>('#ctaDotMatrix') || null)
+})
+
+watch([brandName, subtitle], () => {
+  typedTitle.value = brandName.value
+  typedSubtitle.value = subtitle.value
 })
 
 onUnmounted(() => {
@@ -796,6 +842,39 @@ onUnmounted(() => {
   transform: translateY(clamp(24px, 4.5svh, 54px));
 }
 
+.hero-type {
+  position: relative;
+}
+
+.type-reserve {
+  visibility: hidden;
+}
+
+.type-text {
+  position: absolute;
+  inset: 0;
+  display: block;
+  color: inherit;
+  overflow-wrap: inherit;
+  white-space: inherit;
+}
+
+.hero-type.is-typing .type-text::after {
+  content: "";
+  display: inline-block;
+  width: .08em;
+  height: .86em;
+  margin-left: .08em;
+  transform: translateY(.08em);
+  background: currentColor;
+  animation: typeCursor .82s steps(2, end) infinite;
+}
+
+.hero-type-copy .type-text::after {
+  width: 2px;
+  height: 1em;
+}
+
 .eyebrow {
   margin: 0 0 12px;
   color: var(--muted-foreground);
@@ -1002,54 +1081,81 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.core-loader {
-  width: 124px;
-  min-height: 52px;
-  position: relative;
-  display: grid;
-  align-content: center;
-  gap: 2px;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--foreground) 28%, var(--border));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--muted) 70%, var(--background));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background) 68%, transparent);
-  overflow: hidden;
-  color: color-mix(in srgb, var(--foreground) 82%, var(--muted-foreground));
+.gateway-core::before {
+  content: "async route(req) -> policy.pick(ai.fast)  const mux = normalize(req.body)\A stream.pipe(openai.chat)  fallback.to(claude)  meter.add(tokens)\A if p95.latency > 138ms { provider.next() }  cache.warm(gemini.flash)\A edge/api.in -> auth.ok -> quota.ok -> mux.ok  audit.trace(route.id)\A await router.balance({ cost, latency, context })  codec.openai(delta)\A response.delta += stream.chunk  retry.backoff(32ms)  circuit.half_open\A export /v1/chat/completions as stable.api  quota.window.sync()\A provider.score = latency * .62 + cost * .38  model.alias('auto:fast')\A mux.write({ ok: true, route, usage })  headers.set('x-usa-route')\A warmup.embedding_pool()  token.bucket.take(req.user)  policy.guard()\A cache.hit ? stream.from(cache) : upstream.fetch(req)  trace.flush()\A route.lock.release()  billing.commit(usage.total)  proxy.keepalive()\A const next = health.pick(['openai','claude','gemini'])  done(true)";
+  position: absolute;
+  inset: 6px 8px;
+  color: color-mix(in srgb, var(--muted-foreground) 42%, transparent);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
+  font-size: 8px;
   font-weight: 800;
-  line-height: 1.18;
-  text-align: left;
+  line-height: 1.28;
+  white-space: pre;
+  opacity: .43;
+  transform: skewX(-6deg);
+  pointer-events: none;
 }
 
-.core-loader::before {
+.gateway-core::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--green) 20%, transparent) 48%, transparent 100%);
-  opacity: .72;
-  transform: translateX(-120%);
-  animation: terminalScan 2.8s ease-in-out infinite;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--background) 78%, transparent) 0%, transparent 43%);
+  pointer-events: none;
 }
 
-.terminal-line {
+.gateway-core::before {
+  content: "";
+  inset: 5px;
+  background:
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--muted-foreground) 22%, transparent) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--muted-foreground) 18%, transparent) 0 1px, transparent 1px 9px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='96' viewBox='0 0 220 96'%3E%3Ctext x='0' y='9' fill='%23667085' fill-opacity='.5' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Eroute(req)=pick(ai.fast)%3C/text%3E%3Ctext x='16' y='24' fill='%23667085' fill-opacity='.5' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Emux.write(delta) quota.ok%3C/text%3E%3Ctext x='4' y='39' fill='%23667085' fill-opacity='.5' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Efallback.to(claude) cache.hit%3C/text%3E%3Ctext x='22' y='54' fill='%23667085' fill-opacity='.5' font-family='Consolas,monospace' font-size='8' font-weight='700'%3E/v1/chat -%26gt; stream.ok%3C/text%3E%3Ctext x='8' y='69' fill='%23667085' fill-opacity='.5' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Etokens += usage.total%3C/text%3E%3Ctext x='28' y='84' fill='%23667085' fill-opacity='.5' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Ehealth.pick(provider)%3C/text%3E%3C/svg%3E");
+  background-size: 100% 12px, 9px 100%, 220px 96px;
+  opacity: .56;
+  transform: skewX(-4deg) scale(1.08);
+}
+
+.gateway-core::after {
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--background) 72%, transparent) 0%, transparent 37%);
+}
+
+.usa-home[data-theme="dark"] .gateway-core::before {
+  background:
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--muted-foreground) 28%, transparent) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--muted-foreground) 22%, transparent) 0 1px, transparent 1px 9px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='96' viewBox='0 0 220 96'%3E%3Ctext x='0' y='9' fill='%239caab9' fill-opacity='.58' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Eroute(req)=pick(ai.fast)%3C/text%3E%3Ctext x='16' y='24' fill='%239caab9' fill-opacity='.58' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Emux.write(delta) quota.ok%3C/text%3E%3Ctext x='4' y='39' fill='%239caab9' fill-opacity='.58' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Efallback.to(claude) cache.hit%3C/text%3E%3Ctext x='22' y='54' fill='%239caab9' fill-opacity='.58' font-family='Consolas,monospace' font-size='8' font-weight='700'%3E/v1/chat -%26gt; stream.ok%3C/text%3E%3Ctext x='8' y='69' fill='%239caab9' fill-opacity='.58' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Etokens += usage.total%3C/text%3E%3Ctext x='28' y='84' fill='%239caab9' fill-opacity='.58' font-family='Consolas,monospace' font-size='8' font-weight='700'%3Ehealth.pick(provider)%3C/text%3E%3C/svg%3E");
+  background-size: 100% 12px, 9px 100%, 220px 96px;
+  opacity: .62;
+}
+
+.gateway-core::before {
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='174' height='72' viewBox='0 0 174 72'%3E%3Ctext x='0' y='7' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eroute(req).pick(ai.fast)%3C/text%3E%3Ctext x='12' y='16' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Emux.write(delta) usage+=tokens%3C/text%3E%3Ctext x='3' y='25' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eif latency%26gt;138ms next()%3C/text%3E%3Ctext x='18' y='34' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3E/v1/chat -%26gt; stream.ok%3C/text%3E%3Ctext x='6' y='43' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ecache.hit ? edge : upstream%3C/text%3E%3Ctext x='24' y='52' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Efallback.to(claude)%3C/text%3E%3Ctext x='2' y='61' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ehealth.pick(provider) quota.ok%3C/text%3E%3Ctext x='15' y='70' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Etrace.flush() billing.commit()%3C/text%3E%3C/svg%3E");
+  background-size: 174px 72px;
+  background-position: 0 0;
+  opacity: .72;
+  transform: skewX(-4deg) scale(1.12);
+}
+
+.gateway-core::after {
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--background) 48%, transparent) 0%, transparent 28%);
+}
+
+.usa-home[data-theme="dark"] .gateway-core::before {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='174' height='72' viewBox='0 0 174 72'%3E%3Ctext x='0' y='7' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eroute(req).pick(ai.fast)%3C/text%3E%3Ctext x='12' y='16' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Emux.write(delta) usage+=tokens%3C/text%3E%3Ctext x='3' y='25' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eif latency%26gt;138ms next()%3C/text%3E%3Ctext x='18' y='34' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3E/v1/chat -%26gt; stream.ok%3C/text%3E%3Ctext x='6' y='43' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ecache.hit ? edge : upstream%3C/text%3E%3Ctext x='24' y='52' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Efallback.to(claude)%3C/text%3E%3Ctext x='2' y='61' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ehealth.pick(provider) quota.ok%3C/text%3E%3Ctext x='15' y='70' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Etrace.flush() billing.commit()%3C/text%3E%3C/svg%3E");
+  background-size: 174px 72px;
+  opacity: .78;
+}
+
+.gateway-core strong {
   position: relative;
   z-index: 1;
-  display: block;
-  white-space: pre;
+  color: var(--foreground);
+  font-size: 18px;
+  font-weight: 950;
+  text-shadow: 0 1px 14px var(--background);
 }
-
-.terminal-line:nth-child(2) {
-  color: var(--green);
-}
-
-.terminal-line:nth-child(3) {
-  width: 8px;
-  color: color-mix(in srgb, var(--foreground) 88%, var(--background));
-  animation: terminalCursor 1s steps(2, end) infinite;
-}
-.gateway-core strong { font-size: 17px; }
 
 .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .metric-grid div { border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 8px; text-align: center; }
@@ -1430,8 +1536,7 @@ onUnmounted(() => {
 .site-footer { min-height: 82px; padding: 24px 18px; display: flex; justify-content: center; align-items: center; gap: 16px; color: var(--muted-foreground); border-top: 1px solid var(--border); }
 .site-footer span:first-child { color: var(--foreground); font-weight: 900; }
 
-@keyframes terminalScan { 0%, 18% { transform: translateX(-120%); } 52%, 100% { transform: translateX(120%); } }
-@keyframes terminalCursor { 0%, 45% { opacity: 1; } 46%, 100% { opacity: .08; } }
+@keyframes typeCursor { 0%, 42% { opacity: 1; } 43%, 100% { opacity: .12; } }
 @keyframes flow { 0% { transform: translateX(-120%); } 100% { transform: translateX(180%); } }
 
 @media (prefers-reduced-motion: reduce) {
