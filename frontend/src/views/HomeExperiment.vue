@@ -194,7 +194,7 @@
             <div class="cta-brand">
               <img src="/home-experiment/logo.png" alt="" />
               <span>{{ brandName }}</span></div><h2>把应用里的模型供应商切换成 {{ brandName }}</h2>
-            <p>统一 OpenAI、Claude、Gemini 等接口，按团队额度和路由策略稳定接入。</p>
+            <p>统一 OpenAI、Claude、Gemini 等接口，按额度或路由稳定接入。</p>
           </div>
           <div class="endpoint-card">
             <span>Base URL</span>
@@ -206,7 +206,7 @@
     </main>
 
     <footer class="site-footer">
-      <span>{{ brandName }}</span><span>Unified Service API for multi-model products.</span>
+      <span>{{ brandName }}</span><span>面向多模型产品的统一服务 API。</span>
     </footer>
   </div>
 </template>
@@ -538,6 +538,11 @@ onUnmounted(() => {
   --primary: #475569;
   --primary-strong: #111827;
   --primary-soft: #f2f5f8;
+  --hero-cta-bg: #334155;
+  --hero-cta-fg: #ffffff;
+  --hero-cta-border: #334155;
+  --hero-cta-hover-bg: #1f2937;
+  --hero-cta-shadow: rgba(15, 23, 42, 0.16);
   --overview-bg: color-mix(in srgb, var(--muted) 62%, var(--background));
   --green: #059669;
   --amber: #d97706;
@@ -564,6 +569,11 @@ onUnmounted(() => {
   --primary: #cbd5e1;
   --primary-strong: #f8fafc;
   --primary-soft: rgba(203, 213, 225, 0.1);
+  --hero-cta-bg: #f8fafc;
+  --hero-cta-fg: #101418;
+  --hero-cta-border: rgba(248, 250, 252, 0.92);
+  --hero-cta-hover-bg: #e2e8f0;
+  --hero-cta-shadow: rgba(248, 250, 252, 0.18);
   --panel: rgba(16, 20, 24, 0.82);
   --surface: rgba(22, 28, 34, 0.88);
   --surface-raised: rgba(25, 32, 39, 0.96);
@@ -829,9 +839,26 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 800;
   border: 1px solid var(--border);
+  transition: background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
 }
 
-.button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.button.primary {
+  background: var(--hero-cta-bg);
+  color: var(--hero-cta-fg);
+  border-color: var(--hero-cta-border);
+  box-shadow: 0 12px 30px var(--hero-cta-shadow);
+}
+
+.button.primary:hover {
+  background: var(--hero-cta-hover-bg);
+  border-color: var(--hero-cta-hover-bg);
+  transform: translateY(-1px);
+}
+
+.button.primary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--hero-cta-bg) 34%, transparent);
+  outline-offset: 3px;
+}
 .button.secondary { background: color-mix(in srgb, var(--panel) 96%, transparent); color: var(--foreground); }
 
 .console-shell {
