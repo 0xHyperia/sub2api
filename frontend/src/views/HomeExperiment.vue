@@ -401,8 +401,9 @@ function startCodeFlow(canvas: HTMLCanvasElement | null) {
   ]
   let streams: Array<{ x: number; y: number; direction: number; repeatWidth: number; speed: number; alpha: number; size: number; text: string }> = []
   let raf = 0
+  let lastFrameTime = 0
   const color = (alpha: number) => homeTheme.value === 'dark' ? `rgba(122, 162, 255, ${alpha})` : `rgba(37, 99, 235, ${alpha})`
-  const draw = () => {
+  const render = (deltaSeconds = 0) => {
     const width = canvas.clientWidth
     const height = canvas.clientHeight
     ctx.clearRect(0, 0, width, height)
@@ -420,10 +421,15 @@ function startCodeFlow(canvas: HTMLCanvasElement | null) {
         ctx.fillText('{ normalized: true, billable: tokens }', x + stream.repeatWidth * 0.42, stream.y)
         ctx.fillStyle = color(stream.alpha * rowFade)
       }
-      if (!reducedMotion) stream.x += stream.speed * stream.direction
+      if (!reducedMotion) stream.x += stream.speed * deltaSeconds * stream.direction
       if (stream.direction === 1 && stream.x > stream.repeatWidth) stream.x -= stream.repeatWidth
       if (stream.direction === -1 && stream.x < -stream.repeatWidth) stream.x += stream.repeatWidth
     })
+  }
+  const draw = (time: number) => {
+    const deltaSeconds = lastFrameTime ? Math.min((time - lastFrameTime) / 1000, 0.05) : 0
+    lastFrameTime = time
+    render(deltaSeconds)
     if (!reducedMotion) raf = requestAnimationFrame(draw)
   }
   const resize = () => {
@@ -439,9 +445,9 @@ function startCodeFlow(canvas: HTMLCanvasElement | null) {
       const size = rect.width < 640 ? 10.5 : 12 + Math.random() * 2
       const text = snippets[index % snippets.length]
       const repeatWidth = Math.max(260, text.length * size * 0.68 + 90)
-      return { x: direction === 1 ? -repeatWidth + Math.random() * repeatWidth : Math.random() * repeatWidth, y: -rowGap * 2 + index * rowGap + Math.random() * 8, direction, repeatWidth, speed: 0.18 + Math.random() * 0.42, alpha: 0.08 + Math.random() * 0.17, size, text }
+      return { x: direction === 1 ? -repeatWidth + Math.random() * repeatWidth : Math.random() * repeatWidth, y: -rowGap * 2 + index * rowGap + Math.random() * 8, direction, repeatWidth, speed: 11 + Math.random() * 25, alpha: 0.08 + Math.random() * 0.17, size, text }
     })
-    draw()
+    render(0)
   }
   resize()
   if (!reducedMotion) raf = requestAnimationFrame(draw)
