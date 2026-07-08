@@ -1285,6 +1285,10 @@ onUnmounted(() => {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+.code-window code {
+  color: #e5e7eb;
+}
+
 .pricing-card {
   position: relative;
   overflow: hidden;
