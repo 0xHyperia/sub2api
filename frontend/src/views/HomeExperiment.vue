@@ -74,9 +74,12 @@
                 <span class="provider-chip gemini">Gemini</span>
               </div>
               <div class="gateway-core">
-                <span class="core-ring"></span>
+                <span class="core-loader" aria-hidden="true">
+                  <span class="terminal-line">$ route ai</span>
+                  <span class="terminal-line">&gt; mux://ok</span>
+                  <span class="terminal-line">_</span>
+                </span>
                 <strong>USA-零 Router</strong>
-                <small>normalize · route · meter</small>
               </div>
               <div class="metric-grid">
                 <div><span>99.98%</span><small>可用性</small></div>
@@ -999,16 +1002,54 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.core-ring {
-  width: 48px;
-  height: 48px;
-  border: 2px solid color-mix(in srgb, var(--foreground) 56%, var(--border));
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 4s linear infinite;
+.core-loader {
+  width: 124px;
+  min-height: 52px;
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 28%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 70%, var(--background));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background) 68%, transparent);
+  overflow: hidden;
+  color: color-mix(in srgb, var(--foreground) 82%, var(--muted-foreground));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.18;
+  text-align: left;
+}
+
+.core-loader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--green) 20%, transparent) 48%, transparent 100%);
+  opacity: .72;
+  transform: translateX(-120%);
+  animation: terminalScan 2.8s ease-in-out infinite;
+}
+
+.terminal-line {
+  position: relative;
+  z-index: 1;
+  display: block;
+  white-space: pre;
+}
+
+.terminal-line:nth-child(2) {
+  color: var(--green);
+}
+
+.terminal-line:nth-child(3) {
+  width: 8px;
+  color: color-mix(in srgb, var(--foreground) 88%, var(--background));
+  animation: terminalCursor 1s steps(2, end) infinite;
 }
 .gateway-core strong { font-size: 17px; }
-.gateway-core small { color: var(--muted-foreground); font-size: 12px; }
 
 .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .metric-grid div { border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 8px; text-align: center; }
@@ -1389,7 +1430,8 @@ onUnmounted(() => {
 .site-footer { min-height: 82px; padding: 24px 18px; display: flex; justify-content: center; align-items: center; gap: 16px; color: var(--muted-foreground); border-top: 1px solid var(--border); }
 .site-footer span:first-child { color: var(--foreground); font-weight: 900; }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes terminalScan { 0%, 18% { transform: translateX(-120%); } 52%, 100% { transform: translateX(120%); } }
+@keyframes terminalCursor { 0%, 45% { opacity: 1; } 46%, 100% { opacity: .08; } }
 @keyframes flow { 0% { transform: translateX(-120%); } 100% { transform: translateX(180%); } }
 
 @media (prefers-reduced-motion: reduce) {
