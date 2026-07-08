@@ -19,14 +19,16 @@ export type OrderStatus =
   | 'REFUNDED'
   | 'REFUND_FAILED'
 
-export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' | 'stripe' | 'easypay' | 'airwallex'
+export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' | 'stripe' | 'easypay' | 'ldxp' | 'airwallex'
 
-export type OrderType = 'balance' | 'subscription'
+export type OrderType = 'balance' | 'subscription' | 'card'
 
 // ==================== Configuration ====================
 
 export interface PaymentConfig {
   payment_enabled: boolean
+  instant_enabled?: boolean
+  card_enabled?: boolean
   min_amount: number
   max_amount: number
   daily_limit: number
@@ -66,6 +68,8 @@ export interface CheckoutInfoResponse {
   global_min: number
   global_max: number
   plans: SubscriptionPlan[]
+  instant_enabled?: boolean
+  card_enabled?: boolean
   balance_disabled: boolean
   balance_recharge_multiplier: number
   /** Subscription CNY conversion rate (1 USD = X CNY); 0 = disabled, plan price is charged as-is */
@@ -102,6 +106,9 @@ export interface PaymentOrder {
   refund_request_reason?: string
   plan_id?: number
   provider_instance_id?: string
+  card_codes?: string[]
+  redeemed_card_codes?: string[]
+  card_auto_redeem?: boolean
 }
 
 // ==================== Plans & Channels ====================
@@ -215,6 +222,79 @@ export interface CreateOrderResult {
   oauth?: WechatOAuthInfo
   jsapi?: WechatJSAPIPayload
   jsapi_payload?: WechatJSAPIPayload
+}
+
+export interface CardShopInfo {
+  token: string
+  nickname: string
+  avatar?: string
+  description?: string
+  link?: string
+}
+
+export interface CardCategory {
+  id: number
+  name: string
+  image?: string
+  goods_count?: number
+}
+
+export interface CardGoods {
+  provider_instance_id: string
+  shop_token: string
+  goods_key: string
+  name: string
+  price: number
+  description?: string
+  image?: string
+  category_id: number
+  category_name?: string
+  stock_count: number
+  limit_count: number
+  query_password_required: boolean
+}
+
+export interface CardChannel {
+  id: number
+  name: string
+  show_name?: string
+  code?: string
+  icon?: string
+  status: number
+}
+
+export interface CardCheckoutShop {
+  provider_instance_id: string
+  name: string
+  shop: CardShopInfo
+  categories: CardCategory[]
+  goods: CardGoods[]
+  channels: CardChannel[]
+}
+
+export interface CardCheckoutInfo {
+  shops: CardCheckoutShop[]
+}
+
+export interface CardPrice {
+  original_amount: number
+  total_amount: number
+  fee: number
+}
+
+export interface CardPriceRequest {
+  provider_instance_id: string
+  goods_key: string
+  quantity: number
+  channel_id: number
+  coupon_code?: string
+}
+
+export interface CreateCardOrderRequest extends CardPriceRequest {
+  contact?: string
+  query_password?: string
+  auto_redeem?: boolean
+  return_url?: string
 }
 
 export interface DashboardStats {

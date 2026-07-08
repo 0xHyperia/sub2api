@@ -12,6 +12,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
+	paymentprovider "github.com/Wei-Shaw/sub2api/internal/payment/provider"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
@@ -157,7 +158,7 @@ func (s *PaymentService) checkPaidWithOptions(ctx context.Context, o *dbent.Paym
 	if queryRef == "" {
 		return ""
 	}
-	resp, err := prov.QueryOrder(ctx, queryRef)
+	resp, err := s.queryProviderOrder(ctx, o, prov, queryRef)
 	if err != nil {
 		slog.Warn("query upstream failed", "orderID", o.ID, "error", err)
 		return ""
@@ -171,7 +172,7 @@ func (s *PaymentService) checkPaidWithOptions(ctx context.Context, o *dbent.Paym
 				"queryRef": queryRef,
 			})
 			slog.Warn("query upstream returned invalid paid amount", "orderID", o.ID, "queryRef", queryRef, "paid", resp.Amount)
-			retriedResp, retryOK := requeryPaidOrderOnce(ctx, prov, queryRef)
+			retriedResp, retryOK := s.requeryPaidOrderOnce(ctx, o, prov, queryRef)
 			if !retryOK {
 				return ""
 			}
@@ -204,11 +205,35 @@ func (s *PaymentService) checkPaidWithOptions(ctx context.Context, o *dbent.Paym
 	return ""
 }
 
-func requeryPaidOrderOnce(ctx context.Context, prov payment.Provider, queryRef string) (*payment.QueryOrderResponse, bool) {
+func (s *PaymentService) queryProviderOrder(ctx context.Context, order *dbent.PaymentOrder, prov payment.Provider, queryRef string) (*payment.QueryOrderResponse, error) {
+	if ldxp, ok := prov.(*paymentprovider.Ldxp); ok && order != nil && order.OrderType == payment.OrderTypeCard {
+		info, err := ldxp.GetOrderInfoWithCards(ctx, queryRef, ldxpOrderQueryPassword(order))
+		if err != nil {
+			return nil, err
+		}
+		status := payment.ProviderStatusPending
+		if info.Status == 1 || info.Sendout == 1 {
+			status = payment.ProviderStatusPaid
+		}
+		tradeNo := strings.TrimSpace(info.TradeNo)
+		if tradeNo == "" {
+			tradeNo = queryRef
+		}
+		return &payment.QueryOrderResponse{
+			TradeNo:  tradeNo,
+			Status:   status,
+			Amount:   info.TotalAmount,
+			Metadata: ldxp.MerchantIdentityMetadata(),
+		}, nil
+	}
+	return prov.QueryOrder(ctx, queryRef)
+}
+
+func (s *PaymentService) requeryPaidOrderOnce(ctx context.Context, order *dbent.PaymentOrder, prov payment.Provider, queryRef string) (*payment.QueryOrderResponse, bool) {
 	if prov == nil || strings.TrimSpace(queryRef) == "" {
 		return nil, false
 	}
-	resp, err := prov.QueryOrder(ctx, queryRef)
+	resp, err := s.queryProviderOrder(ctx, order, prov, queryRef)
 	if err != nil {
 		slog.Warn("query upstream retry failed", "queryRef", queryRef, "error", err)
 		return nil, false
@@ -243,12 +268,18 @@ func paymentOrderQueryReference(order *dbent.PaymentOrder, prov payment.Provider
 	switch payment.GetBasePaymentType(providerKey) {
 	case payment.TypeAlipay, payment.TypeEasyPay, payment.TypeWxpay:
 		return strings.TrimSpace(order.OutTradeNo)
-	default:
-		if tradeNo := strings.TrimSpace(order.PaymentTradeNo); tradeNo != "" {
-			return tradeNo
+	case payment.TypeLdxp:
+		if order.OrderType == payment.OrderTypeCard {
+			if tradeNo := strings.TrimSpace(order.PaymentTradeNo); tradeNo != "" {
+				return tradeNo
+			}
+			return strings.TrimSpace(order.OutTradeNo)
 		}
-		return strings.TrimSpace(order.OutTradeNo)
 	}
+	if tradeNo := strings.TrimSpace(order.PaymentTradeNo); tradeNo != "" {
+		return tradeNo
+	}
+	return strings.TrimSpace(order.OutTradeNo)
 }
 
 func paymentOrderShouldPersistUpstreamTradeNo(queryRef, upstreamTradeNo, currentTradeNo string) bool {

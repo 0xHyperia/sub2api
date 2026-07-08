@@ -5,6 +5,7 @@ const pollOrderStatus = vi.hoisted(() => vi.fn())
 const cancelOrder = vi.hoisted(() => vi.fn())
 const verifyOrder = vi.hoisted(() => vi.fn())
 const showError = vi.hoisted(() => vi.fn())
+const showSuccess = vi.hoisted(() => vi.fn())
 const toCanvas = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-i18n', async () => {
@@ -26,6 +27,7 @@ vi.mock('@/stores/payment', () => ({
 vi.mock('@/stores', () => ({
   useAppStore: () => ({
     showError,
+    showSuccess,
   }),
 }))
 
@@ -66,6 +68,7 @@ describe('PaymentStatusPanel', () => {
     cancelOrder.mockReset()
     verifyOrder.mockReset()
     showError.mockReset()
+    showSuccess.mockReset()
     toCanvas.mockReset().mockResolvedValue(undefined)
   })
 
@@ -167,6 +170,46 @@ describe('PaymentStatusPanel', () => {
         expiresAt: '2099-01-01T12:30:00Z',
         paymentType: 'wxpay',
         orderType: 'balance',
+      },
+      global: {
+        stubs: {
+          Icon: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(3000)
+    await flushPromises()
+
+    expect(pollOrderStatus).toHaveBeenCalledWith(42)
+    expect(verifyOrder).toHaveBeenCalledWith('sub2_20260420abcd1234')
+    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.emitted('success')).toHaveLength(1)
+  })
+
+  it('actively verifies pending card orders', async () => {
+    pollOrderStatus.mockResolvedValue({
+      ...orderFactory('PENDING'),
+      payment_type: 'ldxp',
+      order_type: 'card',
+    })
+    verifyOrder.mockResolvedValue({
+      data: {
+        ...orderFactory('COMPLETED'),
+        payment_type: 'ldxp',
+        order_type: 'card',
+      },
+    })
+
+    const wrapper = mount(PaymentStatusPanel, {
+      props: {
+        orderId: 42,
+        qrCode: '',
+        payUrl: 'https://pay.ldxp.cn/pay/42',
+        expiresAt: '2099-01-01T12:30:00Z',
+        paymentType: 'ldxp',
+        orderType: 'card',
       },
       global: {
         stubs: {

@@ -304,6 +304,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/card-payment',
+    name: 'CardPayment',
+    redirect: { path: '/purchase', query: { tab: 'card' } },
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Redeem Card Purchase',
+      titleKey: 'nav.cardPayment',
+      requiresPayment: true
+    }
+  },
+  {
     path: '/orders',
     name: 'OrderList',
     component: () => import('@/views/user/UserOrdersView.vue'),

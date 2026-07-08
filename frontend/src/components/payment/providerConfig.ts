@@ -38,6 +38,7 @@ export interface CallbackPaths {
 /** Maps provider key → available payment types. */
 export const PROVIDER_SUPPORTED_TYPES: Record<string, string[]> = {
   easypay: ['alipay', 'wxpay'],
+  ldxp: ['alipay'],
   alipay: ['alipay'],
   wxpay: ['wxpay'],
   stripe: ['card', 'alipay', 'wxpay', 'link'],
@@ -131,6 +132,14 @@ export const PROVIDER_CONFIG_FIELDS: Record<string, ConfigFieldDef[]> = {
     { key: 'apiBase', label: '', sensitive: false },
     { key: 'cidAlipay', label: '', sensitive: false, optional: true },
     { key: 'cidWxpay', label: '', sensitive: false, optional: true },
+  ],
+  ldxp: [
+    { key: 'shopUrl', label: '', sensitive: false, hintKey: 'admin.settings.payment.field_ldxpShopUrlHint' },
+    { key: 'apiBase', label: '', sensitive: false, optional: true, defaultValue: 'https://pay.ldxp.cn' },
+    { key: 'queryPassword', label: '', sensitive: false, optional: true, clearable: true, hintKey: 'admin.settings.payment.field_ldxpQueryPasswordHint' },
+    { key: 'contactFallback', label: '', sensitive: false, optional: true, clearable: true },
+    { key: 'referer', label: '', sensitive: false, optional: true, clearable: true },
+    { key: 'visitorId', label: '', sensitive: false, optional: true, clearable: true },
   ],
   alipay: [
     { key: 'appId', label: 'App ID', sensitive: false },

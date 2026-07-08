@@ -85,6 +85,7 @@ export type PaymentVisibleMethodSource =
   | ""
   | "official_alipay"
   | "easypay_alipay"
+  | "ldxp_alipay"
   | "official_wxpay"
   | "easypay_wxpay";
 export type WeChatConnectMode = "open" | "mp" | "mobile";
@@ -128,6 +129,11 @@ const PAYMENT_VISIBLE_METHOD_SOURCE_OPTIONS: Record<
       labelZh: "易支付支付宝",
       labelEn: "EasyPay Alipay",
     },
+    {
+      value: "ldxp_alipay",
+      labelZh: "链动小铺支付宝",
+      labelEn: "Ldxp Alipay",
+    },
   ],
   wxpay: [
     { value: "", labelZh: "未配置", labelEn: "Not configured" },
@@ -154,6 +160,8 @@ const PAYMENT_VISIBLE_METHOD_SOURCE_ALIASES: Record<
     official: "official_alipay",
     easypay_alipay: "easypay_alipay",
     easypay: "easypay_alipay",
+    ldxp_alipay: "ldxp_alipay",
+    ldxp: "ldxp_alipay",
   },
   wxpay: {
     official_wxpay: "official_wxpay",
@@ -575,6 +583,8 @@ export interface SystemSettings {
 
   // Payment configuration
   payment_enabled: boolean;
+  payment_instant_enabled: boolean;
+  payment_card_enabled: boolean;
   risk_control_enabled: boolean;
 
   // Cyber session block
@@ -847,6 +857,8 @@ export interface UpdateSettingsRequest {
   codex_cli_only_engine_fingerprint_signals?: string;
   // Payment configuration
   payment_enabled?: boolean;
+  payment_instant_enabled?: boolean;
+  payment_card_enabled?: boolean;
   risk_control_enabled?: boolean;
 
   // Cyber session block

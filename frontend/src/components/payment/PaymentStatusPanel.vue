@@ -30,6 +30,26 @@
               </div>
             </div>
           </div>
+          <div v-if="displayedCardCodes.length" class="w-full rounded-xl bg-gray-50 p-4 dark:bg-dark-800">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ cardCodesTitle }}</span>
+                <p v-if="cardCodesHint" class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ cardCodesHint }}</p>
+              </div>
+              <button class="btn btn-secondary px-3 py-1 text-xs" type="button" @click="copyCardCodes">
+                {{ t('common.copy') }}
+              </button>
+            </div>
+            <div class="space-y-2">
+              <code
+                v-for="code in displayedCardCodes"
+                :key="code"
+                class="block break-all rounded-md bg-white px-3 py-2 text-sm text-gray-900 dark:bg-dark-900 dark:text-gray-100"
+              >
+                {{ code }}
+              </code>
+            </div>
+          </div>
           <button class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
         </div>
       </div>
@@ -185,6 +205,9 @@ const VERIFY_RETRY_MAX_ATTEMPTS = 6
 
 const isAlipay = computed(() => isBuiltInAlipayMethod(props.paymentType))
 const isWxpay = computed(() => isBuiltInWxpayMethod(props.paymentType))
+const shouldVerifyPendingOrder = computed(() => {
+  return isWxpay.value || props.orderType === 'card' || props.paymentType === 'ldxp'
+})
 
 const qrBorderClass = computed(() => {
   if (isAlipay.value) return 'border-[#00AEEF] bg-blue-50 dark:border-[#00AEEF]/70 dark:bg-blue-950/20'
@@ -216,6 +239,29 @@ const scanHint = computed(() => {
   return ''
 })
 
+const cardCodesTitle = computed(() => {
+  if (props.orderType === 'card' && paidOrder.value?.card_auto_redeem) {
+    return t('payment.card.redeemedCodes')
+  }
+  return t('payment.card.codes')
+})
+
+const cardCodesHint = computed(() => {
+  if (props.orderType !== 'card') return ''
+  if (paidOrder.value?.card_auto_redeem) {
+    return t('payment.card.redeemedCodesHint')
+  }
+  return t('payment.card.codesHint')
+})
+
+const displayedCardCodes = computed(() => {
+  if (!paidOrder.value) return []
+  if (paidOrder.value.card_auto_redeem && paidOrder.value.redeemed_card_codes?.length) {
+    return paidOrder.value.redeemed_card_codes
+  }
+  return paidOrder.value.card_codes || []
+})
+
 const countdownDisplay = computed(() => {
   const m = Math.floor(remainingSeconds.value / 60)
   const s = remainingSeconds.value % 60
@@ -245,6 +291,13 @@ function setOutcome(next: PaymentOutcome) {
   emit('settled', next)
 }
 
+async function copyCardCodes() {
+  const codes = displayedCardCodes.value
+  if (!codes.length || typeof navigator === 'undefined' || !navigator.clipboard) return
+  await navigator.clipboard.writeText(codes.join('\n'))
+  appStore.showSuccess(t('common.copied'))
+}
+
 async function renderQR() {
   await nextTick()
   if (!qrCanvas.value || !qrUrl.value) return
@@ -254,8 +307,8 @@ async function renderQR() {
   })
 }
 
-async function tryRecoverPendingOrder(order: PaymentOrder): Promise<PaymentOrder> {
-  if (!isWxpay.value) return order
+async function tryVerifyPendingOrder(order: PaymentOrder): Promise<PaymentOrder> {
+  if (!shouldVerifyPendingOrder.value) return order
   const outTradeNo = String(order.out_trade_no || '').trim()
   if (!outTradeNo) return order
   const normalizedStatus = String(order.status || '').trim().toUpperCase()
@@ -279,7 +332,7 @@ async function pollStatus() {
   if (!props.orderId || outcome.value) return
   let order = await paymentStore.pollOrderStatus(props.orderId)
   if (!order) return
-  order = await tryRecoverPendingOrder(order)
+  order = await tryVerifyPendingOrder(order)
   if (isSuccessStatus(order.status)) {
     cleanup()
     paidOrder.value = order

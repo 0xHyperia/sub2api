@@ -148,6 +148,8 @@ func (h *PaymentHandler) GetCheckoutInfo(c *gin.Context) {
 		GlobalMin:                 limitsResp.GlobalMin,
 		GlobalMax:                 limitsResp.GlobalMax,
 		Plans:                     planList,
+		InstantEnabled:            cfg.InstantEnabled,
+		CardEnabled:               cfg.CardEnabled,
 		BalanceDisabled:           cfg.BalanceDisabled,
 		BalanceRechargeMultiplier: cfg.BalanceRechargeMultiplier,
 		SubscriptionUSDToCNYRate:  cfg.SubscriptionUSDToCNYRate,
@@ -159,11 +161,86 @@ func (h *PaymentHandler) GetCheckoutInfo(c *gin.Context) {
 	})
 }
 
+func (h *PaymentHandler) GetCardCheckoutInfo(c *gin.Context) {
+	if _, ok := requireAuth(c); !ok {
+		return
+	}
+	info, err := h.paymentService.GetCardCheckoutInfo(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, info)
+}
+
+type CardPriceRequest struct {
+	ProviderInstanceID string `json:"provider_instance_id" binding:"required"`
+	GoodsKey           string `json:"goods_key" binding:"required"`
+	Quantity           int    `json:"quantity"`
+	ChannelID          int64  `json:"channel_id" binding:"required"`
+	CouponCode         string `json:"coupon_code"`
+}
+
+func (h *PaymentHandler) GetCardPrice(c *gin.Context) {
+	if _, ok := requireAuth(c); !ok {
+		return
+	}
+	var req CardPriceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	price, err := h.paymentService.GetCardPrice(c.Request.Context(), service.CardPriceRequest(req))
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, price)
+}
+
+type CreateCardOrderRequest struct {
+	ProviderInstanceID string `json:"provider_instance_id" binding:"required"`
+	GoodsKey           string `json:"goods_key" binding:"required"`
+	Quantity           int    `json:"quantity"`
+	ChannelID          int64  `json:"channel_id" binding:"required"`
+	CouponCode         string `json:"coupon_code"`
+	Contact            string `json:"contact"`
+	QueryPassword      string `json:"query_password"`
+	AutoRedeem         *bool  `json:"auto_redeem"`
+	ReturnURL          string `json:"return_url"`
+}
+
+func (h *PaymentHandler) CreateCardOrder(c *gin.Context) {
+	subject, ok := requireAuth(c)
+	if !ok {
+		return
+	}
+	var req CreateCardOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.paymentService.CreateCardOrder(c.Request.Context(), service.CardOrderRequest{
+		UserID: subject.UserID, ProviderInstanceID: req.ProviderInstanceID, GoodsKey: req.GoodsKey,
+		Quantity: req.Quantity, ChannelID: req.ChannelID, CouponCode: req.CouponCode,
+		Contact: req.Contact, QueryPassword: req.QueryPassword, AutoRedeem: req.AutoRedeem, ReturnURL: req.ReturnURL,
+		ClientIP: c.ClientIP(), SrcHost: c.Request.Host, SrcURL: c.Request.Referer(),
+		Locale: c.GetHeader("Accept-Language"),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
 type checkoutInfoResponse struct {
 	Methods                   map[string]service.MethodLimits `json:"methods"`
 	GlobalMin                 float64                         `json:"global_min"`
 	GlobalMax                 float64                         `json:"global_max"`
 	Plans                     []checkoutPlan                  `json:"plans"`
+	InstantEnabled            bool                            `json:"instant_enabled"`
+	CardEnabled               bool                            `json:"card_enabled"`
 	BalanceDisabled           bool                            `json:"balance_disabled"`
 	BalanceRechargeMultiplier float64                         `json:"balance_recharge_multiplier"`
 	SubscriptionUSDToCNYRate  float64                         `json:"subscription_usd_to_cny_rate"`
@@ -641,6 +718,9 @@ type PaymentOrderResult struct {
 	RefundRequestReason *string    `json:"refund_request_reason,omitempty"`
 	PlanID              *int64     `json:"plan_id,omitempty"`
 	ProviderInstanceID  *string    `json:"provider_instance_id,omitempty"`
+	CardCodes           []string   `json:"card_codes,omitempty"`
+	RedeemedCardCodes   []string   `json:"redeemed_card_codes,omitempty"`
+	CardAutoRedeem      *bool      `json:"card_auto_redeem,omitempty"`
 }
 
 func sanitizePaymentOrdersForResponse(orders []*dbent.PaymentOrder) []PaymentOrderResult {
@@ -679,7 +759,58 @@ func sanitizePaymentOrderForResponse(order *dbent.PaymentOrder) *PaymentOrderRes
 		RefundRequestReason: order.RefundRequestReason,
 		PlanID:              order.PlanID,
 		ProviderInstanceID:  order.ProviderInstanceID,
+		CardCodes:           paymentOrderCardCodes(order),
+		RedeemedCardCodes:   paymentOrderSnapshotStringSlice(order, "redeemed_card_codes"),
+		CardAutoRedeem:      paymentOrderCardAutoRedeem(order),
 	}
+}
+
+func paymentOrderCardCodes(order *dbent.PaymentOrder) []string {
+	return paymentOrderSnapshotStringSlice(order, "card_codes")
+}
+
+func paymentOrderSnapshotStringSlice(order *dbent.PaymentOrder, key string) []string {
+	if order == nil || order.OrderType != payment.OrderTypeCard || len(order.ProviderSnapshot) == 0 {
+		return nil
+	}
+	raw, ok := order.ProviderSnapshot[key]
+	if !ok {
+		return nil
+	}
+	var out []string
+	switch typed := raw.(type) {
+	case []string:
+		out = append(out, typed...)
+	case []interface{}:
+		for _, item := range typed {
+			if code, ok := item.(string); ok && strings.TrimSpace(code) != "" {
+				out = append(out, strings.TrimSpace(code))
+			}
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func paymentOrderCardAutoRedeem(order *dbent.PaymentOrder) *bool {
+	if order == nil || order.OrderType != payment.OrderTypeCard || len(order.ProviderSnapshot) == 0 {
+		return nil
+	}
+	raw, ok := order.ProviderSnapshot["auto_redeem"]
+	if !ok {
+		value := true
+		return &value
+	}
+	value := true
+	switch typed := raw.(type) {
+	case bool:
+		value = typed
+	case string:
+		value = !strings.EqualFold(strings.TrimSpace(typed), "false")
+	}
+	return &value
 }
 
 func isWeChatBrowser(c *gin.Context) bool {

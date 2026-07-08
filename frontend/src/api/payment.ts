@@ -10,6 +10,10 @@ import type {
   PaymentChannel,
   MethodLimitsResponse,
   CheckoutInfoResponse,
+  CardCheckoutInfo,
+  CardPrice,
+  CardPriceRequest,
+  CreateCardOrderRequest,
   CreateOrderRequest,
   CreateOrderResult,
   PaymentOrder
@@ -53,6 +57,18 @@ export const paymentAPI = {
   /** Create a new payment order */
   createOrder(data: CreateOrderRequest) {
     return apiClient.post<CreateOrderResult>('/payment/orders', data)
+  },
+
+  getCardCheckoutInfo() {
+    return apiClient.get<CardCheckoutInfo>('/payment/card/checkout-info')
+  },
+
+  getCardPrice(data: CardPriceRequest) {
+    return apiClient.post<CardPrice>('/payment/card/price', data)
+  },
+
+  createCardOrder(data: CreateCardOrderRequest) {
+    return apiClient.post<CreateOrderResult>('/payment/card/orders', data)
   },
 
   /** Get current user's orders */

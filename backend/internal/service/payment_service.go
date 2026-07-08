@@ -46,23 +46,31 @@ const (
 	topUsersLimit      = 10
 	amountToleranceCNY = 0.01
 
-	orderIDPrefix = "sub2_"
+	legacyOrderIDPrefix = "sub2_"
+	orderIDRandomDigits = 6
 )
 
 const paymentResumeSigningKeyEnv = "PAYMENT_RESUME_SIGNING_KEY"
 
 // --- Types ---
 
-// generateOutTradeNo creates a unique external order ID for payment providers.
-// Format: sub2_20250409aB3kX9mQ (prefix + date + 8-char random)
+// generateOutTradeNo 生成支付网关使用的外部订单号。
+// 格式：yyyyMMddHHmmss + 6 位随机数字，例如 20260708141030912345。
 func generateOutTradeNo() string {
-	date := time.Now().Format("20060102")
-	rnd := generateRandomString(8)
-	return orderIDPrefix + date + rnd
+	return time.Now().Format("20060102150405") + generateRandomDigits(orderIDRandomDigits)
 }
 
 func generateRandomString(n int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = charset[rand.IntN(len(charset))]
+	}
+	return string(b)
+}
+
+func generateRandomDigits(n int) string {
+	const charset = "0123456789"
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = charset[rand.IntN(len(charset))]
@@ -76,6 +84,7 @@ type CreateOrderRequest struct {
 	PaymentType     string
 	OpenID          string
 	ClientIP        string
+	Contact         string
 	IsMobile        bool
 	IsWeChatBrowser bool
 	SrcHost         string

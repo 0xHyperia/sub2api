@@ -18,6 +18,7 @@ const (
 	TypeLink         PaymentType = "link"
 	TypeEasyPay      PaymentType = "easypay"
 	TypeAirwallex    PaymentType = "airwallex"
+	TypeLdxp         PaymentType = "ldxp"
 )
 
 // Order status constants shared across payment and service layers.
@@ -41,6 +42,7 @@ const (
 const (
 	OrderTypeBalance      = "balance"
 	OrderTypeSubscription = "subscription"
+	OrderTypeCard         = "card"
 )
 
 // Entity statuses shared across users, groups, etc.
@@ -107,6 +109,7 @@ type CreatePaymentRequest struct {
 	ReturnURL          string // Browser redirect URL after payment
 	OpenID             string // WeChat JSAPI payer OpenID when available
 	ClientIP           string // Payer's IP address
+	Contact            string // 买家联系方式，部分三方通道创建订单时需要
 	IsMobile           bool   // Whether the request comes from a mobile device
 	InstanceSubMethods string // Comma-separated sub-methods from instance supported_types (for Stripe)
 }

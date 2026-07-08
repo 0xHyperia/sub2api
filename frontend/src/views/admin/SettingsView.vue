@@ -6350,6 +6350,22 @@
                 <Toggle v-model="form.payment_enabled" />
               </div>
               <template v-if="form.payment_enabled">
+                <div class="grid gap-4 md:grid-cols-2">
+                  <div class="flex items-start justify-between rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                    <div class="pr-4">
+                      <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.instantEnabled") }}</label>
+                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.instantEnabledHint") }}</p>
+                    </div>
+                    <Toggle v-model="form.payment_instant_enabled" />
+                  </div>
+                  <div class="flex items-start justify-between rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                    <div class="pr-4">
+                      <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.cardEnabled") }}</label>
+                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.cardEnabledHint") }}</p>
+                    </div>
+                    <Toggle v-model="form.payment_card_enabled" />
+                  </div>
+                </div>
                 <!-- Row 1: Product name -->
                 <div class="grid grid-cols-3 gap-3">
                   <div>
@@ -8060,6 +8076,8 @@ const form = reactive<SettingsForm>({
   backend_mode_enabled: false,
   hide_ccs_import_button: false,
   payment_enabled: false,
+  payment_instant_enabled: true,
+  payment_card_enabled: false,
   risk_control_enabled: false,
   cyber_session_block_enabled: false,
   cyber_session_block_ttl_seconds: 3600,
@@ -9559,6 +9577,8 @@ async function saveSettings() {
       ),
       // Payment configuration
       payment_enabled: form.payment_enabled,
+      payment_instant_enabled: form.payment_instant_enabled,
+      payment_card_enabled: form.payment_card_enabled,
       risk_control_enabled: form.risk_control_enabled,
       cyber_session_block_enabled: form.cyber_session_block_enabled,
       cyber_session_block_ttl_seconds:
@@ -10205,6 +10225,7 @@ async function saveBetaPolicySettings() {
 
 const allPaymentTypes = computed(() => [
   { value: "easypay", label: t("payment.methods.easypay") },
+  { value: "ldxp", label: t("admin.settings.payment.providerLdxp") },
   { value: "alipay", label: t("payment.methods.alipay") },
   { value: "wxpay", label: t("payment.methods.wxpay") },
   { value: "stripe", label: t("payment.methods.stripe") },
@@ -10262,6 +10283,7 @@ const providerDialogRef = ref<InstanceType<
 
 const providerKeyOptions = computed(() => [
   { value: "easypay", label: t("admin.settings.payment.providerEasypay") },
+  { value: "ldxp", label: t("admin.settings.payment.providerLdxp") },
   { value: "alipay", label: t("admin.settings.payment.providerAlipay") },
   { value: "wxpay", label: t("admin.settings.payment.providerWxpay") },
   { value: "stripe", label: t("admin.settings.payment.providerStripe") },

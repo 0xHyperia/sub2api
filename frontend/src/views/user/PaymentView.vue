@@ -29,8 +29,11 @@
         </template>
         <!-- Tab content (select phase) -->
         <template v-else>
+          <div v-if="tabs.length === 0" class="card py-16 text-center">
+            <p class="text-gray-500 dark:text-gray-400">{{ t('payment.notAvailable') }}</p>
+          </div>
           <!-- Top-up Tab -->
-          <template v-if="activeTab === 'recharge'">
+          <template v-else-if="activeTab === 'recharge'">
             <!-- Recharge Account Card -->
             <div class="card p-5">
               <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ t('payment.rechargeAccount') }}</p>
@@ -212,8 +215,14 @@
               </div>
             </template>
           </template>
+          <template v-else-if="activeTab === 'card'">
+            <CardPaymentView embedded />
+          </template>
+          <div v-else class="card py-16 text-center">
+            <p class="text-gray-500 dark:text-gray-400">{{ t('payment.notAvailable') }}</p>
+          </div>
         </template>
-        <div v-if="(checkout.help_text || checkout.help_image_url) && paymentPhase === 'select' && !selectedPlan" class="card p-4">
+        <div v-if="showInstantHelp" class="card p-4">
           <div class="flex flex-col items-center gap-3">
             <img v-if="checkout.help_image_url" :src="checkout.help_image_url" alt=""
               class="h-40 max-w-full cursor-pointer rounded-lg object-contain transition-opacity hover:opacity-80"
@@ -282,6 +291,7 @@ import {
 import { platformAccentBarClass, platformBadgeLightClass, platformBadgeClass, platformTextClass, platformLabel } from '@/utils/platformColors'
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import PaymentStatusPanel from '@/components/payment/PaymentStatusPanel.vue'
+import CardPaymentView from '@/views/user/CardPaymentView.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { DEFAULT_PAYMENT_CURRENCY, formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import type { PaymentMethodOption } from '@/components/payment/PaymentMethodSelector.vue'
@@ -317,7 +327,9 @@ const loading = ref(true)
 const submitting = ref(false)
 const errorMessage = ref('')
 const errorHintMessage = ref('')
-const activeTab = ref<'recharge' | 'subscription'>('recharge')
+type PurchaseTab = 'recharge' | 'subscription' | 'card'
+
+const activeTab = ref<PurchaseTab>('recharge')
 const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
@@ -494,15 +506,38 @@ function onPaymentSettled() {
 // All checkout data from single API call
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
-  plans: [], balance_disabled: false, balance_recharge_multiplier: 1, subscription_usd_to_cny_rate: 0, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
+  plans: [], instant_enabled: true, card_enabled: false, balance_disabled: false, balance_recharge_multiplier: 1, subscription_usd_to_cny_rate: 0, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
 })
 
 const tabs = computed(() => {
-  const result: { key: 'recharge' | 'subscription'; label: string }[] = []
-  if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
-  result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
+  const result: { key: PurchaseTab; label: string }[] = []
+  if (checkout.value.instant_enabled !== false) {
+    if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
+    result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
+  }
+  if (checkout.value.card_enabled === true) {
+    result.push({ key: 'card', label: t('payment.tabCard') })
+  }
   return result
 })
+
+const showInstantHelp = computed(() =>
+  (checkout.value.help_text || checkout.value.help_image_url)
+    && paymentPhase.value === 'select'
+    && !selectedPlan.value
+    && activeTab.value !== 'card'
+)
+
+function ensureVisiblePurchaseTab(preferred?: PurchaseTab) {
+  const available = tabs.value.map(tab => tab.key)
+  if (preferred && available.includes(preferred)) {
+    activeTab.value = preferred
+    return
+  }
+  if (!available.includes(activeTab.value)) {
+    activeTab.value = available[0] || 'recharge'
+  }
+}
 
 const visibleMethods = computed(() => getVisibleMethods(checkout.value.methods))
 const enabledMethods = computed(() => Object.keys(visibleMethods.value))
@@ -1093,6 +1128,7 @@ onMounted(async () => {
   try {
     const res = await paymentAPI.getCheckoutInfo()
     checkout.value = res.data
+    ensureVisiblePurchaseTab()
     if (enabledMethods.value.length) {
       const order: readonly string[] = METHOD_ORDER
       const sorted = [...enabledMethods.value].sort((a, b) => {
@@ -1128,12 +1164,9 @@ onMounted(async () => {
       }
     }
     await resumeWechatPaymentFromQuery()
-    if (checkout.value.balance_disabled) {
-      activeTab.value = 'subscription'
-    }
     // Handle renewal navigation: ?tab=subscription&group=123
     if (route.query.tab === 'subscription') {
-      activeTab.value = 'subscription'
+      ensureVisiblePurchaseTab('subscription')
       if (route.query.group) {
         const groupId = Number(route.query.group)
         const groupPlans = checkout.value.plans.filter(p => p.group_id === groupId)
@@ -1144,6 +1177,8 @@ onMounted(async () => {
           showRenewalModal.value = true
         }
       }
+    } else if (route.query.tab === 'card') {
+      ensureVisiblePurchaseTab('card')
     }
   } catch (err: unknown) { appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error'))) }
   finally { loading.value = false }

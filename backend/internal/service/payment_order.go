@@ -35,6 +35,9 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if !cfg.Enabled {
 		return nil, infraerrors.Forbidden("PAYMENT_DISABLED", "payment system is disabled")
 	}
+	if !cfg.InstantEnabled {
+		return nil, infraerrors.Forbidden("PAYMENT_INSTANT_DISABLED", "instant payment is disabled")
+	}
 	plan, err := s.validateOrderInput(ctx, req, cfg)
 	if err != nil {
 		return nil, err
@@ -295,6 +298,11 @@ func buildPaymentOrderProviderSnapshot(sel *payment.InstanceSelection, req Creat
 			snapshot["merchant_id"] = merchantID
 		}
 	}
+	if providerKey == payment.TypeLdxp {
+		if goodsKey := strings.TrimSpace(sel.Config["goodsKey"]); goodsKey != "" {
+			snapshot["merchant_id"] = goodsKey
+		}
+	}
 	if providerKey == payment.TypeStripe {
 		snapshot["currency"] = paymentProviderConfigCurrency(providerKey, sel.Config)
 	}
@@ -442,6 +450,7 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		PaymentType: req.PaymentType,
 		OpenID:      req.OpenID,
 		ClientIP:    req.ClientIP,
+		Contact:     order.UserEmail,
 		IsMobile:    req.IsMobile,
 		ReturnURL:   providerReturnURL,
 	}, sel, outTradeNo, payAmountStr, subject)
@@ -506,6 +515,7 @@ func buildProviderCreatePaymentRequest(req CreateOrderRequest, sel *payment.Inst
 		ReturnURL:          req.ReturnURL,
 		OpenID:             strings.TrimSpace(req.OpenID),
 		ClientIP:           req.ClientIP,
+		Contact:            req.Contact,
 		IsMobile:           req.IsMobile,
 		InstanceSubMethods: selectedInstanceSupportedTypes(sel),
 	}
@@ -815,6 +825,14 @@ func (s *PaymentService) GetOrder(ctx context.Context, orderID, userID int64) (*
 	}
 	if o.UserID != userID {
 		return nil, infraerrors.Forbidden("FORBIDDEN", "no permission for this order")
+	}
+	if o.Status == OrderStatusPending && o.OrderType == payment.OrderTypeCard && o.PaymentType == payment.TypeLdxp {
+		if s.reconcilePaid(ctx, o) == checkPaidResultAlreadyPaid {
+			reloaded, reloadErr := s.entClient.PaymentOrder.Get(ctx, orderID)
+			if reloadErr == nil {
+				return reloaded, nil
+			}
+		}
 	}
 	return o, nil
 }

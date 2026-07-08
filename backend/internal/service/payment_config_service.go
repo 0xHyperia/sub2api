@@ -14,16 +14,18 @@ import (
 )
 
 const (
-	SettingPaymentEnabled      = "payment_enabled"
-	SettingMinRechargeAmount   = "MIN_RECHARGE_AMOUNT"
-	SettingMaxRechargeAmount   = "MAX_RECHARGE_AMOUNT"
-	SettingDailyRechargeLimit  = "DAILY_RECHARGE_LIMIT"
-	SettingOrderTimeoutMinutes = "ORDER_TIMEOUT_MINUTES"
-	SettingMaxPendingOrders    = "MAX_PENDING_ORDERS"
-	SettingEnabledPaymentTypes = "ENABLED_PAYMENT_TYPES"
-	SettingLoadBalanceStrategy = "LOAD_BALANCE_STRATEGY"
-	SettingBalancePayDisabled  = "BALANCE_PAYMENT_DISABLED"
-	SettingBalanceRechargeMult = "BALANCE_RECHARGE_MULTIPLIER"
+	SettingPaymentEnabled        = "payment_enabled"
+	SettingPaymentInstantEnabled = "PAYMENT_INSTANT_ENABLED"
+	SettingPaymentCardEnabled    = "PAYMENT_CARD_ENABLED"
+	SettingMinRechargeAmount     = "MIN_RECHARGE_AMOUNT"
+	SettingMaxRechargeAmount     = "MAX_RECHARGE_AMOUNT"
+	SettingDailyRechargeLimit    = "DAILY_RECHARGE_LIMIT"
+	SettingOrderTimeoutMinutes   = "ORDER_TIMEOUT_MINUTES"
+	SettingMaxPendingOrders      = "MAX_PENDING_ORDERS"
+	SettingEnabledPaymentTypes   = "ENABLED_PAYMENT_TYPES"
+	SettingLoadBalanceStrategy   = "LOAD_BALANCE_STRATEGY"
+	SettingBalancePayDisabled    = "BALANCE_PAYMENT_DISABLED"
+	SettingBalanceRechargeMult   = "BALANCE_RECHARGE_MULTIPLIER"
 	// SettingSubscriptionUSDToCNYRate 是订阅 CNY 换算汇率（1 USD = X CNY）。
 	// 0/未配置 = 关闭换算（订阅按 price 数值直付），显式配置后 CNY 通道订阅按 price × rate 收款。
 	SettingSubscriptionUSDToCNYRate = "SUBSCRIPTION_USD_TO_CNY_RATE"
@@ -49,6 +51,8 @@ const (
 // PaymentConfig holds the payment system configuration.
 type PaymentConfig struct {
 	Enabled                   bool     `json:"enabled"`
+	InstantEnabled            bool     `json:"instant_enabled"`
+	CardEnabled               bool     `json:"card_enabled"`
 	MinAmount                 float64  `json:"min_amount"`
 	MaxAmount                 float64  `json:"max_amount"`
 	DailyLimit                float64  `json:"daily_limit"`
@@ -81,6 +85,8 @@ type PaymentConfig struct {
 // UpdatePaymentConfigRequest contains fields to update payment configuration.
 type UpdatePaymentConfigRequest struct {
 	Enabled                   *bool    `json:"enabled"`
+	InstantEnabled            *bool    `json:"instant_enabled"`
+	CardEnabled               *bool    `json:"card_enabled"`
 	MinAmount                 *float64 `json:"min_amount"`
 	MaxAmount                 *float64 `json:"max_amount"`
 	DailyLimit                *float64 `json:"daily_limit"`
@@ -209,7 +215,7 @@ func (s *PaymentConfigService) IsPaymentEnabled(ctx context.Context) bool {
 // GetPaymentConfig returns the full payment configuration.
 func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentConfig, error) {
 	keys := []string{
-		SettingPaymentEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
+		SettingPaymentEnabled, SettingPaymentInstantEnabled, SettingPaymentCardEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
 		SettingDailyRechargeLimit, SettingOrderTimeoutMinutes, SettingMaxPendingOrders,
 		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingSubscriptionUSDToCNYRate, SettingRechargeFeeRate, SettingLoadBalanceStrategy,
 		SettingProductNamePrefix, SettingProductNameSuffix,
@@ -233,6 +239,8 @@ func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentCo
 func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *PaymentConfig {
 	cfg := &PaymentConfig{
 		Enabled:                   vals[SettingPaymentEnabled] == "true",
+		InstantEnabled:            pcParseBoolDefault(vals[SettingPaymentInstantEnabled], true),
+		CardEnabled:               pcParseBoolDefault(vals[SettingPaymentCardEnabled], false),
 		MinAmount:                 pcParseFloat(vals[SettingMinRechargeAmount], 1),
 		MaxAmount:                 pcParseFloat(vals[SettingMaxRechargeAmount], 0),
 		DailyLimit:                pcParseFloat(vals[SettingDailyRechargeLimit], 0),
@@ -320,6 +328,8 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 	}
 	m := map[string]string{
 		SettingPaymentEnabled:                    formatBoolOrEmpty(req.Enabled),
+		SettingPaymentInstantEnabled:             formatBoolOrEmpty(req.InstantEnabled),
+		SettingPaymentCardEnabled:                formatBoolOrEmpty(req.CardEnabled),
 		SettingMinRechargeAmount:                 formatPositiveFloat(req.MinAmount),
 		SettingMaxRechargeAmount:                 formatPositiveFloat(req.MaxAmount),
 		SettingDailyRechargeLimit:                formatPositiveFloat(req.DailyLimit),
@@ -437,6 +447,17 @@ func pcParseInt(s string, defaultVal int) int {
 	return v
 }
 
+func pcParseBoolDefault(s string, defaultVal bool) bool {
+	if s == "" {
+		return defaultVal
+	}
+	v, err := strconv.ParseBool(s)
+	if err != nil {
+		return defaultVal
+	}
+	return v
+}
+
 func buildVisibleMethodSourceAvailability(instances []*dbent.PaymentProviderInstance) map[string]bool {
 	available := make(map[string]bool, 4)
 	for _, inst := range instances {
@@ -456,6 +477,12 @@ func buildVisibleMethodSourceAvailability(instances []*dbent.PaymentProviderInst
 					available[VisibleMethodSourceEasyPayAlipay] = true
 				case payment.TypeWxpay:
 					available[VisibleMethodSourceEasyPayWechat] = true
+				}
+			}
+		case payment.TypeLdxp:
+			for _, supportedType := range splitTypes(inst.SupportedTypes) {
+				if NormalizeVisibleMethod(supportedType) == payment.TypeAlipay {
+					available[VisibleMethodSourceLdxpAlipay] = true
 				}
 			}
 		}
