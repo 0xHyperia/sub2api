@@ -36,9 +36,9 @@
             <span class="type-reserve" aria-hidden="true">{{ brandName }}</span>
             <span class="type-text" aria-hidden="true">{{ typedTitle }}</span>
           </h1>
-          <p class="hero-copy hero-type hero-type-copy" :class="{ 'is-typing': typedSubtitle.length > 0 && typedSubtitle.length < subtitle.length }" :aria-label="subtitle">
+          <p class="hero-copy hero-type hero-type-copy" :class="{ 'is-typing': typedSubtitle.length > 0 && typedSubtitle.length < subtitle.length, 'is-waiting': typedSubtitle === subtitle }" :aria-label="subtitle">
             <span class="type-reserve" aria-hidden="true">{{ subtitle }}</span>
-            <span class="type-text" aria-hidden="true">{{ typedSubtitle }}</span>
+            <span class="type-text" aria-hidden="true">{{ displaySubtitle }}</span>
           </p>
           <div class="hero-actions" aria-label="主要操作">
             <RouterLink class="button primary" :to="entryPath">
@@ -232,6 +232,7 @@ const props = defineProps<{
 const brandName = computed(() => props.siteName || 'USA-零')
 const heroEyebrowText = 'Unified Service API'
 const subtitle = computed(() => props.siteSubtitle || '统一 OpenAI、Claude、Gemini 等不同接口，把多模型调用规范成一个稳定、可计量、可治理的标准 API。')
+const displaySubtitle = computed(() => typedSubtitle.value.endsWith('。') ? typedSubtitle.value.slice(0, -1) : typedSubtitle.value)
 const entryPath = computed(() => props.isAuthenticated ? props.dashboardPath : '/login')
 const entryLabel = computed(() => props.isAuthenticated ? '进入控制台' : '开始接入')
 const entryButtonLabel = computed(() => props.isAuthenticated ? '进入控制台' : '获取 API Key')
@@ -879,6 +880,17 @@ onUnmounted(() => {
 .hero-type-copy .type-text::after {
   width: 2px;
   height: 1em;
+}
+
+.hero-type-copy.is-waiting .type-text::after {
+  content: "";
+  display: inline-block;
+  width: .58em;
+  height: 2px;
+  margin-left: .1em;
+  transform: translateY(.16em);
+  background: currentColor;
+  animation: typeCursor .82s steps(2, end) infinite;
 }
 
 .eyebrow {
