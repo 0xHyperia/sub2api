@@ -167,7 +167,7 @@
       <section id="providers" class="section">
         <div class="section-inner api-capabilities-inner">
           <div class="api-capabilities-heading">
-            <p class="eyebrow">核心能力</p>
+            <p class="eyebrow">CORE COMPETENCIES</p>
             <h2>专注模型 API 接入的核心能力</h2>
             <p>一个 API Key，改一下 Base URL，就能接入常用大模型能力。按量计费、调用记录可查，适合个人开发、团队工具和服务端项目快速上线。</p>
           </div>
