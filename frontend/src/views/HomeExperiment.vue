@@ -124,6 +124,44 @@
             </article>
           </div>
         </div>
+        <div class="section-inner model-pricing-inner">
+          <div class="model-group openai-group" aria-label="OpenAI 模型价格表">
+            <div class="model-group-title"><span class="provider-symbol openai-symbol">◎</span><strong>OPENAI</strong><span>· 5 个模型</span></div>
+            <div class="pricing-table">
+              <div class="pricing-table-row head"><span>模型</span><span>输入 / 百万</span><span>输出 / 百万</span><span>缓存 / 百万</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.6 <em>最新</em><button class="copy-id" type="button" data-copy="gpt-5.6"></button></strong><small>新一代 · 通用</small></div><span>$5.00</span><span>$30.00</span><span>$0.50</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.5 <em>热门</em><button class="copy-id" type="button" data-copy="gpt-5.5"></button></strong><small>旗舰 · 通用</small></div><span>$5.00</span><span>$30.00</span><span>$0.50</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.4 <button class="copy-id" type="button" data-copy="gpt-5.4"></button></strong><small>通用 · 高性能</small></div><span>$2.50</span><span>$15.00</span><span>$0.25</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.4-mini <button class="copy-id" type="button" data-copy="gpt-5.4-mini"></button></strong><small>高性价比 · 轻量</small></div><span>$0.75</span><span>$4.50</span><span>$0.075</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.3-codex <button class="copy-id" type="button" data-copy="gpt-5.3-codex"></button></strong><small>编程 · Codex</small></div><span>$1.75</span><span>$14.00</span><span>$0.175</span></div>
+            </div>
+          </div>
+          <div class="model-group claude-group" aria-label="Claude Code 模型价格表">
+            <div class="model-group-title"><span class="provider-symbol claude-symbol">✣</span><strong>CLAUDE CODE</strong><span>· 7 个模型</span></div>
+            <div class="pricing-table">
+              <div class="pricing-table-row head"><span>模型</span><span>输入 / 百万</span><span>输出 / 百万</span><span>缓存 / 百万</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>claude-sonnet-5 <em>热门</em><button class="copy-id" type="button" data-copy="claude-sonnet-5"></button></strong><small>新一代 · 通用</small></div><span>$3.00</span><span>$15.00</span><span>$0.30</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>claude-fable-5 <em>热门</em><button class="copy-id" type="button" data-copy="claude-fable-5"></button></strong><small>新一代 · 旗舰</small></div><span>$10.00</span><span>$50.00</span><span>$1.00</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>claude-opus-4-8 <em>热门</em><button class="copy-id" type="button" data-copy="claude-opus-4-8"></button></strong><small>旗舰 · 编程</small></div><span>$5.00</span><span>$25.00</span><span>$0.50</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>claude-opus-4-7 <button class="copy-id" type="button" data-copy="claude-opus-4-7"></button></strong><small>旗舰 · 编程</small></div><span>$5.00</span><span>$25.00</span><span>$0.50</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>claude-opus-4-6 <button class="copy-id" type="button" data-copy="claude-opus-4-6"></button></strong><small>旗舰 · 编程</small></div><span>$5.00</span><span>$25.00</span><span>$0.50</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>claude-sonnet-4-6 <button class="copy-id" type="button" data-copy="claude-sonnet-4-6"></button></strong><small>通用 · 平衡</small></div><span>$3.00</span><span>$15.00</span><span>$0.30</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>claude-haiku-4-5-20251001 <button class="copy-id" type="button" data-copy="claude-haiku-4-5-20251001"></button></strong><small>高性价比 · 轻量</small></div><span>$1.00</span><span>$5.00</span><span>$0.10</span></div>
+            </div>
+          </div>
+          <div class="model-group gemini-group" aria-label="Gemini 模型价格表">
+            <div class="model-group-title"><span class="provider-symbol gemini-symbol">✦</span><strong>GEMINI</strong><span>· 6 个模型</span></div>
+            <div class="pricing-table">
+              <div class="pricing-table-row head"><span>模型</span><span>输入 / 百万</span><span>输出 / 百万</span><span>缓存 / 百万</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-3.5-flash <em>最新</em><button class="copy-id" type="button" data-copy="gemini-3.5-flash"></button></strong><small>速度优先 · 搜索与 grounding</small></div><span>$1.50</span><span>$9.00</span><span>$0.15</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-3.1-pro-preview <em>旗舰</em><button class="copy-id" type="button" data-copy="gemini-3.1-pro-preview"></button></strong><small>多模态 · Agent 与复杂任务</small></div><span>$2.00 <small class="price-note">≤200k</small></span><span>$12.00 <small class="price-note">≤200k</small></span><span>$0.20 <small class="price-note">≤200k</small></span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-3.1-flash-lite <em>低价</em><button class="copy-id" type="button" data-copy="gemini-3.1-flash-lite"></button></strong><small>高吞吐 · 翻译与轻量处理</small></div><span>$0.25</span><span>$1.50</span><span>$0.025</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-2.5-pro <button class="copy-id" type="button" data-copy="gemini-2.5-pro"></button></strong><small>推理 · 编程与复杂任务</small></div><span>$1.25 <small class="price-note">≤200k</small></span><span>$10.00 <small class="price-note">≤200k</small></span><span>$0.125 <small class="price-note">≤200k</small></span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-2.5-flash <button class="copy-id" type="button" data-copy="gemini-2.5-flash"></button></strong><small>平衡 · 1M 上下文</small></div><span>$0.30</span><span>$2.50</span><span>$0.03</span></div>
+              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-2.5-flash-lite <button class="copy-id" type="button" data-copy="gemini-2.5-flash-lite"></button></strong><small>批量 · 极低成本</small></div><span>$0.10</span><span>$0.40</span><span>$0.01</span></div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section id="providers" class="section">
@@ -165,12 +203,12 @@
                 <span>$3.00</span><span>$15.00</span><span>$0.30</span>
               </div>
               <div class="price-row">
-                <strong><i class="provider-dot gemini"></i>gemini-3.1-pro<em>多模态</em></strong>
-                <span>按配置</span><span>按配置</span><span>按配置</span>
+                <strong><i class="provider-dot gemini"></i>gemini-3.1-pro-preview<em>多模态</em></strong>
+                <span>$2.00</span><span>$12.00</span><span>$0.20</span>
               </div>
               <div class="price-row">
-                <strong><i class="provider-dot custom"></i>兼容上游<em>映射</em></strong>
-                <span>可设</span><span>可设</span><span>可设</span>
+                <strong><i class="provider-dot custom"></i>auto:best<em>路由</em></strong>
+                <span>随模型</span><span>随模型</span><span>随模型</span>
               </div>
             </div>
             <div class="ops-strip" aria-label="运营控制能力">
@@ -219,19 +257,19 @@
           </div>
           <div class="pricing-card">
             <div class="pricing-head">
-              <span>充值估算</span>
-              <strong>1:1 折算</strong>
+              <span>用量估算</span>
+              <strong>按量计费</strong>
             </div>
-            <label class="range-label" for="tokenRange">充值金额 <span id="amountValue">¥10</span></label>
-            <input id="tokenRange" type="range" min="0.5" max="100" value="10" step="0.5" />
+            <label class="range-label" for="tokenRange">每月 Token 使用量 <span id="usageTokenValue">40 百万</span></label>
+            <input id="tokenRange" type="range" min="1" max="400" value="40" step="1" />
             <div class="estimate token-estimate" aria-label="Token 额度估算">
-              <div><span id="inputTokenValue">40 百万</span><small>可用输入 Token（纯提问）</small></div>
-              <div><span id="outputTokenValue">约 6.67 百万</span><small>可用输出 Token（纯回答）</small></div>
+              <div><span id="inputCostValue">约 ¥10</span><small>预估输入 Token 费用</small></div>
             </div>
+            <p class="pricing-promo">百万输入 Token 低至 ¥0.25，适合高频调用与团队统一管理。</p>
             <ul class="check-list">
+              <li>先估算每月 Token 使用量，再按输入单价折算预算</li>
               <li>人民币与美元额度 1:1 折算，¥1 等于 $1 可用余额</li>
-              <li>输入、输出分别估算，Token 单位以百万 / 万展示</li>
-              <li>模型组、用户组、项目 Key 可独立设置额度</li>
+              <li>Token 单位按万、百万、亿自动切换展示</li>
             </ul>
           </div>
         </div>
@@ -256,8 +294,11 @@
     </main>
 
     <footer class="site-footer">
-      <span>{{ brandName }}</span><span>面向多模型产品的统一服务 API。</span>
+      <span>{{ brandName }}</span><span>Unified Service API ZERO（零号统一智能服务 API）</span>
     </footer>
+    <div class="copy-toast" :class="{ 'is-visible': copyToastVisible }" role="status" aria-live="polite">
+      {{ copyToastMessage }}
+    </div>
   </div>
 </template>
 
@@ -285,11 +326,14 @@ const homeRoot = ref<HTMLElement | null>(null)
 const themeToggleRef = ref<HTMLButtonElement | null>(null)
 const homeTheme = ref<'light' | 'dark'>('light')
 const activeTab = ref('chat')
-const rechargeAmount = ref(10)
+const monthlyTokenMillions = ref(40)
 const typedEyebrow = ref('')
 const typedTitle = ref('')
 const typedSubtitle = ref('')
+const copyToastVisible = ref(false)
+const copyToastMessage = ref('已复制')
 let cleanupCallbacks: Array<() => void> = []
+let copyToastTimer: number | undefined
 
 const routeExamples: Record<string, string> = {
   chat: `{
@@ -354,12 +398,11 @@ function setupTabs() {
 function setupPricingRange() {
   const root = homeRoot.value
   const range = root?.querySelector<HTMLInputElement>('#tokenRange')
-  const amountValue = root?.querySelector<HTMLElement>('#amountValue')
-  const inputTokenValue = root?.querySelector<HTMLElement>('#inputTokenValue')
-  const outputTokenValue = root?.querySelector<HTMLElement>('#outputTokenValue')
-  if (!range || !amountValue || !inputTokenValue || !outputTokenValue) return
-  const formatAmount = (value: number) => Number.isInteger(value) ? `¥${value}` : `¥${value.toFixed(1)}`
+  const usageTokenValue = root?.querySelector<HTMLElement>('#usageTokenValue')
+  const inputCostValue = root?.querySelector<HTMLElement>('#inputCostValue')
+  if (!range || !usageTokenValue || !inputCostValue) return
   const trimNumber = (value: number, digits = 2) => value.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1')
+  const formatCurrency = (value: number) => `约 ¥${trimNumber(value)}`
   const formatTokenMillions = (millionTokens: number, approximate = false) => {
     const prefix = approximate ? '约 ' : ''
     if (millionTokens >= 100) return `${prefix}${trimNumber(millionTokens / 100)} 亿`
@@ -367,28 +410,46 @@ function setupPricingRange() {
     return `${prefix}${trimNumber(millionTokens * 100, 1)} 万`
   }
   const update = () => {
-    rechargeAmount.value = Number(range.value)
-    amountValue.textContent = formatAmount(rechargeAmount.value)
-    inputTokenValue.textContent = formatTokenMillions(rechargeAmount.value * 4)
-    outputTokenValue.textContent = formatTokenMillions(rechargeAmount.value * 2 / 3, true)
+    monthlyTokenMillions.value = Number(range.value)
+    usageTokenValue.textContent = formatTokenMillions(monthlyTokenMillions.value)
+    inputCostValue.textContent = formatCurrency(monthlyTokenMillions.value / 4)
   }
   onElement(range, 'input', update)
   update()
+}
+
+function showCopyToast(message = '复制成功') {
+  copyToastMessage.value = message
+  copyToastVisible.value = true
+  if (copyToastTimer) window.clearTimeout(copyToastTimer)
+  copyToastTimer = window.setTimeout(() => {
+    copyToastVisible.value = false
+    copyToastTimer = undefined
+  }, 1600)
 }
 
 function setupCopyButtons() {
   const root = homeRoot.value
   if (!root) return
   root.querySelectorAll<HTMLElement>('[data-copy]').forEach((button) => {
+    if (button.classList.contains('copy-id')) {
+      const value = button.getAttribute('data-copy') || ''
+      button.textContent = ''
+      button.setAttribute('aria-label', `复制 ${value}`)
+      button.setAttribute('title', `复制 ${value}`)
+    }
     onElement(button, 'click', async () => {
       const value = button.getAttribute('data-copy') || ''
+      let copied = false
       try {
         await navigator.clipboard.writeText(value)
+        copied = true
       } catch {
         // 浏览器可能禁用剪贴板权限，此处只保留视觉反馈。
       }
       button.classList.add('copied')
       window.setTimeout(() => button.classList.remove('copied'), 1200)
+      if (copied) showCopyToast('复制成功')
     })
   })
 }
@@ -631,6 +692,7 @@ watch([brandName, subtitle], () => {
 onUnmounted(() => {
   cleanupCallbacks.forEach((cleanup) => cleanup())
   cleanupCallbacks = []
+  if (copyToastTimer) window.clearTimeout(copyToastTimer)
 })
 </script>
 
@@ -1098,7 +1160,35 @@ onUnmounted(() => {
 
 .copy-button { width: 30px; height: 30px; }
 .copy-button.text { width: auto; min-height: 34px; padding: 7px 12px; font-size: 13px; font-weight: 800; }
-.copy-button.copied { color: #fff; background: var(--green); border-color: var(--green); }
+.copy-button.copied {
+  border-color: color-mix(in srgb, var(--foreground) 24%, var(--border));
+  background: color-mix(in srgb, var(--muted) 78%, var(--surface-raised));
+  color: var(--foreground);
+}
+
+.copy-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 80;
+  transform: translate(-50%, 12px);
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 999px;
+  padding: 9px 14px;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  color: var(--foreground);
+  box-shadow: var(--soft-shadow);
+  backdrop-filter: blur(12px);
+  font-size: 13px;
+  font-weight: 820;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.copy-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
 
 .usa-home pre {
   margin: 0;
@@ -1488,7 +1578,7 @@ onUnmounted(() => {
 }
 .price-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) repeat(3, minmax(64px, .72fr));
+  grid-template-columns: minmax(210px, 2fr) repeat(3, minmax(58px, .62fr));
   gap: 12px;
   align-items: center;
   min-height: 62px;
@@ -1513,7 +1603,8 @@ onUnmounted(() => {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 13px;
   font-weight: 780;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 .price-row span {
   color: var(--muted-foreground);
@@ -1544,6 +1635,143 @@ onUnmounted(() => {
 .provider-dot.claude { color: #f97316; background: currentColor; }
 .provider-dot.gemini { color: #3b82f6; background: currentColor; }
 .provider-dot.custom { color: #a855f7; background: currentColor; }
+.model-pricing-inner {
+  display: grid;
+  gap: 34px;
+  margin-top: clamp(44px, 7vw, 74px);
+}
+.model-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: .18em;
+}
+.model-group-title strong {
+  color: var(--foreground);
+  font-weight: 840;
+}
+.provider-symbol {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+.provider-symbol.claude-symbol { color: #f97316; }
+.provider-symbol.gemini-symbol { color: #3b82f6; }
+.pricing-table {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  box-shadow: var(--soft-shadow);
+  backdrop-filter: blur(14px);
+}
+.pricing-table-row {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.8fr) repeat(3, minmax(92px, .75fr));
+  gap: 16px;
+  align-items: center;
+  min-height: 76px;
+  padding: 14px 26px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+}
+.pricing-table-row:last-child { border-bottom: 0; }
+.pricing-table-row.head {
+  min-height: 44px;
+  background: color-mix(in srgb, var(--muted) 52%, transparent);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 820;
+}
+.pricing-table-row > span {
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  text-align: right;
+}
+.pricing-table-row .price-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.pricing-table-row.head > span {
+  color: var(--muted-foreground);
+  font-family: inherit;
+}
+.pricing-table-row.head > span:first-child { text-align: left; }
+.model-cell {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+.model-cell strong {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 860;
+  overflow-wrap: anywhere;
+}
+.model-cell small {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.model-cell em {
+  border-radius: 4px;
+  padding: 2px 6px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 820;
+}
+.copy-id {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
+  border-radius: 4px;
+  padding: 0;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  color: var(--muted-foreground);
+  font-size: 0;
+  line-height: 0;
+  cursor: pointer;
+}
+.copy-id::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 7a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-1v-2h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v1H8V7Zm-5 4a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-7Zm3-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1H6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 7a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-1v-2h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v1H8V7Zm-5 4a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-7Zm3-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1H6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.copy-id:hover {
+  border-color: color-mix(in srgb, var(--foreground) 28%, var(--border));
+  color: var(--foreground);
+}
+.copy-id.copied {
+  border-color: color-mix(in srgb, var(--foreground) 24%, var(--border));
+  background: color-mix(in srgb, var(--muted) 78%, var(--surface-raised));
+  color: var(--foreground);
+}
 .ops-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1671,7 +1899,7 @@ onUnmounted(() => {
 .estimate small { color: var(--muted-foreground); }
 .token-estimate {
   min-height: 132px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   place-items: stretch;
   align-content: stretch;
   overflow: hidden;
@@ -1681,6 +1909,7 @@ onUnmounted(() => {
   align-content: center;
   gap: 7px;
   padding: 20px;
+  text-align: center;
   border-right: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
 }
 .token-estimate div:last-child { border-right: 0; }
@@ -1690,6 +1919,14 @@ onUnmounted(() => {
 }
 .token-estimate small {
   line-height: 1.5;
+}
+.pricing-promo {
+  margin: -4px 0 20px;
+  text-align: center;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 820;
+  line-height: 1.6;
 }
 .check-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; color: var(--muted-foreground); }
 .check-list li { position: relative; padding-left: 22px; line-height: 1.55; }
@@ -1781,6 +2018,7 @@ onUnmounted(() => {
   .route-demo { padding: 14px; }
   .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .section-title.align-left { text-align: center; margin: 0 auto 30px; }
+  .pricing-table-row { grid-template-columns: minmax(220px, 1.35fr) repeat(3, minmax(72px, .7fr)); padding: 14px 18px; }
 }
 
 @media (max-width: 620px) {
@@ -1801,9 +2039,15 @@ onUnmounted(() => {
   .provider-points div { grid-template-columns: 1fr; gap: 4px; }
   .showcase-head { align-items: flex-start; flex-direction: column; justify-content: center; padding: 12px 16px; }
   .pricing-note { align-items: flex-start; flex-direction: column; }
-  .price-row { grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(52px, .7fr)); gap: 8px; padding: 12px 14px; }
+  .price-row { grid-template-columns: minmax(190px, 1.8fr) repeat(3, minmax(50px, .58fr)); gap: 8px; padding: 12px 14px; }
   .price-row strong { align-items: flex-start; flex-direction: column; gap: 5px; font-size: 12px; }
   .price-row span { font-size: 11px; }
+  .model-pricing-inner { gap: 28px; margin-top: 42px; }
+  .model-group-title { align-items: flex-start; flex-wrap: wrap; letter-spacing: .12em; }
+  .pricing-table { overflow-x: auto; }
+  .pricing-table-row { min-width: 680px; grid-template-columns: minmax(230px, 1.4fr) repeat(3, minmax(82px, .72fr)); padding: 13px 16px; }
+  .model-cell strong { font-size: 14px; }
+  .pricing-table-row > span { font-size: 13px; }
   .ops-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
   .section { padding: 64px 12px; }
@@ -1812,9 +2056,6 @@ onUnmounted(() => {
   .cta-layout { min-height: 300px; gap: 22px; }
   .route-demo { padding: 12px; }
   .pricing-card { padding: 20px; }
-  .token-estimate { grid-template-columns: 1fr; }
-  .token-estimate div { border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent); }
-  .token-estimate div:last-child { border-bottom: 0; }
   .endpoint-card { grid-template-columns: 1fr; }
   .site-footer { flex-direction: column; gap: 6px; text-align: center; }
 }
