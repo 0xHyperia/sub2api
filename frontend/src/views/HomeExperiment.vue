@@ -342,11 +342,14 @@ const homeTheme = ref<'light' | 'dark'>('light')
 const activeTab = ref('chat')
 const monthlyTokenMillions = ref(40)
 const HOME_METRICS_REFRESH_MS = 60_000
+const HOME_TOKEN_STORAGE_KEY = 'usa_home_today_tokens_state'
 let fallbackTokenDateKey = getLocalDateKey()
 let fallbackTokenProfile = createFallbackTokenProfile(fallbackTokenDateKey)
-let lastFallbackTokens = 0
+let storedTokenState = readStoredTokenState(fallbackTokenDateKey)
+let lastFallbackTokens = storedTokenState.tokens
+let lastFallbackMinute = storedTokenState.minute
 let lastDisplayedTokenDateKey = fallbackTokenDateKey
-let lastDisplayedTokens = 0
+let lastDisplayedTokens = storedTokenState.tokens
 const todayTokens = ref<number | null>(calculateFallbackTokens())
 const routeLatencyMs = ref(randomRouteLatency())
 const availabilityLabel = ref('99.98%')
@@ -390,6 +393,11 @@ interface FallbackTokenProfile {
   lateEnd: number
 }
 
+interface StoredTokenState {
+  tokens: number
+  minute: number
+}
+
 function getLocalDateKey(date = new Date()): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -398,6 +406,39 @@ function getLocalDateKey(date = new Date()): string {
 
 function getLocalDayStartedAt(date = new Date()): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+}
+
+function getElapsedTokenMinute(date = new Date()): number {
+  return Math.floor(Math.max(0, (date.getTime() - getLocalDayStartedAt(date)) / HOME_METRICS_REFRESH_MS))
+}
+
+function readStoredTokenState(dateKey: string): StoredTokenState {
+  try {
+    const raw = localStorage.getItem(HOME_TOKEN_STORAGE_KEY)
+    if (!raw) return { tokens: 0, minute: 0 }
+    const parsed = JSON.parse(raw) as { dateKey?: unknown; tokens?: unknown; minute?: unknown }
+    const tokens = Number(parsed.tokens)
+    const minute = Number(parsed.minute)
+    if (parsed.dateKey !== dateKey || !Number.isFinite(tokens)) return { tokens: 0, minute: 0 }
+    return {
+      tokens: Math.max(0, Math.round(tokens)),
+      minute: Number.isFinite(minute) ? Math.max(0, Math.floor(minute)) : 0
+    }
+  } catch {
+    return { tokens: 0, minute: 0 }
+  }
+}
+
+function persistTokenState(dateKey: string, tokens: number, minute: number) {
+  try {
+    localStorage.setItem(HOME_TOKEN_STORAGE_KEY, JSON.stringify({
+      dateKey,
+      tokens: Math.max(0, Math.round(tokens)),
+      minute: Math.max(0, Math.floor(minute))
+    }))
+  } catch {
+    // Storage can be unavailable in private or restricted browser contexts.
+  }
 }
 
 function hashDateKey(dateKey: string): number {
@@ -432,6 +473,14 @@ function smoothstep(edge0: number, edge1: number, value: number): number {
   return x * x * (3 - 2 * x)
 }
 
+function calculateCumulativeMinuteTexture(seed: number, wholeMinutes: number): number {
+  let total = 0
+  for (let minute = 1; minute <= wholeMinutes; minute += 1) {
+    total += seededInt(seed, minute + 101, 60_000, 380_000)
+  }
+  return total
+}
+
 function createFallbackTokenProfile(dateKey: string): FallbackTokenProfile {
   const seed = hashDateKey(dateKey)
   const morningShare = seededRange(seed, 2, 0.20, 0.29)
@@ -463,22 +512,32 @@ function syncTokenDayState(now = new Date()): string {
   if (dateKey !== fallbackTokenDateKey) {
     fallbackTokenDateKey = dateKey
     fallbackTokenProfile = createFallbackTokenProfile(dateKey)
-    lastFallbackTokens = 0
+    storedTokenState = readStoredTokenState(dateKey)
+    lastFallbackTokens = storedTokenState.tokens
+    lastFallbackMinute = storedTokenState.minute
   }
   if (dateKey !== lastDisplayedTokenDateKey) {
     lastDisplayedTokenDateKey = dateKey
-    lastDisplayedTokens = 0
+    storedTokenState = readStoredTokenState(dateKey)
+    lastDisplayedTokens = storedTokenState.tokens
+    lastFallbackTokens = Math.max(lastFallbackTokens, storedTokenState.tokens)
+    lastFallbackMinute = Math.max(lastFallbackMinute, storedTokenState.minute)
   }
   return dateKey
 }
 
-function rememberDisplayedTokens(tokens: number, dateKey: string): number {
+function rememberDisplayedTokens(tokens: number, dateKey: string, minute = getElapsedTokenMinute()): number {
   if (dateKey !== lastDisplayedTokenDateKey) {
     lastDisplayedTokenDateKey = dateKey
-    lastDisplayedTokens = 0
+    storedTokenState = readStoredTokenState(dateKey)
+    lastDisplayedTokens = storedTokenState.tokens
+    lastFallbackTokens = Math.max(lastFallbackTokens, storedTokenState.tokens)
+    lastFallbackMinute = Math.max(lastFallbackMinute, storedTokenState.minute)
   }
-  lastDisplayedTokens = Math.max(0, Math.round(tokens))
+  lastDisplayedTokens = Math.max(lastDisplayedTokens, Math.max(0, Math.round(tokens)))
   lastFallbackTokens = Math.max(lastFallbackTokens, lastDisplayedTokens)
+  lastFallbackMinute = Math.max(lastFallbackMinute, minute)
+  persistTokenState(dateKey, lastDisplayedTokens, lastFallbackMinute)
   return lastDisplayedTokens
 }
 
@@ -493,12 +552,12 @@ function calculateFallbackTokens(now = new Date()): number {
     fallbackTokenProfile.afternoonShare * smoothstep(fallbackTokenProfile.afternoonStart, fallbackTokenProfile.afternoonEnd, dayProgress) +
     fallbackTokenProfile.eveningShare * smoothstep(fallbackTokenProfile.eveningStart, fallbackTokenProfile.eveningEnd, dayProgress) +
     fallbackTokenProfile.lateShare * smoothstep(fallbackTokenProfile.lateStart, fallbackTokenProfile.lateEnd, dayProgress)
-  const minuteTexture = wholeMinutes * seededRange(fallbackTokenProfile.seed, wholeMinutes + 101, 60_000, 380_000)
+  const minuteTexture = calculateCumulativeMinuteTexture(fallbackTokenProfile.seed, wholeMinutes)
   const candidate = Math.round(fallbackTokenProfile.dailyTargetTokens * Math.min(1, curve) + minuteTexture)
-  const minimum = lastFallbackTokens > 0
+  const minimum = lastFallbackTokens > 0 && wholeMinutes > lastFallbackMinute
     ? lastFallbackTokens + seededInt(fallbackTokenProfile.seed, wholeMinutes + 10_001, 800_000, 4_800_000)
-    : 0
-  return rememberDisplayedTokens(Math.max(candidate, minimum), dateKey)
+    : lastFallbackTokens
+  return rememberDisplayedTokens(Math.max(candidate, minimum), dateKey, wholeMinutes)
 }
 
 function formatMetricTokens(tokens: number): string {
@@ -522,7 +581,7 @@ async function refreshHomeMetrics() {
     const dateKey = syncTokenDayState()
     const backendTokens = Number(metrics.today_tokens)
     todayTokens.value = Number.isFinite(backendTokens) && backendTokens >= 0
-      ? rememberDisplayedTokens(Math.max(backendTokens, lastDisplayedTokens), dateKey)
+      ? rememberDisplayedTokens(Math.max(backendTokens, lastDisplayedTokens), dateKey, getElapsedTokenMinute())
       : calculateFallbackTokens()
   } catch (error) {
     todayTokens.value = calculateFallbackTokens()
