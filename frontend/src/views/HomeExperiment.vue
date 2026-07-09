@@ -896,10 +896,12 @@ onUnmounted(() => {
   min-height: 100svh;
   position: relative;
   overflow: hidden;
-  padding: clamp(92px, 11svh, 118px) 18px clamp(18px, 3svh, 30px);
+  padding: clamp(88px, 10svh, 112px) 18px clamp(16px, 2.5svh, 26px);
   display: grid;
-  grid-template-rows: auto minmax(250px, 1fr);
-  align-items: center;
+  grid-template-rows: auto auto;
+  align-content: center;
+  row-gap: clamp(8px, 1.6svh, 18px);
+  align-items: start;
   justify-items: center;
   isolation: isolate;
 }
@@ -958,10 +960,10 @@ onUnmounted(() => {
 .hero-content {
   width: min(900px, 100%);
   text-align: center;
-  margin: 0 auto clamp(16px, 3svh, 28px);
+  margin: 0 auto;
   position: relative;
   z-index: 2;
-  transform: translateY(clamp(24px, 4.5svh, 54px));
+  transform: translateY(clamp(12px, 2.6svh, 30px));
 }
 
 .hero-type {
@@ -1037,7 +1039,7 @@ onUnmounted(() => {
 }
 
 .hero-actions {
-  margin-top: 26px;
+  margin-top: 20px;
   display: flex;
   justify-content: center;
   gap: 12px;
@@ -1078,8 +1080,9 @@ onUnmounted(() => {
 
 .console-shell {
   width: min(1040px, 100%);
-  min-height: min(388px, 42svh);
-  max-height: calc(100svh - clamp(92px, 11svh, 118px) - clamp(18px, 3svh, 30px) - 285px);
+  min-height: min(350px, 38svh);
+  max-height: min(410px, 43svh);
+  margin-top: clamp(28px, 4svh, 48px);
   position: relative;
   z-index: 1;
   border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
@@ -1096,8 +1099,8 @@ onUnmounted(() => {
   }
 
   .console-shell {
-    min-height: min(388px, 42dvh);
-    max-height: calc(100dvh - clamp(92px, 11dvh, 118px) - clamp(18px, 3dvh, 30px) - 285px);
+    min-height: min(350px, 38dvh);
+    max-height: min(410px, 43dvh);
   }
 }
 
@@ -1134,10 +1137,10 @@ onUnmounted(() => {
 .status-pill span { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, .14); }
 
 .gateway-board {
-  padding: 18px;
+  padding: 16px;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
-  gap: 18px;
+  gap: 16px;
 }
 
 .request-panel, .flow-panel, .pricing-card, .endpoint-card, .code-window {
@@ -1199,15 +1202,15 @@ onUnmounted(() => {
   line-height: 1.7;
 }
 
-.request-panel pre { padding: 16px; min-height: 272px; }
+.request-panel pre { padding: 15px; min-height: 238px; }
 .muted { color: var(--muted-foreground); }
 .string { color: var(--green); }
 
 .flow-panel {
-  padding: 18px;
-  min-height: 316px;
+  padding: 16px;
+  min-height: 282px;
   display: grid;
-  gap: 18px;
+  gap: 14px;
   align-content: center;
 }
 
@@ -1231,7 +1234,7 @@ onUnmounted(() => {
 .line i { display: block; width: 60%; height: 1px; background: color-mix(in srgb, var(--foreground) 36%, transparent); animation: flow 2.7s ease-in-out infinite; }
 
 .gateway-core {
-  min-height: 132px;
+  min-height: 116px;
   display: grid;
   place-items: center;
   align-content: center;
@@ -2009,10 +2012,11 @@ onUnmounted(() => {
   .site-header.is-scrolled .nav-shell { border-radius: 18px; }
   .nav-links { order: 3; flex: 0 0 100%; justify-content: flex-start; overflow-x: auto; padding: 0 2px 2px; }
   .nav-actions { margin-left: auto; }
-  .hero { padding-top: 142px; min-height: 100svh; grid-template-rows: auto auto; align-content: center; }
-  .hero-content { transform: translateY(clamp(8px, 2svh, 18px)); }
-  .console-shell { max-height: min(520px, 48svh); min-height: 0; }
-  .gateway-board { max-height: calc(min(520px, 48svh) - 52px); overflow: auto; }
+  .hero { padding-top: 124px; min-height: 100svh; grid-template-rows: auto auto; align-content: center; row-gap: 14px; }
+  .hero-content { transform: translateY(0); }
+  .hero-actions { margin-top: 18px; }
+  .console-shell { max-height: min(500px, 50svh); min-height: 0; margin-top: 30px; }
+  .gateway-board { max-height: calc(min(500px, 50svh) - 52px); overflow: auto; }
   .gateway-board, .split-layout, .pricing-layout, .cta-layout, .route-demo { grid-template-columns: 1fr; }
   .cta-layout { flex-direction: column; align-items: flex-start; }
   .route-demo { padding: 14px; }
@@ -2024,18 +2028,34 @@ onUnmounted(() => {
 @media (max-width: 620px) {
   .brand-name { font-size: 15px; }
   .primary-link { display: none; }
-  .hero { padding: 132px 12px 22px; }
-  .usa-home h1 { font-size: clamp(3.25rem, 17vw, 4.8rem); }
-  .hero-copy { font-size: 16px; }
-  .hero-actions { align-items: stretch; }
-  .button { flex: 1 1 160px; justify-content: center; }
+  .hero { padding: 112px 12px 18px; row-gap: 12px; align-content: start; }
+  .usa-home h1 { margin-bottom: 10px; font-size: clamp(3rem, 16vw, 4.25rem); }
+  .hero-copy { max-width: 34rem; font-size: 15px; line-height: 1.58; }
+  .hero-actions { margin-top: 16px; align-items: stretch; gap: 8px; }
+  .button { min-height: 40px; flex: 1 1 136px; justify-content: center; padding: 9px 12px; font-size: 13px; }
+  .console-shell { max-height: min(420px, 48svh); margin-top: 28px; border-radius: 8px; }
   .console-topbar { justify-content: flex-start; }
   .route-pill { display: none; }
-  .gateway-board { padding: 12px; }
+  .gateway-board { max-height: calc(min(420px, 48svh) - 52px); padding: 10px; gap: 10px; }
+  .panel-head { min-height: 38px; padding: 8px 10px; }
+  .usa-home pre { font-size: 11px; line-height: 1.55; }
+  .request-panel pre { min-height: 156px; padding: 11px; }
+  .flow-panel { min-height: 190px; padding: 12px; gap: 10px; }
+  .gateway-core { min-height: 82px; }
+  .gateway-core strong { font-size: 15px; }
   .provider-row { flex-wrap: wrap; }
   .line { display: none; }
-  .metric-grid { grid-template-columns: 1fr; }
-  .feature-grid { grid-template-columns: 1fr; }
+  .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .metric-grid div { padding: 8px 5px; }
+  .metric-grid span { font-size: 14px; }
+  .metric-grid small { font-size: 10px; }
+  .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .feature-card { min-height: 150px; padding: 12px; }
+  .feature-card::before { height: 2px; }
+  .feature-icon { width: 30px; height: 30px; margin-bottom: 10px; }
+  .feature-icon svg { width: 16px; height: 16px; }
+  .feature-card h3 { margin-bottom: 6px; font-size: 14px; }
+  .feature-card p { font-size: 12px; line-height: 1.45; }
   .provider-points div { grid-template-columns: 1fr; gap: 4px; }
   .showcase-head { align-items: flex-start; flex-direction: column; justify-content: center; padding: 12px 16px; }
   .pricing-note { align-items: flex-start; flex-direction: column; }
@@ -2073,9 +2093,9 @@ onUnmounted(() => {
 }
 
 @media (max-width: 900px) and (max-height: 760px) {
-  .hero { align-content: start; }
-  .console-shell { max-height: 42svh; }
-  .gateway-board { max-height: calc(42svh - 52px); }
+  .hero { align-content: start; row-gap: 10px; }
+  .console-shell { max-height: 44svh; }
+  .gateway-board { max-height: calc(44svh - 52px); }
 }
 
 </style>
