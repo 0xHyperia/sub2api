@@ -7,11 +7,11 @@
           <span class="brand-name">{{ brandName }}</span>
         </a>
         <nav class="nav-links" aria-label="页面导航">
-          <a href="#overview">总览</a>
-          <a href="#providers">模型</a>
-          <a href="#routes">路由</a>
-          <a href="#pricing">价格</a>
-          <a href="#docs">文档</a>
+          <a href="#overview">功能总览</a>
+          <a href="#providers">模型能力</a>
+          <a href="#routes">接入端点</a>
+          <a href="#pricing">价格估算</a>
+          <RouterLink to="/key-usage">Key 用量</RouterLink>
         </nav>
         <div class="nav-actions">
           <button class="icon-button" ref="themeToggleRef" type="button" @click="toggleHomeTheme" aria-label="切换深浅色主题" title="切换主题">
