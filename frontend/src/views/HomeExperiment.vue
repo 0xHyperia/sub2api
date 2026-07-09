@@ -86,7 +86,7 @@
                 <strong>USA-零 智能路由</strong>
               </div>
               <div class="metric-grid">
-                <div><span>99.98%</span><small>可用性</small></div>
+                <div><span class="metric-value digit-ticker">{{ availabilityLabel }}</span><small>可用性</small></div>
                 <div><span class="metric-value digit-ticker">{{ routeLatencyLabel }}</span><small>路由延迟</small></div>
                 <div><span class="metric-value digit-ticker">{{ todayTokensLabel }}</span><small>今日 Tokens</small></div>
               </div>
@@ -349,8 +349,9 @@ let lastDisplayedTokenDateKey = fallbackTokenDateKey
 let lastDisplayedTokens = 0
 const todayTokens = ref<number | null>(calculateFallbackTokens())
 const routeLatencyMs = ref(randomRouteLatency())
-const displayedTodayTokens = ref(todayTokens.value ?? 0)
-const displayedRouteLatencyMs = ref(routeLatencyMs.value)
+const availabilityLabel = ref('99.98%')
+const todayTokensLabel = ref(todayTokens.value == null ? '--' : formatMetricTokens(todayTokens.value))
+const routeLatencyLabel = ref(`${routeLatencyMs.value}ms`)
 const typedEyebrow = ref('')
 const typedTitle = ref('')
 const typedSubtitle = ref('')
@@ -359,11 +360,9 @@ const copyToastMessage = ref('已复制')
 let cleanupCallbacks: Array<() => void> = []
 let copyToastTimer: number | undefined
 let homeMetricsRefreshing = false
+let availabilityMetricAnimationFrame: number | undefined
 let tokenMetricAnimationFrame: number | undefined
 let latencyMetricAnimationFrame: number | undefined
-
-const todayTokensLabel = computed(() => todayTokens.value == null ? '--' : formatMetricTokens(displayedTodayTokens.value))
-const routeLatencyLabel = computed(() => `${Math.round(displayedRouteLatencyMs.value)}ms`)
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -536,73 +535,94 @@ function startHomeMetricsRefresh() {
   void refreshHomeMetrics()
   const metricsTimer = window.setInterval(() => void refreshHomeMetrics(), HOME_METRICS_REFRESH_MS)
   const latencyTimer = window.setInterval(() => {
+    animateAvailability()
     routeLatencyMs.value = randomRouteLatency()
   }, HOME_METRICS_REFRESH_MS)
   cleanupCallbacks.push(() => window.clearInterval(metricsTimer))
   cleanupCallbacks.push(() => window.clearInterval(latencyTimer))
 }
 
-function easeOutCubic(progress: number): number {
-  return 1 - Math.pow(1 - progress, 3)
+function startMetricIntroAnimation() {
+  const timer = window.setTimeout(() => {
+    animateAvailability()
+    animateRouteLatency(`${routeLatencyMs.value}ms`)
+    animateTodayTokens(todayTokens.value == null ? '--' : formatMetricTokens(todayTokens.value))
+  }, 220)
+  cleanupCallbacks.push(() => window.clearTimeout(timer))
 }
 
-function animateMetricNumber(options: {
-  from: number
-  to: number
+function scrambleMetricLabel(options: {
+  target: string
   duration: number
   cancelCurrent: () => void
   setFrame: (frame: number | undefined) => void
-  setValue: (value: number) => void
-  round?: boolean
+  setValue: (value: string) => void
 }) {
   options.cancelCurrent()
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  if (reducedMotion || options.from === options.to) {
-    options.setValue(options.to)
+  if (reducedMotion) {
+    options.setValue(options.target)
     options.setFrame(undefined)
     return
   }
 
+  const chars = [...options.target]
+  const digitIndexes = chars
+    .map((char, index) => (/\d/.test(char) ? index : -1))
+    .filter((index) => index >= 0)
   const startedAt = performance.now()
   const tick = (now: number) => {
     const progress = Math.min(1, (now - startedAt) / options.duration)
-    const next = options.from + (options.to - options.from) * easeOutCubic(progress)
-    options.setValue(options.round ? Math.round(next) : next)
+    const settledDigits = Math.floor(Math.max(0, progress - 0.34) / 0.66 * (digitIndexes.length + 1))
+    const next = chars.map((char, index) => {
+      if (!/\d/.test(char)) return char
+      const digitOrder = digitIndexes.indexOf(index)
+      return digitOrder >= 0 && digitOrder < settledDigits ? char : String(randomInt(0, 9))
+    }).join('')
+    options.setValue(progress >= 1 ? options.target : next)
     if (progress < 1) {
       options.setFrame(window.requestAnimationFrame(tick))
       return
     }
-    options.setValue(options.to)
     options.setFrame(undefined)
   }
 
   options.setFrame(window.requestAnimationFrame(tick))
 }
 
-function animateTodayTokens(target: number) {
-  animateMetricNumber({
-    from: displayedTodayTokens.value,
-    to: target,
+function animateAvailability() {
+  scrambleMetricLabel({
+    target: '99.98%',
+    duration: 760,
+    cancelCurrent: () => {
+      if (availabilityMetricAnimationFrame) window.cancelAnimationFrame(availabilityMetricAnimationFrame)
+    },
+    setFrame: (frame) => { availabilityMetricAnimationFrame = frame },
+    setValue: (value) => { availabilityLabel.value = value }
+  })
+}
+
+function animateTodayTokens(target: string) {
+  scrambleMetricLabel({
+    target,
     duration: 980,
     cancelCurrent: () => {
       if (tokenMetricAnimationFrame) window.cancelAnimationFrame(tokenMetricAnimationFrame)
     },
     setFrame: (frame) => { tokenMetricAnimationFrame = frame },
-    setValue: (value) => { displayedTodayTokens.value = Math.max(0, value) },
-    round: true
+    setValue: (value) => { todayTokensLabel.value = value }
   })
 }
 
-function animateRouteLatency(target: number) {
-  animateMetricNumber({
-    from: displayedRouteLatencyMs.value,
-    to: target,
+function animateRouteLatency(target: string) {
+  scrambleMetricLabel({
+    target,
     duration: 620,
     cancelCurrent: () => {
       if (latencyMetricAnimationFrame) window.cancelAnimationFrame(latencyMetricAnimationFrame)
     },
     setFrame: (frame) => { latencyMetricAnimationFrame = frame },
-    setValue: (value) => { displayedRouteLatencyMs.value = value }
+    setValue: (value) => { routeLatencyLabel.value = value }
   })
 }
 
@@ -947,6 +967,7 @@ function startCtaDotMatrix(canvas: HTMLCanvasElement | null) {
 onMounted(() => {
   setupTheme()
   startHomeMetricsRefresh()
+  startMetricIntroAnimation()
   startHeroTyping()
   setupHeader()
   setupTabs()
@@ -962,18 +983,18 @@ watch([brandName, subtitle], () => {
 })
 
 watch(todayTokens, (value) => {
-  if (value == null) return
-  animateTodayTokens(value)
+  animateTodayTokens(value == null ? '--' : formatMetricTokens(value))
 })
 
 watch(routeLatencyMs, (value) => {
-  animateRouteLatency(value)
+  animateRouteLatency(`${value}ms`)
 })
 
 onUnmounted(() => {
   cleanupCallbacks.forEach((cleanup) => cleanup())
   cleanupCallbacks = []
   if (copyToastTimer) window.clearTimeout(copyToastTimer)
+  if (availabilityMetricAnimationFrame) window.cancelAnimationFrame(availabilityMetricAnimationFrame)
   if (tokenMetricAnimationFrame) window.cancelAnimationFrame(tokenMetricAnimationFrame)
   if (latencyMetricAnimationFrame) window.cancelAnimationFrame(latencyMetricAnimationFrame)
 })
