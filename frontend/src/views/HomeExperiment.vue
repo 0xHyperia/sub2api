@@ -130,46 +130,54 @@
         <div class="section-inner split-layout">
           <div class="section-title align-left">
             <p class="eyebrow">Multi-model gateway</p>
-            <h2>一套网关，统一模型接入与运营控制</h2>
-            <p>把 OpenAI、Claude、Gemini 和兼容上游收敛到同一个 API 层，在接入之外提供路由、日志、计费和用量可视化，适合团队长期稳定运营。</p>
+            <h2>模型接入、路由与计费放在同一层</h2>
+            <p>面向多模型应用保留统一 API 入口，同时把模型目录、供应商路由、请求日志和用量计费整理成一套可运营的控制面。</p>
             <div class="provider-points" aria-label="多模型网关能力">
-              <div><strong>统一入口</strong><span>一个 Base URL、一把 Key，减少多 SDK 和多鉴权配置。</span></div>
-              <div><strong>弹性路由</strong><span>按模型能力、延迟、余额和失败状态选择可用通道。</span></div>
-              <div><strong>运营视图</strong><span>请求日志、Token 消耗、账单和错误原因集中查看。</span></div>
+              <div><strong>统一入口</strong><span>一个 Base URL、一把 Key，兼容 Chat、Responses、Images 等常用端点。</span></div>
+              <div><strong>模型目录</strong><span>按供应商和用途筛选模型，模型 ID 可直接用于请求或复制到客户端。</span></div>
+              <div><strong>计费口径</strong><span>输入、输出、缓存分别统计，按百万 tokens 展示单价或倍率。</span></div>
+              <div><strong>运营视图</strong><span>路由、日志、账单、用量和错误原因集中查看，便于团队排查和治理。</span></div>
             </div>
           </div>
           <div class="provider-showcase" aria-label="多模型网关能力展示">
             <div class="showcase-head">
-              <span>Gateway layer</span>
-              <strong>{{ baseUrl }}</strong>
+              <span>Model catalog</span>
+              <strong>{{ baseUrl }}/models</strong>
             </div>
-            <div class="model-stack" aria-label="模型供应商接入">
-              <article>
-                <span class="provider-dot openai"></span>
-                <div><strong>OpenAI</strong><small>Chat / Responses / Images</small></div>
-                <em>高质量通用推理</em>
-              </article>
-              <article>
-                <span class="provider-dot claude"></span>
-                <div><strong>Claude</strong><small>Code / Long context / Tools</small></div>
-                <em>代码与长上下文</em>
-              </article>
-              <article>
-                <span class="provider-dot gemini"></span>
-                <div><strong>Gemini</strong><small>Text / Vision / Multimodal</small></div>
-                <em>多模态与低延迟</em>
-              </article>
-              <article>
-                <span class="provider-dot custom"></span>
-                <div><strong>兼容上游</strong><small>OpenAI-compatible endpoints</small></div>
-                <em>按需映射扩展</em>
-              </article>
+            <div class="catalog-toolbar" aria-label="模型筛选示例">
+              <span class="is-active">全部</span>
+              <span>OpenAI</span>
+              <span>Claude Code</span>
+              <span>Gemini</span>
+            </div>
+            <div class="pricing-note">
+              <span>美元 / 百万 Tokens</span>
+              <strong>输入 / 输出 / 缓存</strong>
+            </div>
+            <div class="model-price-table" aria-label="模型与计费口径示例">
+              <div class="price-row head"><span>模型 ID</span><span>输入</span><span>输出</span><span>缓存</span></div>
+              <div class="price-row">
+                <strong><i class="provider-dot openai"></i>gpt-5.5<em>热门</em></strong>
+                <span>$5.00</span><span>$30.00</span><span>$0.50</span>
+              </div>
+              <div class="price-row">
+                <strong><i class="provider-dot claude"></i>claude-sonnet-4-6<em>代码</em></strong>
+                <span>$3.00</span><span>$15.00</span><span>$0.30</span>
+              </div>
+              <div class="price-row">
+                <strong><i class="provider-dot gemini"></i>gemini-3.1-pro<em>多模态</em></strong>
+                <span>按配置</span><span>按配置</span><span>按配置</span>
+              </div>
+              <div class="price-row">
+                <strong><i class="provider-dot custom"></i>兼容上游<em>映射</em></strong>
+                <span>可设</span><span>可设</span><span>可设</span>
+              </div>
             </div>
             <div class="ops-strip" aria-label="运营控制能力">
-              <div><strong>Routing</strong><span>智能路由</span></div>
-              <div><strong>Logs</strong><span>请求追踪</span></div>
-              <div><strong>Billing</strong><span>按量计费</span></div>
-              <div><strong>Usage</strong><span>用量分析</span></div>
+              <div><strong>Filter</strong><span>供应商筛选</span></div>
+              <div><strong>Copy</strong><span>模型 ID</span></div>
+              <div><strong>Billing</strong><span>分项计费</span></div>
+              <div><strong>Routing</strong><span>自动调度</span></div>
             </div>
           </div>
         </div>
@@ -211,16 +219,19 @@
           </div>
           <div class="pricing-card">
             <div class="pricing-head">
-              <span>Developer</span>
-              <strong>按量计费</strong>
+              <span>充值估算</span>
+              <strong>1:1 折算</strong>
             </div>
-            <label class="range-label" for="tokenRange">每月 token 预算 <span id="tokenValue">10M</span></label>
-            <input id="tokenRange" type="range" min="5" max="100" value="10" step="5" />
-            <div class="estimate"><span id="estimateValue">$18</span><small>预估月消耗</small></div>
+            <label class="range-label" for="tokenRange">充值金额 <span id="amountValue">¥10</span></label>
+            <input id="tokenRange" type="range" min="0.5" max="100" value="10" step="0.5" />
+            <div class="estimate token-estimate" aria-label="Token 额度估算">
+              <div><span id="inputTokenValue">40 百万</span><small>可用输入 Token（纯提问）</small></div>
+              <div><span id="outputTokenValue">约 6.67 百万</span><small>可用输出 Token（纯回答）</small></div>
+            </div>
             <ul class="check-list">
-              <li>模型组、用户组、项目 Key 独立额度</li>
-              <li>失败重试和熔断策略内置</li>
-              <li>日志、账单和错误追踪统一导出</li>
+              <li>人民币与美元额度 1:1 折算，¥1 等于 $1 可用余额</li>
+              <li>输入、输出分别估算，Token 单位以百万 / 万展示</li>
+              <li>模型组、用户组、项目 Key 可独立设置额度</li>
             </ul>
           </div>
         </div>
@@ -274,7 +285,7 @@ const homeRoot = ref<HTMLElement | null>(null)
 const themeToggleRef = ref<HTMLButtonElement | null>(null)
 const homeTheme = ref<'light' | 'dark'>('light')
 const activeTab = ref('chat')
-const tokenBudget = ref(10)
+const rechargeAmount = ref(10)
 const typedEyebrow = ref('')
 const typedTitle = ref('')
 const typedSubtitle = ref('')
@@ -343,13 +354,23 @@ function setupTabs() {
 function setupPricingRange() {
   const root = homeRoot.value
   const range = root?.querySelector<HTMLInputElement>('#tokenRange')
-  const tokenValue = root?.querySelector<HTMLElement>('#tokenValue')
-  const estimateValue = root?.querySelector<HTMLElement>('#estimateValue')
-  if (!range || !tokenValue || !estimateValue) return
+  const amountValue = root?.querySelector<HTMLElement>('#amountValue')
+  const inputTokenValue = root?.querySelector<HTMLElement>('#inputTokenValue')
+  const outputTokenValue = root?.querySelector<HTMLElement>('#outputTokenValue')
+  if (!range || !amountValue || !inputTokenValue || !outputTokenValue) return
+  const formatAmount = (value: number) => Number.isInteger(value) ? `¥${value}` : `¥${value.toFixed(1)}`
+  const trimNumber = (value: number, digits = 2) => value.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1')
+  const formatTokenMillions = (millionTokens: number, approximate = false) => {
+    const prefix = approximate ? '约 ' : ''
+    if (millionTokens >= 100) return `${prefix}${trimNumber(millionTokens / 100)} 亿`
+    if (millionTokens >= 1) return `${prefix}${trimNumber(millionTokens)} 百万`
+    return `${prefix}${trimNumber(millionTokens * 100, 1)} 万`
+  }
   const update = () => {
-    tokenBudget.value = Number(range.value)
-    tokenValue.textContent = `${tokenBudget.value}M`
-    estimateValue.textContent = `$${Math.round(tokenBudget.value * 1.8)}`
+    rechargeAmount.value = Number(range.value)
+    amountValue.textContent = formatAmount(rechargeAmount.value)
+    inputTokenValue.textContent = formatTokenMillions(rechargeAmount.value * 4)
+    outputTokenValue.textContent = formatTokenMillions(rechargeAmount.value * 2 / 3, true)
   }
   onElement(range, 'input', update)
   update()
@@ -1421,44 +1442,99 @@ onUnmounted(() => {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 13px;
 }
-.model-stack {
-  display: grid;
-  gap: 0;
-}
-.model-stack article {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) max-content;
-  gap: 14px;
-  align-items: center;
-  min-height: 76px;
-  padding: 15px 18px;
+.catalog-toolbar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 14px 18px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
 }
-.model-stack strong {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--foreground);
-  font-size: 15px;
+.catalog-toolbar span {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 11px;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted) 48%, transparent);
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
 }
-.model-stack small {
-  display: block;
+.catalog-toolbar .is-active {
+  border-color: color-mix(in srgb, var(--foreground) 72%, transparent);
+  background: color-mix(in srgb, var(--foreground) 88%, var(--muted-foreground));
+  color: var(--background);
+}
+.pricing-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted) 38%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  font-size: 12px;
+}
+.pricing-note span, .pricing-note strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.pricing-note strong {
+  color: var(--foreground);
+  font-weight: 800;
+}
+.model-price-table {
+  display: grid;
+}
+.price-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) repeat(3, minmax(64px, .72fr));
+  gap: 12px;
+  align-items: center;
+  min-height: 62px;
+  padding: 12px 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+}
+.price-row.head {
+  min-height: 38px;
+  background: color-mix(in srgb, var(--muted) 52%, transparent);
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+.price-row:last-child { border-bottom: 0; }
+.price-row strong {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 780;
+  overflow-wrap: anywhere;
+}
+.price-row span {
   color: var(--muted-foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
-  overflow-wrap: anywhere;
+  text-align: right;
 }
-.model-stack em {
-  justify-self: end;
-  border: 1px solid var(--border);
+.price-row em {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--foreground) 18%, var(--border));
   border-radius: 999px;
-  padding: 5px 9px;
-  background: color-mix(in srgb, var(--muted) 58%, transparent);
+  padding: 2px 6px;
+  background: color-mix(in srgb, var(--muted) 54%, transparent);
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 10px;
   font-style: normal;
-  white-space: nowrap;
 }
 .provider-dot {
+  display: inline-block;
+  flex: 0 0 auto;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -1593,6 +1669,28 @@ onUnmounted(() => {
 }
 .estimate span { font-size: 38px; font-weight: 900; }
 .estimate small { color: var(--muted-foreground); }
+.token-estimate {
+  min-height: 132px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  place-items: stretch;
+  align-content: stretch;
+  overflow: hidden;
+}
+.token-estimate div {
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  padding: 20px;
+  border-right: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+}
+.token-estimate div:last-child { border-right: 0; }
+.token-estimate span {
+  font-size: clamp(22px, 3.2vw, 30px);
+  line-height: 1.1;
+}
+.token-estimate small {
+  line-height: 1.5;
+}
 .check-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; color: var(--muted-foreground); }
 .check-list li { position: relative; padding-left: 22px; line-height: 1.55; }
 .check-list li::before { content: ""; position: absolute; left: 0; top: .58em; width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--foreground) 42%, var(--muted-foreground)); }
@@ -1702,8 +1800,10 @@ onUnmounted(() => {
   .feature-grid { grid-template-columns: 1fr; }
   .provider-points div { grid-template-columns: 1fr; gap: 4px; }
   .showcase-head { align-items: flex-start; flex-direction: column; justify-content: center; padding: 12px 16px; }
-  .model-stack article { grid-template-columns: 16px minmax(0, 1fr); min-height: 92px; }
-  .model-stack em { grid-column: 2; justify-self: start; }
+  .pricing-note { align-items: flex-start; flex-direction: column; }
+  .price-row { grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(52px, .7fr)); gap: 8px; padding: 12px 14px; }
+  .price-row strong { align-items: flex-start; flex-direction: column; gap: 5px; font-size: 12px; }
+  .price-row span { font-size: 11px; }
   .ops-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
   .section { padding: 64px 12px; }
@@ -1712,6 +1812,9 @@ onUnmounted(() => {
   .cta-layout { min-height: 300px; gap: 22px; }
   .route-demo { padding: 12px; }
   .pricing-card { padding: 20px; }
+  .token-estimate { grid-template-columns: 1fr; }
+  .token-estimate div { border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent); }
+  .token-estimate div:last-child { border-bottom: 0; }
   .endpoint-card { grid-template-columns: 1fr; }
   .site-footer { flex-direction: column; gap: 6px; text-align: center; }
 }
