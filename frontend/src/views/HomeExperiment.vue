@@ -129,16 +129,48 @@
       <section id="providers" class="section">
         <div class="section-inner split-layout">
           <div class="section-title align-left">
-            <p class="eyebrow">Provider matrix</p>
-            <h2>同一套 API，面向不同模型能力</h2>
-            <p>保留各家模型的优势，同时把开发者入口收敛到一个域名、一种鉴权、一套日志。</p>
+            <p class="eyebrow">Multi-model gateway</p>
+            <h2>一套网关，统一模型接入与运营控制</h2>
+            <p>把 OpenAI、Claude、Gemini 和兼容上游收敛到同一个 API 层，在接入之外提供路由、日志、计费和用量可视化，适合团队长期稳定运营。</p>
+            <div class="provider-points" aria-label="多模型网关能力">
+              <div><strong>统一入口</strong><span>一个 Base URL、一把 Key，减少多 SDK 和多鉴权配置。</span></div>
+              <div><strong>弹性路由</strong><span>按模型能力、延迟、余额和失败状态选择可用通道。</span></div>
+              <div><strong>运营视图</strong><span>请求日志、Token 消耗、账单和错误原因集中查看。</span></div>
+            </div>
           </div>
-          <div class="provider-matrix" aria-label="供应商能力矩阵">
-            <div class="matrix-row head"><span>Provider</span><span>Text</span><span>Vision</span><span>Tools</span><span>Fallback</span></div>
-            <div class="matrix-row"><strong>OpenAI</strong><span>on</span><span>on</span><span>on</span><span>hot</span></div>
-            <div class="matrix-row"><strong>Claude</strong><span>on</span><span>on</span><span>on</span><span>warm</span></div>
-            <div class="matrix-row"><strong>Gemini</strong><span>on</span><span>on</span><span>beta</span><span>warm</span></div>
-            <div class="matrix-row"><strong>自定义上游</strong><span>map</span><span>map</span><span>map</span><span>cold</span></div>
+          <div class="provider-showcase" aria-label="多模型网关能力展示">
+            <div class="showcase-head">
+              <span>Gateway layer</span>
+              <strong>{{ baseUrl }}</strong>
+            </div>
+            <div class="model-stack" aria-label="模型供应商接入">
+              <article>
+                <span class="provider-dot openai"></span>
+                <div><strong>OpenAI</strong><small>Chat / Responses / Images</small></div>
+                <em>高质量通用推理</em>
+              </article>
+              <article>
+                <span class="provider-dot claude"></span>
+                <div><strong>Claude</strong><small>Code / Long context / Tools</small></div>
+                <em>代码与长上下文</em>
+              </article>
+              <article>
+                <span class="provider-dot gemini"></span>
+                <div><strong>Gemini</strong><small>Text / Vision / Multimodal</small></div>
+                <em>多模态与低延迟</em>
+              </article>
+              <article>
+                <span class="provider-dot custom"></span>
+                <div><strong>兼容上游</strong><small>OpenAI-compatible endpoints</small></div>
+                <em>按需映射扩展</em>
+              </article>
+            </div>
+            <div class="ops-strip" aria-label="运营控制能力">
+              <div><strong>Routing</strong><span>智能路由</span></div>
+              <div><strong>Logs</strong><span>请求追踪</span></div>
+              <div><strong>Billing</strong><span>按量计费</span></div>
+              <div><strong>Usage</strong><span>用量分析</span></div>
+            </div>
           </div>
         </div>
       </section>
@@ -1284,15 +1316,12 @@ onUnmounted(() => {
 
 #providers .eyebrow { color: var(--muted-foreground); }
 #providers .section-title p:not(.eyebrow) { color: var(--muted-foreground); }
-#providers .provider-matrix {
+#providers .provider-showcase {
   border-color: color-mix(in srgb, var(--border) 86%, transparent);
   background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
   box-shadow: var(--soft-shadow);
   backdrop-filter: blur(14px);
 }
-#providers .matrix-row { border-bottom-color: color-mix(in srgb, var(--border) 76%, transparent); }
-#providers .matrix-row.head { background: color-mix(in srgb, var(--muted) 72%, var(--background)); color: var(--muted-foreground); }
-#providers .matrix-row span:not(:first-child) { border-color: var(--border); background: color-mix(in srgb, var(--muted) 58%, transparent); color: var(--muted-foreground); }
 
 .feature-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
 .feature-card {
@@ -1339,52 +1368,128 @@ onUnmounted(() => {
   gap: clamp(34px, 6vw, 64px);
   align-items: center;
 }
-.provider-matrix {
+.provider-points {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.provider-points div {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.provider-points strong {
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 860;
+}
+.provider-points span {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.provider-showcase {
   border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface-raised);
   box-shadow: var(--soft-shadow);
 }
-
-.matrix-row {
-  display: grid;
-  grid-template-columns: 1.4fr repeat(4, .8fr);
-  min-height: 58px;
+.showcase-head {
+  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 58px;
   padding: 0 18px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
-  font-size: 14px;
+  background: color-mix(in srgb, var(--muted) 72%, var(--background));
 }
-.matrix-row:last-child { border-bottom: 0; }
-.matrix-row.head {
-  min-height: 44px;
+.showcase-head span {
   color: var(--muted-foreground);
-  background: color-mix(in srgb, var(--muted) 78%, var(--background));
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 860;
   text-transform: uppercase;
 }
-.matrix-row span:not(:first-child) {
-  width: max-content;
-  min-width: 42px;
-  justify-self: start;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px 8px;
+.showcase-head strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+.model-stack {
+  display: grid;
+  gap: 0;
+}
+.model-stack article {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) max-content;
+  gap: 14px;
+  align-items: center;
+  min-height: 76px;
+  padding: 15px 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+}
+.model-stack strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--foreground);
+  font-size: 15px;
+}
+.model-stack small {
+  display: block;
   color: var(--muted-foreground);
-  background: color-mix(in srgb, var(--muted) 64%, transparent);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
+  overflow-wrap: anywhere;
 }
-
-.matrix-row.head span:not(:first-child) {
-  min-width: 0;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
+.model-stack em {
+  justify-self: end;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: color-mix(in srgb, var(--muted) 58%, transparent);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-style: normal;
+  white-space: nowrap;
+}
+.provider-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 14%, transparent);
+}
+.provider-dot.openai { color: #10b981; background: currentColor; }
+.provider-dot.claude { color: #f97316; background: currentColor; }
+.provider-dot.gemini { color: #3b82f6; background: currentColor; }
+.provider-dot.custom { color: #a855f7; background: currentColor; }
+.ops-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: color-mix(in srgb, var(--border) 74%, transparent);
+}
+.ops-strip div {
+  min-height: 82px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--surface-raised) 94%, var(--background));
+}
+.ops-strip strong {
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+.ops-strip span {
+  color: var(--muted-foreground);
+  font-size: 12px;
 }
 
 .tabs {
@@ -1595,8 +1700,11 @@ onUnmounted(() => {
   .line { display: none; }
   .metric-grid { grid-template-columns: 1fr; }
   .feature-grid { grid-template-columns: 1fr; }
-  .matrix-row { grid-template-columns: 1fr repeat(2, .62fr); }
-  .matrix-row span:nth-child(4), .matrix-row span:nth-child(5) { display: none; }
+  .provider-points div { grid-template-columns: 1fr; gap: 4px; }
+  .showcase-head { align-items: flex-start; flex-direction: column; justify-content: center; padding: 12px 16px; }
+  .model-stack article { grid-template-columns: 16px minmax(0, 1fr); min-height: 92px; }
+  .model-stack em { grid-column: 2; justify-self: start; }
+  .ops-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
   .section { padding: 64px 12px; }
   .band-light { padding-top: 10px; }
