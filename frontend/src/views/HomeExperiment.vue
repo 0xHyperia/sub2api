@@ -87,8 +87,8 @@
               </div>
               <div class="metric-grid">
                 <div><span>99.98%</span><small>可用性</small></div>
-                <div><span>138ms</span><small>路由延迟</small></div>
-                <div><span>3.2M</span><small>今日 Tokens</small></div>
+                <div><span class="metric-value digit-ticker">{{ routeLatencyLabel }}</span><small>路由延迟</small></div>
+                <div><span class="metric-value digit-ticker">{{ todayTokensLabel }}</span><small>今日 Tokens</small></div>
               </div>
             </div>
           </div>
@@ -318,6 +318,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { getHomeMetrics } from '@/api/home'
 
 const props = defineProps<{
   siteName: string
@@ -340,6 +341,16 @@ const themeToggleRef = ref<HTMLButtonElement | null>(null)
 const homeTheme = ref<'light' | 'dark'>('light')
 const activeTab = ref('chat')
 const monthlyTokenMillions = ref(40)
+const HOME_METRICS_REFRESH_MS = 60_000
+let fallbackTokenDateKey = getLocalDateKey()
+let fallbackTokenProfile = createFallbackTokenProfile(fallbackTokenDateKey)
+let lastFallbackTokens = 0
+let lastDisplayedTokenDateKey = fallbackTokenDateKey
+let lastDisplayedTokens = 0
+const todayTokens = ref<number | null>(calculateFallbackTokens())
+const routeLatencyMs = ref(randomRouteLatency())
+const displayedTodayTokens = ref(todayTokens.value ?? 0)
+const displayedRouteLatencyMs = ref(routeLatencyMs.value)
 const typedEyebrow = ref('')
 const typedTitle = ref('')
 const typedSubtitle = ref('')
@@ -347,6 +358,253 @@ const copyToastVisible = ref(false)
 const copyToastMessage = ref('已复制')
 let cleanupCallbacks: Array<() => void> = []
 let copyToastTimer: number | undefined
+let homeMetricsRefreshing = false
+let tokenMetricAnimationFrame: number | undefined
+let latencyMetricAnimationFrame: number | undefined
+
+const todayTokensLabel = computed(() => todayTokens.value == null ? '--' : formatMetricTokens(displayedTodayTokens.value))
+const routeLatencyLabel = computed(() => `${Math.round(displayedRouteLatencyMs.value)}ms`)
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function randomRouteLatency(): number {
+  return randomInt(18, 110)
+}
+
+interface FallbackTokenProfile {
+  seed: number
+  dailyTargetTokens: number
+  backgroundShare: number
+  morningShare: number
+  afternoonShare: number
+  eveningShare: number
+  lateShare: number
+  morningStart: number
+  morningEnd: number
+  afternoonStart: number
+  afternoonEnd: number
+  eveningStart: number
+  eveningEnd: number
+  lateStart: number
+  lateEnd: number
+}
+
+function getLocalDateKey(date = new Date()): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+function getLocalDayStartedAt(date = new Date()): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+}
+
+function hashDateKey(dateKey: string): number {
+  let hash = 2166136261
+  for (let i = 0; i < dateKey.length; i += 1) {
+    hash ^= dateKey.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+function seededUnit(seed: number, salt: number): number {
+  let value = (seed + Math.imul(salt, 0x9e3779b1)) >>> 0
+  value ^= value >>> 16
+  value = Math.imul(value, 0x85ebca6b) >>> 0
+  value ^= value >>> 13
+  value = Math.imul(value, 0xc2b2ae35) >>> 0
+  value ^= value >>> 16
+  return value / 0xffffffff
+}
+
+function seededRange(seed: number, salt: number, min: number, max: number): number {
+  return min + (max - min) * seededUnit(seed, salt)
+}
+
+function seededInt(seed: number, salt: number, min: number, max: number): number {
+  return Math.round(seededRange(seed, salt, min, max))
+}
+
+function smoothstep(edge0: number, edge1: number, value: number): number {
+  const x = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)))
+  return x * x * (3 - 2 * x)
+}
+
+function createFallbackTokenProfile(dateKey: string): FallbackTokenProfile {
+  const seed = hashDateKey(dateKey)
+  const morningShare = seededRange(seed, 2, 0.20, 0.29)
+  const afternoonShare = seededRange(seed, 3, 0.27, 0.38)
+  const eveningShare = seededRange(seed, 4, 0.19, 0.31)
+  const backgroundShare = seededRange(seed, 5, 0.08, 0.15)
+  const lateShare = Math.max(0.06, 1 - morningShare - afternoonShare - eveningShare - backgroundShare)
+  return {
+    seed,
+    dailyTargetTokens: seededInt(seed, 1, 2_800_000_000, 9_600_000_000),
+    backgroundShare,
+    morningShare,
+    afternoonShare,
+    eveningShare,
+    lateShare,
+    morningStart: seededRange(seed, 6, 0.20, 0.28),
+    morningEnd: seededRange(seed, 7, 0.43, 0.52),
+    afternoonStart: seededRange(seed, 8, 0.36, 0.46),
+    afternoonEnd: seededRange(seed, 9, 0.64, 0.74),
+    eveningStart: seededRange(seed, 10, 0.58, 0.68),
+    eveningEnd: seededRange(seed, 11, 0.82, 0.92),
+    lateStart: seededRange(seed, 12, 0.76, 0.84),
+    lateEnd: 1
+  }
+}
+
+function syncTokenDayState(now = new Date()): string {
+  const dateKey = getLocalDateKey(now)
+  if (dateKey !== fallbackTokenDateKey) {
+    fallbackTokenDateKey = dateKey
+    fallbackTokenProfile = createFallbackTokenProfile(dateKey)
+    lastFallbackTokens = 0
+  }
+  if (dateKey !== lastDisplayedTokenDateKey) {
+    lastDisplayedTokenDateKey = dateKey
+    lastDisplayedTokens = 0
+  }
+  return dateKey
+}
+
+function rememberDisplayedTokens(tokens: number, dateKey: string): number {
+  if (dateKey !== lastDisplayedTokenDateKey) {
+    lastDisplayedTokenDateKey = dateKey
+    lastDisplayedTokens = 0
+  }
+  lastDisplayedTokens = Math.max(0, Math.round(tokens))
+  lastFallbackTokens = Math.max(lastFallbackTokens, lastDisplayedTokens)
+  return lastDisplayedTokens
+}
+
+function calculateFallbackTokens(now = new Date()): number {
+  const dateKey = syncTokenDayState(now)
+  const elapsedMinutes = Math.max(0, (now.getTime() - getLocalDayStartedAt(now)) / HOME_METRICS_REFRESH_MS)
+  const wholeMinutes = Math.floor(elapsedMinutes)
+  const dayProgress = Math.min(1, elapsedMinutes / 1440)
+  const curve =
+    fallbackTokenProfile.backgroundShare * dayProgress +
+    fallbackTokenProfile.morningShare * smoothstep(fallbackTokenProfile.morningStart, fallbackTokenProfile.morningEnd, dayProgress) +
+    fallbackTokenProfile.afternoonShare * smoothstep(fallbackTokenProfile.afternoonStart, fallbackTokenProfile.afternoonEnd, dayProgress) +
+    fallbackTokenProfile.eveningShare * smoothstep(fallbackTokenProfile.eveningStart, fallbackTokenProfile.eveningEnd, dayProgress) +
+    fallbackTokenProfile.lateShare * smoothstep(fallbackTokenProfile.lateStart, fallbackTokenProfile.lateEnd, dayProgress)
+  const minuteTexture = wholeMinutes * seededRange(fallbackTokenProfile.seed, wholeMinutes + 101, 60_000, 380_000)
+  const candidate = Math.round(fallbackTokenProfile.dailyTargetTokens * Math.min(1, curve) + minuteTexture)
+  const minimum = lastFallbackTokens > 0
+    ? lastFallbackTokens + seededInt(fallbackTokenProfile.seed, wholeMinutes + 10_001, 800_000, 4_800_000)
+    : 0
+  return rememberDisplayedTokens(Math.max(candidate, minimum), dateKey)
+}
+
+function formatMetricTokens(tokens: number): string {
+  if (!Number.isFinite(tokens) || tokens <= 0) return '0'
+  if (tokens >= 1_000_000_000) return `${(tokens / 1_000_000_000).toFixed(3)}B`
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(2)}M`
+  if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(1)}K`
+  return Math.round(tokens).toString()
+}
+
+async function refreshHomeMetrics() {
+  syncTokenDayState()
+  if (homeMetricsRefreshing) {
+    todayTokens.value = calculateFallbackTokens()
+    return
+  }
+
+  homeMetricsRefreshing = true
+  try {
+    const metrics = await getHomeMetrics()
+    const dateKey = syncTokenDayState()
+    const backendTokens = Number(metrics.today_tokens)
+    todayTokens.value = Number.isFinite(backendTokens) && backendTokens >= 0
+      ? rememberDisplayedTokens(Math.max(backendTokens, lastDisplayedTokens), dateKey)
+      : calculateFallbackTokens()
+  } catch (error) {
+    todayTokens.value = calculateFallbackTokens()
+  } finally {
+    homeMetricsRefreshing = false
+  }
+}
+
+function startHomeMetricsRefresh() {
+  void refreshHomeMetrics()
+  const metricsTimer = window.setInterval(() => void refreshHomeMetrics(), HOME_METRICS_REFRESH_MS)
+  const latencyTimer = window.setInterval(() => {
+    routeLatencyMs.value = randomRouteLatency()
+  }, HOME_METRICS_REFRESH_MS)
+  cleanupCallbacks.push(() => window.clearInterval(metricsTimer))
+  cleanupCallbacks.push(() => window.clearInterval(latencyTimer))
+}
+
+function easeOutCubic(progress: number): number {
+  return 1 - Math.pow(1 - progress, 3)
+}
+
+function animateMetricNumber(options: {
+  from: number
+  to: number
+  duration: number
+  cancelCurrent: () => void
+  setFrame: (frame: number | undefined) => void
+  setValue: (value: number) => void
+  round?: boolean
+}) {
+  options.cancelCurrent()
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (reducedMotion || options.from === options.to) {
+    options.setValue(options.to)
+    options.setFrame(undefined)
+    return
+  }
+
+  const startedAt = performance.now()
+  const tick = (now: number) => {
+    const progress = Math.min(1, (now - startedAt) / options.duration)
+    const next = options.from + (options.to - options.from) * easeOutCubic(progress)
+    options.setValue(options.round ? Math.round(next) : next)
+    if (progress < 1) {
+      options.setFrame(window.requestAnimationFrame(tick))
+      return
+    }
+    options.setValue(options.to)
+    options.setFrame(undefined)
+  }
+
+  options.setFrame(window.requestAnimationFrame(tick))
+}
+
+function animateTodayTokens(target: number) {
+  animateMetricNumber({
+    from: displayedTodayTokens.value,
+    to: target,
+    duration: 980,
+    cancelCurrent: () => {
+      if (tokenMetricAnimationFrame) window.cancelAnimationFrame(tokenMetricAnimationFrame)
+    },
+    setFrame: (frame) => { tokenMetricAnimationFrame = frame },
+    setValue: (value) => { displayedTodayTokens.value = Math.max(0, value) },
+    round: true
+  })
+}
+
+function animateRouteLatency(target: number) {
+  animateMetricNumber({
+    from: displayedRouteLatencyMs.value,
+    to: target,
+    duration: 620,
+    cancelCurrent: () => {
+      if (latencyMetricAnimationFrame) window.cancelAnimationFrame(latencyMetricAnimationFrame)
+    },
+    setFrame: (frame) => { latencyMetricAnimationFrame = frame },
+    setValue: (value) => { displayedRouteLatencyMs.value = value }
+  })
+}
 
 const routeExamples: Record<string, string> = {
   chat: `{
@@ -688,6 +946,7 @@ function startCtaDotMatrix(canvas: HTMLCanvasElement | null) {
 
 onMounted(() => {
   setupTheme()
+  startHomeMetricsRefresh()
   startHeroTyping()
   setupHeader()
   setupTabs()
@@ -702,10 +961,21 @@ watch([brandName, subtitle], () => {
   typedSubtitle.value = subtitle.value
 })
 
+watch(todayTokens, (value) => {
+  if (value == null) return
+  animateTodayTokens(value)
+})
+
+watch(routeLatencyMs, (value) => {
+  animateRouteLatency(value)
+})
+
 onUnmounted(() => {
   cleanupCallbacks.forEach((cleanup) => cleanup())
   cleanupCallbacks = []
   if (copyToastTimer) window.clearTimeout(copyToastTimer)
+  if (tokenMetricAnimationFrame) window.cancelAnimationFrame(tokenMetricAnimationFrame)
+  if (latencyMetricAnimationFrame) window.cancelAnimationFrame(latencyMetricAnimationFrame)
 })
 </script>
 
@@ -1259,7 +1529,7 @@ onUnmounted(() => {
 }
 
 .gateway-core::before {
-  content: "async route(req) -> policy.pick(ai.fast)  const mux = normalize(req.body)\A stream.pipe(openai.chat)  fallback.to(claude)  meter.add(tokens)\A if p95.latency > 138ms { provider.next() }  cache.warm(gemini.flash)\A edge/api.in -> auth.ok -> quota.ok -> mux.ok  audit.trace(route.id)\A await router.balance({ cost, latency, context })  codec.openai(delta)\A response.delta += stream.chunk  retry.backoff(32ms)  circuit.half_open\A export /v1/chat/completions as stable.api  quota.window.sync()\A provider.score = latency * .62 + cost * .38  model.alias('auto:fast')\A mux.write({ ok: true, route, usage })  headers.set('x-usa-route')\A warmup.embedding_pool()  token.bucket.take(req.user)  policy.guard()\A cache.hit ? stream.from(cache) : upstream.fetch(req)  trace.flush()\A route.lock.release()  billing.commit(usage.total)  proxy.keepalive()\A const next = health.pick(['openai','claude','gemini'])  done(true)";
+  content: "async route(req) -> policy.pick(ai.fast)  const mux = normalize(req.body)\A stream.pipe(openai.chat)  fallback.to(claude)  meter.add(tokens)\A if p95.latency > 110ms { provider.next() }  cache.warm(gemini.flash)\A edge/api.in -> auth.ok -> quota.ok -> mux.ok  audit.trace(route.id)\A await router.balance({ cost, latency, context })  codec.openai(delta)\A response.delta += stream.chunk  retry.backoff(32ms)  circuit.half_open\A export /v1/chat/completions as stable.api  quota.window.sync()\A provider.score = latency * .62 + cost * .38  model.alias('auto:fast')\A mux.write({ ok: true, route, usage })  headers.set('x-usa-route')\A warmup.embedding_pool()  token.bucket.take(req.user)  policy.guard()\A cache.hit ? stream.from(cache) : upstream.fetch(req)  trace.flush()\A route.lock.release()  billing.commit(usage.total)  proxy.keepalive()\A const next = health.pick(['openai','claude','gemini'])  done(true)";
   position: absolute;
   inset: 6px 8px;
   color: color-mix(in srgb, var(--muted-foreground) 42%, transparent);
@@ -1308,7 +1578,7 @@ onUnmounted(() => {
 
 .gateway-core::before {
   inset: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='174' height='72' viewBox='0 0 174 72'%3E%3Ctext x='0' y='7' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eroute(req).pick(ai.fast)%3C/text%3E%3Ctext x='12' y='16' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Emux.write(delta) usage+=tokens%3C/text%3E%3Ctext x='3' y='25' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eif latency%26gt;138ms next()%3C/text%3E%3Ctext x='18' y='34' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3E/v1/chat -%26gt; stream.ok%3C/text%3E%3Ctext x='6' y='43' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ecache.hit ? edge : upstream%3C/text%3E%3Ctext x='24' y='52' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Efallback.to(claude)%3C/text%3E%3Ctext x='2' y='61' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ehealth.pick(provider) quota.ok%3C/text%3E%3Ctext x='15' y='70' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Etrace.flush() billing.commit()%3C/text%3E%3C/svg%3E");
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='174' height='72' viewBox='0 0 174 72'%3E%3Ctext x='0' y='7' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eroute(req).pick(ai.fast)%3C/text%3E%3Ctext x='12' y='16' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Emux.write(delta) usage+=tokens%3C/text%3E%3Ctext x='3' y='25' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eif latency%26gt;110ms next()%3C/text%3E%3Ctext x='18' y='34' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3E/v1/chat -%26gt; stream.ok%3C/text%3E%3Ctext x='6' y='43' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ecache.hit ? edge : upstream%3C/text%3E%3Ctext x='24' y='52' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Efallback.to(claude)%3C/text%3E%3Ctext x='2' y='61' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ehealth.pick(provider) quota.ok%3C/text%3E%3Ctext x='15' y='70' fill='%23667085' fill-opacity='.52' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Etrace.flush() billing.commit()%3C/text%3E%3C/svg%3E");
   background-size: 174px 72px;
   background-position: 0 0;
   opacity: .72;
@@ -1320,7 +1590,7 @@ onUnmounted(() => {
 }
 
 .usa-home[data-theme="dark"] .gateway-core::before {
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='174' height='72' viewBox='0 0 174 72'%3E%3Ctext x='0' y='7' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eroute(req).pick(ai.fast)%3C/text%3E%3Ctext x='12' y='16' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Emux.write(delta) usage+=tokens%3C/text%3E%3Ctext x='3' y='25' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eif latency%26gt;138ms next()%3C/text%3E%3Ctext x='18' y='34' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3E/v1/chat -%26gt; stream.ok%3C/text%3E%3Ctext x='6' y='43' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ecache.hit ? edge : upstream%3C/text%3E%3Ctext x='24' y='52' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Efallback.to(claude)%3C/text%3E%3Ctext x='2' y='61' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ehealth.pick(provider) quota.ok%3C/text%3E%3Ctext x='15' y='70' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Etrace.flush() billing.commit()%3C/text%3E%3C/svg%3E");
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='174' height='72' viewBox='0 0 174 72'%3E%3Ctext x='0' y='7' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eroute(req).pick(ai.fast)%3C/text%3E%3Ctext x='12' y='16' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Emux.write(delta) usage+=tokens%3C/text%3E%3Ctext x='3' y='25' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Eif latency%26gt;110ms next()%3C/text%3E%3Ctext x='18' y='34' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3E/v1/chat -%26gt; stream.ok%3C/text%3E%3Ctext x='6' y='43' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ecache.hit ? edge : upstream%3C/text%3E%3Ctext x='24' y='52' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Efallback.to(claude)%3C/text%3E%3Ctext x='2' y='61' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Ehealth.pick(provider) quota.ok%3C/text%3E%3Ctext x='15' y='70' fill='%239caab9' fill-opacity='.66' font-family='Consolas,monospace' font-size='7' font-weight='700'%3Etrace.flush() billing.commit()%3C/text%3E%3C/svg%3E");
   background-size: 174px 72px;
   opacity: .78;
 }
@@ -1337,6 +1607,8 @@ onUnmounted(() => {
 .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .metric-grid div { border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 8px; text-align: center; }
 .metric-grid span { display: block; font-size: 17px; font-weight: 850; }
+.metric-grid .metric-value { min-height: 1.2em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.digit-ticker { transition: color .18s ease, text-shadow .18s ease; }
 .metric-grid small { color: var(--muted-foreground); font-size: 11px; }
 
 .brand-reveal {
