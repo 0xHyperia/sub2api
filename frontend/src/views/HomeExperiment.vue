@@ -165,58 +165,71 @@
       </section>
 
       <section id="providers" class="section">
-        <div class="section-inner split-layout">
-          <div class="section-title align-left">
-            <p class="eyebrow">Multi-model gateway</p>
-            <h2>模型接入、路由与计费放在同一层</h2>
-            <p>面向多模型应用保留统一 API 入口，同时把模型目录、供应商路由、请求日志和用量计费整理成一套可运营的控制面。</p>
-            <div class="provider-points" aria-label="多模型网关能力">
-              <div><strong>统一入口</strong><span>一个 Base URL、一把 Key，兼容 Chat、Responses、Images 等常用端点。</span></div>
-              <div><strong>模型目录</strong><span>按供应商和用途筛选模型，模型 ID 可直接用于请求或复制到客户端。</span></div>
-              <div><strong>计费口径</strong><span>输入、输出、缓存分别统计，按百万 tokens 展示单价或倍率。</span></div>
-              <div><strong>运营视图</strong><span>路由、日志、账单、用量和错误原因集中查看，便于团队排查和治理。</span></div>
-            </div>
+        <div class="section-inner api-capabilities-inner">
+          <div class="api-capabilities-heading">
+            <p class="eyebrow">核心能力</p>
+            <h2>专注模型 API 接入的核心能力</h2>
+            <p>一个 API Key，改一下 Base URL，就能接入常用大模型能力。按量计费、调用记录可查，适合个人开发、团队工具和服务端项目快速上线。</p>
           </div>
-          <div class="provider-showcase" aria-label="多模型网关能力展示">
-            <div class="showcase-head">
-              <span>Model catalog</span>
-              <strong>{{ baseUrl }}/models</strong>
+          <div class="api-capabilities-grid">
+            <div class="capability-list" aria-label="模型 API 接入能力">
+              <article class="capability-item">
+                <span class="capability-index">01</span>
+                <div>
+                  <h3>官方同源，稳定直连</h3>
+                  <p>面向高频调用场景优化连接稳定性，减少 429、超时和长连接中断带来的接入成本。</p>
+                </div>
+              </article>
+              <article class="capability-item">
+                <span class="capability-index">02</span>
+                <div>
+                  <h3>兼容 OpenAI 接口</h3>
+                  <p>保留熟悉的请求格式和鉴权方式，常见 SDK、IDE 插件和服务端集成通常只需要替换基础地址。</p>
+                </div>
+              </article>
+              <article class="capability-item">
+                <span class="capability-index">03</span>
+                <div>
+                  <h3>GPT / Claude / Gemini 模型可用</h3>
+                  <p>集中查看可用模型与适用场景，按任务选择对话、代码、长上下文或轻量模型。</p>
+                </div>
+              </article>
+              <article class="capability-item">
+                <span class="capability-index">04</span>
+                <div>
+                  <h3>余额与调用记录透明</h3>
+                  <p>按量消费、余额可查，调用明细记录请求状态、模型和用量，方便排查与对账。</p>
+                </div>
+              </article>
             </div>
-            <div class="catalog-toolbar" aria-label="模型筛选示例">
-              <span class="is-active">全部</span>
-              <span>OpenAI</span>
-              <span>Claude Code</span>
-              <span>Gemini</span>
-            </div>
-            <div class="pricing-note">
-              <span>美元 / 百万 Tokens</span>
-              <strong>输入 / 输出 / 缓存</strong>
-            </div>
-            <div class="model-price-table" aria-label="模型与计费口径示例">
-              <div class="price-row head"><span>模型 ID</span><span>输入</span><span>输出</span><span>缓存</span></div>
-              <div class="price-row">
-                <strong><i class="provider-dot openai"></i>gpt-5.5<em>热门</em></strong>
-                <span>$5.00</span><span>$30.00</span><span>$0.50</span>
+            <aside class="api-access-panel" aria-label="API 接入参数示例">
+              <div class="access-panel-head">
+                <span>接入参数</span>
+                <strong>OpenAI 兼容</strong>
               </div>
-              <div class="price-row">
-                <strong><i class="provider-dot claude"></i>claude-sonnet-4-6<em>代码</em></strong>
-                <span>$3.00</span><span>$15.00</span><span>$0.30</span>
+              <div class="access-credentials" aria-label="基础接入信息">
+                <div>
+                  <span>Base URL</span>
+                  <code>{{ baseUrl }}</code>
+                </div>
+                <div>
+                  <span>Authorization</span>
+                  <code>Bearer sk-usa0...</code>
+                </div>
               </div>
-              <div class="price-row">
-                <strong><i class="provider-dot gemini"></i>gemini-3.1-pro-preview<em>多模态</em></strong>
-                <span>$2.00</span><span>$12.00</span><span>$0.20</span>
+              <div class="access-status-grid" aria-label="平台状态摘要">
+                <div><i class="status-dot green"></i><strong>接口可用</strong><span>稳定直连</span></div>
+                <div><i class="status-dot amber"></i><strong>按量计费</strong><span>余额消费</span></div>
+                <div><i class="status-dot blue"></i><strong>用量可查</strong><span>明细记录</span></div>
               </div>
-              <div class="price-row">
-                <strong><i class="provider-dot custom"></i>auto:best<em>路由</em></strong>
-                <span>随模型</span><span>随模型</span><span>随模型</span>
+              <div class="access-terminal" aria-label="终端调用示例">
+                <div class="terminal-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+                <pre class="access-code"><code><span class="terminal-prompt">$</span> curl {{ baseUrl }}/chat/completions \
+  -H "Authorization: Bearer sk-usa0..." \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-5.3-codex","messages":[{"role":"user","content":"生成接口测试用例"}]}'</code></pre>
               </div>
-            </div>
-            <div class="ops-strip" aria-label="运营控制能力">
-              <div><strong>Filter</strong><span>供应商筛选</span></div>
-              <div><strong>Copy</strong><span>模型 ID</span></div>
-              <div><strong>Billing</strong><span>分项计费</span></div>
-              <div><strong>Routing</strong><span>自动调度</span></div>
-            </div>
+            </aside>
           </div>
         </div>
       </section>
@@ -1430,7 +1443,7 @@ onUnmounted(() => {
 
 #providers .eyebrow { color: var(--muted-foreground); }
 #providers .section-title p:not(.eyebrow) { color: var(--muted-foreground); }
-#providers .provider-showcase {
+#providers .api-access-panel {
   border-color: color-mix(in srgb, var(--border) 86%, transparent);
   background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
   box-shadow: var(--soft-shadow);
@@ -1482,166 +1495,209 @@ onUnmounted(() => {
   gap: clamp(34px, 6vw, 64px);
   align-items: center;
 }
-.provider-points {
+.api-capabilities-inner {
   display: grid;
-  gap: 12px;
-  margin-top: 24px;
+  gap: clamp(34px, 6vw, 62px);
 }
-.provider-points div {
-  display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-  padding: 12px 0;
-  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+.api-capabilities-heading {
+  max-width: 780px;
 }
-.provider-points strong {
-  color: var(--foreground);
-  font-size: 14px;
-  font-weight: 860;
+.api-capabilities-heading h2 {
+  margin-bottom: 12px;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.08;
+  font-weight: 880;
+  letter-spacing: 0;
 }
-.provider-points span {
+.api-capabilities-heading p:not(.eyebrow) {
+  max-width: 720px;
   color: var(--muted-foreground);
-  font-size: 14px;
-  line-height: 1.65;
+  line-height: 1.75;
 }
-.provider-showcase {
+.api-capabilities-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, .78fr);
+  gap: clamp(28px, 5vw, 52px);
+  align-items: start;
+}
+.capability-list {
+  border-top: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+}
+.capability-item {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  padding: 26px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+}
+.capability-index {
+  padding-top: 6px;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 820;
+}
+.capability-item h3 {
+  margin: 0 0 10px;
+  color: var(--foreground);
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  line-height: 1.18;
+  font-weight: 860;
+  letter-spacing: 0;
+}
+.capability-item p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 15px;
+  line-height: 1.72;
+}
+.api-access-panel {
+  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   border-radius: var(--radius);
-  overflow: hidden;
   background: var(--surface-raised);
   box-shadow: var(--soft-shadow);
 }
-.showcase-head {
+.access-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 16px;
   min-height: 58px;
   padding: 0 18px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
-  background: color-mix(in srgb, var(--muted) 72%, var(--background));
+  background: color-mix(in srgb, var(--muted) 58%, var(--background));
 }
-.showcase-head span {
+.access-panel-head span {
   color: var(--muted-foreground);
   font-size: 12px;
   font-weight: 860;
-  text-transform: uppercase;
 }
-.showcase-head strong {
+.access-panel-head strong {
   min-width: 0;
-  overflow-wrap: anywhere;
   color: var(--foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 13px;
+  font-weight: 820;
+  overflow-wrap: anywhere;
 }
-.catalog-toolbar {
-  display: flex;
+.access-credentials {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--muted) 18%, transparent), transparent 58%),
+    color-mix(in srgb, var(--surface-raised) 94%, transparent);
+}
+.access-credentials div {
+  min-width: 0;
+  display: grid;
   gap: 8px;
-  overflow-x: auto;
-  padding: 14px 18px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--background) 78%, transparent);
 }
-.catalog-toolbar span {
-  flex: 0 0 auto;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 6px 11px;
-  color: var(--muted-foreground);
-  background: color-mix(in srgb, var(--muted) 48%, transparent);
-  font-size: 12px;
-  font-weight: 760;
-  white-space: nowrap;
-}
-.catalog-toolbar .is-active {
-  border-color: color-mix(in srgb, var(--foreground) 72%, transparent);
-  background: color-mix(in srgb, var(--foreground) 88%, var(--muted-foreground));
-  color: var(--background);
-}
-.pricing-note {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 18px;
-  color: var(--muted-foreground);
-  background: color-mix(in srgb, var(--muted) 38%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
-  font-size: 12px;
-}
-.pricing-note span, .pricing-note strong {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-.pricing-note strong {
-  color: var(--foreground);
-  font-weight: 800;
-}
-.model-price-table {
-  display: grid;
-}
-.price-row {
-  display: grid;
-  grid-template-columns: minmax(210px, 2fr) repeat(3, minmax(58px, .62fr));
-  gap: 12px;
-  align-items: center;
-  min-height: 62px;
-  padding: 12px 18px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
-}
-.price-row.head {
-  min-height: 38px;
-  background: color-mix(in srgb, var(--muted) 52%, transparent);
+.access-credentials span {
   color: var(--muted-foreground);
   font-size: 11px;
-  font-weight: 820;
-  text-transform: uppercase;
+  font-weight: 840;
 }
-.price-row:last-child { border-bottom: 0; }
-.price-row strong {
+.access-credentials code {
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   color: var(--foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 13px;
   font-weight: 780;
-  overflow-wrap: normal;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
-.price-row span {
+.access-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: color-mix(in srgb, var(--border) 70%, transparent);
+}
+.access-status-grid div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 5px 8px;
+  align-items: center;
+  padding: 14px;
+  background: color-mix(in srgb, var(--surface-raised) 94%, var(--background));
+}
+.access-status-grid strong {
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 840;
+}
+.access-status-grid span {
+  grid-column: 2;
+  min-width: 0;
   color: var(--muted-foreground);
+  font-size: 12px;
+}
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent);
+}
+.status-dot.green { color: var(--green); }
+.status-dot.amber { color: var(--amber); }
+.status-dot.blue { color: #3b82f6; }
+.access-terminal {
+  overflow: hidden;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: #0f1115;
+}
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #151922;
+}
+.terminal-bar span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #64748b;
+}
+.terminal-bar span:nth-child(1) { background: #ef4444; }
+.terminal-bar span:nth-child(2) { background: #f59e0b; }
+.terminal-bar span:nth-child(3) { background: #22c55e; }
+.access-code {
+  margin: 0;
+  padding: 18px;
+  background: #0f1115;
+  color: #e5e7eb;
+  overflow-x: auto;
+  white-space: pre;
+}
+.access-code code {
+  color: #e5e7eb;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
-  text-align: right;
+  line-height: 1.7;
 }
-.price-row em {
-  flex: 0 0 auto;
-  border: 1px solid color-mix(in srgb, var(--foreground) 18%, var(--border));
-  border-radius: 999px;
-  padding: 2px 6px;
-  background: color-mix(in srgb, var(--muted) 54%, transparent);
-  color: var(--muted-foreground);
-  font-family: inherit;
-  font-size: 10px;
-  font-style: normal;
+.terminal-prompt {
+  color: #22c55e;
+  font-weight: 840;
 }
-.provider-dot {
-  display: inline-block;
-  flex: 0 0 auto;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 14%, transparent);
-}
-.provider-dot.openai { color: #10b981; background: currentColor; }
-.provider-dot.claude { color: #f97316; background: currentColor; }
-.provider-dot.gemini { color: #3b82f6; background: currentColor; }
-.provider-dot.custom { color: #a855f7; background: currentColor; }
 .model-pricing-inner {
   display: grid;
   gap: 34px;
   margin-top: clamp(44px, 7vw, 74px);
+}
+.model-group {
+  min-width: 0;
 }
 .model-group-title {
   display: flex;
@@ -1774,29 +1830,6 @@ onUnmounted(() => {
   border-color: color-mix(in srgb, var(--foreground) 24%, var(--border));
   background: color-mix(in srgb, var(--muted) 78%, var(--surface-raised));
   color: var(--foreground);
-}
-.ops-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
-  background: color-mix(in srgb, var(--border) 74%, transparent);
-}
-.ops-strip div {
-  min-height: 82px;
-  display: grid;
-  align-content: center;
-  gap: 6px;
-  padding: 14px;
-  background: color-mix(in srgb, var(--surface-raised) 94%, var(--background));
-}
-.ops-strip strong {
-  color: var(--foreground);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
-}
-.ops-strip span {
-  color: var(--muted-foreground);
-  font-size: 12px;
 }
 
 .tabs {
@@ -2018,6 +2051,9 @@ onUnmounted(() => {
   .console-shell { max-height: min(500px, 50svh); min-height: 0; margin-top: 30px; }
   .gateway-board { max-height: calc(min(500px, 50svh) - 52px); overflow: auto; }
   .gateway-board, .split-layout, .pricing-layout, .cta-layout, .route-demo { grid-template-columns: 1fr; }
+  .api-capabilities-grid { grid-template-columns: 1fr; }
+  .api-capabilities-heading { max-width: 100%; text-align: center; }
+  .api-capabilities-heading p:not(.eyebrow) { margin-inline: auto; }
   .cta-layout { flex-direction: column; align-items: flex-start; }
   .route-demo { padding: 14px; }
   .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2056,19 +2092,24 @@ onUnmounted(() => {
   .feature-icon svg { width: 16px; height: 16px; }
   .feature-card h3 { margin-bottom: 6px; font-size: 14px; }
   .feature-card p { font-size: 12px; line-height: 1.45; }
-  .provider-points div { grid-template-columns: 1fr; gap: 4px; }
-  .showcase-head { align-items: flex-start; flex-direction: column; justify-content: center; padding: 12px 16px; }
-  .pricing-note { align-items: flex-start; flex-direction: column; }
-  .price-row { grid-template-columns: minmax(190px, 1.8fr) repeat(3, minmax(50px, .58fr)); gap: 8px; padding: 12px 14px; }
-  .price-row strong { align-items: flex-start; flex-direction: column; gap: 5px; font-size: 12px; }
-  .price-row span { font-size: 11px; }
+  .api-capabilities-heading { text-align: left; }
+  .capability-item { grid-template-columns: 46px minmax(0, 1fr); gap: 14px; padding: 22px 0; }
+  .capability-index { padding-top: 4px; font-size: 12px; }
+  .capability-item h3 { font-size: 20px; }
+  .capability-item p { font-size: 14px; line-height: 1.65; }
+  .access-panel-head { align-items: flex-start; flex-direction: column; justify-content: center; padding: 12px 16px; }
+  .access-credentials { padding: 12px; gap: 10px; }
+  .access-credentials div { padding: 12px; }
+  .access-status-grid { grid-template-columns: 1fr; }
+  .access-status-grid div { padding: 12px; }
+  .access-code { padding: 12px; }
+  .access-code code { font-size: 11px; line-height: 1.6; }
   .model-pricing-inner { gap: 28px; margin-top: 42px; }
   .model-group-title { align-items: flex-start; flex-wrap: wrap; letter-spacing: .12em; }
   .pricing-table { overflow-x: auto; }
   .pricing-table-row { min-width: 680px; grid-template-columns: minmax(230px, 1.4fr) repeat(3, minmax(82px, .72fr)); padding: 13px 16px; }
   .model-cell strong { font-size: 14px; }
   .pricing-table-row > span { font-size: 13px; }
-  .ops-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
   .section { padding: 64px 12px; }
   .band-light { padding-top: 10px; }
