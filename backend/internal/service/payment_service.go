@@ -60,15 +60,6 @@ func generateOutTradeNo() string {
 	return time.Now().Format("20060102150405") + generateRandomDigits(orderIDRandomDigits)
 }
 
-func generateRandomString(n int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = charset[rand.IntN(len(charset))]
-	}
-	return string(b)
-}
-
 func generateRandomDigits(n int) string {
 	const charset = "0123456789"
 	b := make([]byte, n)

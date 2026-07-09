@@ -703,17 +703,22 @@ const routeExamples: Record<string, string> = {
 }`,
 }
 
+type WindowListener = Parameters<Window['addEventListener']>[1]
+type WindowListenerOptions = Parameters<Window['addEventListener']>[2]
+type ElementListener = Parameters<Element['addEventListener']>[1]
+type ElementListenerOptions = Parameters<Element['addEventListener']>[2]
+
 function toggleHomeTheme() {
   homeTheme.value = homeTheme.value === 'dark' ? 'light' : 'dark'
   localStorage.setItem('usa-zero-theme', homeTheme.value)
 }
 
-function on<K extends keyof WindowEventMap>(target: Window, type: K, listener: (event: WindowEventMap[K]) => void, options?: AddEventListenerOptions) {
-  target.addEventListener(type, listener as EventListener, options)
-  cleanupCallbacks.push(() => target.removeEventListener(type, listener as EventListener, options))
+function on(target: Window, type: string, listener: WindowListener, options?: WindowListenerOptions) {
+  target.addEventListener(type, listener, options)
+  cleanupCallbacks.push(() => target.removeEventListener(type, listener, options))
 }
 
-function onElement(target: Element, type: string, listener: EventListener, options?: AddEventListenerOptions) {
+function onElement(target: Element, type: string, listener: ElementListener, options?: ElementListenerOptions) {
   target.addEventListener(type, listener, options)
   cleanupCallbacks.push(() => target.removeEventListener(type, listener, options))
 }
