@@ -13,8 +13,9 @@
     </button>
 
     <main class="gateway-auth-main">
-      <div class="gateway-auth-stack">
-        <div class="gateway-auth-intro">
+      <div class="gateway-auth-shell">
+        <aside class="gateway-auth-promo">
+          <div class="gateway-auth-intro">
           <router-link to="/home" class="gateway-auth-brand" :aria-label="`${displaySiteName} 首页`">
             <span class="gateway-auth-logo" aria-hidden="true">
               <img src="/home-experiment/logo.png" alt="" />
@@ -22,21 +23,59 @@
             <h1>{{ displaySiteName }}</h1>
           </router-link>
           <p class="gateway-auth-subtitle">统一模型 API 平台</p>
-        </div>
-
-        <section class="gateway-auth-panel">
-          <div class="gateway-auth-body">
-            <slot />
           </div>
-        </section>
 
-        <div class="gateway-auth-meta">
-          <div v-if="$slots.footer" class="gateway-auth-switch">
-            <slot name="footer" />
+          <div class="gateway-auth-pitch">
+            <h2>让每一种智能，都从同一个入口抵达</h2>
+            <p>稳定路由、统一计量和密钥治理，集中在同一个工作台。</p>
           </div>
-          <p class="gateway-auth-copyright">
-            &copy; {{ currentYear }} {{ displaySiteName }}. All rights reserved.
-          </p>
+
+          <ul class="gateway-auth-benefits" aria-label="平台能力">
+            <li>多模型统一接入与故障切换</li>
+            <li>清晰的用量记录与额度管理</li>
+          </ul>
+        </aside>
+
+        <div class="gateway-auth-content">
+          <section class="gateway-auth-panel">
+            <div class="gateway-auth-body">
+              <slot name="heading" />
+
+              <div
+                v-if="showRegister"
+                class="gateway-auth-tabs"
+                :data-mode="visualMode"
+                role="tablist"
+                aria-label="账户入口"
+              >
+                <span class="gateway-auth-tab-indicator" aria-hidden="true"></span>
+                <button
+                  type="button"
+                  role="tab"
+                  :aria-selected="visualMode === 'login'"
+                  @click="switchAuthMode('login')"
+                >
+                  {{ t('auth.signIn') }}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  :aria-selected="visualMode === 'register'"
+                  @click="switchAuthMode('register')"
+                >
+                  {{ t('auth.signUp') }}
+                </button>
+              </div>
+
+              <slot />
+            </div>
+          </section>
+
+          <div class="gateway-auth-meta">
+            <p class="gateway-auth-copyright">
+              &copy; {{ currentYear }} {{ displaySiteName }}. All rights reserved.
+            </p>
+          </div>
         </div>
       </div>
     </main>
@@ -44,22 +83,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
 
 const props = withDefaults(defineProps<{
   siteName?: string
+  showRegister?: boolean
 }>(), {
-  siteName: ''
+  siteName: '',
+  showRegister: true
 })
 
 const appStore = useAppStore()
+const route = useRoute()
+const router = useRouter()
+const { t } = useI18n()
 const displaySiteName = computed(() => props.siteName || appStore.siteName || 'Sub2API')
 const theme = ref<'light' | 'dark'>('light')
+const visualMode = ref<'login' | 'register'>(route.path === '/register' ? 'register' : 'login')
 const codeFlowCanvas = ref<HTMLCanvasElement | null>(null)
 const currentYear = new Date().getFullYear()
 let stopCodeFlow: (() => void) | null = null
+let authModeTimer: number | undefined
 
 function setupTheme(): void {
   const storedTheme = localStorage.getItem('usa-zero-theme')
@@ -75,6 +123,17 @@ function toggleTheme(): void {
   localStorage.setItem('usa-zero-theme', theme.value)
   stopCodeFlow?.()
   stopCodeFlow = startCodeFlow(codeFlowCanvas.value)
+}
+
+function switchAuthMode(mode: 'login' | 'register'): void {
+  const destination = mode === 'register' ? '/register' : '/login'
+  if (route.path === destination || authModeTimer) return
+
+  visualMode.value = mode
+  authModeTimer = window.setTimeout(() => {
+    authModeTimer = undefined
+    void router.push({ path: destination, query: route.query })
+  }, 180)
 }
 
 function startCodeFlow(canvas: HTMLCanvasElement | null): (() => void) | null {
@@ -209,8 +268,16 @@ onMounted(() => {
   }
 })
 
+watch(
+  () => route.path,
+  (path) => {
+    visualMode.value = path === '/register' ? 'register' : 'login'
+  }
+)
+
 onUnmounted(() => {
   stopCodeFlow?.()
+  if (authModeTimer) window.clearTimeout(authModeTimer)
 })
 </script>
 
@@ -293,10 +360,9 @@ onUnmounted(() => {
 .gateway-auth-brand {
   display: inline-flex;
   min-width: 0;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 11px;
   color: inherit;
   text-decoration: none;
 }
@@ -304,7 +370,7 @@ onUnmounted(() => {
 .gateway-auth-brand h1 {
   min-width: 0;
   margin: 0;
-  font-size: 30px;
+  font-size: 27px;
   line-height: 1.15;
   font-weight: 850;
   letter-spacing: 0;
@@ -313,9 +379,9 @@ onUnmounted(() => {
 
 .gateway-auth-logo {
   display: grid;
-  width: 64px;
-  height: 64px;
-  flex: 0 0 64px;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
@@ -347,46 +413,157 @@ onUnmounted(() => {
 
 .gateway-auth-main {
   display: flex;
-  width: min(480px, calc(100% - 36px));
+  width: min(920px, calc(100% - 36px));
   min-height: 100vh;
   align-items: center;
   justify-content: center;
   margin: 0 auto;
-  padding: 54px 0;
+  padding: 40px 0;
 }
 
-.gateway-auth-stack {
+.gateway-auth-shell {
   display: grid;
   width: 100%;
-  gap: 26px;
-}
-
-.gateway-auth-intro {
-  text-align: center;
-}
-
-.gateway-auth-subtitle {
-  margin: 9px auto 0;
-  color: var(--muted-foreground);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.gateway-auth-panel {
-  width: 100%;
+  grid-template-columns: minmax(0, 1.05fr) minmax(390px, 0.95fr);
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
-  border-radius: 8px;
+  border-radius: 16px;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
 }
 
-.gateway-auth-body { padding: 34px 36px 30px; }
+.gateway-auth-promo {
+  display: flex;
+  min-height: 610px;
+  flex-direction: column;
+  padding: 32px 34px;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 72%, transparent);
+}
+
+.gateway-auth-intro {
+  text-align: left;
+}
+
+.gateway-auth-subtitle {
+  margin: 9px 0 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.gateway-auth-pitch {
+  margin-top: 32px;
+}
+
+.gateway-auth-pitch h2 {
+  max-width: 390px;
+  margin: 0;
+  color: var(--foreground);
+  font-size: 34px;
+  line-height: 1.22;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.gateway-auth-pitch > p:last-child {
+  max-width: 380px;
+  margin: 15px 0 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.gateway-auth-benefits {
+  display: grid;
+  gap: 10px;
+  margin: auto 0 0;
+  padding: 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  list-style: none;
+}
+
+.gateway-auth-benefits li {
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--background) 62%, transparent);
+}
+
+.gateway-auth-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  background: color-mix(in srgb, var(--background) 68%, transparent);
+}
+
+.gateway-auth-panel {
+  width: 100%;
+}
+
+.gateway-auth-body { padding: 38px 36px 28px; }
+
+.gateway-auth-tabs {
+  position: relative;
+  display: grid;
+  height: 40px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 22px 0 24px;
+  padding: 3px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 90%, transparent);
+}
+
+.gateway-auth-tab-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 6px;
+  background: var(--background);
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--foreground) 10%, transparent);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gateway-auth-tabs[data-mode="register"] .gateway-auth-tab-indicator {
+  transform: translateX(100%);
+}
+
+.gateway-auth-tabs button {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  transition: color 180ms ease;
+}
+
+.gateway-auth-tabs button[aria-selected="true"] {
+  color: var(--foreground);
+}
+
+.gateway-auth-tabs button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 38%, transparent);
+  outline-offset: -2px;
+}
 
 .gateway-auth-meta {
   display: grid;
-  gap: 22px;
+  gap: 17px;
+  padding: 0 36px 28px;
   text-align: center;
 }
 
@@ -485,18 +662,37 @@ onUnmounted(() => {
   .gateway-auth-main {
     width: min(480px, calc(100% - 24px));
     min-height: 100vh;
-    padding: 48px 0 44px;
+    padding: 44px 0;
   }
+
+  .gateway-auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-auth-promo {
+    min-height: 0;
+    align-items: center;
+    padding: 28px 24px 24px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .gateway-auth-brand { align-items: center; }
+  .gateway-auth-intro { text-align: center; }
+  .gateway-auth-subtitle { margin-inline: auto; }
+  .gateway-auth-pitch,
+  .gateway-auth-benefits { display: none; }
 }
 
 @media (max-width: 520px) {
   .gateway-auth-theme-floating { top: 12px; right: 12px; }
   .gateway-auth-main { width: min(100% - 20px, 480px); padding-top: 64px; }
-  .gateway-auth-stack { gap: 22px; }
-  .gateway-auth-logo { width: 56px; height: 56px; flex-basis: 56px; }
+  .gateway-auth-logo { width: 44px; height: 44px; flex-basis: 44px; }
   .gateway-auth-brand h1 { font-size: 24px; }
   .gateway-auth-subtitle { font-size: 13px; }
   .gateway-auth-body { padding: 26px 20px 24px; }
+  .gateway-auth-tabs { margin: 20px 0 22px; }
+  .gateway-auth-meta { padding: 0 20px 24px; }
   .gateway-auth :deep(.auth-form-heading h2) { font-size: 24px; }
 }
 

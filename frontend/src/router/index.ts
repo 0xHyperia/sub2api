@@ -62,7 +62,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/email-verify',
     name: 'EmailVerify',
-    component: () => import('@/views/auth/EmailVerifyView.vue'),
+    redirect: (to) => ({
+      path: '/register',
+      query: { ...to.query, step: 'verify' }
+    }),
     meta: {
       requiresAuth: false,
       title: 'Verify Email'

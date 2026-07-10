@@ -1,19 +1,20 @@
 <template>
   <GatewayAuthLayout :site-name="siteName">
-    <div class="space-y-6">
-      <!-- Title -->
+    <template #heading>
       <div class="auth-form-heading">
         <h2 id="register-title">
-          {{ t('auth.createAccount') }}
+          {{ verificationMode ? t('auth.verifyYourEmail') : t('auth.createAccount') }}
         </h2>
-        <p>
-          {{ t('auth.signUpToStart', { siteName }) }}
-        </p>
       </div>
+    </template>
 
+    <div class="space-y-6">
+      <EmailVerificationStep v-if="verificationMode" @back="handleVerificationBack" />
+
+      <template v-else>
       <!-- Registration Disabled Message -->
       <div
-        v-if="!registrationEnabled && settingsLoaded"
+        v-if="settingsLoaded && !registrationEnabled"
         class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20"
       >
         <div class="flex items-start gap-3">
@@ -27,7 +28,11 @@
       </div>
 
       <!-- Registration Form -->
-      <form v-else @submit.prevent="handleRegister" class="space-y-5">
+      <form
+        v-else-if="settingsLoaded && registrationEnabled"
+        @submit.prevent="handleRegister"
+        class="space-y-5"
+      >
         <!-- Email Input -->
         <div>
           <label for="email" class="input-label">
@@ -243,7 +248,10 @@
 
       </form>
 
-      <div v-if="showOAuthLogin" class="space-y-3 pt-1">
+      <div
+        v-if="settingsLoaded && registrationEnabled && showOAuthLogin"
+        class="space-y-3 pt-1"
+      >
         <div class="flex items-center gap-3">
           <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
           <span class="text-xs text-gray-500 dark:text-dark-400">
@@ -280,16 +288,9 @@
           :show-divider="false"
         />
       </div>
+      </template>
     </div>
 
-    <template #footer>
-      <p>
-        {{ t('auth.alreadyHaveAccount') }}
-        <router-link to="/login">
-          {{ t('auth.signIn') }}
-        </router-link>
-      </p>
-    </template>
   </GatewayAuthLayout>
 </template>
 
@@ -298,6 +299,7 @@ import { computed, ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import GatewayAuthLayout from '@/components/auth/GatewayAuthLayout.vue'
+import EmailVerificationStep from '@/components/auth/EmailVerificationStep.vue'
 import LinuxDoOAuthSection from '@/components/auth/LinuxDoOAuthSection.vue'
 import OidcOAuthSection from '@/components/auth/OidcOAuthSection.vue'
 import WechatOAuthSection from '@/components/auth/WechatOAuthSection.vue'
@@ -339,17 +341,20 @@ const appStore = useAppStore()
 
 const isLoading = ref<boolean>(false)
 const settingsLoaded = ref<boolean>(false)
+const verificationMode = ref<boolean>(
+  route.query.step === 'verify' && Boolean(sessionStorage.getItem('register_data'))
+)
 const errorMessage = ref<string>('')
 const showPassword = ref<boolean>(false)
 
 // Public settings
-const registrationEnabled = ref<boolean>(true)
+const registrationEnabled = ref<boolean>(false)
 const emailVerifyEnabled = ref<boolean>(false)
 const promoCodeEnabled = ref<boolean>(true)
 const invitationCodeEnabled = ref<boolean>(false)
 const turnstileEnabled = ref<boolean>(false)
 const turnstileSiteKey = ref<string>('')
-const siteName = ref<string>('Sub2API')
+const siteName = ref<string>('')
 const linuxdoOAuthEnabled = ref<boolean>(false)
 const wechatOAuthEnabled = ref<boolean>(false)
 const oidcOAuthEnabled = ref<boolean>(false)
@@ -457,7 +462,7 @@ onMounted(async () => {
     invitationCodeEnabled.value = settings.invitation_code_enabled
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
-    siteName.value = settings.site_name || 'Sub2API'
+    siteName.value = settings.site_name || appStore.siteName || ''
     linuxdoOAuthEnabled.value = settings.linuxdo_oauth_enabled
     wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
     oidcOAuthEnabled.value = settings.oidc_oauth_enabled
@@ -857,7 +862,7 @@ async function handleRegister(): Promise<void> {
       formData.aff_code = affCode
     }
 
-    // If email verification is enabled, redirect to verification page
+    // If email verification is enabled, continue in the inline verification step.
     if (emailVerifyEnabled.value) {
       // Store registration data in sessionStorage
       sessionStorage.setItem(
@@ -872,8 +877,11 @@ async function handleRegister(): Promise<void> {
         })
       )
 
-      // Navigate to email verification page
-      await router.push('/email-verify')
+      verificationMode.value = true
+      await router.replace({
+        path: '/register',
+        query: { ...route.query, step: 'verify' }
+      })
       return
     }
 
@@ -910,6 +918,13 @@ async function handleRegister(): Promise<void> {
   } finally {
     isLoading.value = false
   }
+}
+
+function handleVerificationBack(): void {
+  verificationMode.value = false
+  const query = { ...route.query }
+  delete query.step
+  void router.replace({ path: '/register', query })
 }
 </script>
 

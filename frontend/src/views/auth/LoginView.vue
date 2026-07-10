@@ -1,15 +1,14 @@
 <template>
-  <GatewayAuthLayout>
-    <div class="space-y-6">
-      <!-- Title -->
+  <GatewayAuthLayout :show-register="!backendModeEnabled">
+    <template #heading>
       <div class="auth-form-heading">
         <h2>
           {{ t('auth.welcomeBack') }}
         </h2>
-        <p>
-          {{ t('auth.signInToAccount') }}
-        </p>
       </div>
+    </template>
+
+    <div class="space-y-6">
       <!-- Login Form -->
       <form @submit.prevent="handleLogin" class="space-y-5">
         <!-- Email Input -->
@@ -172,18 +171,6 @@
       </form>
     </div>
 
-    <!-- Footer -->
-    <template v-if="!backendModeEnabled" #footer>
-      <p class="text-gray-500 dark:text-dark-400">
-        {{ t('auth.dontHaveAccount') }}
-        <router-link
-          to="/register"
-          class="font-medium text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
-        >
-          {{ t('auth.signUp') }}
-        </router-link>
-      </p>
-    </template>
   </GatewayAuthLayout>
 
   <!-- 2FA Modal -->

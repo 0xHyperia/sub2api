@@ -1,12 +1,15 @@
 <template>
-  <AuthLayout>
+  <component
+    :is="props.embedded ? 'div' : AuthLayout"
+    :class="{ 'email-verification-step': props.embedded }"
+  >
     <div class="space-y-6">
       <!-- Title -->
       <div class="text-center">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 v-if="!props.embedded" class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ t('auth.verifyYourEmail') }}
         </h2>
-        <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
+        <p class="verification-email-copy mt-2 text-sm text-gray-500 dark:text-dark-400">
           {{ t('auth.sendCodeDesc') }}
           <span class="font-medium text-gray-700 dark:text-gray-300">{{ email }}</span>
         </p>
@@ -15,7 +18,7 @@
       <!-- No Data Warning -->
       <div
         v-if="!hasRegisterData"
-        class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20"
+        class="verification-notice rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20"
       >
         <div class="flex items-start gap-3">
           <div class="flex-shrink-0">
@@ -35,26 +38,37 @@
           <label for="code" class="input-label text-center">
             {{ t('auth.verificationCode') }}
           </label>
-          <input
-            id="code"
-            v-model="verifyCode"
-            type="text"
-            required
-            autocomplete="one-time-code"
-            inputmode="numeric"
-            maxlength="6"
-            :disabled="isLoading"
-            class="input py-3 text-center font-mono text-xl tracking-[0.5em]"
-            :class="{ 'input-error': errors.code }"
-            placeholder="000000"
-          />
+          <div class="verification-code-grid" @paste="handleVerificationPaste">
+            <input
+              v-for="(_, index) in verificationDigits"
+              :id="index === 0 ? 'code' : `code-${index + 1}`"
+              ref="codeInputRefs"
+              :key="index"
+              :value="verificationDigits[index]"
+              type="text"
+              required
+              :autocomplete="index === 0 ? 'one-time-code' : 'off'"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="1"
+              :autofocus="index === 0"
+              :disabled="isLoading"
+              class="verification-code-cell input"
+              :class="{ 'input-error': errors.code }"
+              :aria-label="`${t('auth.verificationCode')} ${index + 1}`"
+              :aria-invalid="Boolean(errors.code)"
+              @input="handleVerificationInput(index, $event)"
+              @keydown="handleVerificationKeydown(index, $event)"
+              @focus="($event.target as HTMLInputElement).select()"
+            />
+          </div>
           <p class="input-hint text-center">{{ t('auth.verificationCodeHint') }}</p>
         </div>
 
         <!-- Code Status -->
         <div
           v-if="codeSent"
-          class="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800/50 dark:bg-green-900/20"
+          class="verification-notice rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800/50 dark:bg-green-900/20"
         >
           <div class="flex items-start gap-3">
             <div class="flex-shrink-0">
@@ -78,7 +92,11 @@
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" :disabled="isLoading || !verifyCode" class="btn btn-primary w-full">
+        <button
+          type="submit"
+          :disabled="isLoading || !verifyCode"
+          class="auth-submit btn btn-primary w-full"
+        >
           <svg
             v-if="isLoading"
             class="-ml-1 mr-2 h-4 w-4 animate-spin text-white"
@@ -133,8 +151,9 @@
     </div>
 
     <!-- Footer -->
-    <template #footer>
+    <template v-if="!props.embedded" #footer>
       <button
+        type="button"
         @click="handleBack"
         class="flex items-center gap-2 text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-gray-300"
       >
@@ -142,11 +161,21 @@
         {{ t('auth.backToRegistration') }}
       </button>
     </template>
-  </AuthLayout>
+
+    <button
+      v-if="props.embedded"
+      type="button"
+      class="email-verification-back"
+      @click="handleBack"
+    >
+      <Icon name="arrowLeft" size="sm" />
+      {{ t('auth.backToRegistration') }}
+    </button>
+  </component>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { AuthLayout } from '@/components/layout'
@@ -175,6 +204,14 @@ import {
 } from '@/utils/oauthAffiliate'
 
 const { t, locale } = useI18n()
+const props = withDefaults(defineProps<{
+  embedded?: boolean
+}>(), {
+  embedded: false
+})
+const emit = defineEmits<{
+  back: []
+}>()
 
 // ==================== Router & Stores ====================
 
@@ -189,6 +226,8 @@ const isSendingCode = ref<boolean>(false)
 const errorMessage = ref<string>('')
 const codeSent = ref<boolean>(false)
 const verifyCode = ref<string>('')
+const verificationDigits = ref<string[]>(Array.from({ length: 6 }, () => ''))
+const codeInputRefs = ref<HTMLInputElement[]>([])
 const countdown = ref<number>(0)
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
@@ -251,6 +290,72 @@ watch(validationToastMessage, (value, previousValue) => {
     appStore.showError(value)
   }
 })
+
+function updateVerificationCode(digits: string[]): void {
+  verificationDigits.value = digits.slice(0, 6)
+  verifyCode.value = verificationDigits.value.join('')
+  if (verifyCode.value) errors.value.code = ''
+}
+
+function focusVerificationCell(index: number): void {
+  const targetIndex = Math.max(0, Math.min(index, verificationDigits.value.length - 1))
+  void nextTick(() => {
+    codeInputRefs.value[targetIndex]?.focus()
+    codeInputRefs.value[targetIndex]?.select()
+  })
+}
+
+function applyVerificationCode(value: string): void {
+  const normalized = value.replace(/\D/g, '').slice(0, 6)
+  const digits = Array.from({ length: 6 }, (_, index) => normalized[index] || '')
+  updateVerificationCode(digits)
+  focusVerificationCell(Math.min(normalized.length, 6) - 1)
+}
+
+function handleVerificationInput(index: number, event: Event): void {
+  const input = event.target as HTMLInputElement
+  const normalized = input.value.replace(/\D/g, '')
+
+  if (normalized.length > 1) {
+    applyVerificationCode(normalized)
+    return
+  }
+
+  const digits = [...verificationDigits.value]
+  digits[index] = normalized.slice(-1)
+  updateVerificationCode(digits)
+
+  if (digits[index] && index < digits.length - 1) {
+    focusVerificationCell(index + 1)
+  }
+}
+
+function handleVerificationKeydown(index: number, event: KeyboardEvent): void {
+  if (event.key === 'Backspace' && !verificationDigits.value[index] && index > 0) {
+    event.preventDefault()
+    const digits = [...verificationDigits.value]
+    digits[index - 1] = ''
+    updateVerificationCode(digits)
+    focusVerificationCell(index - 1)
+    return
+  }
+
+  if (event.key === 'ArrowLeft' && index > 0) {
+    event.preventDefault()
+    focusVerificationCell(index - 1)
+  } else if (event.key === 'ArrowRight' && index < verificationDigits.value.length - 1) {
+    event.preventDefault()
+    focusVerificationCell(index + 1)
+  }
+}
+
+function handleVerificationPaste(event: ClipboardEvent): void {
+  const value = event.clipboardData?.getData('text') || ''
+  if (!/\d/.test(value)) return
+
+  event.preventDefault()
+  applyVerificationCode(value)
+}
 
 // ==================== Lifecycle ====================
 
@@ -570,8 +675,12 @@ function handleBack(): void {
   // Clear session data
   sessionStorage.removeItem('register_data')
 
-  // Go back to registration
-  router.push('/register')
+  if (props.embedded) {
+    emit('back')
+    return
+  }
+
+  void router.push('/register')
 }
 
 function buildEmailSuffixNotAllowedMessage(): string {
@@ -592,6 +701,82 @@ function buildEmailSuffixNotAllowedMessage(): string {
 </script>
 
 <style scoped>
+.email-verification-step {
+  width: 100%;
+}
+
+.email-verification-step .verification-email-copy {
+  margin: 0;
+  color: var(--muted-foreground);
+  line-height: 1.7;
+}
+
+.email-verification-step .verification-email-copy span {
+  display: inline;
+  margin-left: 4px;
+  color: var(--foreground);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.email-verification-step .verification-notice {
+  border-radius: 8px;
+}
+
+.verification-code-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.verification-code-cell.input {
+  width: 100%;
+  min-width: 0;
+  height: 50px;
+  padding: 0;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 20px;
+  font-weight: 750;
+  line-height: 1;
+  text-align: center;
+}
+
+.email-verification-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 20px auto 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.email-verification-back:hover {
+  color: var(--foreground);
+}
+
+.email-verification-back:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 34%, transparent);
+  outline-offset: 4px;
+}
+
+@media (max-width: 520px) {
+  .verification-code-grid {
+    gap: 6px;
+  }
+
+  .verification-code-cell.input {
+    height: 46px;
+    font-size: 18px;
+  }
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: all 0.3s ease;

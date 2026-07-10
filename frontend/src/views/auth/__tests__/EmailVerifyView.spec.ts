@@ -453,4 +453,52 @@ describe('EmailVerifyView', () => {
     expect(apiClientPostMock).not.toHaveBeenCalled()
     expect(pushMock).toHaveBeenCalledWith('/dashboard')
   })
+
+  it('runs as an inline registration step and returns without route navigation', async () => {
+    sessionStorage.setItem(
+      'register_data',
+      JSON.stringify({
+        email: 'inline@example.com',
+        password: 'secret-789',
+      })
+    )
+
+    const wrapper = mount(EmailVerifyView, {
+      props: { embedded: true },
+      global: {
+        stubs: {
+          Icon: true,
+          TurnstileWidget: true,
+          transition: false,
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.email-verification-step').exists()).toBe(true)
+    expect(sendVerifyCodeMock).toHaveBeenCalledWith({
+      email: 'inline@example.com',
+      pending_auth_token: undefined,
+      turnstile_token: undefined,
+    })
+
+    const codeCells = wrapper.findAll('.verification-code-cell')
+    expect(codeCells).toHaveLength(6)
+    await wrapper.get('#code').setValue('123456')
+    await flushPromises()
+    expect(codeCells.map((cell) => (cell.element as HTMLInputElement).value)).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+    ])
+
+    await wrapper.get('.email-verification-back').trigger('click')
+
+    expect(wrapper.emitted('back')).toHaveLength(1)
+    expect(sessionStorage.getItem('register_data')).toBeNull()
+    expect(pushMock).not.toHaveBeenCalledWith('/register')
+  })
 })
