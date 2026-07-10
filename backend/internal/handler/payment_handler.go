@@ -781,7 +781,7 @@ func paymentOrderSnapshotStringSlice(order *dbent.PaymentOrder, key string) []st
 	switch typed := raw.(type) {
 	case []string:
 		out = append(out, typed...)
-	case []interface{}:
+	case []any:
 		for _, item := range typed {
 			if code, ok := item.(string); ok && strings.TrimSpace(code) != "" {
 				out = append(out, strings.TrimSpace(code))
