@@ -327,7 +327,8 @@ const routes: RouteRecordRaw[] = [
       requiresAdmin: false,
       title: 'My Orders',
       titleKey: 'nav.myOrders',
-      requiresPayment: true
+      requiresPayment: true,
+      requiresPaymentOrders: true
     }
   },
   {
@@ -849,6 +850,16 @@ router.beforeEach(async (to, _from, next) => {
     const paymentEnabled = appStore.cachedPublicSettings?.payment_enabled
     if (paymentEnabled === false) {
       next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      return
+    }
+  }
+
+  if (to.meta.requiresPaymentOrders) {
+    const settings = appStore.cachedPublicSettings
+    const paymentOrdersEnabled = settings?.payment_enabled === true
+      && (settings.payment_instant_enabled !== false || settings.payment_card_enabled === true)
+    if (!paymentOrdersEnabled) {
+      next('/purchase?tab=iframe')
       return
     }
   }

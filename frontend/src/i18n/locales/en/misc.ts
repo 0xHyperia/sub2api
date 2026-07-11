@@ -400,6 +400,7 @@ export default {
     tabTopUp: 'Top Up',
     tabSubscribe: 'Subscribe',
     tabCard: 'Redeem Cards',
+    tabIframe: 'Store',
     noPlans: 'No subscription plans available',
     notAvailable: 'Top-up is currently unavailable',
     confirmSubscription: 'Confirm Subscription',

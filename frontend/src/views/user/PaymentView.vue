@@ -218,6 +218,9 @@
           <template v-else-if="activeTab === 'card'">
             <CardPaymentView embedded />
           </template>
+          <template v-else-if="activeTab === 'iframe'">
+            <CardShopEmbedView />
+          </template>
           <div v-else class="card py-16 text-center">
             <p class="text-gray-500 dark:text-gray-400">{{ t('payment.notAvailable') }}</p>
           </div>
@@ -292,6 +295,7 @@ import { platformAccentBarClass, platformBadgeLightClass, platformBadgeClass, pl
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import PaymentStatusPanel from '@/components/payment/PaymentStatusPanel.vue'
 import CardPaymentView from '@/views/user/CardPaymentView.vue'
+import CardShopEmbedView from '@/views/user/CardShopEmbedView.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { DEFAULT_PAYMENT_CURRENCY, formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import type { PaymentMethodOption } from '@/components/payment/PaymentMethodSelector.vue'
@@ -327,7 +331,7 @@ const loading = ref(true)
 const submitting = ref(false)
 const errorMessage = ref('')
 const errorHintMessage = ref('')
-type PurchaseTab = 'recharge' | 'subscription' | 'card'
+type PurchaseTab = 'recharge' | 'subscription' | 'card' | 'iframe'
 
 const activeTab = ref<PurchaseTab>('recharge')
 const amount = ref<number | null>(null)
@@ -518,6 +522,9 @@ const tabs = computed(() => {
   if (checkout.value.card_enabled === true) {
     result.push({ key: 'card', label: t('payment.tabCard') })
   }
+  if (appStore.cachedPublicSettings?.purchase_subscription_enabled === true) {
+    result.push({ key: 'iframe', label: t('payment.tabIframe') })
+  }
   return result
 })
 
@@ -529,7 +536,7 @@ const showInstantHelp = computed(() =>
 )
 
 const pageContainerClass = computed(() => {
-  const wideCardSelect = paymentPhase.value === 'select' && activeTab.value === 'card' && !selectedPlan.value
+  const wideCardSelect = paymentPhase.value === 'select' && (activeTab.value === 'card' || activeTab.value === 'iframe') && !selectedPlan.value
   return [
     'mx-auto space-y-6',
     wideCardSelect ? 'max-w-[1500px]' : 'max-w-4xl',
@@ -1187,6 +1194,8 @@ onMounted(async () => {
       }
     } else if (route.query.tab === 'card') {
       ensureVisiblePurchaseTab('card')
+    } else if (route.query.tab === 'iframe') {
+      ensureVisiblePurchaseTab('iframe')
     }
   } catch (err: unknown) { appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error'))) }
   finally { loading.value = false }

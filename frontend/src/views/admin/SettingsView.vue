@@ -6365,6 +6365,23 @@
                     </div>
                     <Toggle v-model="form.payment_card_enabled" />
                   </div>
+                  <div class="flex items-start justify-between rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                    <div class="pr-4">
+                      <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.iframeEnabled") }}</label>
+                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.iframeEnabledHint") }}</p>
+                    </div>
+                    <Toggle v-model="form.purchase_subscription_enabled" />
+                  </div>
+                </div>
+                <div v-if="form.purchase_subscription_enabled">
+                  <label class="input-label">{{ t("admin.settings.payment.iframeUrl") }}</label>
+                  <input
+                    v-model="form.purchase_subscription_url"
+                    type="url"
+                    class="input"
+                    placeholder="https://pay.ldxp.cn/shop/FWW9YE0U"
+                  />
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.iframeUrlHint") }}</p>
                 </div>
                 <!-- Row 1: Product name -->
                 <div class="grid grid-cols-3 gap-3">
@@ -8078,6 +8095,8 @@ const form = reactive<SettingsForm>({
   payment_enabled: false,
   payment_instant_enabled: true,
   payment_card_enabled: false,
+  purchase_subscription_enabled: false,
+  purchase_subscription_url: "",
   risk_control_enabled: false,
   cyber_session_block_enabled: false,
   cyber_session_block_ttl_seconds: 3600,
@@ -9579,6 +9598,8 @@ async function saveSettings() {
       payment_enabled: form.payment_enabled,
       payment_instant_enabled: form.payment_instant_enabled,
       payment_card_enabled: form.payment_card_enabled,
+      purchase_subscription_enabled: form.purchase_subscription_enabled,
+      purchase_subscription_url: form.purchase_subscription_url.trim(),
       risk_control_enabled: form.risk_control_enabled,
       cyber_session_block_enabled: form.cyber_session_block_enabled,
       cyber_session_block_ttl_seconds:

@@ -425,6 +425,7 @@ export default {
     tabTopUp: '充值',
     tabSubscribe: '订阅',
     tabCard: '兑换卡购买',
+    tabIframe: '店铺购买',
     noPlans: '暂无可用订阅套餐',
     notAvailable: '充值功能暂未开放',
     confirmSubscription: '确认订阅',
