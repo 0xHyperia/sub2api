@@ -352,6 +352,45 @@ var (
 			},
 		},
 	}
+	// AppAuthorizationsColumns holds the columns for the "app_authorizations" table.
+	AppAuthorizationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "grant_id", Type: field.TypeString, Unique: true, Size: 64},
+		{Name: "client_id", Type: field.TypeString, Size: 64},
+		{Name: "device_name", Type: field.TypeString, Size: 200, Default: ""},
+		{Name: "platform", Type: field.TypeString, Size: 40, Default: ""},
+		{Name: "scopes", Type: field.TypeJSON, SchemaType: map[string]string{"postgres": "jsonb"}},
+		{Name: "token_family_id", Type: field.TypeString, Unique: true, Size: 64},
+		{Name: "status", Type: field.TypeString, Size: 20, Default: "active"},
+		{Name: "last_used_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// AppAuthorizationsTable holds the schema information for the "app_authorizations" table.
+	AppAuthorizationsTable = &schema.Table{
+		Name:       "app_authorizations",
+		Columns:    AppAuthorizationsColumns,
+		PrimaryKey: []*schema.Column{AppAuthorizationsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "appauthorization_user_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{AppAuthorizationsColumns[3], AppAuthorizationsColumns[10]},
+			},
+			{
+				Name:    "appauthorization_client_id",
+				Unique:  false,
+				Columns: []*schema.Column{AppAuthorizationsColumns[5]},
+			},
+			{
+				Name:    "appauthorization_token_family_id",
+				Unique:  false,
+				Columns: []*schema.Column{AppAuthorizationsColumns[9]},
+			},
+		},
+	}
 	// AuthIdentitiesColumns holds the columns for the "auth_identities" table.
 	AuthIdentitiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1983,6 +2022,7 @@ var (
 		AccountGroupsTable,
 		AnnouncementsTable,
 		AnnouncementReadsTable,
+		AppAuthorizationsTable,
 		AuthIdentitiesTable,
 		AuthIdentityChannelsTable,
 		BatchImageEventsTable,
@@ -2042,6 +2082,9 @@ func init() {
 	AnnouncementReadsTable.ForeignKeys[1].RefTable = UsersTable
 	AnnouncementReadsTable.Annotation = &entsql.Annotation{
 		Table: "announcement_reads",
+	}
+	AppAuthorizationsTable.Annotation = &entsql.Annotation{
+		Table: "app_authorizations",
 	}
 	AuthIdentitiesTable.ForeignKeys[0].RefTable = UsersTable
 	AuthIdentitiesTable.Annotation = &entsql.Annotation{

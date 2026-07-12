@@ -58,10 +58,17 @@ func TestEnsureBootstrapSecretsGenerateAndPersistJWTSecret(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, cfg.JWT.Secret)
 	require.GreaterOrEqual(t, len([]byte(cfg.JWT.Secret)), 32)
+	require.NotEmpty(t, cfg.AppAuth.SigningSecret)
+	require.GreaterOrEqual(t, len([]byte(cfg.AppAuth.SigningSecret)), 32)
+	require.NotEqual(t, cfg.JWT.Secret, cfg.AppAuth.SigningSecret)
 
 	stored, err := client.SecuritySecret.Query().Where(securitysecret.KeyEQ(securitySecretKeyJWT)).Only(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, cfg.JWT.Secret, stored.Value)
+
+	appStored, err := client.SecuritySecret.Query().Where(securitysecret.KeyEQ(securitySecretKeyAppAuth)).Only(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, cfg.AppAuth.SigningSecret, appStored.Value)
 }
 
 func TestEnsureBootstrapSecretsLoadExistingJWTSecret(t *testing.T) {

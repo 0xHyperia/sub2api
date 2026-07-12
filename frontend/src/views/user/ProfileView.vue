@@ -57,6 +57,8 @@
         />
 
         <ProfileTotpCard />
+
+        <ProfileAuthorizedAppsCard />
       </section>
     </div>
   </AppLayout>
@@ -71,6 +73,7 @@ import ProfileBalanceNotifyCard from '@/components/user/profile/ProfileBalanceNo
 import ProfileInfoCard from '@/components/user/profile/ProfileInfoCard.vue'
 import ProfilePasswordForm from '@/components/user/profile/ProfilePasswordForm.vue'
 import ProfileTotpCard from '@/components/user/profile/ProfileTotpCard.vue'
+import ProfileAuthorizedAppsCard from '@/components/user/profile/ProfileAuthorizedAppsCard.vue'
 import { isWeChatWebOAuthEnabled } from '@/api/auth'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'

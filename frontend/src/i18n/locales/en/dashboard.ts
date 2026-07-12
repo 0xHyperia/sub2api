@@ -583,6 +583,32 @@ export default {
     pleaseEnterCode: 'Please enter a redeem code'
   },
 
+  appAuthorization: {
+    pageTitle: 'Authorize application',
+    title: 'Connect an application',
+    requestDescription: '{app} is requesting access to your SUB2API account.',
+    device: 'Device',
+    platform: 'Platform',
+    unknownDevice: 'Unknown device',
+    unknownPlatform: 'Unknown platform',
+    permissionsTitle: 'Permissions requested',
+    allow: 'Allow access',
+    deny: 'Deny',
+    invalidRequest: 'This authorization request is invalid',
+    missingParameters: 'Required OAuth parameters are missing.',
+    loadFailed: 'Failed to load the authorization request.',
+    decisionFailed: 'Failed to complete authorization.',
+    scopes: {
+      openid: 'Identify your SUB2API account',
+      profile_read: 'View your profile',
+      groups_read: 'View available groups',
+      keys_read: 'View your API keys',
+      keys_write: 'Create API keys',
+      subscriptions_read: 'View your subscriptions',
+      offline_access: 'Stay connected when the application is closed'
+    }
+  },
+
   // Profile
   profile: {
     title: 'Profile Settings',
@@ -710,6 +736,22 @@ export default {
       compressFailed: 'Failed to compress the selected image.',
       readFailed: 'Failed to read the selected image.',
       emptyDeleteHint: 'Avatar is already empty',
+    },
+    authorizedApps: {
+      title: 'Authorized applications',
+      description: 'Review devices that can access your account and revoke access at any time.',
+      empty: 'No applications are currently authorized.',
+      unknownDevice: 'Unknown device',
+      unknownPlatform: 'Unknown platform',
+      authorizedAt: 'Authorized {date}',
+      lastUsedAt: 'Last used {date}',
+      revoke: 'Revoke access',
+      revokeTitle: 'Revoke application access',
+      revokeMessage: 'Revoke access for {device}? The application will need to be authorized again.',
+      revokeSuccess: 'Application access revoked',
+      revokeFailed: 'Failed to revoke application access',
+      loadFailed: 'Failed to load authorized applications',
+      retry: 'Retry'
     },
     authBindings: {
       title: 'Connected Sign-In Methods',

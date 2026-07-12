@@ -1,0 +1,19 @@
+root = "."
+tmp_dir = "tmp"
+env_files = ["dev.env"]
+
+[build]
+cmd = "go build -o ./tmp/sub2api.exe ./cmd/server"
+entrypoint = ["tmp\\sub2api.exe"]
+bin = "tmp\\sub2api.exe"
+delay = 1000
+include_ext = ["go"]
+exclude_dir = ["tmp", "vendor", "testdata", "internal/web/dist"]
+exclude_regex = ["_test.go"]
+stop_on_error = true
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = false
