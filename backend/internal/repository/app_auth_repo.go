@@ -53,7 +53,7 @@ func (r *appAuthorizationRepository) ListByUserID(ctx context.Context, userID in
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make([]*service.AppAuthorization, 0)
 	for rows.Next() {

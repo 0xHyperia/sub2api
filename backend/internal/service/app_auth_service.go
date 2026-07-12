@@ -313,7 +313,6 @@ func (s *AppAuthService) Refresh(ctx context.Context, clientID, refreshToken str
 
 func (s *AppAuthService) issueTokenPair(ctx context.Context, userID int64, clientID string, scopes []string, grantID, familyID string, rotating bool, oldRefreshToken string) (*AppTokenResponse, error) {
 	var nextRefreshToken string
-	var nextRecord *AppRefreshTokenRecord
 	if rotating || containsScope(scopes, "offline_access") {
 		var err error
 		nextRefreshToken, err = appAuthRandomOpaqueToken(48)
@@ -344,7 +343,6 @@ func (s *AppAuthService) issueTokenPair(ctx context.Context, userID int64, clien
 			return nil, oauthError("invalid_grant", "refresh token client mismatch")
 		}
 		userID, scopes, grantID, familyID = oldRecord.UserID, oldRecord.Scopes, oldRecord.GrantID, oldRecord.FamilyID
-		nextRecord = oldRecord
 	}
 	authorization, err := s.repository.GetByGrantID(ctx, grantID)
 	if errors.Is(err, ErrAppAuthorizationNotFound) || (err == nil && authorization.Status != "active") {
@@ -372,7 +370,7 @@ func (s *AppAuthService) issueTokenPair(ctx context.Context, userID int64, clien
 		return nil, err
 	}
 	if !rotating && nextRefreshToken != "" {
-		nextRecord = &AppRefreshTokenRecord{UserID: userID, ClientID: clientID, Scopes: scopes, GrantID: grantID, FamilyID: familyID}
+		nextRecord := &AppRefreshTokenRecord{UserID: userID, ClientID: clientID, Scopes: scopes, GrantID: grantID, FamilyID: familyID}
 		if err := s.cache.PutRefreshToken(ctx, hashOpaqueToken(nextRefreshToken), nextRecord, AppRefreshTokenTTL); err != nil {
 			return nil, err
 		}
@@ -541,7 +539,11 @@ func validPKCEValue(value string) bool {
 		return false
 	}
 	for _, r := range value {
-		if !(r >= 'a' && r <= 'z') && !(r >= 'A' && r <= 'Z') && !(r >= '0' && r <= '9') && !strings.ContainsRune("-._~", r) {
+		allowed := (r >= 'a' && r <= 'z') ||
+			(r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') ||
+			strings.ContainsRune("-._~", r)
+		if !allowed {
 			return false
 		}
 	}
