@@ -22,10 +22,11 @@ const (
 	AppAuthIssuer           = "https://usa0.top"
 	AppAuthAudience         = "sub2api-app-api"
 	AppAuthTokenUse         = "app"
-	AuthorizationRequestTTL = 10 * time.Minute
+	AuthorizationRequestTTL = 5 * time.Minute
 	AuthorizationCodeTTL    = time.Minute
 	AppAccessTokenTTL       = 10 * time.Minute
 	AppRefreshTokenTTL      = 30 * 24 * time.Hour
+	MaxAppAuthStateLength   = 1024
 )
 
 var (
@@ -53,15 +54,11 @@ func oauthError(code, description string) error {
 }
 
 type AppPublicClient struct {
-	ID       string
-	Platform string
-	Name     string
-}
-
-var appPublicClients = map[string]AppPublicClient{
-	"zerobox-desktop": {ID: "zerobox-desktop", Platform: "desktop", Name: "ZeroBox"},
-	"zerobox-android": {ID: "zerobox-android", Platform: "android", Name: "ZeroBox"},
-	"zerobox-ios":     {ID: "zerobox-ios", Platform: "ios", Name: "ZeroBox"},
+	ID               string
+	Platform         string
+	Name             string
+	AllowedScopes    map[string]struct{}
+	ValidateRedirect func(string) bool
 }
 
 var appAllowedScopes = map[string]struct{}{
@@ -74,6 +71,21 @@ var appAllowedScopes = map[string]struct{}{
 	"keys:write":         {},
 	"subscriptions:read": {},
 	"offline_access":     {},
+}
+
+var appPublicClients = map[string]AppPublicClient{
+	"zerobox-desktop": {
+		ID: "zerobox-desktop", Platform: "desktop", Name: "ZeroBox",
+		AllowedScopes: appAllowedScopes, ValidateRedirect: validateZeroBoxLoopbackRedirect,
+	},
+	"zerobox-android": {
+		ID: "zerobox-android", Platform: "android", Name: "ZeroBox",
+		AllowedScopes: appAllowedScopes, ValidateRedirect: exactRedirect("zerobox://oauth/callback"),
+	},
+	"zerobox-ios": {
+		ID: "zerobox-ios", Platform: "ios", Name: "ZeroBox",
+		AllowedScopes: appAllowedScopes, ValidateRedirect: exactRedirect("zerobox://oauth/callback"),
+	},
 }
 
 func AppPublicClientByID(clientID string) (AppPublicClient, bool) {
@@ -181,25 +193,28 @@ func NewAppAuthService(repository AppAuthorizationRepository, cache AppAuthCache
 }
 
 func (s *AppAuthService) CreateAuthorizationRequest(ctx context.Context, input AuthorizationRequestInput) (*AuthorizationRequest, error) {
+	if input.ResponseType != "code" {
+		return nil, oauthError("unsupported_response_type", "response_type must be code")
+	}
 	client, ok := AppPublicClientByID(input.ClientID)
 	if !ok {
 		return nil, oauthError("invalid_client", "unknown public client")
 	}
-	if input.ResponseType != "code" {
-		return nil, oauthError("unsupported_response_type", "response_type must be code")
+	if err := validateRedirectURI(client, input.RedirectURI); err != nil {
+		return nil, err
 	}
 	if input.CodeChallengeMethod != "S256" || !validPKCEChallenge(input.CodeChallenge) {
 		return nil, oauthError("invalid_request", "S256 PKCE is required")
 	}
+	scopes, err := normalizeScopes(client, input.Scope)
+	if err != nil {
+		return nil, err
+	}
 	if input.State == "" {
 		return nil, oauthError("invalid_request", "state is required")
 	}
-	if err := validateRedirectURI(client, input.RedirectURI); err != nil {
-		return nil, err
-	}
-	scopes, err := normalizeScopes(input.Scope)
-	if err != nil {
-		return nil, err
+	if len(input.State) > MaxAppAuthStateLength {
+		return nil, oauthError("invalid_request", "state is too long")
 	}
 	requestID, err := appAuthRandomOpaqueToken(32)
 	if err != nil {
@@ -285,8 +300,12 @@ type AppTokenResponse struct {
 }
 
 func (s *AppAuthService) ExchangeAuthorizationCode(ctx context.Context, clientID, code, redirectURI, verifier string) (*AppTokenResponse, error) {
-	if _, ok := AppPublicClientByID(clientID); !ok {
+	client, ok := AppPublicClientByID(clientID)
+	if !ok {
 		return nil, oauthError("invalid_client", "unknown public client")
+	}
+	if err := validateRedirectURI(client, redirectURI); err != nil {
+		return nil, err
 	}
 	entry, err := s.cache.ConsumeAuthorizationCode(ctx, hashOpaqueToken(code))
 	if errors.Is(err, ErrAppAuthCacheMiss) {
@@ -380,10 +399,10 @@ func (s *AppAuthService) issueTokenPair(ctx context.Context, userID int64, clien
 }
 
 type AppAccessClaims struct {
-	TokenUse string `json:"token_use"`
-	ClientID string `json:"client_id"`
-	GrantID  string `json:"grant_id"`
-	Scope    string `json:"scope"`
+	TokenUse string   `json:"token_use"`
+	ClientID string   `json:"client_id"`
+	GrantID  string   `json:"grant_id"`
+	Scope    []string `json:"scope"`
 	jwt.RegisteredClaims
 }
 
@@ -394,7 +413,7 @@ func (s *AppAuthService) signAccessToken(userID int64, clientID, grantID string,
 		return "", err
 	}
 	claims := AppAccessClaims{
-		TokenUse: AppAuthTokenUse, ClientID: clientID, GrantID: grantID, Scope: strings.Join(scopes, " "),
+		TokenUse: AppAuthTokenUse, ClientID: clientID, GrantID: grantID, Scope: append([]string(nil), scopes...),
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer: AppAuthIssuer, Subject: strconv.FormatInt(userID, 10), Audience: jwt.ClaimStrings{AppAuthAudience}, ID: jti,
 			IssuedAt: jwt.NewNumericDate(now), NotBefore: jwt.NewNumericDate(now), ExpiresAt: jwt.NewNumericDate(now.Add(AppAccessTokenTTL)),
@@ -411,7 +430,8 @@ func (s *AppAuthService) ValidateAccessToken(ctx context.Context, raw string) (*
 	if err != nil || subjectErr != nil || userID <= 0 || !token.Valid || claims.TokenUse != AppAuthTokenUse || claims.ClientID == "" || claims.GrantID == "" || claims.ID == "" {
 		return nil, oauthError("invalid_token", "invalid app access token")
 	}
-	if _, ok := AppPublicClientByID(claims.ClientID); !ok {
+	client, ok := AppPublicClientByID(claims.ClientID)
+	if !ok {
 		return nil, oauthError("invalid_token", "unknown app client")
 	}
 	if revoked, err := s.cache.IsGrantRevoked(ctx, claims.GrantID); err != nil {
@@ -426,7 +446,7 @@ func (s *AppAuthService) ValidateAccessToken(ctx context.Context, raw string) (*
 	if err != nil {
 		return nil, fmt.Errorf("load device authorization: %w", err)
 	}
-	claimScopes, err := normalizeScopes(claims.Scope)
+	claimScopes, err := normalizeScopeValues(client, claims.Scope)
 	if err != nil || !sameScopes(claimScopes, authorization.Scopes) {
 		return nil, oauthError("invalid_token", "token scopes do not match the device authorization")
 	}
@@ -491,10 +511,14 @@ func (s *AppAuthService) parseAccessTokenWithoutGrantLookup(raw string) (*AppAcc
 	return claims, nil
 }
 
-func normalizeScopes(raw string) ([]string, error) {
+func normalizeScopes(client AppPublicClient, raw string) ([]string, error) {
+	return normalizeScopeValues(client, strings.Fields(raw))
+}
+
+func normalizeScopeValues(client AppPublicClient, values []string) ([]string, error) {
 	seen := make(map[string]struct{})
-	for _, scope := range strings.Fields(raw) {
-		if _, ok := appAllowedScopes[scope]; !ok {
+	for _, scope := range values {
+		if _, ok := client.AllowedScopes[scope]; !ok {
 			return nil, oauthError("invalid_scope", "unsupported scope: "+scope)
 		}
 		seen[scope] = struct{}{}
@@ -511,27 +535,26 @@ func normalizeScopes(raw string) ([]string, error) {
 }
 
 func validateRedirectURI(client AppPublicClient, raw string) error {
-	u, err := url.Parse(raw)
-	if err != nil || u.Fragment != "" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Opaque != "" {
-		return oauthError("invalid_request", "invalid redirect_uri")
-	}
-	switch client.Platform {
-	case "desktop":
-		if u.Scheme != "http" || u.Hostname() != "127.0.0.1" || u.Path != "/oauth/callback" || u.RawPath != "" {
-			return oauthError("invalid_request", "redirect_uri is not registered")
-		}
-		port, err := strconv.Atoi(u.Port())
-		if err != nil || port < 1 || port > 65535 || net.ParseIP(u.Hostname()) == nil {
-			return oauthError("invalid_request", "desktop redirect_uri requires a valid loopback port")
-		}
-	case "android", "ios":
-		if raw != "https://usa0.top/app/zerobox/callback" {
-			return oauthError("invalid_request", "redirect_uri is not registered")
-		}
-	default:
-		return oauthError("invalid_client", "unknown client platform")
+	if client.ValidateRedirect == nil || !client.ValidateRedirect(raw) {
+		return oauthError("invalid_request", "redirect_uri is not registered for this client")
 	}
 	return nil
+}
+
+func exactRedirect(registered string) func(string) bool {
+	return func(raw string) bool { return raw == registered }
+}
+
+func validateZeroBoxLoopbackRedirect(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Fragment != "" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Opaque != "" {
+		return false
+	}
+	if u.Scheme != "http" || u.Hostname() != "127.0.0.1" || u.Path != "/oauth/callback" || u.RawPath != "" {
+		return false
+	}
+	port, err := strconv.Atoi(u.Port())
+	return err == nil && port >= 1 && port <= 65535 && net.ParseIP(u.Hostname()) != nil
 }
 
 func validPKCEValue(value string) bool {

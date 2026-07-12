@@ -58,7 +58,7 @@ func NewAppJWTAuthMiddleware(appAuthService *service.AppAuthService, userService
 		}
 
 		scopes := make(map[string]struct{})
-		for _, scope := range strings.Fields(claims.Scope) {
+		for _, scope := range claims.Scope {
 			scopes[scope] = struct{}{}
 		}
 		c.Set(contextKeyAppAuth, AppAuthSubject{

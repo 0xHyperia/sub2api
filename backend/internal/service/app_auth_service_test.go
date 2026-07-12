@@ -121,6 +121,63 @@ func TestCreateAuthorizationRequestValidatesRedirectAndScopes(t *testing.T) {
 	require.Equal(t, "invalid_request", oauthErr.Code)
 }
 
+func TestCreateAuthorizationRequestAcceptsExactMobileRedirects(t *testing.T) {
+	verifier := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
+	sum := sha256.Sum256([]byte(verifier))
+	challenge := base64.RawURLEncoding.EncodeToString(sum[:])
+
+	for _, clientID := range []string{"zerobox-android", "zerobox-ios"} {
+		t.Run(clientID, func(t *testing.T) {
+			svc := NewAppAuthService(&appAuthRepoStub{}, &appAuthCacheStub{}, "website-secret")
+			request, err := svc.CreateAuthorizationRequest(context.Background(), AuthorizationRequestInput{
+				ResponseType: "code", ClientID: clientID, RedirectURI: "zerobox://oauth/callback",
+				Scope: "profile:read", State: "state", CodeChallenge: challenge, CodeChallengeMethod: "S256",
+			})
+			require.NoError(t, err)
+			require.Equal(t, "zerobox://oauth/callback", request.RedirectURI)
+		})
+	}
+}
+
+func TestCreateAuthorizationRequestRejectsMobileRedirectVariants(t *testing.T) {
+	verifier := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
+	sum := sha256.Sum256([]byte(verifier))
+	challenge := base64.RawURLEncoding.EncodeToString(sum[:])
+	redirects := []string{
+		"https://usa0.top/app/zerobox/callback",
+		"zerobox://oauth/callback/",
+		"zerobox://oauth/callback?next=allowed",
+		"ZeroBox://oauth/callback",
+	}
+
+	for _, redirectURI := range redirects {
+		t.Run(redirectURI, func(t *testing.T) {
+			svc := NewAppAuthService(&appAuthRepoStub{}, &appAuthCacheStub{}, "website-secret")
+			_, err := svc.CreateAuthorizationRequest(context.Background(), AuthorizationRequestInput{
+				ResponseType: "code", ClientID: "zerobox-android", RedirectURI: redirectURI,
+				Scope: "profile:read", State: "state", CodeChallenge: challenge, CodeChallengeMethod: "S256",
+			})
+			var oauthErr *OAuthError
+			require.ErrorAs(t, err, &oauthErr)
+			require.Equal(t, "invalid_request", oauthErr.Code)
+		})
+	}
+}
+
+func TestCreateAuthorizationRequestRejectsOversizedState(t *testing.T) {
+	verifier := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
+	sum := sha256.Sum256([]byte(verifier))
+	svc := NewAppAuthService(&appAuthRepoStub{}, &appAuthCacheStub{}, "website-secret")
+	_, err := svc.CreateAuthorizationRequest(context.Background(), AuthorizationRequestInput{
+		ResponseType: "code", ClientID: "zerobox-android", RedirectURI: "zerobox://oauth/callback",
+		Scope: "profile:read", State: string(make([]byte, MaxAppAuthStateLength+1)),
+		CodeChallenge: base64.RawURLEncoding.EncodeToString(sum[:]), CodeChallengeMethod: "S256",
+	})
+	var oauthErr *OAuthError
+	require.ErrorAs(t, err, &oauthErr)
+	require.Equal(t, "invalid_request", oauthErr.Code)
+}
+
 func TestAuthorizationCodePKCEAndSingleUse(t *testing.T) {
 	repo := &appAuthRepoStub{active: true}
 	cache := &appAuthCacheStub{}
@@ -134,8 +191,25 @@ func TestAuthorizationCodePKCEAndSingleUse(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, response.AccessToken)
 	require.Empty(t, response.RefreshToken)
+	claims, err := svc.ValidateAccessToken(context.Background(), response.AccessToken)
+	require.NoError(t, err)
+	require.Equal(t, []string{"profile:read"}, claims.Scope)
 	_, err = svc.ExchangeAuthorizationCode(context.Background(), "zerobox-desktop", "code", "http://127.0.0.1:43123/oauth/callback", verifier)
 	require.Error(t, err)
+}
+
+func TestAuthorizationCodeExchangeRevalidatesMobileRedirect(t *testing.T) {
+	cache := &appAuthCacheStub{code: &AuthorizationCode{
+		UserID: 9, ClientID: "zerobox-android", RedirectURI: "zerobox://oauth/callback",
+		Scopes: []string{"profile:read"}, GrantID: "grant", FamilyID: "family",
+	}}
+	svc := NewAppAuthService(&appAuthRepoStub{}, cache, "website-secret")
+
+	_, err := svc.ExchangeAuthorizationCode(context.Background(), "zerobox-android", "code", "https://usa0.top/app/zerobox/callback", "verifier")
+	var oauthErr *OAuthError
+	require.ErrorAs(t, err, &oauthErr)
+	require.Equal(t, "invalid_request", oauthErr.Code)
+	require.NotNil(t, cache.code, "an unregistered redirect must be rejected before the code is consumed")
 }
 
 func TestAppRefreshRotationAndReuseRevokesGrant(t *testing.T) {
