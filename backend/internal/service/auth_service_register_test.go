@@ -10,6 +10,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -505,6 +506,44 @@ func TestAuthService_ValidateToken_ExpiredReturnsClaimsWithError(t *testing.T) {
 	require.NotNil(t, claims, "claims should not be nil when token is expired")
 	require.Equal(t, int64(1), claims.UserID)
 	require.Equal(t, "test@test.com", claims.Email)
+}
+
+func TestAuthService_ValidateToken_RejectsAppTokenUse(t *testing.T) {
+	service := newAuthService(&userRepoStub{}, nil, nil, nil)
+	now := time.Now()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &JWTClaims{
+		UserID:   1,
+		TokenUse: "app",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute)),
+			IssuedAt:  jwt.NewNumericDate(now),
+		},
+	})
+	signed, err := token.SignedString([]byte(service.cfg.JWT.Secret))
+	require.NoError(t, err)
+
+	claims, err := service.ValidateToken(signed)
+	require.ErrorIs(t, err, ErrInvalidToken)
+	require.Nil(t, claims)
+}
+
+func TestAuthService_RefreshToken_RejectsExpiredNonWebTokenUse(t *testing.T) {
+	user := &User{ID: 1, Email: "test@test.com", Role: RoleUser, Status: StatusActive, TokenVersion: 1}
+	service := newAuthService(&userRepoStub{user: user}, nil, nil, nil)
+	now := time.Now()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &JWTClaims{
+		UserID: user.ID, TokenUse: "app", TokenVersion: resolvedTokenVersion(user),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(-time.Minute)),
+			IssuedAt:  jwt.NewNumericDate(now.Add(-2 * time.Minute)),
+		},
+	})
+	signed, err := token.SignedString([]byte(service.cfg.JWT.Secret))
+	require.NoError(t, err)
+
+	refreshed, err := service.RefreshToken(context.Background(), signed)
+	require.ErrorIs(t, err, ErrInvalidToken)
+	require.Empty(t, refreshed)
 }
 
 func TestAuthService_RefreshToken_ExpiredTokenNoPanic(t *testing.T) {

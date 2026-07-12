@@ -69,6 +69,7 @@ type Config struct {
 	Redis                   RedisConfig                   `mapstructure:"redis"`
 	Ops                     OpsConfig                     `mapstructure:"ops"`
 	JWT                     JWTConfig                     `mapstructure:"jwt"`
+	AppAuth                 AppAuthConfig                 `mapstructure:"app_auth"`
 	Totp                    TotpConfig                    `mapstructure:"totp"`
 	LinuxDo                 LinuxDoConnectConfig          `mapstructure:"linuxdo_connect"`
 	WeChat                  WeChatConnectConfig           `mapstructure:"wechat_connect"`
@@ -1304,6 +1305,10 @@ type JWTConfig struct {
 	RefreshWindowMinutes int `mapstructure:"refresh_window_minutes"`
 }
 
+type AppAuthConfig struct {
+	SigningSecret string `mapstructure:"signing_secret"`
+}
+
 // TotpConfig TOTP 双因素认证配置
 type TotpConfig struct {
 	// EncryptionKey 用于加密 TOTP 密钥的 AES-256 密钥（32 字节 hex 编码）
@@ -1485,6 +1490,7 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	}
 	cfg.Server.FrontendURL = strings.TrimSpace(cfg.Server.FrontendURL)
 	cfg.JWT.Secret = strings.TrimSpace(cfg.JWT.Secret)
+	cfg.AppAuth.SigningSecret = strings.TrimSpace(cfg.AppAuth.SigningSecret)
 	cfg.LinuxDo.ClientID = strings.TrimSpace(cfg.LinuxDo.ClientID)
 	cfg.LinuxDo.ClientSecret = strings.TrimSpace(cfg.LinuxDo.ClientSecret)
 	cfg.LinuxDo.AuthorizeURL = strings.TrimSpace(cfg.LinuxDo.AuthorizeURL)
@@ -1568,9 +1574,13 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	}
 
 	originalJWTSecret := cfg.JWT.Secret
+	originalAppAuthSecret := cfg.AppAuth.SigningSecret
 	if allowMissingJWTSecret && originalJWTSecret == "" {
 		// 启动阶段允许先无 JWT 密钥，后续在数据库初始化后补齐。
 		cfg.JWT.Secret = strings.Repeat("0", 32)
+	}
+	if allowMissingJWTSecret && originalAppAuthSecret == "" {
+		cfg.AppAuth.SigningSecret = strings.Repeat("0", 32)
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -1579,6 +1589,9 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 
 	if allowMissingJWTSecret && originalJWTSecret == "" {
 		cfg.JWT.Secret = ""
+	}
+	if allowMissingJWTSecret && originalAppAuthSecret == "" {
+		cfg.AppAuth.SigningSecret = ""
 	}
 
 	if !cfg.Security.URLAllowlist.Enabled {
@@ -1850,6 +1863,7 @@ func setDefaults() {
 	viper.SetDefault("jwt.access_token_expire_minutes", 0) // 0 表示回退到 expire_hour
 	viper.SetDefault("jwt.refresh_token_expire_days", 30)  // 30天Refresh Token有效期
 	viper.SetDefault("jwt.refresh_window_minutes", 2)      // 过期前2分钟开始允许刷新
+	viper.SetDefault("app_auth.signing_secret", "")
 
 	// TOTP
 	viper.SetDefault("totp.encryption_key", "")
@@ -2106,6 +2120,10 @@ func (c *Config) Validate() error {
 	// 选择 bytes 而不是 rune 计数，确保二进制/随机串的长度语义更接近“熵”而非“字符数”。
 	if len([]byte(jwtSecret)) < 32 {
 		return fmt.Errorf("jwt.secret must be at least 32 bytes")
+	}
+	appAuthSecret := strings.TrimSpace(c.AppAuth.SigningSecret)
+	if appAuthSecret != "" && len([]byte(appAuthSecret)) < 32 {
+		return fmt.Errorf("app_auth.signing_secret must be at least 32 bytes")
 	}
 	switch c.Log.Level {
 	case "debug", "info", "warn", "error":

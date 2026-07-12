@@ -56,6 +56,7 @@ type JWTClaims struct {
 	UserID       int64  `json:"user_id"`
 	Email        string `json:"email"`
 	Role         string `json:"role"`
+	TokenUse     string `json:"token_use,omitempty"`
 	TokenVersion int64  `json:"token_version"` // Used to invalidate tokens on password change
 	jwt.RegisteredClaims
 }
@@ -1151,6 +1152,9 @@ func (s *AuthService) ValidateToken(tokenString string) (*JWTClaims, error) {
 			// token 过期但仍返回 claims（用于 RefreshToken 等场景）
 			// jwt-go 在解析时即使遇到过期错误，token.Claims 仍会被填充
 			if claims, ok := token.Claims.(*JWTClaims); ok {
+				if !isWebTokenUse(claims.TokenUse) {
+					return nil, ErrInvalidToken
+				}
 				return claims, ErrTokenExpired
 			}
 			return nil, ErrTokenExpired
@@ -1159,10 +1163,20 @@ func (s *AuthService) ValidateToken(tokenString string) (*JWTClaims, error) {
 	}
 
 	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
+		// App access tokens belong to a separate trust domain and must never enter
+		// browser user/admin routes, even if a signing-key configuration is reused.
+		if !isWebTokenUse(claims.TokenUse) {
+			return nil, ErrInvalidToken
+		}
 		return claims, nil
 	}
 
 	return nil, ErrInvalidToken
+}
+
+func isWebTokenUse(tokenUse string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(tokenUse))
+	return normalized == "" || normalized == "web"
 }
 
 func randomHexString(byteLength int) (string, error) {

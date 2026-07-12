@@ -18,6 +18,7 @@ import (
 
 const (
 	securitySecretKeyJWT        = "jwt_secret"
+	securitySecretKeyAppAuth    = "app_auth_signing_secret"
 	securitySecretReadRetryMax  = 5
 	securitySecretReadRetryWait = 10 * time.Millisecond
 )
@@ -32,29 +33,38 @@ func ensureBootstrapSecrets(ctx context.Context, client *ent.Client, cfg *config
 		return fmt.Errorf("nil config")
 	}
 
-	cfg.JWT.Secret = strings.TrimSpace(cfg.JWT.Secret)
-	if cfg.JWT.Secret != "" {
-		storedSecret, err := createSecuritySecretIfAbsent(ctx, client, securitySecretKeyJWT, cfg.JWT.Secret)
-		if err != nil {
-			return fmt.Errorf("persist jwt secret: %w", err)
-		}
-		if storedSecret != cfg.JWT.Secret {
-			log.Println("Warning: configured JWT secret mismatches persisted value; using persisted secret for cross-instance consistency.")
-		}
-		cfg.JWT.Secret = storedSecret
-		return nil
-	}
-
-	secret, created, err := getOrCreateGeneratedSecuritySecret(ctx, client, securitySecretKeyJWT, 32)
+	var err error
+	cfg.JWT.Secret, err = ensureNamedBootstrapSecret(ctx, client, securitySecretKeyJWT, cfg.JWT.Secret, "JWT")
 	if err != nil {
-		return fmt.Errorf("ensure jwt secret: %w", err)
+		return err
 	}
-	cfg.JWT.Secret = secret
-
-	if created {
-		log.Println("Warning: JWT secret auto-generated and persisted to database. Consider rotating to a managed secret for production.")
+	cfg.AppAuth.SigningSecret, err = ensureNamedBootstrapSecret(ctx, client, securitySecretKeyAppAuth, cfg.AppAuth.SigningSecret, "App OAuth signing")
+	if err != nil {
+		return err
 	}
 	return nil
+}
+
+func ensureNamedBootstrapSecret(ctx context.Context, client *ent.Client, key, configured, label string) (string, error) {
+	configured = strings.TrimSpace(configured)
+	if configured != "" {
+		stored, err := createSecuritySecretIfAbsent(ctx, client, key, configured)
+		if err != nil {
+			return "", fmt.Errorf("persist %s secret: %w", label, err)
+		}
+		if stored != configured {
+			log.Printf("Warning: configured %s secret mismatches persisted value; using persisted secret for cross-instance consistency.", label)
+		}
+		return stored, nil
+	}
+	secret, created, err := getOrCreateGeneratedSecuritySecret(ctx, client, key, 32)
+	if err != nil {
+		return "", fmt.Errorf("ensure %s secret: %w", label, err)
+	}
+	if created {
+		log.Printf("Warning: %s secret auto-generated and persisted to database. Consider rotating to a managed secret for production.", label)
+	}
+	return secret, nil
 }
 
 func getOrCreateGeneratedSecuritySecret(ctx context.Context, client *ent.Client, key string, byteLength int) (string, bool, error) {

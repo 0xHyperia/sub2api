@@ -584,6 +584,32 @@ export default {
     pleaseEnterCode: '请输入兑换码'
   },
 
+  appAuthorization: {
+    pageTitle: '应用授权',
+    title: '连接应用',
+    requestDescription: '{app} 正在请求访问您的 SUB2API 账户。',
+    device: '设备',
+    platform: '平台',
+    unknownDevice: '未知设备',
+    unknownPlatform: '未知平台',
+    permissionsTitle: '申请的权限',
+    allow: '允许访问',
+    deny: '拒绝',
+    invalidRequest: '此授权请求无效',
+    missingParameters: '缺少必要的 OAuth 参数。',
+    loadFailed: '无法加载授权请求。',
+    decisionFailed: '无法完成授权。',
+    scopes: {
+      openid: '识别您的 SUB2API 账户',
+      profile_read: '查看您的个人资料',
+      groups_read: '查看可用分组',
+      keys_read: '查看您的 API 密钥',
+      keys_write: '创建 API 密钥',
+      subscriptions_read: '查看您的订阅',
+      offline_access: '应用关闭后仍保持连接'
+    }
+  },
+
   // Profile
   profile: {
     title: '个人设置',
@@ -710,6 +736,22 @@ export default {
       compressFailed: '压缩所选图片失败',
       readFailed: '读取所选图片失败',
       emptyDeleteHint: '当前没有可删除的头像',
+    },
+    authorizedApps: {
+      title: '已授权应用',
+      description: '查看可访问您账户的设备，并可随时撤销访问权限。',
+      empty: '当前没有已授权的应用。',
+      unknownDevice: '未知设备',
+      unknownPlatform: '未知平台',
+      authorizedAt: '授权于 {date}',
+      lastUsedAt: '最后使用于 {date}',
+      revoke: '撤销访问',
+      revokeTitle: '撤销应用访问权限',
+      revokeMessage: '确定撤销 {device} 的访问权限吗？该应用需要重新授权。',
+      revokeSuccess: '已撤销应用访问权限',
+      revokeFailed: '撤销应用访问权限失败',
+      loadFailed: '加载已授权应用失败',
+      retry: '重试'
     },
     authBindings: {
       title: '登录方式绑定',

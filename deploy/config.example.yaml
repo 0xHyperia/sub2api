@@ -874,6 +874,11 @@ jwt:
   # - =0: 回退使用 expire_hour
   access_token_expire_minutes: 0
 
+# ZeroBox/App OAuth tokens use a separate signing trust domain. If omitted,
+# SUB2API generates and persists a random secret in the database on first boot.
+app_auth:
+  signing_secret: ""
+
 # =============================================================================
 # TOTP (2FA) Configuration
 # TOTP 双因素认证配置

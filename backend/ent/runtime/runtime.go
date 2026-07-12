@@ -10,6 +10,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcement"
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
+	"github.com/Wei-Shaw/sub2api/ent/appauthorization"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
 	"github.com/Wei-Shaw/sub2api/ent/batchimageevent"
@@ -321,6 +322,111 @@ func init() {
 	announcementreadDescCreatedAt := announcementreadFields[3].Descriptor()
 	// announcementread.DefaultCreatedAt holds the default value on creation for the created_at field.
 	announcementread.DefaultCreatedAt = announcementreadDescCreatedAt.Default.(func() time.Time)
+	appauthorizationMixin := schema.AppAuthorization{}.Mixin()
+	appauthorizationMixinFields0 := appauthorizationMixin[0].Fields()
+	_ = appauthorizationMixinFields0
+	appauthorizationFields := schema.AppAuthorization{}.Fields()
+	_ = appauthorizationFields
+	// appauthorizationDescCreatedAt is the schema descriptor for created_at field.
+	appauthorizationDescCreatedAt := appauthorizationMixinFields0[0].Descriptor()
+	// appauthorization.DefaultCreatedAt holds the default value on creation for the created_at field.
+	appauthorization.DefaultCreatedAt = appauthorizationDescCreatedAt.Default.(func() time.Time)
+	// appauthorizationDescUpdatedAt is the schema descriptor for updated_at field.
+	appauthorizationDescUpdatedAt := appauthorizationMixinFields0[1].Descriptor()
+	// appauthorization.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	appauthorization.DefaultUpdatedAt = appauthorizationDescUpdatedAt.Default.(func() time.Time)
+	// appauthorization.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	appauthorization.UpdateDefaultUpdatedAt = appauthorizationDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// appauthorizationDescGrantID is the schema descriptor for grant_id field.
+	appauthorizationDescGrantID := appauthorizationFields[1].Descriptor()
+	// appauthorization.GrantIDValidator is a validator for the "grant_id" field. It is called by the builders before save.
+	appauthorization.GrantIDValidator = func() func(string) error {
+		validators := appauthorizationDescGrantID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(grant_id string) error {
+			for _, fn := range fns {
+				if err := fn(grant_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// appauthorizationDescClientID is the schema descriptor for client_id field.
+	appauthorizationDescClientID := appauthorizationFields[2].Descriptor()
+	// appauthorization.ClientIDValidator is a validator for the "client_id" field. It is called by the builders before save.
+	appauthorization.ClientIDValidator = func() func(string) error {
+		validators := appauthorizationDescClientID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(client_id string) error {
+			for _, fn := range fns {
+				if err := fn(client_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// appauthorizationDescDeviceName is the schema descriptor for device_name field.
+	appauthorizationDescDeviceName := appauthorizationFields[3].Descriptor()
+	// appauthorization.DefaultDeviceName holds the default value on creation for the device_name field.
+	appauthorization.DefaultDeviceName = appauthorizationDescDeviceName.Default.(string)
+	// appauthorization.DeviceNameValidator is a validator for the "device_name" field. It is called by the builders before save.
+	appauthorization.DeviceNameValidator = appauthorizationDescDeviceName.Validators[0].(func(string) error)
+	// appauthorizationDescPlatform is the schema descriptor for platform field.
+	appauthorizationDescPlatform := appauthorizationFields[4].Descriptor()
+	// appauthorization.DefaultPlatform holds the default value on creation for the platform field.
+	appauthorization.DefaultPlatform = appauthorizationDescPlatform.Default.(string)
+	// appauthorization.PlatformValidator is a validator for the "platform" field. It is called by the builders before save.
+	appauthorization.PlatformValidator = appauthorizationDescPlatform.Validators[0].(func(string) error)
+	// appauthorizationDescScopes is the schema descriptor for scopes field.
+	appauthorizationDescScopes := appauthorizationFields[5].Descriptor()
+	// appauthorization.DefaultScopes holds the default value on creation for the scopes field.
+	appauthorization.DefaultScopes = appauthorizationDescScopes.Default.(func() []string)
+	// appauthorizationDescTokenFamilyID is the schema descriptor for token_family_id field.
+	appauthorizationDescTokenFamilyID := appauthorizationFields[6].Descriptor()
+	// appauthorization.TokenFamilyIDValidator is a validator for the "token_family_id" field. It is called by the builders before save.
+	appauthorization.TokenFamilyIDValidator = func() func(string) error {
+		validators := appauthorizationDescTokenFamilyID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(token_family_id string) error {
+			for _, fn := range fns {
+				if err := fn(token_family_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// appauthorizationDescStatus is the schema descriptor for status field.
+	appauthorizationDescStatus := appauthorizationFields[7].Descriptor()
+	// appauthorization.DefaultStatus holds the default value on creation for the status field.
+	appauthorization.DefaultStatus = appauthorizationDescStatus.Default.(string)
+	// appauthorization.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	appauthorization.StatusValidator = func() func(string) error {
+		validators := appauthorizationDescStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(status string) error {
+			for _, fn := range fns {
+				if err := fn(status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	authidentityMixin := schema.AuthIdentity{}.Mixin()
 	authidentityMixinFields0 := authidentityMixin[0].Fields()
 	_ = authidentityMixinFields0

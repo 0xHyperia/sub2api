@@ -555,10 +555,15 @@ func ProvideAPIKeyService(
 	return svc
 }
 
+func ProvideAppAuthService(repository AppAuthorizationRepository, cache AppAuthCache, cfg *config.Config) *AppAuthService {
+	return NewAppAuthService(repository, cache, cfg.AppAuth.SigningSecret)
+}
+
 // ProviderSet is the Wire provider set for all services
 var ProviderSet = wire.NewSet(
 	// Core services
 	NewAuthService,
+	ProvideAppAuthService,
 	NewUserService,
 	ProvideAPIKeyService,
 	ProvideAPIKeyAuthCacheInvalidator,
