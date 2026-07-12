@@ -9,17 +9,17 @@
       <!-- Account Info Card -->
       <div
         v-if="account"
-        class="flex items-center justify-between rounded-xl border border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 p-3 dark:border-dark-500 dark:from-dark-700 dark:to-dark-600"
+        class="flex min-w-0 items-center justify-between gap-3 rounded-panel border border-outline bg-surface-subtle p-3"
       >
-        <div class="flex items-center gap-3">
+        <div class="flex min-w-0 items-center gap-3">
           <div
-            class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-600"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-outline bg-surface text-foreground-muted"
           >
-            <Icon name="play" size="md" class="text-white" :stroke-width="2" />
+            <Icon name="play" size="md" :stroke-width="2" />
           </div>
-          <div>
-            <div class="font-semibold text-gray-900 dark:text-gray-100">{{ account.name }}</div>
-            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <div class="min-w-0">
+            <div class="truncate font-semibold text-foreground" :title="account.name">{{ account.name }}</div>
+            <div class="flex flex-wrap items-center gap-1.5 text-xs text-foreground-subtle">
               <span
                 class="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium uppercase dark:bg-dark-500"
               >
@@ -31,10 +31,10 @@
         </div>
         <span
           :class="[
-            'rounded-full px-2.5 py-1 text-xs font-semibold',
+            'shrink-0 rounded-control border px-2.5 py-1 text-xs font-semibold',
             account.status === 'active'
-              ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'
-              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+              ? 'border-success/30 bg-success-subtle text-success-foreground'
+              : 'border-outline bg-surface text-foreground-muted'
           ]"
         >
           {{ account.status }}
@@ -53,6 +53,18 @@
           label-key="display_name"
           :placeholder="loadingModels ? t('common.loading') + '...' : t('admin.accounts.selectTestModel')"
         />
+        <div
+          v-if="modelsLoadFailed"
+          class="mt-2 flex flex-col gap-2 rounded-panel border border-danger/30 bg-danger-subtle p-3 text-danger-foreground sm:flex-row sm:items-center sm:justify-between"
+          role="alert"
+          data-testid="account-test-models-error"
+        >
+          <span class="text-xs font-medium">{{ t('admin.accounts.testModelsLoadFailed') }}</span>
+          <button type="button" class="btn btn-secondary btn-sm" :disabled="loadingModels" @click="loadAvailableModels">
+            <Icon name="refresh" size="sm" :class="{ 'animate-spin': loadingModels }" />
+            {{ t('common.retry') }}
+          </button>
+        </div>
       </div>
 
       <div v-if="isOpenAIAccount" class="space-y-1.5">
@@ -81,7 +93,7 @@
       <div class="group relative">
         <div
           ref="terminalRef"
-          class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 p-4 font-mono text-sm dark:border-gray-800 dark:bg-black"
+          class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-panel border border-gray-700 bg-gray-950 p-4 font-mono text-sm text-gray-200"
         >
           <!-- Status Line -->
           <div v-if="status === 'idle'" class="flex items-center gap-2 text-gray-500">
@@ -123,11 +135,13 @@
         <!-- Copy Button -->
         <button
           v-if="outputLines.length > 0"
+          type="button"
           @click="copyOutput"
-          class="absolute right-2 top-2 rounded-lg bg-gray-800/80 p-1.5 text-gray-400 opacity-0 transition-all hover:bg-gray-700 hover:text-white group-hover:opacity-100"
+          class="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-control bg-gray-800 text-gray-300 opacity-100 transition-colors hover:bg-gray-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
           :title="t('admin.accounts.copyOutput')"
+          :aria-label="t('admin.accounts.copyOutput')"
         >
-          <Icon name="link" size="sm" :stroke-width="2" />
+          <Icon name="copy" size="sm" :stroke-width="2" />
         </button>
       </div>
 
@@ -136,10 +150,12 @@
           {{ t('admin.accounts.imagePreview') }}
         </div>
         <div class="flex flex-wrap justify-center gap-3">
-          <div
+          <button
             v-for="(image, index) in generatedImages"
             :key="`${image.url}-${index}`"
-            class="group/img relative cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:border-primary-300 hover:shadow-md dark:border-dark-500 dark:bg-dark-700"
+            type="button"
+            class="group/img relative min-w-0 overflow-hidden rounded-panel border border-outline bg-surface text-left transition-colors hover:border-outline-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            :aria-label="`${t('admin.accounts.imagePreview')} ${index + 1}`"
             @click="previewImageUrl = image.url"
           >
             <img :src="image.url" :alt="`test-image-${index + 1}`" class="max-h-[360px] w-full object-contain" />
@@ -149,7 +165,7 @@
             <div class="border-t border-gray-100 px-3 py-1.5 text-xs text-gray-500 dark:border-dark-500 dark:text-gray-300">
               {{ image.mimeType || 'image/*' }}
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -159,10 +175,16 @@
           <div
             v-if="previewImageUrl"
             class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="t('admin.accounts.imagePreview')"
             @click.self="previewImageUrl = ''"
+            @keydown.esc="previewImageUrl = ''"
           >
             <button
-              class="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+              type="button"
+              class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-control bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              :aria-label="t('common.close')"
               @click="previewImageUrl = ''"
             >
               <Icon name="x" size="lg" :stroke-width="2" />
@@ -170,14 +192,14 @@
             <img
               :src="previewImageUrl"
               alt="preview"
-              class="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+              class="max-h-[90vh] max-w-[90vw] rounded-panel object-contain"
             />
           </div>
         </Transition>
       </Teleport>
 
       <!-- Test Info -->
-      <div class="flex items-center justify-between px-1 text-xs text-gray-500 dark:text-gray-400">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-gray-500 dark:text-gray-400">
         <div class="flex items-center gap-3">
           <span class="flex items-center gap-1">
             <Icon name="grid" size="sm" :stroke-width="2" />
@@ -198,23 +220,25 @@
     <template #footer>
       <div class="flex justify-end gap-3">
         <button
+          type="button"
           @click="handleClose"
-          class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-300 dark:hover:bg-dark-500"
+          class="btn btn-secondary"
         >
           {{ t('common.close') }}
         </button>
         <button
+          type="button"
           @click="startTest"
           :disabled="status === 'connecting' || !selectedModelId"
           :class="[
-            'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+            'btn btn-primary',
             status === 'connecting' || !selectedModelId
-              ? 'cursor-not-allowed bg-primary-400 text-white'
+              ? 'cursor-not-allowed'
               : status === 'success'
-                ? 'bg-green-500 text-white hover:bg-green-600'
+                ? 'bg-success text-white hover:bg-success/90'
                 : status === 'error'
-                  ? 'bg-orange-500 text-white hover:bg-orange-600'
-                  : 'bg-primary-500 text-white hover:bg-primary-600'
+                  ? 'bg-warning text-warning-foreground hover:bg-warning/90'
+                  : ''
           ]"
         >
           <Icon
@@ -242,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Select from '@/components/common/Select.vue'
@@ -284,6 +308,8 @@ const availableModels = ref<ClaudeModel[]>([])
 const selectedModelId = ref('')
 const testPrompt = ref('')
 const loadingModels = ref(false)
+const modelsLoadFailed = ref(false)
+let modelsLoadSequence = 0
 let abortController: AbortController | null = null
 const generatedImages = ref<PreviewImage[]>([])
 const previewImageUrl = ref('')
@@ -330,6 +356,7 @@ watch(
       resetState()
       await loadAvailableModels()
     } else {
+      modelsLoadSequence += 1
       abortStream()
     }
   }
@@ -344,16 +371,21 @@ watch(selectedModelId, () => {
 const loadAvailableModels = async () => {
   if (!props.account) return
 
+  const account = props.account
+  const sequence = ++modelsLoadSequence
   loadingModels.value = true
+  modelsLoadFailed.value = false
+  availableModels.value = []
   selectedModelId.value = '' // Reset selection before loading
   try {
-    const models = await adminAPI.accounts.getAvailableModels(props.account.id)
-    availableModels.value = props.account.platform === 'gemini' || props.account.platform === 'antigravity'
+    const models = await adminAPI.accounts.getAvailableModels(account.id)
+    if (sequence !== modelsLoadSequence) return
+    availableModels.value = account.platform === 'gemini' || account.platform === 'antigravity'
       ? sortTestModels(models)
       : models
     // Default selection by platform
     if (availableModels.value.length > 0) {
-      if (props.account.platform === 'gemini') {
+      if (account.platform === 'gemini') {
         selectedModelId.value = availableModels.value[0].id
       } else {
         // Try to select Sonnet as default, otherwise use first model
@@ -362,12 +394,11 @@ const loadAvailableModels = async () => {
       }
     }
   } catch (error) {
+    if (sequence !== modelsLoadSequence) return
     console.error('Failed to load available models:', error)
-    // Fallback to empty list
-    availableModels.value = []
-    selectedModelId.value = ''
+    modelsLoadFailed.value = true
   } finally {
-    loadingModels.value = false
+    if (sequence === modelsLoadSequence) loadingModels.value = false
   }
 }
 
@@ -391,6 +422,11 @@ const abortStream = () => {
     abortController = null
   }
 }
+
+onUnmounted(() => {
+  modelsLoadSequence += 1
+  abortStream()
+})
 
 const addLine = (text: string, className: string = 'text-gray-300') => {
   outputLines.value.push({ text, class: className })

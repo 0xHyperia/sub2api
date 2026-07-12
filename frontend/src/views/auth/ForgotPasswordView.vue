@@ -2,7 +2,7 @@
   <AuthLayout>
     <div class="space-y-6">
       <!-- Title -->
-      <div class="text-center">
+      <div class="auth-form-heading">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ t('auth.forgotPasswordTitle') }}
         </h2>
@@ -11,9 +11,20 @@
         </p>
       </div>
 
+      <div
+        v-if="errorMessage"
+        class="auth-flow-alert"
+        role="alert"
+        aria-live="assertive"
+      >
+        {{ errorMessage }}
+      </div>
+
       <!-- Success State -->
       <div v-if="isSubmitted" class="space-y-6">
-        <div class="rounded-xl border border-green-200 bg-green-50 p-6 dark:border-green-800/50 dark:bg-green-900/20">
+        <div
+          class="auth-flow-surface border-green-200 bg-green-50 dark:border-green-800/50 dark:bg-green-900/20"
+        >
           <div class="flex flex-col items-center gap-4 text-center">
             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-800/50">
               <Icon name="checkCircle" size="lg" class="text-green-600 dark:text-green-400" />
@@ -41,7 +52,13 @@
       </div>
 
       <!-- Form State -->
-      <form v-else @submit.prevent="handleSubmit" class="space-y-5">
+      <form
+        v-else
+        class="space-y-5"
+        novalidate
+        :aria-busy="isLoading"
+        @submit.prevent="handleSubmit"
+      >
         <!-- Email Input -->
         <div>
           <label for="email" class="input-label">
@@ -62,12 +79,27 @@
               class="input pl-11"
               :class="{ 'input-error': errors.email }"
               :placeholder="t('auth.emailPlaceholder')"
+              :aria-invalid="Boolean(errors.email)"
+              :aria-describedby="errors.email ? 'forgot-password-email-error' : undefined"
+              @input="errors.email = ''"
             />
           </div>
+          <p
+            v-if="errors.email"
+            id="forgot-password-email-error"
+            class="input-error-text"
+            role="alert"
+          >
+            {{ errors.email }}
+          </p>
         </div>
 
         <!-- Turnstile Widget -->
-        <div v-if="turnstileEnabled && turnstileSiteKey">
+        <div
+          v-if="turnstileEnabled && turnstileSiteKey"
+          role="group"
+          :aria-describedby="errors.turnstile ? 'forgot-password-turnstile-error' : undefined"
+        >
           <TurnstileWidget
             ref="turnstileRef"
             :site-key="turnstileSiteKey"
@@ -75,13 +107,21 @@
             @expire="onTurnstileExpire"
             @error="onTurnstileError"
           />
+          <p
+            v-if="errors.turnstile"
+            id="forgot-password-turnstile-error"
+            class="input-error-text"
+            role="alert"
+          >
+            {{ errors.turnstile }}
+          </p>
         </div>
 
         <!-- Submit Button -->
         <button
           type="submit"
           :disabled="isLoading || (turnstileEnabled && !turnstileToken)"
-          class="btn btn-primary w-full"
+          class="auth-submit btn btn-primary w-full"
         >
           <svg
             v-if="isLoading"
@@ -127,7 +167,7 @@
 <script setup lang="ts">
 import { computed, ref, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AuthLayout } from '@/components/layout'
+import AuthLayout from '@/components/auth/AuthFlowLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAppStore } from '@/stores'

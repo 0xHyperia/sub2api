@@ -34,4 +34,25 @@ describe('PaymentMethodSelector', () => {
     expect(button.classes()).toContain('border-primary-500')
     expect(button.classes()).not.toContain('border-[#02A9F1]')
   })
+
+  it('exposes radio semantics and moves selection with arrow keys', async () => {
+    const wrapper = mount(PaymentMethodSelector, {
+      props: {
+        selected: 'alipay',
+        methods: [
+          { type: 'alipay', fee_rate: 0, available: true },
+          { type: 'wxpay', fee_rate: 0, available: false },
+          { type: 'stripe', fee_rate: 0, available: true },
+        ],
+      },
+    })
+
+    expect(wrapper.get('[role="radiogroup"]').exists()).toBe(true)
+    const radios = wrapper.findAll('[role="radio"]')
+    expect(radios[0].attributes('aria-checked')).toBe('true')
+
+    await radios[0].trigger('keydown', { key: 'ArrowRight' })
+
+    expect(wrapper.emitted('select')).toEqual([['stripe']])
+  })
 })

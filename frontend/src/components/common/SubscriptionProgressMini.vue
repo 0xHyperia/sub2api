@@ -2,11 +2,15 @@
   <div v-if="hasActiveSubscriptions" class="relative" ref="containerRef">
     <!-- Mini Progress Display -->
     <button
+      type="button"
       @click="toggleTooltip"
-      class="flex cursor-pointer items-center gap-2 rounded-xl bg-purple-50 px-3 py-1.5 transition-colors hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/30"
+      class="flex min-h-9 cursor-pointer items-center gap-2 rounded-md border border-outline bg-surface px-2.5 text-foreground-muted shadow-card transition-colors hover:bg-surface-subtle hover:text-foreground"
       :title="t('subscriptionProgress.viewDetails')"
+      :aria-label="t('subscriptionProgress.viewDetails')"
+      :aria-expanded="tooltipOpen"
+      aria-haspopup="dialog"
     >
-      <Icon name="creditCard" size="sm" class="text-purple-600 dark:text-purple-400" />
+      <Icon name="creditCard" size="sm" />
       <div class="flex items-center gap-1.5">
         <!-- Combined progress indicator -->
         <div class="flex items-center gap-0.5">
@@ -17,7 +21,7 @@
             :class="getProgressDotClass(sub)"
           ></div>
         </div>
-        <span class="text-xs font-medium text-purple-700 dark:text-purple-300">
+        <span class="text-xs font-semibold tabular-nums text-foreground">
           {{ activeSubscriptions.length }}
         </span>
       </div>
@@ -27,7 +31,10 @@
     <transition name="dropdown">
       <div
         v-if="tooltipOpen"
-        class="absolute right-0 z-50 mt-2 w-[340px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-dark-700 dark:bg-dark-800"
+        role="dialog"
+        :aria-label="t('subscriptionProgress.title')"
+        class="absolute right-0 z-50 mt-2 w-[min(340px,calc(100vw-2rem))] overflow-hidden rounded-panel border border-outline bg-surface shadow-floating"
+        @keydown.esc.stop="closeTooltip"
       >
         <div class="border-b border-gray-100 p-3 dark:border-dark-700">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
@@ -62,10 +69,10 @@
               <!-- Unlimited subscription badge -->
               <div
                 v-if="isUnlimited(subscription)"
-                class="flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 px-2.5 py-1.5 dark:from-emerald-900/20 dark:to-teal-900/20"
+                class="flex items-center gap-2 rounded-md border border-success/20 bg-success-subtle px-2.5 py-1.5"
               >
-                <span class="text-lg text-emerald-600 dark:text-emerald-400">∞</span>
-                <span class="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                <span class="text-lg text-success-foreground">∞</span>
+                <span class="text-xs font-medium text-success-foreground">
                   {{ t('subscriptionProgress.unlimited') }}
                 </span>
               </div>
@@ -79,6 +86,11 @@
                   <div class="h-1.5 min-w-0 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
+                      role="progressbar"
+                      :aria-label="t('subscriptionProgress.daily')"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      :aria-valuenow="getProgressPercentage(subscription.daily_usage_usd, subscription.group?.daily_limit_usd)"
                       :class="
                         getProgressBarClass(
                           subscription.daily_usage_usd,
@@ -107,6 +119,11 @@
                   <div class="h-1.5 min-w-0 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
+                      role="progressbar"
+                      :aria-label="t('subscriptionProgress.weekly')"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      :aria-valuenow="getProgressPercentage(subscription.weekly_usage_usd, subscription.group?.weekly_limit_usd)"
                       :class="
                         getProgressBarClass(
                           subscription.weekly_usage_usd,
@@ -135,6 +152,11 @@
                   <div class="h-1.5 min-w-0 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
+                      role="progressbar"
+                      :aria-label="t('subscriptionProgress.monthly')"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      :aria-valuenow="getProgressPercentage(subscription.monthly_usage_usd, subscription.group?.monthly_limit_usd)"
                       :class="
                         getProgressBarClass(
                           subscription.monthly_usage_usd,
@@ -249,6 +271,11 @@ function getProgressWidth(used: number | undefined, limit: number | null | undef
   if (!limit || limit === 0) return '0%'
   const percentage = Math.min(((used || 0) / limit) * 100, 100)
   return `${percentage}%`
+}
+
+function getProgressPercentage(used: number | undefined, limit: number | null | undefined): number {
+  if (!limit || limit === 0) return 0
+  return Math.min(Math.round(((used || 0) / limit) * 100), 100)
 }
 
 function formatUsage(used: number | undefined, limit: number | null | undefined): string {

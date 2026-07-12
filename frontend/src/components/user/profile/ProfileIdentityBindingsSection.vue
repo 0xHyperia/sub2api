@@ -1,23 +1,23 @@
 <template>
-  <div :class="props.embedded ? 'space-y-4' : 'card overflow-hidden'">
+  <div :class="props.embedded ? 'min-w-0' : 'card min-w-0 overflow-hidden'">
     <div
       v-if="!props.embedded"
-      class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+      class="card-header"
     >
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white">
+      <h2 class="text-base font-semibold text-foreground">
         {{ t('profile.authBindings.title') }}
       </h2>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-sm text-foreground-muted">
         {{ t('profile.authBindings.description') }}
       </p>
     </div>
 
-    <div :class="props.embedded ? 'space-y-4' : 'divide-y divide-gray-100 dark:divide-dark-700'">
-      <div v-if="props.embedded">
-        <p class="text-sm font-semibold text-gray-900 dark:text-white">
+    <div :class="props.embedded ? '' : 'divide-y divide-outline'">
+      <div v-if="props.embedded" class="pb-4">
+        <p class="text-base font-semibold text-foreground">
           {{ t('profile.authBindings.title') }}
         </p>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p class="mt-1 text-sm text-foreground-muted">
           {{ t('profile.authBindings.description') }}
         </p>
       </div>
@@ -27,11 +27,11 @@
         :key="item.provider"
         :class="rowClass"
       >
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div class="flex min-w-0 flex-1 items-start gap-4">
+        <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div class="flex min-w-0 flex-1 items-start gap-3">
             <div
               :class="providerIconClass(item.provider)"
-              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border text-sm font-semibold"
             >
               <Icon
                 v-if="item.provider === 'email'"
@@ -42,9 +42,9 @@
               <span v-else>{{ providerInitial(item.provider) }}</span>
             </div>
 
-            <div class="min-w-0 flex-1 space-y-3">
+            <div class="min-w-0 flex-1 space-y-2">
               <div class="flex flex-wrap items-center gap-2">
-                <h3 class="font-medium text-gray-900 dark:text-white">
+                <h3 class="break-words text-sm font-medium text-foreground">
                   {{ item.label }}
                 </h3>
                 <span
@@ -61,18 +61,18 @@
 
               <p
                 v-if="providerSummary(item.provider)"
-                class="text-sm text-gray-600 dark:text-gray-300"
+                class="break-all text-sm text-foreground-muted"
               >
                 {{ providerSummary(item.provider) }}
               </p>
 
               <div
                 v-if="hasBindingDetails(item.provider, item.details)"
-                class="grid gap-1 text-sm text-gray-500 dark:text-gray-400"
+                class="grid gap-1 text-sm text-foreground-subtle"
               >
                 <p
                   v-if="item.provider !== 'email' && item.details?.display_name"
-                  class="font-medium text-gray-700 dark:text-gray-200"
+                  class="break-words font-medium text-foreground-muted"
                 >
                   {{ item.details.display_name }}
                 </p>
@@ -89,10 +89,15 @@
 
               <div
                 v-if="item.provider === 'email' && showEmailForm"
+                id="profile-binding-email-form-controls"
                 data-testid="profile-binding-email-form"
-                class="grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_auto]"
+                class="grid min-w-0 gap-2 border-t border-outline pt-3 sm:grid-cols-[minmax(0,1.4fr)_auto]"
               >
+                <label for="profile-binding-email" class="sr-only">
+                  {{ t('profile.authBindings.emailPlaceholder') }}
+                </label>
                 <input
+                  id="profile-binding-email"
                   v-model.trim="emailBindingForm.email"
                   data-testid="profile-binding-email-input"
                   type="email"
@@ -113,7 +118,11 @@
                       : t('profile.authBindings.sendCodeAction')
                   }}
                 </button>
+                <label for="profile-binding-email-code" class="sr-only">
+                  {{ t('profile.authBindings.codePlaceholder') }}
+                </label>
                 <input
+                  id="profile-binding-email-code"
                   v-model.trim="emailBindingForm.verifyCode"
                   data-testid="profile-binding-email-code-input"
                   type="text"
@@ -123,7 +132,11 @@
                   :placeholder="t('profile.authBindings.codePlaceholder')"
                   :disabled="isBindingEmail"
                 />
+                <label for="profile-binding-email-password" class="sr-only">
+                  {{ emailPasswordPlaceholder }}
+                </label>
                 <input
+                  id="profile-binding-email-password"
                   v-model="emailBindingForm.password"
                   data-testid="profile-binding-email-password-input"
                   type="password"
@@ -148,12 +161,14 @@
             </div>
           </div>
 
-          <div class="flex shrink-0 flex-wrap items-center gap-3">
+          <div class="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
             <button
               v-if="item.provider === 'email' && compact"
               data-testid="profile-binding-email-toggle"
               type="button"
               class="btn btn-secondary btn-sm"
+              :aria-expanded="showEmailForm"
+              aria-controls="profile-binding-email-form-controls"
               @click="toggleEmailForm"
             >
               {{
@@ -283,10 +298,8 @@ const currentUser = computed(() => localUser.value ?? props.user)
 const compact = computed(() => props.compact)
 const rowClass = computed(() =>
   props.embedded
-    ? compact.value
-      ? 'rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-900/40'
-      : 'rounded-2xl border border-gray-100 bg-gray-50/70 p-4 dark:border-dark-700 dark:bg-dark-900/30'
-    : 'px-6 py-5'
+    ? 'border-t border-outline py-4'
+    : 'px-4 py-4 sm:px-5'
 )
 const emailBound = computed(() => getBindingStatus('email'))
 const showEmailForm = computed(() => !compact.value || isEmailFormExpanded.value)
@@ -489,19 +502,8 @@ function providerInitial(provider: UserAuthProvider): string {
 }
 
 function providerIconClass(provider: UserAuthProvider): string {
-  if (provider === 'linuxdo') {
-    return 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-300'
-  }
-  if (provider === 'dingtalk') {
-    return 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
-  }
-  if (provider === 'wechat') {
-    return 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-300'
-  }
-  if (provider === 'oidc') {
-    return 'bg-sky-100 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300'
-  }
-  return 'bg-primary-100 text-primary-600 dark:bg-primary-900/20 dark:text-primary-300'
+  void provider
+  return 'border-outline bg-surface-subtle text-foreground-muted'
 }
 
 function providerSummary(provider: UserAuthProvider): string {

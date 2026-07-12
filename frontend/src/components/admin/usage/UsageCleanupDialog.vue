@@ -5,62 +5,78 @@
         v-model="localFilters"
         v-model:startDate="localStartDate"
         v-model:endDate="localEndDate"
+        class="!rounded-panel !border-outline !bg-surface-subtle !p-3 sm:!p-4"
         :exporting="false"
         :show-actions="false"
         @change="noop"
       />
 
-      <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+      <div
+        role="note"
+        class="rounded-panel border border-warning/20 bg-warning-subtle px-3 py-3 text-sm text-warning-foreground sm:px-4"
+      >
         {{ t('admin.usage.cleanup.warning') }}
       </div>
 
-      <div class="rounded-xl border border-gray-200 p-4 dark:border-dark-700">
-        <div class="flex items-center justify-between">
-          <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <section class="min-w-0 rounded-panel border border-outline bg-surface p-3 sm:p-4">
+        <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h4 class="text-sm font-semibold text-foreground">
             {{ t('admin.usage.cleanup.recentTasks') }}
           </h4>
-          <button type="button" class="btn btn-ghost btn-sm" @click="loadTasks">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm w-full sm:w-auto"
+            :disabled="tasksLoading"
+            @click="loadTasks"
+          >
+            <Icon
+              name="refresh"
+              size="sm"
+              :class="tasksLoading ? 'animate-spin' : ''"
+              :stroke-width="2"
+            />
             {{ t('common.refresh') }}
           </button>
         </div>
 
-        <div class="mt-3 space-y-2">
-          <div v-if="tasksLoading" class="text-sm text-gray-500 dark:text-gray-400">
+        <div class="mt-3 space-y-2" aria-live="polite">
+          <div v-if="tasksLoading" role="status" class="text-sm text-foreground-muted">
             {{ t('admin.usage.cleanup.loadingTasks') }}
           </div>
-          <div v-else-if="tasks.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
+          <div v-else-if="tasks.length === 0" class="text-sm text-foreground-muted">
             {{ t('admin.usage.cleanup.noTasks') }}
           </div>
           <div v-else class="space-y-2">
             <div
               v-for="task in tasks"
               :key="task.id"
-              class="flex flex-col gap-2 rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-600 dark:border-dark-700 dark:text-gray-300"
+              class="flex min-w-0 flex-col gap-2 rounded-panel border border-outline bg-surface-subtle px-3 py-2 text-sm text-foreground-muted"
             >
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <span :class="statusClass(task.status)" class="rounded-full px-2 py-0.5 text-xs font-semibold">
+              <div class="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
+                  <span :class="['badge', statusClass(task.status)]">
                     {{ statusLabel(task.status) }}
                   </span>
-                  <span class="text-xs text-gray-400">#{{ task.id }}</span>
+                  <span class="text-xs text-foreground-subtle">#{{ task.id }}</span>
                   <button
                     v-if="canCancel(task)"
                     type="button"
-                    class="btn btn-ghost btn-xs text-rose-600 hover:text-rose-700 dark:text-rose-300"
+                    class="btn btn-ghost btn-sm text-danger-foreground"
+                    :disabled="canceling || submitting"
                     @click="openCancelConfirm(task)"
                   >
                     {{ t('admin.usage.cleanup.cancel') }}
                   </button>
                 </div>
-                <div class="text-xs text-gray-400">
+                <div class="break-words text-xs text-foreground-subtle">
                   {{ formatDateTime(task.created_at) }}
                 </div>
               </div>
-              <div class="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                <span>{{ t('admin.usage.cleanup.range') }}: {{ formatRange(task) }}</span>
+              <div class="flex min-w-0 flex-col gap-1 text-xs text-foreground-muted sm:flex-row sm:flex-wrap sm:gap-4">
+                <span class="break-words">{{ t('admin.usage.cleanup.range') }}: {{ formatRange(task) }}</span>
                 <span>{{ t('admin.usage.cleanup.deletedRows') }}: {{ task.deleted_rows.toLocaleString() }}</span>
               </div>
-              <div v-if="task.error_message" class="text-xs text-rose-500">
+              <div v-if="task.error_message" class="break-all text-xs text-danger-foreground">
                 {{ task.error_message }}
               </div>
             </div>
@@ -79,15 +95,25 @@
           @update:page="handleTaskPageChange"
           @update:pageSize="handleTaskPageSizeChange"
         />
-      </div>
+      </section>
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-3">
-        <button type="button" class="btn btn-secondary" @click="handleClose">
+      <div class="grid w-full grid-cols-1 gap-2 sm:flex sm:justify-end">
+        <button
+          type="button"
+          class="btn btn-secondary w-full sm:w-auto"
+          :disabled="submitting || canceling"
+          @click="handleClose"
+        >
           {{ t('common.cancel') }}
         </button>
-        <button type="button" class="btn btn-danger" :disabled="submitting" @click="openConfirm">
+        <button
+          type="button"
+          class="btn btn-danger w-full sm:w-auto"
+          :disabled="submitting || canceling"
+          @click="openConfirm"
+        >
           {{ submitting ? t('admin.usage.cleanup.submitting') : t('admin.usage.cleanup.submit') }}
         </button>
       </div>
@@ -123,6 +149,7 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import UsageFilters from '@/components/admin/usage/UsageFilters.vue'
+import { Icon } from '@/components/icons'
 import { adminUsageAPI } from '@/api/admin/usage'
 import type { AdminUsageQueryParams, UsageCleanupTask, CreateUsageCleanupTaskRequest } from '@/api/admin/usage'
 import { requestTypeToLegacyStream } from '@/utils/usageRequestType'
@@ -183,6 +210,7 @@ const stopPolling = () => {
 }
 
 const handleClose = () => {
+  if (submitting.value || canceling.value) return
   stopPolling()
   confirmVisible.value = false
   cancelConfirmVisible.value = false
@@ -205,13 +233,13 @@ const statusLabel = (status: string) => {
 
 const statusClass = (status: string) => {
   const map: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200',
-    running: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200',
-    succeeded: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
-    failed: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200',
-    canceled: 'bg-gray-200 text-gray-600 dark:bg-dark-600 dark:text-gray-300'
+    pending: 'badge-warning',
+    running: 'badge-primary',
+    succeeded: 'badge-success',
+    failed: 'badge-danger',
+    canceled: 'badge-gray'
   }
-  return map[status] || 'bg-gray-100 text-gray-600'
+  return map[status] || 'badge-gray'
 }
 
 const formatDateTime = (value?: string | null) => {
@@ -272,6 +300,7 @@ const handleTaskPageSizeChange = (size: number) => {
 }
 
 const openConfirm = () => {
+  if (submitting.value || canceling.value) return
   confirmVisible.value = true
 }
 
@@ -280,6 +309,7 @@ const canCancel = (task: UsageCleanupTask) => {
 }
 
 const openCancelConfirm = (task: UsageCleanupTask) => {
+  if (submitting.value || canceling.value) return
   cancelTarget.value = task
   cancelConfirmVisible.value = true
 }
@@ -328,6 +358,7 @@ const buildPayload = (): CreateUsageCleanupTaskRequest | null => {
 }
 
 const submitCleanup = async () => {
+  if (submitting.value || canceling.value) return
   const payload = buildPayload()
   if (!payload) {
     confirmVisible.value = false
@@ -348,6 +379,7 @@ const submitCleanup = async () => {
 }
 
 const cancelTask = async () => {
+  if (canceling.value || submitting.value) return
   const task = cancelTarget.value
   if (!task) {
     cancelConfirmVisible.value = false
@@ -377,8 +409,12 @@ watch(
       startPolling()
     } else {
       stopPolling()
+      confirmVisible.value = false
+      cancelConfirmVisible.value = false
+      cancelTarget.value = null
     }
-  }
+  },
+  { immediate: true }
 )
 
 onUnmounted(() => {

@@ -6,14 +6,13 @@
     @close="emit('close')"
   >
     <div class="space-y-4">
-      <!-- Add Plan Button -->
-      <div class="flex items-center justify-between">
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-          {{ t('admin.scheduledTests.title') }}
-        </p>
+      <div class="flex justify-end">
         <button
+          type="button"
+          class="btn btn-primary w-full sm:w-auto"
+          :aria-expanded="showAddForm"
+          aria-controls="scheduled-test-add-form"
           @click="showAddForm = !showAddForm"
-          class="btn btn-primary flex items-center gap-1.5 text-sm"
         >
           <Icon name="plus" size="sm" :stroke-width="2" />
           {{ t('admin.scheduledTests.addPlan') }}
@@ -23,17 +22,19 @@
       <!-- Add Plan Form -->
       <div
         v-if="showAddForm"
-        class="rounded-xl border border-primary-200 bg-primary-50/50 p-4 dark:border-primary-800 dark:bg-primary-900/20"
+        id="scheduled-test-add-form"
+        class="rounded-panel border border-outline bg-surface-subtle p-3 sm:p-4"
       >
-        <div class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div class="mb-3 text-sm font-medium text-foreground">
           {{ t('admin.scheduledTests.addPlan') }}
         </div>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+            <label for="scheduled-test-new-model" class="mb-1 block text-xs font-medium text-foreground-muted">
               {{ t('admin.scheduledTests.model') }}
             </label>
             <Select
+              id="scheduled-test-new-model"
               v-model="newPlan.model_id"
               :options="modelOptions"
               :placeholder="t('admin.scheduledTests.model')"
@@ -41,13 +42,19 @@
             />
           </div>
           <div>
-            <label class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-              {{ t('admin.scheduledTests.cronExpression') }}
-              <HelpTooltip>
+            <div class="mb-1 flex items-center gap-1 text-xs font-medium text-foreground-muted">
+              <label for="scheduled-test-new-cron">
+                {{ t('admin.scheduledTests.cronExpression') }}
+              </label>
+              <HelpTooltip trigger="click">
                 <template #trigger>
-                  <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-gray-400/70 text-[10px] font-semibold text-gray-400 transition-colors hover:border-primary-500 hover:text-primary-600 dark:border-gray-500 dark:text-gray-500 dark:hover:border-primary-400 dark:hover:text-primary-400">
-                    ?
-                  </span>
+                  <button
+                    type="button"
+                    class="inline-flex h-6 w-6 items-center justify-center rounded-control text-foreground-subtle hover:bg-surface hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+                    :aria-label="t('admin.scheduledTests.cronTooltipTitle')"
+                  >
+                    <Icon name="infoCircle" size="xs" :stroke-width="2" />
+                  </button>
                 </template>
                 <div class="space-y-1.5">
                   <p class="font-medium">{{ t('admin.scheduledTests.cronTooltipTitle') }}</p>
@@ -59,21 +66,28 @@
                   <p>{{ t('admin.scheduledTests.cronTooltipRange') }}</p>
                 </div>
               </HelpTooltip>
-            </label>
+            </div>
             <Input
+              id="scheduled-test-new-cron"
               v-model="newPlan.cron_expression"
               :placeholder="'*/30 * * * *'"
               :hint="t('admin.scheduledTests.cronHelp')"
             />
           </div>
           <div>
-            <label class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-              {{ t('admin.scheduledTests.maxResults') }}
-              <HelpTooltip>
+            <div class="mb-1 flex items-center gap-1 text-xs font-medium text-foreground-muted">
+              <label for="scheduled-test-new-max-results">
+                {{ t('admin.scheduledTests.maxResults') }}
+              </label>
+              <HelpTooltip trigger="click">
                 <template #trigger>
-                  <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-gray-400/70 text-[10px] font-semibold text-gray-400 transition-colors hover:border-primary-500 hover:text-primary-600 dark:border-gray-500 dark:text-gray-500 dark:hover:border-primary-400 dark:hover:text-primary-400">
-                    ?
-                  </span>
+                  <button
+                    type="button"
+                    class="inline-flex h-6 w-6 items-center justify-center rounded-control text-foreground-subtle hover:bg-surface hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+                    :aria-label="t('admin.scheduledTests.maxResultsTooltipTitle')"
+                  >
+                    <Icon name="infoCircle" size="xs" :stroke-width="2" />
+                  </button>
                 </template>
                 <div class="space-y-1.5">
                   <p class="font-medium">{{ t('admin.scheduledTests.maxResultsTooltipTitle') }}</p>
@@ -83,42 +97,51 @@
                   <p>{{ t('admin.scheduledTests.maxResultsTooltipRange') }}</p>
                 </div>
               </HelpTooltip>
-            </label>
+            </div>
             <Input
+              id="scheduled-test-new-max-results"
               v-model="newPlan.max_results"
               type="number"
               placeholder="100"
             />
           </div>
           <div class="flex items-end">
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <Toggle v-model="newPlan.enabled" />
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
+              <Toggle
+                v-model="newPlan.enabled"
+                :aria-label="t('admin.scheduledTests.enabled')"
+              />
               {{ t('admin.scheduledTests.enabled') }}
             </label>
           </div>
           <div class="flex items-end">
             <div>
-              <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <Toggle v-model="newPlan.auto_recover" />
+              <label class="flex items-center gap-2 text-sm text-foreground-muted">
+                <Toggle
+                  v-model="newPlan.auto_recover"
+                  :aria-label="t('admin.scheduledTests.autoRecover')"
+                />
                 {{ t('admin.scheduledTests.autoRecover') }}
               </label>
-              <p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+              <p class="mt-1 text-xs text-foreground-subtle">
                 {{ t('admin.scheduledTests.autoRecoverHelp') }}
               </p>
             </div>
           </div>
         </div>
-        <div class="mt-3 flex justify-end gap-2">
+        <div class="mt-3 grid grid-cols-1 gap-2 sm:flex sm:justify-end">
           <button
+            type="button"
             @click="showAddForm = false; resetNewPlan()"
-            class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-300 dark:hover:bg-dark-500"
+            class="btn btn-secondary btn-sm w-full sm:w-auto"
           >
             {{ t('common.cancel') }}
           </button>
           <button
+            type="button"
             @click="handleCreate"
             :disabled="!newPlan.model_id || !newPlan.cron_expression || creating"
-            class="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
+            class="btn btn-primary btn-sm w-full sm:w-auto"
           >
             <Icon v-if="creating" name="refresh" size="sm" class="animate-spin" :stroke-width="2" />
             {{ t('common.save') }}
@@ -127,18 +150,18 @@
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-8">
-        <Icon name="refresh" size="md" class="animate-spin text-gray-400" :stroke-width="2" />
-        <span class="ml-2 text-sm text-gray-500">{{ t('common.loading') }}...</span>
+      <div v-if="loading" role="status" class="flex items-center justify-center py-8">
+        <Icon name="refresh" size="md" class="animate-spin text-foreground-subtle" :stroke-width="2" />
+        <span class="ml-2 text-sm text-foreground-muted">{{ t('common.loading') }}...</span>
       </div>
 
       <!-- Empty State -->
       <div
         v-else-if="plans.length === 0"
-        class="rounded-xl border border-dashed border-gray-300 py-10 text-center dark:border-dark-600"
+        class="rounded-panel border border-dashed border-outline-strong bg-surface-subtle px-3 py-10 text-center"
       >
-        <Icon name="calendar" size="lg" class="mx-auto mb-2 text-gray-400" :stroke-width="1.5" />
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <Icon name="calendar" size="lg" class="mx-auto mb-2 text-foreground-subtle" :stroke-width="1.5" />
+        <p class="text-sm text-foreground-muted">
           {{ t('admin.scheduledTests.noPlans') }}
         </p>
       </div>
@@ -148,102 +171,101 @@
         <div
           v-for="plan in plans"
           :key="plan.id"
-          class="rounded-xl border border-gray-200 bg-white transition-all dark:border-dark-600 dark:bg-dark-800"
+          class="min-w-0 overflow-hidden rounded-panel border border-outline bg-surface"
         >
-          <!-- Plan Header -->
-          <div
-            class="flex cursor-pointer items-center justify-between px-4 py-3"
-            @click="toggleExpand(plan.id)"
-          >
-            <div class="flex flex-1 items-center gap-4">
-              <!-- Model -->
+          <div class="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+            <button
+              type="button"
+              class="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-control text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+              :aria-expanded="expandedPlanId === plan.id"
+              :aria-controls="`scheduled-test-results-${plan.id}`"
+              @click="toggleExpand(plan.id)"
+            >
               <div class="min-w-0">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div class="truncate text-sm font-medium text-foreground" :title="plan.model_id">
                   {{ plan.model_id }}
                 </div>
-                <div class="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">
+                <div class="mt-0.5 truncate font-mono text-xs text-foreground-muted" :title="plan.cron_expression">
                   {{ plan.cron_expression }}
                 </div>
               </div>
-
-              <!-- Enabled Toggle -->
-              <div class="flex items-center gap-1.5" @click.stop>
-                <Toggle
-                  :model-value="plan.enabled"
-                  @update:model-value="(val: boolean) => handleToggleEnabled(plan, val)"
-                />
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ plan.enabled ? t('admin.scheduledTests.enabled') : '' }}
-                </span>
-              </div>
-
-              <!-- Auto Recover Badge -->
-              <span
-                v-if="plan.auto_recover"
-                class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-              >
+              <span v-if="plan.auto_recover" class="badge badge-success hidden shrink-0 sm:inline-flex">
                 {{ t('admin.scheduledTests.autoRecover') }}
               </span>
-            </div>
-
-            <div class="flex items-center gap-3">
-              <!-- Last Run -->
-              <div v-if="plan.last_run_at" class="hidden text-right text-xs text-gray-500 dark:text-gray-400 sm:block">
-                <div>{{ t('admin.scheduledTests.lastRun') }}</div>
-                <div>{{ formatDateTime(plan.last_run_at) }}</div>
-              </div>
-
-              <!-- Next Run -->
-              <div v-if="plan.next_run_at" class="hidden text-right text-xs text-gray-500 dark:text-gray-400 sm:block">
-                <div>{{ t('admin.scheduledTests.nextRun') }}</div>
-                <div>{{ formatDateTime(plan.next_run_at) }}</div>
-              </div>
-
-              <!-- Actions -->
-              <div class="flex items-center gap-1" @click.stop>
-                <button
-                  @click="startEdit(plan)"
-                  class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20"
-                  :title="t('admin.scheduledTests.editPlan')"
-                >
-                  <Icon name="edit" size="sm" :stroke-width="2" />
-                </button>
-                <button
-                  @click="confirmDeletePlan(plan)"
-                  class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                  :title="t('admin.scheduledTests.deletePlan')"
-                >
-                  <Icon name="trash" size="sm" :stroke-width="2" />
-                </button>
-              </div>
-
-              <!-- Expand indicator -->
               <Icon
                 name="chevronDown"
                 size="sm"
                 :class="[
-                  'text-gray-400 transition-transform duration-200',
+                  'shrink-0 text-foreground-subtle transition-transform duration-200',
                   expandedPlanId === plan.id ? 'rotate-180' : ''
                 ]"
               />
+            </button>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 sm:justify-end sm:gap-3">
+              <div class="flex items-center gap-1.5">
+                <Toggle
+                  :model-value="plan.enabled"
+                  :aria-label="`${plan.model_id}: ${t('admin.scheduledTests.enabled')}`"
+                  @update:model-value="(val: boolean) => handleToggleEnabled(plan, val)"
+                />
+                <span class="text-xs text-foreground-muted">
+                  {{ plan.enabled ? t('admin.scheduledTests.enabled') : '' }}
+                </span>
+              </div>
+
+              <span v-if="plan.auto_recover" class="badge badge-success sm:hidden">
+                {{ t('admin.scheduledTests.autoRecover') }}
+              </span>
+
+              <div v-if="plan.last_run_at" class="hidden text-right text-xs text-foreground-muted lg:block">
+                <div>{{ t('admin.scheduledTests.lastRun') }}</div>
+                <div>{{ formatDateTime(plan.last_run_at) }}</div>
+              </div>
+
+              <div v-if="plan.next_run_at" class="hidden text-right text-xs text-foreground-muted lg:block">
+                <div>{{ t('admin.scheduledTests.nextRun') }}</div>
+                <div>{{ formatDateTime(plan.next_run_at) }}</div>
+              </div>
+
+              <div class="ml-auto flex items-center gap-1 sm:ml-0">
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm w-control-sm px-0"
+                  :aria-label="t('admin.scheduledTests.editPlan')"
+                  :title="t('admin.scheduledTests.editPlan')"
+                  @click="startEdit(plan)"
+                >
+                  <Icon name="edit" size="sm" :stroke-width="2" />
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm w-control-sm px-0 text-danger-foreground"
+                  :aria-label="t('admin.scheduledTests.deletePlan')"
+                  :title="t('admin.scheduledTests.deletePlan')"
+                  @click="confirmDeletePlan(plan)"
+                >
+                  <Icon name="trash" size="sm" :stroke-width="2" />
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- Edit Form -->
           <div
             v-if="editingPlanId === plan.id"
-            class="border-t border-blue-100 bg-blue-50/50 px-4 py-3 dark:border-blue-900 dark:bg-blue-900/10"
-            @click.stop
+            class="border-t border-outline bg-surface-subtle px-3 py-3 sm:px-4"
           >
-            <div class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+            <div class="mb-2 text-xs font-medium text-foreground-muted">
               {{ t('admin.scheduledTests.editPlan') }}
             </div>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                <label for="scheduled-test-edit-model" class="mb-1 block text-xs font-medium text-foreground-muted">
                   {{ t('admin.scheduledTests.model') }}
                 </label>
                 <Select
+                  id="scheduled-test-edit-model"
                   v-model="editForm.model_id"
                   :options="modelOptions"
                   :placeholder="t('admin.scheduledTests.model')"
@@ -251,13 +273,19 @@
                 />
               </div>
               <div>
-                <label class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-                  {{ t('admin.scheduledTests.cronExpression') }}
-                  <HelpTooltip>
+                <div class="mb-1 flex items-center gap-1 text-xs font-medium text-foreground-muted">
+                  <label for="scheduled-test-edit-cron">
+                    {{ t('admin.scheduledTests.cronExpression') }}
+                  </label>
+                  <HelpTooltip trigger="click">
                     <template #trigger>
-                      <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-gray-400/70 text-[10px] font-semibold text-gray-400 transition-colors hover:border-primary-500 hover:text-primary-600 dark:border-gray-500 dark:text-gray-500 dark:hover:border-primary-400 dark:hover:text-primary-400">
-                        ?
-                      </span>
+                      <button
+                        type="button"
+                        class="inline-flex h-6 w-6 items-center justify-center rounded-control text-foreground-subtle hover:bg-surface hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+                        :aria-label="t('admin.scheduledTests.cronTooltipTitle')"
+                      >
+                        <Icon name="infoCircle" size="xs" :stroke-width="2" />
+                      </button>
                     </template>
                     <div class="space-y-1.5">
                       <p class="font-medium">{{ t('admin.scheduledTests.cronTooltipTitle') }}</p>
@@ -269,21 +297,28 @@
                       <p>{{ t('admin.scheduledTests.cronTooltipRange') }}</p>
                     </div>
                   </HelpTooltip>
-                </label>
+                </div>
                 <Input
+                  id="scheduled-test-edit-cron"
                   v-model="editForm.cron_expression"
                   :placeholder="'*/30 * * * *'"
                   :hint="t('admin.scheduledTests.cronHelp')"
                 />
               </div>
               <div>
-                <label class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-                  {{ t('admin.scheduledTests.maxResults') }}
-                  <HelpTooltip>
+                <div class="mb-1 flex items-center gap-1 text-xs font-medium text-foreground-muted">
+                  <label for="scheduled-test-edit-max-results">
+                    {{ t('admin.scheduledTests.maxResults') }}
+                  </label>
+                  <HelpTooltip trigger="click">
                     <template #trigger>
-                      <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-gray-400/70 text-[10px] font-semibold text-gray-400 transition-colors hover:border-primary-500 hover:text-primary-600 dark:border-gray-500 dark:text-gray-500 dark:hover:border-primary-400 dark:hover:text-primary-400">
-                        ?
-                      </span>
+                      <button
+                        type="button"
+                        class="inline-flex h-6 w-6 items-center justify-center rounded-control text-foreground-subtle hover:bg-surface hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+                        :aria-label="t('admin.scheduledTests.maxResultsTooltipTitle')"
+                      >
+                        <Icon name="infoCircle" size="xs" :stroke-width="2" />
+                      </button>
                     </template>
                     <div class="space-y-1.5">
                       <p class="font-medium">{{ t('admin.scheduledTests.maxResultsTooltipTitle') }}</p>
@@ -293,42 +328,51 @@
                       <p>{{ t('admin.scheduledTests.maxResultsTooltipRange') }}</p>
                     </div>
                   </HelpTooltip>
-                </label>
+                </div>
                 <Input
+                  id="scheduled-test-edit-max-results"
                   v-model="editForm.max_results"
                   type="number"
                   placeholder="100"
                 />
               </div>
               <div class="flex items-end">
-                <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <Toggle v-model="editForm.enabled" />
+                <label class="flex items-center gap-2 text-sm text-foreground-muted">
+                  <Toggle
+                    v-model="editForm.enabled"
+                    :aria-label="t('admin.scheduledTests.enabled')"
+                  />
                   {{ t('admin.scheduledTests.enabled') }}
                 </label>
               </div>
               <div class="flex items-end">
                 <div>
-                  <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                    <Toggle v-model="editForm.auto_recover" />
+                  <label class="flex items-center gap-2 text-sm text-foreground-muted">
+                    <Toggle
+                      v-model="editForm.auto_recover"
+                      :aria-label="t('admin.scheduledTests.autoRecover')"
+                    />
                     {{ t('admin.scheduledTests.autoRecover') }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                  <p class="mt-1 text-xs text-foreground-subtle">
                     {{ t('admin.scheduledTests.autoRecoverHelp') }}
                   </p>
                 </div>
               </div>
             </div>
-            <div class="mt-3 flex justify-end gap-2">
+            <div class="mt-3 grid grid-cols-1 gap-2 sm:flex sm:justify-end">
               <button
+                type="button"
                 @click="cancelEdit"
-                class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-300 dark:hover:bg-dark-500"
+                class="btn btn-secondary btn-sm w-full sm:w-auto"
               >
                 {{ t('common.cancel') }}
               </button>
               <button
+                type="button"
                 @click="handleEdit"
                 :disabled="!editForm.model_id || !editForm.cron_expression || updating"
-                class="flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
+                class="btn btn-primary btn-sm w-full sm:w-auto"
               >
                 <Icon v-if="updating" name="refresh" size="sm" class="animate-spin" :stroke-width="2" />
                 {{ t('common.save') }}
@@ -339,22 +383,21 @@
           <!-- Expanded Results Section -->
           <div
             v-if="expandedPlanId === plan.id"
-            class="border-t border-gray-100 px-4 py-3 dark:border-dark-700"
+            :id="`scheduled-test-results-${plan.id}`"
+            class="border-t border-outline px-3 py-3 sm:px-4"
           >
-            <div class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+            <div class="mb-2 text-xs font-medium text-foreground-muted">
               {{ t('admin.scheduledTests.results') }}
             </div>
 
-            <!-- Results Loading -->
-            <div v-if="loadingResults" class="flex items-center justify-center py-4">
-              <Icon name="refresh" size="sm" class="animate-spin text-gray-400" :stroke-width="2" />
-              <span class="ml-2 text-xs text-gray-500">{{ t('common.loading') }}...</span>
+            <div v-if="loadingResults" role="status" class="flex items-center justify-center py-4">
+              <Icon name="refresh" size="sm" class="animate-spin text-foreground-subtle" :stroke-width="2" />
+              <span class="ml-2 text-xs text-foreground-muted">{{ t('common.loading') }}...</span>
             </div>
 
-            <!-- No Results -->
             <div
               v-else-if="results.length === 0"
-              class="py-4 text-center text-xs text-gray-500 dark:text-gray-400"
+              class="py-4 text-center text-xs text-foreground-muted"
             >
               {{ t('admin.scheduledTests.noResults') }}
             </div>
@@ -364,81 +407,70 @@
               <div
                 v-for="result in results"
                 :key="result.id"
-                class="rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-900"
+                class="min-w-0 rounded-panel border border-outline bg-surface-subtle p-3"
               >
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <!-- Status Badge -->
-                    <span
-                      :class="[
-                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                        result.status === 'success'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'
-                          : result.status === 'running'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
-                      ]"
-                    >
-                      {{
-                        result.status === 'success'
-                          ? t('admin.scheduledTests.success')
-                          : result.status === 'running'
-                            ? t('admin.scheduledTests.running')
-                            : t('admin.scheduledTests.failed')
-                      }}
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span :class="['badge', resultStatusClass(result.status)]">
+                      {{ resultStatusLabel(result.status) }}
                     </span>
 
-                    <!-- Latency -->
-                    <span v-if="result.latency_ms > 0" class="text-xs text-gray-500 dark:text-gray-400">
+                    <span v-if="result.latency_ms > 0" class="text-xs text-foreground-muted">
                       {{ result.latency_ms }}ms
                     </span>
                   </div>
 
-                  <!-- Started At -->
-                  <span class="text-xs text-gray-400">
+                  <span class="break-words text-xs text-foreground-subtle">
                     {{ formatDateTime(result.started_at) }}
                   </span>
                 </div>
 
-                <!-- Response / Error (collapsible) -->
                 <div v-if="result.error_message" class="mt-2">
-                  <div
-                    class="cursor-pointer text-xs font-medium text-red-600 dark:text-red-400"
+                  <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-2 rounded-control py-1 text-left text-xs font-medium text-danger-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+                    :aria-expanded="expandedResultIds.has(result.id)"
+                    :aria-controls="`scheduled-result-detail-${result.id}`"
                     @click="toggleResultDetail(result.id)"
                   >
-                    {{ t('admin.scheduledTests.errorMessage') }}
+                    <span>{{ t('admin.scheduledTests.errorMessage') }}</span>
                     <Icon
                       name="chevronDown"
                       size="sm"
                       :class="[
-                        'inline transition-transform duration-200',
+                        'shrink-0 transition-transform duration-200',
                         expandedResultIds.has(result.id) ? 'rotate-180' : ''
                       ]"
                     />
-                  </div>
+                  </button>
                   <pre
                     v-if="expandedResultIds.has(result.id)"
-                    class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap rounded bg-red-50 p-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-300"
+                    :id="`scheduled-result-detail-${result.id}`"
+                    class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-control border border-danger/20 bg-danger-subtle p-2 text-xs text-danger-foreground"
                   >{{ result.error_message }}</pre>
                 </div>
                 <div v-else-if="result.response_text" class="mt-2">
-                  <div
-                    class="cursor-pointer text-xs font-medium text-gray-600 dark:text-gray-400"
+                  <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-2 rounded-control py-1 text-left text-xs font-medium text-foreground-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+                    :aria-expanded="expandedResultIds.has(result.id)"
+                    :aria-controls="`scheduled-result-detail-${result.id}`"
                     @click="toggleResultDetail(result.id)"
                   >
-                    {{ t('admin.scheduledTests.responseText') }}
+                    <span>{{ t('admin.scheduledTests.responseText') }}</span>
                     <Icon
                       name="chevronDown"
                       size="sm"
                       :class="[
-                        'inline transition-transform duration-200',
+                        'shrink-0 transition-transform duration-200',
                         expandedResultIds.has(result.id) ? 'rotate-180' : ''
                       ]"
                     />
-                  </div>
+                  </button>
                   <pre
                     v-if="expandedResultIds.has(result.id)"
-                    class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap rounded bg-gray-100 p-2 text-xs text-gray-700 dark:bg-dark-800 dark:text-gray-300"
+                    :id="`scheduled-result-detail-${result.id}`"
+                    class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-control border border-outline bg-surface p-2 text-xs text-foreground-muted"
                   >{{ result.response_text }}</pre>
                 </div>
               </div>
@@ -527,6 +559,18 @@ const resetNewPlan = () => {
   newPlan.auto_recover = false
 }
 
+const resultStatusClass = (status: string) => {
+  if (status === 'success') return 'badge-success'
+  if (status === 'running') return 'badge-primary'
+  return 'badge-danger'
+}
+
+const resultStatusLabel = (status: string) => {
+  if (status === 'success') return t('admin.scheduledTests.success')
+  if (status === 'running') return t('admin.scheduledTests.running')
+  return t('admin.scheduledTests.failed')
+}
+
 // Load plans when dialog opens
 watch(
   () => props.show,
@@ -541,7 +585,8 @@ watch(
       showAddForm.value = false
       showDeleteConfirm.value = false
     }
-  }
+  },
+  { immediate: true }
 )
 
 const loadPlans = async () => {

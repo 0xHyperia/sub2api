@@ -5,6 +5,47 @@ export default {
   theme: {
     extend: {
       colors: {
+        canvas: 'rgb(var(--color-canvas) / <alpha-value>)',
+        surface: {
+          DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
+          subtle: 'rgb(var(--color-surface-subtle) / <alpha-value>)',
+          raised: 'rgb(var(--color-surface-raised) / <alpha-value>)'
+        },
+        foreground: {
+          DEFAULT: 'rgb(var(--color-foreground) / <alpha-value>)',
+          muted: 'rgb(var(--color-foreground-muted) / <alpha-value>)',
+          subtle: 'rgb(var(--color-foreground-subtle) / <alpha-value>)'
+        },
+        outline: {
+          DEFAULT: 'rgb(var(--color-border) / <alpha-value>)',
+          strong: 'rgb(var(--color-border-strong) / <alpha-value>)'
+        },
+        brand: {
+          DEFAULT: 'rgb(var(--color-brand) / <alpha-value>)',
+          hover: 'rgb(var(--color-brand-hover) / <alpha-value>)',
+          foreground: 'rgb(var(--color-brand-foreground) / <alpha-value>)'
+        },
+        focus: 'rgb(var(--color-focus) / <alpha-value>)',
+        info: {
+          DEFAULT: 'rgb(var(--color-info) / <alpha-value>)',
+          subtle: 'rgb(var(--color-info-subtle) / <alpha-value>)',
+          foreground: 'rgb(var(--color-info-foreground) / <alpha-value>)'
+        },
+        success: {
+          DEFAULT: 'rgb(var(--color-success) / <alpha-value>)',
+          subtle: 'rgb(var(--color-success-subtle) / <alpha-value>)',
+          foreground: 'rgb(var(--color-success-foreground) / <alpha-value>)'
+        },
+        warning: {
+          DEFAULT: 'rgb(var(--color-warning) / <alpha-value>)',
+          subtle: 'rgb(var(--color-warning-subtle) / <alpha-value>)',
+          foreground: 'rgb(var(--color-warning-foreground) / <alpha-value>)'
+        },
+        danger: {
+          DEFAULT: 'rgb(var(--color-danger) / <alpha-value>)',
+          subtle: 'rgb(var(--color-danger-subtle) / <alpha-value>)',
+          foreground: 'rgb(var(--color-danger-foreground) / <alpha-value>)'
+        },
         // 主色调 - Teal/Cyan 青色系
         primary: {
           50: '#f0fdfa',
@@ -69,8 +110,10 @@ export default {
         'glass-sm': '0 4px 16px rgba(0, 0, 0, 0.06)',
         glow: '0 0 20px rgba(20, 184, 166, 0.25)',
         'glow-lg': '0 0 40px rgba(20, 184, 166, 0.35)',
-        card: '0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06)',
-        'card-hover': '0 10px 40px rgba(0, 0, 0, 0.08)',
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-floating)',
+        floating: 'var(--shadow-floating)',
+        modal: 'var(--shadow-modal)',
         'inner-glow': 'inset 0 1px 0 rgba(255, 255, 255, 0.1)'
       },
       backgroundImage: {
@@ -126,7 +169,34 @@ export default {
         xs: '2px'
       },
       borderRadius: {
+        control: 'var(--radius-sm)',
+        panel: 'var(--radius-md)',
+        dialog: 'var(--radius-md)',
         '4xl': '2rem'
+      },
+      height: {
+        'control-sm': 'var(--control-height-sm)',
+        control: 'var(--control-height)',
+        'control-lg': 'var(--control-height-lg)'
+      },
+      width: {
+        'control-sm': 'var(--control-height-sm)',
+        control: 'var(--control-height)',
+        'control-lg': 'var(--control-height-lg)'
+      },
+      minHeight: {
+        'control-sm': 'var(--control-height-sm)',
+        control: 'var(--control-height)',
+        'control-lg': 'var(--control-height-lg)',
+        touch: 'var(--touch-target)'
+      },
+      maxWidth: {
+        page: 'var(--page-max-width)'
+      },
+      spacing: {
+        gutter: 'var(--page-gutter)',
+        sidebar: 'var(--sidebar-width)',
+        'sidebar-collapsed': 'var(--sidebar-width-collapsed)'
       }
     }
   },

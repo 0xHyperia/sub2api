@@ -1,62 +1,62 @@
 <template>
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+  <div class="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
     <!-- Today Revenue -->
-    <div class="card p-4">
-      <div class="flex items-center gap-3">
-        <div class="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
-          <Icon name="dollar" size="md" class="text-green-600 dark:text-green-400" :stroke-width="2" />
+    <article class="min-w-0 rounded-panel border border-outline bg-surface p-4">
+      <div class="flex min-w-0 items-start gap-3">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-success-subtle text-success-foreground">
+          <Icon name="dollar" size="md" :stroke-width="2" />
         </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('payment.admin.todayRevenue') }}</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">${{ formatMoney(stats.today_amount) }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-foreground-muted">{{ t('payment.admin.todayRevenue') }}</p>
+          <p class="break-all text-xl font-bold text-foreground">${{ formatMoney(stats.today_amount) }}</p>
+          <p class="text-xs text-foreground-subtle">
             {{ stats.today_count }} {{ t('payment.admin.orders') }}
           </p>
         </div>
       </div>
-    </div>
+    </article>
 
     <!-- Total Revenue -->
-    <div class="card p-4">
-      <div class="flex items-center gap-3">
-        <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
-          <Icon name="creditCard" size="md" class="text-blue-600 dark:text-blue-400" :stroke-width="2" />
+    <article class="min-w-0 rounded-panel border border-outline bg-surface p-4">
+      <div class="flex min-w-0 items-start gap-3">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-info-subtle text-info-foreground">
+          <Icon name="creditCard" size="md" :stroke-width="2" />
         </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('payment.admin.totalRevenue') }}</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">${{ formatMoney(stats.total_amount) }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-foreground-muted">{{ t('payment.admin.totalRevenue') }}</p>
+          <p class="break-all text-xl font-bold text-foreground">${{ formatMoney(stats.total_amount) }}</p>
+          <p class="text-xs text-foreground-subtle">
             {{ stats.total_count }} {{ t('payment.admin.orders') }}
           </p>
         </div>
       </div>
-    </div>
+    </article>
 
     <!-- Today Orders -->
-    <div class="card p-4">
-      <div class="flex items-center gap-3">
-        <div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
-          <Icon name="chart" size="md" class="text-purple-600 dark:text-purple-400" :stroke-width="2" />
+    <article class="min-w-0 rounded-panel border border-outline bg-surface p-4">
+      <div class="flex min-w-0 items-start gap-3">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface-subtle text-foreground-muted">
+          <Icon name="chart" size="md" :stroke-width="2" />
         </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('payment.admin.todayOrders') }}</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats.today_count }}</p>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-foreground-muted">{{ t('payment.admin.todayOrders') }}</p>
+          <p class="break-all text-xl font-bold text-foreground">{{ stats.today_count }}</p>
         </div>
       </div>
-    </div>
+    </article>
 
     <!-- Average Amount -->
-    <div class="card p-4">
-      <div class="flex items-center gap-3">
-        <div class="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30">
-          <Icon name="chart" size="md" class="text-amber-600 dark:text-amber-400" :stroke-width="2" />
+    <article class="min-w-0 rounded-panel border border-outline bg-surface p-4">
+      <div class="flex min-w-0 items-start gap-3">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-warning-subtle text-warning-foreground">
+          <Icon name="chart" size="md" :stroke-width="2" />
         </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('payment.admin.avgAmount') }}</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">${{ formatMoney(stats.avg_amount) }}</p>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-foreground-muted">{{ t('payment.admin.avgAmount') }}</p>
+          <p class="break-all text-xl font-bold text-foreground">${{ formatMoney(stats.avg_amount) }}</p>
         </div>
       </div>
-    </div>
+    </article>
   </div>
 </template>
 

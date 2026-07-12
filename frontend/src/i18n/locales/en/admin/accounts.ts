@@ -1128,6 +1128,7 @@ export default {
       startingTestForAccount: 'Starting test for account: {name}',
       testAccountTypeLabel: 'Account type: {type}',
       selectTestModel: 'Select Test Model',
+      testModelsLoadFailed: 'Available test models could not be loaded.',
       testModel: 'Test model',
       testPrompt: 'Prompt: "hi"',
       imagePromptLabel: 'Image prompt',
@@ -1169,7 +1170,8 @@ export default {
         todayTokens: 'Today Tokens',
         todayCost: 'Today Cost',
         usageTrend: '30-Day Cost & Request Trend',
-        noData: 'No usage data available for this account'
+        noData: 'No usage data available for this account',
+        failedToLoad: 'Account usage statistics could not be loaded.'
       },
       usageWindow: {
         statsTitle: '5-Hour Window Usage Statistics',

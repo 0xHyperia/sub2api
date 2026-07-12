@@ -6,32 +6,45 @@
     close-on-click-outside
     @close="handleClose"
   >
-    <form id="import-proxy-data-form" class="space-y-4" @submit.prevent="handleImport">
-      <div class="text-sm text-gray-600 dark:text-dark-300">
+    <form
+      id="import-proxy-data-form"
+      class="min-w-0 space-y-4"
+      :aria-busy="importing"
+      @submit.prevent="handleImport"
+    >
+      <div class="text-sm text-foreground-muted">
         {{ t('admin.proxies.dataImportHint') }}
       </div>
       <div
-        class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-600 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+        role="note"
+        class="rounded-panel border border-warning/20 bg-warning-subtle p-3 text-xs text-warning-foreground"
       >
         {{ t('admin.proxies.dataImportWarning') }}
       </div>
 
       <div>
-        <label class="input-label">{{ t('admin.proxies.dataImportFile') }}</label>
+        <label for="proxy-import-data-file" class="input-label">
+          {{ t('admin.proxies.dataImportFile') }}
+        </label>
         <div
-          class="flex items-center justify-between gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 dark:border-dark-600 dark:bg-dark-800"
+          class="flex min-w-0 flex-col items-stretch gap-3 rounded-panel border border-dashed border-outline-strong bg-surface-subtle px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
         >
           <div class="min-w-0">
-            <div class="truncate text-sm text-gray-700 dark:text-dark-200">
+            <div class="break-all text-sm text-foreground" :title="fileName">
               {{ fileName || t('admin.proxies.dataImportSelectFile') }}
             </div>
-            <div class="text-xs text-gray-500 dark:text-dark-400">JSON (.json)</div>
+            <div class="text-xs text-foreground-subtle">JSON (.json)</div>
           </div>
-          <button type="button" class="btn btn-secondary shrink-0" @click="openFilePicker">
+          <button
+            type="button"
+            class="btn btn-secondary w-full shrink-0 sm:w-auto"
+            @click="openFilePicker"
+          >
             {{ t('common.chooseFile') }}
           </button>
         </div>
         <input
+          id="proxy-import-data-file"
           ref="fileInput"
           type="file"
           class="hidden"
@@ -42,23 +55,24 @@
 
       <div
         v-if="result"
-        class="space-y-2 rounded-xl border border-gray-200 p-4 dark:border-dark-700"
+        class="min-w-0 space-y-2 rounded-panel border border-outline bg-surface-subtle p-3 sm:p-4"
+        aria-live="polite"
       >
-        <div class="text-sm font-medium text-gray-900 dark:text-white">
+        <div class="text-sm font-medium text-foreground">
           {{ t('admin.proxies.dataImportResult') }}
         </div>
-        <div class="text-sm text-gray-700 dark:text-dark-300">
+        <div class="text-sm text-foreground-muted">
           {{ t('admin.proxies.dataImportResultSummary', result) }}
         </div>
 
         <div v-if="errorItems.length" class="mt-2">
-          <div class="text-sm font-medium text-red-600 dark:text-red-400">
+          <div class="text-sm font-medium text-danger-foreground">
             {{ t('admin.proxies.dataImportErrors') }}
           </div>
           <div
-            class="mt-2 max-h-48 overflow-auto rounded-lg bg-gray-50 p-3 font-mono text-xs dark:bg-dark-800"
+            class="mt-2 max-h-48 overflow-auto rounded-panel border border-outline bg-surface p-3 font-mono text-xs text-foreground-muted"
           >
-            <div v-for="(item, idx) in errorItems" :key="idx" class="whitespace-pre-wrap">
+            <div v-for="(item, idx) in errorItems" :key="idx" class="whitespace-pre-wrap break-all">
               {{ item.kind }} {{ item.name || item.proxy_key || '-' }} — {{ item.message }}
             </div>
           </div>
@@ -67,12 +81,12 @@
     </form>
 
     <template #footer>
-      <div class="flex justify-end gap-3">
-        <button class="btn btn-secondary" type="button" :disabled="importing" @click="handleClose">
+      <div class="grid w-full grid-cols-1 gap-2 sm:flex sm:justify-end">
+        <button class="btn btn-secondary w-full sm:w-auto" type="button" :disabled="importing" @click="handleClose">
           {{ t('common.cancel') }}
         </button>
         <button
-          class="btn btn-primary"
+          class="btn btn-primary w-full sm:w-auto"
           type="submit"
           form="import-proxy-data-form"
           :disabled="importing"

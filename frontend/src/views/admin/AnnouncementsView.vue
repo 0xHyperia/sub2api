@@ -2,36 +2,40 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <div class="flex flex-wrap items-center gap-3">
-          <!-- Left: Search + Filters -->
-          <div class="flex-1 sm:max-w-64">
+        <div class="communication-toolbar flex flex-wrap items-center gap-3">
+          <div class="relative w-full md:w-72">
+            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               v-model="searchQuery"
-              type="text"
+              type="search"
               :placeholder="t('admin.announcements.searchAnnouncements')"
-              class="input"
+              :aria-label="t('admin.announcements.searchAnnouncements')"
+              autocomplete="off"
+              class="input pl-10"
               @input="handleSearch"
             />
           </div>
-          <Select
-            v-model="filters.status"
-            :options="statusFilterOptions"
-            class="w-40"
-            @change="handleStatusChange"
-          />
+          <div class="w-full sm:w-40">
+            <Select
+              v-model="filters.status"
+              :options="statusFilterOptions"
+              @change="handleStatusChange"
+            />
+          </div>
 
-          <!-- Right: Action buttons -->
-          <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
+          <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
             <button
+              type="button"
               @click="loadAnnouncements"
               :disabled="loading"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2.5"
               :title="t('common.refresh')"
+              :aria-label="t('common.refresh')"
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
             </button>
-            <button @click="openCreateDialog" class="btn btn-primary">
-              <Icon name="plus" size="md" class="mr-1" />
+            <button type="button" @click="openCreateDialog" class="btn btn-primary">
+              <Icon name="plus" size="sm" />
               {{ t('admin.announcements.createAnnouncement') }}
             </button>
           </div>
@@ -39,7 +43,25 @@
       </template>
 
       <template #table>
+        <div class="space-y-3">
+          <div
+            v-if="loadError"
+            class="flex flex-col gap-3 rounded-panel border border-danger/30 bg-danger-subtle p-4 text-danger-foreground sm:flex-row sm:items-center sm:justify-between"
+            role="alert"
+            data-testid="announcements-load-error"
+          >
+            <div class="flex min-w-0 items-start gap-2">
+              <Icon name="exclamationTriangle" size="sm" class="mt-0.5 shrink-0" aria-hidden="true" />
+              <span class="break-words text-sm font-medium">{{ t('admin.announcements.failedToLoad') }}</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm w-full shrink-0 sm:w-auto" :disabled="loading" @click="loadAnnouncements">
+              <Icon name="refresh" size="sm" aria-hidden="true" />
+              {{ t('common.retry') }}
+            </button>
+          </div>
+
         <DataTable
+          v-if="announcements.length > 0 || !loadError"
           :columns="columns"
           :data="announcements"
           :loading="loading"
@@ -113,25 +135,31 @@
           </template>
 
           <template #cell-actions="{ row }">
-            <div class="flex items-center space-x-1">
+            <div class="flex items-center gap-1">
               <button
+                type="button"
                 @click="openReadStatus(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                class="announcement-action"
                 :title="t('admin.announcements.readStatus')"
+                :aria-label="`${t('admin.announcements.readStatus')}: ${row.title}`"
               >
                 <Icon name="eye" size="sm" />
               </button>
               <button
+                type="button"
                 @click="openEditDialog(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-dark-600 dark:hover:text-gray-300"
+                class="announcement-action"
                 :title="t('common.edit')"
+                :aria-label="`${t('common.edit')}: ${row.title}`"
               >
                 <Icon name="edit" size="sm" />
               </button>
               <button
+                type="button"
                 @click="handleDelete(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                class="announcement-action announcement-action-danger"
                 :title="t('common.delete')"
+                :aria-label="`${t('common.delete')}: ${row.title}`"
               >
                 <Icon name="trash" size="sm" />
               </button>
@@ -141,12 +169,13 @@
           <template #empty>
             <EmptyState
               :title="t('empty.noData')"
-              :description="t('admin.announcements.failedToLoad')"
+              :description="t('admin.announcements.emptyDescription')"
               :action-text="t('admin.announcements.createAnnouncement')"
               @action="openCreateDialog"
             />
           </template>
         </DataTable>
+        </div>
       </template>
 
       <template #pagination>
@@ -170,13 +199,13 @@
     >
       <form id="announcement-form" @submit.prevent="handleSave" class="space-y-4">
         <div>
-          <label class="input-label">{{ t('admin.announcements.form.title') }}</label>
-          <input v-model="form.title" type="text" class="input" required />
+          <label for="announcement-title" class="input-label">{{ t('admin.announcements.form.title') }}</label>
+          <input id="announcement-title" v-model="form.title" type="text" class="input" required />
         </div>
 
         <div>
-          <label class="input-label">{{ t('admin.announcements.form.content') }}</label>
-          <textarea v-model="form.content" rows="6" class="input" required></textarea>
+          <label for="announcement-content" class="input-label">{{ t('admin.announcements.form.content') }}</label>
+          <textarea id="announcement-content" v-model="form.content" rows="6" class="input" required></textarea>
         </div>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -193,13 +222,13 @@
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label class="input-label">{{ t('admin.announcements.form.startsAt') }}</label>
-            <input v-model="form.starts_at_str" type="datetime-local" class="input" />
+            <label for="announcement-starts-at" class="input-label">{{ t('admin.announcements.form.startsAt') }}</label>
+            <input id="announcement-starts-at" v-model="form.starts_at_str" type="datetime-local" class="input" />
             <p class="input-hint">{{ t('admin.announcements.form.startsAtHint') }}</p>
           </div>
           <div>
-            <label class="input-label">{{ t('admin.announcements.form.endsAt') }}</label>
-            <input v-model="form.ends_at_str" type="datetime-local" class="input" />
+            <label for="announcement-ends-at" class="input-label">{{ t('admin.announcements.form.endsAt') }}</label>
+            <input id="announcement-ends-at" v-model="form.ends_at_str" type="datetime-local" class="input" />
             <p class="input-hint">{{ t('admin.announcements.form.endsAtHint') }}</p>
           </div>
         </div>
@@ -271,6 +300,7 @@ const appStore = useAppStore()
 
 const announcements = ref<Announcement[]>([])
 const loading = ref(false)
+const loadError = ref(false)
 
 const filters = reactive({
   status: '',
@@ -341,6 +371,7 @@ async function loadAnnouncements() {
 
   try {
     loading.value = true
+    loadError.value = false
     const res = await adminAPI.announcements.list(pagination.page, pagination.page_size, {
       status: filters.status || undefined,
       search: searchQuery.value || undefined,
@@ -365,6 +396,7 @@ async function loadAnnouncements() {
       return
     }
     console.error('Error loading announcements:', error)
+    loadError.value = true
     appStore.showError(error.response?.data?.detail || t('admin.announcements.failedToLoad'))
   } finally {
     if (currentController === requestController) {
@@ -604,3 +636,46 @@ onUnmounted(() => {
   currentController?.abort()
 })
 </script>
+
+<style scoped>
+.communication-toolbar {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.announcement-action {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.announcement-action:hover {
+  color: var(--ui-text, #0f172a);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.announcement-action-danger:hover {
+  color: rgb(var(--color-danger-foreground, 185 28 28));
+  background: rgb(var(--color-danger-subtle, 254 242 242));
+}
+
+.announcement-action:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 1px;
+}
+
+@media (max-width: 639px) {
+  .communication-toolbar {
+    padding: 10px;
+  }
+}
+</style>

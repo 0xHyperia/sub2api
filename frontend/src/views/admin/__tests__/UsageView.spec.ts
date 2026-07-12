@@ -237,6 +237,60 @@ describe('admin UsageView distribution metric toggles', () => {
     expect(groupChart.find('.metric').text()).toBe('actual_cost')
     expect(getSnapshotV2).toHaveBeenCalledTimes(1)
   })
+
+  it('shows a recoverable analytics error instead of an empty chart state', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    getSnapshotV2
+      .mockRejectedValueOnce(new Error('analytics unavailable'))
+      .mockResolvedValueOnce({ trend: [], models: [], groups: [] })
+
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, AuditLogModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: ModelDistributionChartStub,
+        GroupDistributionChart: GroupDistributionChartStub,
+        EndpointDistributionChart: true,
+      } },
+    })
+
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+    expect(wrapper.get('[data-test="usage-analytics-error"]').text()).toContain('usage.analyticsLoadFailed')
+
+    await wrapper.get('[data-test="usage-analytics-error"] button').trigger('click')
+    await flushPromises()
+    expect(getSnapshotV2).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-test="usage-analytics-error"]').exists()).toBe(false)
+    consoleError.mockRestore()
+  })
+
+  it('opens the column menu from the keyboard and focuses its first item', async () => {
+    const wrapper = mount(UsageView, {
+      attachTo: document.body,
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, AuditLogModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: ModelDistributionChartStub,
+        GroupDistributionChart: GroupDistributionChartStub,
+        EndpointDistributionChart: true,
+      } },
+    })
+
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+    const trigger = wrapper.get('button[aria-haspopup="menu"]')
+    await trigger.trigger('keydown', { key: 'ArrowDown' })
+    await flushPromises()
+
+    const firstItem = wrapper.get('[role="menuitemcheckbox"]')
+    expect(document.activeElement).toBe(firstItem.element)
+    wrapper.unmount()
+  })
 })
 
 describe('admin UsageView handleUserClick', () => {
@@ -339,8 +393,8 @@ describe('admin UsageView errors tab filter forwarding', () => {
     vm.filters.group_id = 3
     await flushPromises()
 
-    // 切换到「错误请求」标签（第二个 .tab 按钮）触发 loadAdminErrors
-    const tabs = wrapper.findAll('button.tab')
+    // 切换到「错误请求」标签触发 loadAdminErrors
+    const tabs = wrapper.findAll('button[role="tab"]')
     await tabs[1].trigger('click')
     await flushPromises()
 

@@ -2,10 +2,29 @@
   <AppLayout>
     <div class="mx-auto max-w-6xl space-y-6">
       <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-12">
+      <div
+        v-if="loading"
+        class="flex items-center justify-center py-12"
+        role="status"
+        :aria-label="t('common.loading')"
+      >
         <div
           class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600"
         ></div>
+      </div>
+
+      <div
+        v-else-if="loadFailed"
+        class="flex min-h-56 flex-col items-center justify-center gap-4 rounded-panel border border-danger/30 bg-danger-subtle p-6 text-center text-danger-foreground"
+        role="alert"
+        data-testid="settings-load-error"
+      >
+        <Icon name="exclamationTriangle" size="lg" aria-hidden="true" />
+        <p class="text-sm font-medium">{{ t('admin.settings.failedToLoad') }}</p>
+        <button type="button" class="btn btn-secondary" @click="loadSettings">
+          <Icon name="refresh" size="sm" />
+          {{ t('common.retry') }}
+        </button>
       </div>
 
       <!-- Settings Form -->
@@ -30,7 +49,7 @@
                   'settings-tab',
                   activeTab === tab.key && 'settings-tab-active',
                 ]"
-                @click="selectSettingsTab(tab.key)"
+                @click="handleSettingsTabClick(tab.key)"
                 @keydown="handleSettingsTabKeydown($event, tab.key)"
               >
                 <span class="settings-tab-icon">
@@ -236,7 +255,10 @@
                       {{ t("admin.settings.overloadCooldown.enabledHint") }}
                     </p>
                   </div>
-                  <Toggle v-model="overloadCooldownForm.enabled" />
+                  <Toggle
+                    v-model="overloadCooldownForm.enabled"
+                    :aria-label="t('admin.settings.overloadCooldown.enabled')"
+                  />
                 </div>
 
                 <div
@@ -337,7 +359,10 @@
                       {{ t("admin.settings.rateLimit429Cooldown.enabledHint") }}
                     </p>
                   </div>
-                  <Toggle v-model="rateLimit429CooldownForm.enabled" />
+                  <Toggle
+                    v-model="rateLimit429CooldownForm.enabled"
+                    :aria-label="t('admin.settings.rateLimit429Cooldown.enabled')"
+                  />
                 </div>
 
                 <div
@@ -446,7 +471,10 @@
                       {{ t("admin.settings.streamTimeout.enabledHint") }}
                     </p>
                   </div>
-                  <Toggle v-model="streamTimeoutForm.enabled" />
+                  <Toggle
+                    v-model="streamTimeoutForm.enabled"
+                    :aria-label="t('admin.settings.streamTimeout.enabled')"
+                  />
                 </div>
 
                 <!-- Settings - Only show when enabled -->
@@ -626,7 +654,10 @@
                       {{ t("admin.settings.rectifier.enabledHint") }}
                     </p>
                   </div>
-                  <Toggle v-model="rectifierForm.enabled" />
+                  <Toggle
+                    v-model="rectifierForm.enabled"
+                    :aria-label="t('admin.settings.rectifier.enabled')"
+                  />
                 </div>
 
                 <!-- Sub-toggles (only show when master is enabled) -->
@@ -651,6 +682,7 @@
                     </div>
                     <Toggle
                       v-model="rectifierForm.thinking_signature_enabled"
+                      :aria-label="t('admin.settings.rectifier.thinkingSignature')"
                     />
                   </div>
 
@@ -667,7 +699,10 @@
                         {{ t("admin.settings.rectifier.thinkingBudgetHint") }}
                       </p>
                     </div>
-                    <Toggle v-model="rectifierForm.thinking_budget_enabled" />
+                    <Toggle
+                      v-model="rectifierForm.thinking_budget_enabled"
+                      :aria-label="t('admin.settings.rectifier.thinkingBudget')"
+                    />
                   </div>
 
                   <!-- API Key Signature Rectifier -->
@@ -683,7 +718,10 @@
                         {{ t("admin.settings.rectifier.apikeySignatureHint") }}
                       </p>
                     </div>
-                    <Toggle v-model="rectifierForm.apikey_signature_enabled" />
+                    <Toggle
+                      v-model="rectifierForm.apikey_signature_enabled"
+                      :aria-label="t('admin.settings.rectifier.apikeySignature')"
+                    />
                   </div>
 
                   <!-- Custom Patterns (only when apikey_signature_enabled) -->
@@ -719,6 +757,7 @@
                       />
                       <button
                         type="button"
+                        :aria-label="`${t('common.delete')} ${index + 1}`"
                         @click="
                           rectifierForm.apikey_signature_patterns.splice(
                             index,
@@ -728,6 +767,7 @@
                         class="btn btn-ghost btn-xs text-red-500 hover:text-red-700"
                       >
                         <svg
+                          aria-hidden="true"
                           class="h-4 w-4"
                           fill="none"
                           stroke="currentColor"
@@ -834,7 +874,7 @@
                     </span>
                   </div>
 
-                  <div class="grid grid-cols-2 gap-4">
+                  <div class="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
                     <!-- Action -->
                     <div>
                       <label
@@ -931,10 +971,12 @@
                       />
                       <button
                         type="button"
+                        :aria-label="`${t('common.delete')} ${index + 1}`"
                         @click="rule.model_whitelist!.splice(index, 1)"
                         class="shrink-0 rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                       >
                         <svg
+                          aria-hidden="true"
                           class="h-4 w-4"
                           fill="none"
                           viewBox="0 0 24 24"
@@ -1383,7 +1425,10 @@
                     }}
                   </p>
                 </div>
-                <Toggle v-model="form.registration_enabled" />
+                <Toggle
+                  v-model="form.registration_enabled"
+                  :aria-label="t('admin.settings.registration.enableRegistration')"
+                />
               </div>
 
               <!-- Email Verification -->
@@ -1398,7 +1443,10 @@
                     {{ t("admin.settings.registration.emailVerificationHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.email_verify_enabled" />
+                <Toggle
+                  v-model="form.email_verify_enabled"
+                  :aria-label="t('admin.settings.registration.emailVerification')"
+                />
               </div>
 
               <!-- Email Suffix Whitelist -->
@@ -1482,7 +1530,10 @@
                     {{ t("admin.settings.registration.promoCodeHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.promo_code_enabled" />
+                <Toggle
+                  v-model="form.promo_code_enabled"
+                  :aria-label="t('admin.settings.registration.promoCode')"
+                />
               </div>
 
               <!-- Invitation Code -->
@@ -1497,7 +1548,10 @@
                     {{ t("admin.settings.registration.invitationCodeHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.invitation_code_enabled" />
+                <Toggle
+                  v-model="form.invitation_code_enabled"
+                  :aria-label="t('admin.settings.registration.invitationCode')"
+                />
               </div>
               <!-- Password Reset - Only show when email verification is enabled -->
               <div
@@ -1512,7 +1566,10 @@
                     {{ t("admin.settings.registration.passwordResetHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.password_reset_enabled" />
+                <Toggle
+                  v-model="form.password_reset_enabled"
+                  :aria-label="t('admin.settings.registration.passwordReset')"
+                />
               </div>
               <!-- Frontend URL - Only show when password reset is enabled -->
               <div
@@ -1558,6 +1615,7 @@
                 </div>
                 <Toggle
                   v-model="form.totp_enabled"
+                  :aria-label="t('admin.settings.registration.totp')"
                   :disabled="!form.totp_encryption_key_configured"
                 />
               </div>
@@ -1586,7 +1644,10 @@
                     {{ t("admin.settings.apiKeyAcl.trustForwardedIpHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.api_key_acl_trust_forwarded_ip" />
+                <Toggle
+                  v-model="form.api_key_acl_trust_forwarded_ip"
+                  :aria-label="t('admin.settings.apiKeyAcl.trustForwardedIp')"
+                />
               </div>
             </div>
           </div>
@@ -1614,7 +1675,10 @@
                     {{ t("admin.settings.turnstile.enableTurnstileHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.turnstile_enabled" />
+                <Toggle
+                  v-model="form.turnstile_enabled"
+                  :aria-label="t('admin.settings.turnstile.enableTurnstile')"
+                />
               </div>
 
               <!-- Turnstile Keys - Only show when enabled -->
@@ -1696,7 +1760,10 @@
                     {{ t("admin.settings.linuxdo.enableHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.linuxdo_connect_enabled" />
+                <Toggle
+                  v-model="form.linuxdo_connect_enabled"
+                  :aria-label="t('admin.settings.linuxdo.enable')"
+                />
               </div>
 
               <div
@@ -1826,7 +1893,10 @@
                         }}
                       </p>
                     </div>
-                    <Toggle v-model="form.github_oauth_enabled" />
+                    <Toggle
+                      v-model="form.github_oauth_enabled"
+                      :aria-label="localText('启用 GitHub OAuth', 'Enable GitHub OAuth')"
+                    />
                   </div>
 
                   <div v-if="form.github_oauth_enabled" class="mt-4 space-y-4">
@@ -1936,7 +2006,10 @@
                         }}
                       </p>
                     </div>
-                    <Toggle v-model="form.google_oauth_enabled" />
+                    <Toggle
+                      v-model="form.google_oauth_enabled"
+                      :aria-label="localText('启用 Google OAuth', 'Enable Google OAuth')"
+                    />
                   </div>
 
                   <div v-if="form.google_oauth_enabled" class="mt-4 space-y-4">
@@ -2042,6 +2115,7 @@
                 </div>
                 <Toggle
                   v-model="form.wechat_connect_enabled"
+                  :aria-label="t('admin.settings.wechatConnect.enabledLabel')"
                   data-testid="wechat-connect-enabled"
                 />
               </div>
@@ -2070,6 +2144,7 @@
                       </div>
                       <Toggle
                         :model-value="form.wechat_connect_open_enabled"
+                        :aria-label="localText('启用 PC 应用登录', 'Enable PC App sign-in')"
                         data-testid="wechat-connect-open-enabled"
                         @update:model-value="handleWeChatOpenEnabledChange"
                       />
@@ -2143,6 +2218,7 @@
                       </div>
                       <Toggle
                         :model-value="form.wechat_connect_mp_enabled"
+                        :aria-label="localText('启用公众号登录', 'Enable Official Account sign-in')"
                         data-testid="wechat-connect-mp-enabled"
                         @update:model-value="handleWeChatMPEnabledChange"
                       />
@@ -2221,6 +2297,7 @@
                       </div>
                       <Toggle
                         :model-value="form.wechat_connect_mobile_enabled"
+                        :aria-label="localText('启用移动应用登录', 'Enable Mobile App sign-in')"
                         data-testid="wechat-connect-mobile-enabled"
                         @update:model-value="handleWeChatMobileEnabledChange"
                       />
@@ -2382,7 +2459,10 @@
                     {{ t("admin.settings.dingtalk.enableHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.dingtalk_connect_enabled" />
+                <Toggle
+                  v-model="form.dingtalk_connect_enabled"
+                  :aria-label="t('admin.settings.dingtalk.enable')"
+                />
               </div>
 
               <div
@@ -2504,7 +2584,10 @@
                         {{ t("admin.settings.dingtalk.bypassRegistrationHint") }}
                       </p>
                     </div>
-                    <Toggle v-model="form.dingtalk_connect_bypass_registration" />
+                    <Toggle
+                      v-model="form.dingtalk_connect_bypass_registration"
+                      :aria-label="t('admin.settings.dingtalk.bypassRegistration')"
+                    />
                   </div>
 
                   <!-- 身份同步开关（仅 internal_only 模式下可见） -->
@@ -2521,7 +2604,10 @@
                           {{ t("admin.settings.dingtalk.syncDisplayNameHint") }}
                         </p>
                       </div>
-                      <Toggle v-model="form.dingtalk_connect_sync_display_name" />
+                      <Toggle
+                        v-model="form.dingtalk_connect_sync_display_name"
+                        :aria-label="t('admin.settings.dingtalk.syncDisplayName')"
+                      />
                     </div>
                     <div v-if="form.dingtalk_connect_sync_display_name" class="space-y-2">
                       <div class="flex items-center gap-2">
@@ -2567,7 +2653,10 @@
                           {{ t("admin.settings.dingtalk.syncCorpEmailPermissionHint") }}
                         </p>
                       </div>
-                      <Toggle v-model="form.dingtalk_connect_sync_corp_email" />
+                      <Toggle
+                        v-model="form.dingtalk_connect_sync_corp_email"
+                        :aria-label="t('admin.settings.dingtalk.syncCorpEmail')"
+                      />
                     </div>
                     <div v-if="form.dingtalk_connect_sync_corp_email" class="space-y-2">
                       <div class="flex items-center gap-2">
@@ -2613,7 +2702,10 @@
                           {{ t("admin.settings.dingtalk.syncDeptPermissionHint") }}
                         </p>
                       </div>
-                      <Toggle v-model="form.dingtalk_connect_sync_dept" />
+                      <Toggle
+                        v-model="form.dingtalk_connect_sync_dept"
+                        :aria-label="t('admin.settings.dingtalk.syncDept')"
+                      />
                     </div>
                     <div v-if="form.dingtalk_connect_sync_dept" class="space-y-2">
                       <div class="flex items-center gap-2">
@@ -2670,7 +2762,10 @@
                     {{ t("admin.settings.oidc.enableHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.oidc_connect_enabled" />
+                <Toggle
+                  v-model="form.oidc_connect_enabled"
+                  :aria-label="t('admin.settings.oidc.enable')"
+                />
               </div>
 
               <div
@@ -2972,6 +3067,7 @@
                     </div>
                     <Toggle
                       v-model="form.oidc_connect_use_pkce"
+                      :aria-label="t('admin.settings.oidc.usePkce')"
                       data-testid="oidc-connect-use-pkce"
                     />
                   </div>
@@ -2986,6 +3082,7 @@
                     </div>
                     <Toggle
                       v-model="form.oidc_connect_validate_id_token"
+                      :aria-label="t('admin.settings.oidc.validateIdToken')"
                       data-testid="oidc-connect-validate-id-token"
                     />
                   </div>
@@ -3000,6 +3097,7 @@
                     </div>
                     <Toggle
                       v-model="form.oidc_connect_require_email_verified"
+                      :aria-label="t('admin.settings.oidc.requireEmailVerified')"
                     />
                   </div>
                 </div>
@@ -3131,8 +3229,8 @@
               </div>
 
               <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
-                <div class="mb-3 flex items-center justify-between">
-                  <div>
+                <div class="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="min-w-0">
                     <label class="font-medium text-gray-900 dark:text-white">
                       {{ t("admin.settings.defaults.defaultSubscriptions") }}
                     </label>
@@ -3358,14 +3456,17 @@
                     {{ t("admin.settings.authSourceDefaults.requireEmailHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.force_email_on_third_party_signup" />
+                <Toggle
+                  v-model="form.force_email_on_third_party_signup"
+                  :aria-label="t('admin.settings.authSourceDefaults.requireEmailLabel')"
+                />
               </div>
 
               <div class="space-y-4">
                 <div
                   v-for="authSource in authSourceDefaultsMeta"
                   :key="authSource.source"
-                  class="rounded-xl border border-gray-200 p-4 dark:border-dark-700"
+                  class="rounded-lg border border-gray-200 p-4 dark:border-dark-700"
                 >
                   <div class="flex items-center justify-between gap-4">
                     <div>
@@ -3380,6 +3481,7 @@
                       v-model="
                         authSourceDefaults[authSource.source].grant_on_signup
                       "
+                      :aria-label="`${authSource.title}: ${t('admin.settings.authSourceDefaults.title')}`"
                       :data-testid="`auth-source-${authSource.source}-enabled`"
                     />
                   </div>
@@ -3449,6 +3551,7 @@
                           authSourceDefaults[authSource.source]
                             .grant_on_first_bind
                         "
+                        :aria-label="`${authSource.title}: ${t('admin.settings.authSourceDefaults.grantOnFirstBindLabel')}`"
                       />
                     </div>
 
@@ -3852,6 +3955,7 @@
                   </div>
                   <Toggle
                     v-model="form.codex_cli_only_allow_app_server_clients"
+                    :aria-label="t('admin.settings.gatewayForwarding.codexAllowAppServer')"
                   />
                 </div>
 
@@ -4001,7 +4105,10 @@
                     {{ t("admin.settings.scheduling.allowUngroupedKeyHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.allow_ungrouped_key_scheduling" />
+                <Toggle
+                  v-model="form.allow_ungrouped_key_scheduling"
+                  :aria-label="t('admin.settings.scheduling.allowUngroupedKey')"
+                />
               </div>
 
               <div class="flex items-center justify-between">
@@ -4017,7 +4124,10 @@
                     }}
                   </p>
                 </div>
-                <Toggle v-model="form.openai_advanced_scheduler_enabled" />
+                <Toggle
+                  v-model="form.openai_advanced_scheduler_enabled"
+                  :aria-label="t('admin.settings.openaiExperimentalScheduler.title')"
+                />
               </div>
 
               <div
@@ -4036,7 +4146,10 @@
                     }}
                   </p>
                 </div>
-                <Toggle v-model="form.openai_advanced_scheduler_sticky_weighted_enabled" />
+                <Toggle
+                  v-model="form.openai_advanced_scheduler_sticky_weighted_enabled"
+                  :aria-label="t('admin.settings.openaiExperimentalScheduler.stickyWeightedTitle')"
+                />
               </div>
 
               <div
@@ -4055,7 +4168,10 @@
                     }}
                   </p>
                 </div>
-                <Toggle v-model="form.openai_advanced_scheduler_subscription_priority_enabled" />
+                <Toggle
+                  v-model="form.openai_advanced_scheduler_subscription_priority_enabled"
+                  :aria-label="t('admin.settings.openaiExperimentalScheduler.subscriptionPriorityTitle')"
+                />
               </div>
 
               <div
@@ -4130,7 +4246,10 @@
                     }}
                   </p>
                 </div>
-                <Toggle v-model="form.enable_fingerprint_unification" />
+                <Toggle
+                  v-model="form.enable_fingerprint_unification"
+                  :aria-label="t('admin.settings.gatewayForwarding.fingerprintUnification')"
+                />
               </div>
 
               <!-- Metadata Passthrough -->
@@ -4151,7 +4270,10 @@
                     }}
                   </p>
                 </div>
-                <Toggle v-model="form.enable_metadata_passthrough" />
+                <Toggle
+                  v-model="form.enable_metadata_passthrough"
+                  :aria-label="t('admin.settings.gatewayForwarding.metadataPassthrough')"
+                />
               </div>
 
               <!-- CCH Signing -->
@@ -4166,7 +4288,10 @@
                     {{ t("admin.settings.gatewayForwarding.cchSigningHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.enable_cch_signing" />
+                <Toggle
+                  v-model="form.enable_cch_signing"
+                  :aria-label="t('admin.settings.gatewayForwarding.cchSigning')"
+                />
               </div>
 
               <!-- Claude OAuth System Prompt Injection -->
@@ -4191,6 +4316,7 @@
                 </div>
                 <Toggle
                   v-model="form.enable_claude_oauth_system_prompt_injection"
+                  :aria-label="t('admin.settings.gatewayForwarding.claudeOAuthSystemPromptInjection')"
                 />
               </div>
 
@@ -4280,7 +4406,10 @@
                         >
                           <Icon name="arrowDown" size="xs" />
                         </button>
-                        <Toggle v-model="block.enabled" />
+                        <Toggle
+                          v-model="block.enabled"
+                          :aria-label="t('admin.settings.gatewayForwarding.systemBlockTitle', { index: index + 1 })"
+                        />
                         <button
                           type="button"
                           class="btn btn-secondary btn-sm px-2 text-red-600 hover:text-red-700 dark:text-red-400"
@@ -4358,7 +4487,10 @@
                               }}
                             </label>
                           </div>
-                          <Toggle v-model="block.cacheControlEnabled" />
+                          <Toggle
+                            v-model="block.cacheControlEnabled"
+                            :aria-label="`${t('admin.settings.gatewayForwarding.systemBlockTitle', { index: index + 1 })}: ${t('admin.settings.gatewayForwarding.systemBlockCacheControl')}`"
+                          />
                         </div>
                         <div v-if="block.cacheControlEnabled">
                           <Select
@@ -4422,6 +4554,7 @@
                 </div>
                 <Toggle
                   v-model="form.enable_anthropic_cache_ttl_1h_injection"
+                  :aria-label="t('admin.settings.gatewayForwarding.anthropicCacheTTL1hInjection')"
                 />
               </div>
 
@@ -4445,7 +4578,10 @@
                     }}
                   </p>
                 </div>
-                <Toggle v-model="form.rewrite_message_cache_control" />
+                <Toggle
+                  v-model="form.rewrite_message_cache_control"
+                  :aria-label="t('admin.settings.gatewayForwarding.rewriteMessageCacheControl')"
+                />
               </div>
 
               <!-- 客户端 dateline 归一化（仅 Anthropic OAuth/SetupToken） -->
@@ -4470,6 +4606,7 @@
                 </div>
                 <Toggle
                   v-model="form.enable_client_dateline_normalization"
+                  :aria-label="t('admin.settings.gatewayForwarding.clientDatelineNormalization')"
                 />
               </div>
 
@@ -4561,7 +4698,10 @@
                     {{ t("admin.settings.webSearchEmulation.enabledHint") }}
                   </p>
                 </div>
-                <Toggle v-model="webSearchConfig.enabled" />
+                <Toggle
+                  v-model="webSearchConfig.enabled"
+                  :aria-label="t('admin.settings.webSearchEmulation.enabled')"
+                />
               </div>
 
               <!-- Providers -->
@@ -4770,7 +4910,7 @@
                     </div>
 
                     <!-- Quota + Subscription in compact row -->
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
                       <div>
                         <label class="text-xs text-gray-500">{{
                           t("admin.settings.webSearchEmulation.quotaLimit")
@@ -4890,19 +5030,13 @@
           </div>
 
           <!-- Web Search Test Dialog -->
-          <div
-            v-if="wsTestDialogOpen"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            @click.self="wsTestDialogOpen = false"
+          <BaseDialog
+            :show="wsTestDialogOpen"
+            :title="t('admin.settings.webSearchEmulation.testResultTitle')"
+            width="normal"
+            @close="wsTestDialogOpen = false"
           >
-            <div
-              class="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-dark-800"
-            >
-              <h3
-                class="mb-4 text-lg font-semibold text-gray-900 dark:text-white"
-              >
-                {{ t("admin.settings.webSearchEmulation.testResultTitle") }}
-              </h3>
+            <div>
               <div class="flex items-center gap-2">
                 <input
                   v-model="wsTestQuery"
@@ -4929,7 +5063,7 @@
               <!-- Test results -->
               <div
                 v-if="wsTestResult"
-                class="mt-4 max-h-80 overflow-y-auto rounded-lg bg-gray-50 p-4 dark:bg-dark-700"
+                class="mt-4 max-h-80 overflow-y-auto rounded-lg border border-outline bg-surface-subtle p-4"
               >
                 <p
                   class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -4960,17 +5094,19 @@
                   </p>
                 </div>
               </div>
-              <div class="mt-4 flex justify-end">
+            </div>
+            <template #footer>
+              <div class="flex justify-end">
                 <button
                   type="button"
-                  class="btn btn-secondary btn-sm"
+                  class="btn btn-secondary"
                   @click="wsTestDialogOpen = false"
                 >
                   {{ t("common.close") }}
                 </button>
               </div>
-            </div>
-          </div>
+            </template>
+          </BaseDialog>
 
         <!-- Usage Records Settings -->
         <div class="card">
@@ -4993,10 +5129,10 @@
                   {{ t('admin.settings.user_error_view.description') }}
                 </p>
               </div>
-              <label class="toggle">
-                <input v-model="form.allow_user_view_error_requests" type="checkbox" />
-                <span class="toggle-slider"></span>
-              </label>
+              <Toggle
+                v-model="form.allow_user_view_error_requests"
+                :aria-label="t('admin.settings.user_error_view.label')"
+              />
             </div>
           </div>
         </div>
@@ -5030,7 +5166,10 @@
                     {{ t("admin.settings.site.backendModeDescription") }}
                   </p>
 	                </div>
-	                <Toggle v-model="form.backend_mode_enabled" />
+	                <Toggle
+	                  v-model="form.backend_mode_enabled"
+	                  :aria-label="t('admin.settings.site.backendMode')"
+	                />
 	              </div>
 
 	              <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -5354,7 +5493,10 @@
                     {{ t("admin.settings.site.hideCcsImportButtonHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.hide_ccs_import_button" />
+                <Toggle
+                  v-model="form.hide_ccs_import_button"
+                  :aria-label="t('admin.settings.site.hideCcsImportButton')"
+                />
               </div>
             </div>
           </div>
@@ -5574,7 +5716,10 @@
 	                  <span class="text-sm text-gray-600 dark:text-gray-300">
 	                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
 	                  </span>
-	                  <Toggle v-model="form.login_agreement_enabled" />
+	                  <Toggle
+	                    v-model="form.login_agreement_enabled"
+	                    :aria-label="localText('启用登录条款确认', 'Enable login agreement')"
+	                  />
 	                </div>
 	              </div>
 	            </div>
@@ -5585,14 +5730,19 @@
 	                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
 	                    {{ localText("展示形式", "Display mode") }}
 	                  </label>
-	                  <div class="grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1 dark:bg-dark-700">
+                  <div
+                    class="grid grid-cols-2 gap-1 rounded-panel border border-outline bg-surface-subtle p-1"
+                    role="group"
+                    :aria-label="localText('展示形式', 'Display mode')"
+                  >
                     <button
                       type="button"
-                      class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition"
+                      :aria-pressed="form.login_agreement_mode === 'modal'"
+                      class="inline-flex min-w-0 items-center justify-center gap-2 rounded-control px-2 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                       :class="
                         form.login_agreement_mode === 'modal'
-                          ? 'bg-white text-primary-700 shadow-sm dark:bg-dark-800 dark:text-primary-300'
-                          : 'text-gray-600 hover:text-gray-900 dark:text-dark-300 dark:hover:text-white'
+                          ? 'bg-surface text-brand shadow-sm'
+                          : 'text-foreground-muted hover:bg-surface hover:text-foreground'
                       "
                       @click="form.login_agreement_mode = 'modal'"
                     >
@@ -5601,11 +5751,12 @@
                     </button>
                     <button
                       type="button"
-                      class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition"
+                      :aria-pressed="form.login_agreement_mode === 'checkbox'"
+                      class="inline-flex min-w-0 items-center justify-center gap-2 rounded-control px-2 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                       :class="
                         form.login_agreement_mode === 'checkbox'
-                          ? 'bg-white text-primary-700 shadow-sm dark:bg-dark-800 dark:text-primary-300'
-                          : 'text-gray-600 hover:text-gray-900 dark:text-dark-300 dark:hover:text-white'
+                          ? 'bg-surface text-brand shadow-sm'
+                          : 'text-foreground-muted hover:bg-surface hover:text-foreground'
                       "
                       @click="form.login_agreement_mode = 'checkbox'"
                     >
@@ -5785,7 +5936,10 @@
                   {{ t('admin.settings.features.channelMonitor.enabledHint') }}
                 </p>
               </div>
-              <Toggle v-model="form.channel_monitor_enabled" />
+              <Toggle
+                v-model="form.channel_monitor_enabled"
+                :aria-label="t('admin.settings.features.channelMonitor.enabled')"
+              />
             </div>
 
             <div v-if="form.channel_monitor_enabled">
@@ -5835,7 +5989,10 @@
                   {{ t('admin.settings.features.availableChannels.enabledHint') }}
                 </p>
               </div>
-              <Toggle v-model="form.available_channels_enabled" />
+              <Toggle
+                v-model="form.available_channels_enabled"
+                :aria-label="t('admin.settings.features.availableChannels.enabled')"
+              />
             </div>
           </div>
         </div>
@@ -5868,7 +6025,10 @@
                   {{ t('admin.settings.features.riskControl.enabledHint') }}
                 </p>
               </div>
-              <Toggle v-model="form.risk_control_enabled" />
+              <Toggle
+                v-model="form.risk_control_enabled"
+                :aria-label="t('admin.settings.features.riskControl.enabled')"
+              />
             </div>
 
             <div class="flex items-center justify-between">
@@ -5880,7 +6040,10 @@
                   {{ t('admin.settings.features.riskControl.cyberSessionBlockHint') }}
                 </p>
               </div>
-              <Toggle v-model="form.cyber_session_block_enabled" />
+              <Toggle
+                v-model="form.cyber_session_block_enabled"
+                :aria-label="t('admin.settings.features.riskControl.cyberSessionBlock')"
+              />
             </div>
 
             <div v-if="form.cyber_session_block_enabled">
@@ -5918,7 +6081,10 @@
                   {{ t('admin.settings.features.affiliate.enabledHint') }}
                 </p>
               </div>
-              <Toggle v-model="form.affiliate_enabled" />
+              <Toggle
+                v-model="form.affiliate_enabled"
+                :aria-label="t('admin.settings.features.affiliate.enabled')"
+              />
             </div>
 
             <div v-if="form.affiliate_enabled" class="space-y-6">
@@ -6006,38 +6172,40 @@
                   </div>
                   <button
                     type="button"
-                    class="btn btn-primary btn-sm"
+                    class="btn btn-primary btn-sm w-full sm:w-auto"
                     @click="openAffiliateModal(null)"
                   >
                     + {{ t('admin.settings.features.affiliate.customUsers.addButton') }}
                   </button>
                 </div>
 
-                <div class="mb-3 flex items-center gap-2">
+                <div class="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
                   <input
                     v-model="affiliateState.search"
                     type="text"
                     class="input flex-1"
+                    :aria-label="t('admin.settings.features.affiliate.customUsers.searchPlaceholder')"
                     :placeholder="t('admin.settings.features.affiliate.customUsers.searchPlaceholder')"
                     @input="onAffiliateSearchInput"
                   />
                   <button
                     v-if="affiliateState.selected.length > 0"
                     type="button"
-                    class="btn btn-secondary btn-sm"
+                    class="btn btn-secondary btn-sm w-full sm:w-auto"
                     @click="openAffiliateBatchModal"
                   >
                     {{ t('admin.settings.features.affiliate.customUsers.batchButton', { count: affiliateState.selected.length }) }}
                   </button>
                 </div>
 
-                <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-dark-700">
+                <div class="hidden overflow-x-auto rounded-lg border border-gray-200 dark:border-dark-700 md:block">
                   <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
                     <thead class="bg-gray-50 dark:bg-dark-800">
                       <tr>
                         <th class="px-3 py-2 text-left">
                           <input
                             type="checkbox"
+                            :aria-label="t('common.selectAll')"
                             :checked="affiliateState.entries.length > 0 && affiliateState.selected.length === affiliateState.entries.length"
                             @change="toggleAffiliateSelectAll"
                           />
@@ -6064,6 +6232,7 @@
                         <td class="px-3 py-2">
                           <input
                             type="checkbox"
+                            :aria-label="`${t('common.select')} ${entry.email || entry.username || entry.user_id}`"
                             :checked="affiliateState.selected.includes(entry.user_id)"
                             @change="toggleAffiliateSelect(entry.user_id)"
                           />
@@ -6100,11 +6269,83 @@
                   </table>
                 </div>
 
-                <div v-if="affiliateState.total > affiliateState.pageSize" class="mt-3 flex items-center justify-between text-sm">
+                <div class="border-y border-gray-200 dark:border-dark-700 md:hidden">
+                  <div
+                    v-if="affiliateState.loading"
+                    class="px-3 py-8 text-center text-sm text-gray-500"
+                    role="status"
+                  >
+                    {{ t('common.loading') }}
+                  </div>
+                  <div
+                    v-else-if="affiliateState.entries.length === 0"
+                    class="px-3 py-8 text-center text-sm text-gray-500"
+                  >
+                    {{ t('admin.settings.features.affiliate.customUsers.empty') }}
+                  </div>
+                  <div v-else class="divide-y divide-gray-200 dark:divide-dark-700">
+                    <article
+                      v-for="entry in affiliateState.entries"
+                      :key="`mobile-${entry.user_id}`"
+                      class="space-y-3 py-4"
+                    >
+                      <div class="flex min-w-0 items-start gap-3">
+                        <input
+                          type="checkbox"
+                          class="mt-1"
+                          :aria-label="`${t('common.select')} ${entry.email || entry.username || entry.user_id}`"
+                          :checked="affiliateState.selected.includes(entry.user_id)"
+                          @change="toggleAffiliateSelect(entry.user_id)"
+                        />
+                        <div class="min-w-0 flex-1">
+                          <p class="break-all text-sm font-medium text-gray-900 dark:text-white">
+                            {{ entry.email }}
+                          </p>
+                          <p class="mt-0.5 break-all text-xs text-gray-500 dark:text-gray-400">
+                            {{ entry.username }}
+                          </p>
+                        </div>
+                      </div>
+                      <dl class="grid grid-cols-1 gap-x-3 gap-y-2 pl-7 text-sm min-[420px]:grid-cols-2">
+                        <div class="min-w-0">
+                          <dt class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ t('admin.settings.features.affiliate.customUsers.col.code') }}
+                          </dt>
+                          <dd class="mt-0.5 break-all font-mono text-gray-900 dark:text-white">
+                            {{ entry.aff_code }}
+                            <span
+                              v-if="entry.aff_code_custom"
+                              class="mt-1 inline-block rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                            >{{ t('admin.settings.features.affiliate.customUsers.customBadge') }}</span>
+                          </dd>
+                        </div>
+                        <div class="min-w-0">
+                          <dt class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ t('admin.settings.features.affiliate.customUsers.col.rate') }}
+                          </dt>
+                          <dd class="mt-0.5 text-gray-900 dark:text-white">
+                            <span v-if="entry.aff_rebate_rate_percent != null">{{ entry.aff_rebate_rate_percent }}%</span>
+                            <span v-else class="text-gray-400">{{ t('admin.settings.features.affiliate.customUsers.useGlobal') }}</span>
+                          </dd>
+                        </div>
+                      </dl>
+                      <div class="flex items-center justify-end gap-3 pl-7 text-sm">
+                        <button type="button" class="text-primary-600 hover:underline" @click="openAffiliateModal(entry)">
+                          {{ t('common.edit') }}
+                        </button>
+                        <button type="button" class="text-red-600 hover:underline" @click="askResetAffiliateUser(entry)">
+                          {{ t('common.delete') }}
+                        </button>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+
+                <div v-if="affiliateState.total > affiliateState.pageSize" class="mt-3 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <span class="text-gray-500">
                     {{ t('admin.settings.features.affiliate.customUsers.totalLabel', { total: affiliateState.total }) }}
                   </span>
-                  <div class="flex items-center gap-2">
+                  <div class="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       class="btn btn-secondary btn-sm"
@@ -6130,16 +6371,13 @@
         </div>
 
         <!-- Affiliate add/edit modal -->
-        <div
-          v-if="affiliateModal.open"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          @click.self="closeAffiliateModal"
+        <BaseDialog
+          :show="affiliateModal.open"
+          :title="affiliateModal.mode === 'add' ? t('admin.settings.features.affiliate.modal.addTitle') : t('admin.settings.features.affiliate.modal.editTitle')"
+          width="narrow"
+          @close="closeAffiliateModal"
         >
-          <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-dark-900">
-            <h3 class="mb-4 text-lg font-semibold">
-              {{ affiliateModal.mode === 'add' ? t('admin.settings.features.affiliate.modal.addTitle') : t('admin.settings.features.affiliate.modal.editTitle') }}
-            </h3>
-            <div class="space-y-4">
+          <div class="space-y-4">
               <div v-if="affiliateModal.mode === 'add'">
                 <label class="input-label">{{ t('admin.settings.features.affiliate.modal.userLabel') }}</label>
                 <!-- Chip showing the picked user; clicking it re-opens the search -->
@@ -6227,9 +6465,10 @@
                   {{ t('admin.settings.features.affiliate.modal.rateHint') }}
                 </p>
               </div>
-            </div>
+          </div>
 
-            <div class="mt-6 flex items-center justify-between gap-3">
+          <template #footer>
+            <div class="flex w-full items-center justify-between gap-3">
               <p
                 v-if="!affiliateModalCanSubmit"
                 class="text-xs text-gray-500 dark:text-gray-400"
@@ -6251,19 +6490,17 @@
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+          </template>
+        </BaseDialog>
 
         <!-- Affiliate batch rate modal -->
-        <div
-          v-if="affiliateBatchModal.open"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          @click.self="affiliateBatchModal.open = false"
+        <BaseDialog
+          :show="affiliateBatchModal.open"
+          :title="t('admin.settings.features.affiliate.batchModal.title', { count: affiliateState.selected.length })"
+          width="narrow"
+          @close="affiliateBatchModal.open = false"
         >
-          <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-dark-900">
-            <h3 class="mb-4 text-lg font-semibold">
-              {{ t('admin.settings.features.affiliate.batchModal.title', { count: affiliateState.selected.length }) }}
-            </h3>
+          <div>
             <p class="mb-4 text-sm text-gray-500">
               {{ t('admin.settings.features.affiliate.batchModal.hint') }}
             </p>
@@ -6282,7 +6519,9 @@
             <p class="mt-2 text-xs text-gray-400">
               {{ t('admin.settings.features.affiliate.batchModal.clearHint') }}
             </p>
-            <div class="mt-6 flex justify-end gap-2">
+          </div>
+          <template #footer>
+            <div class="flex justify-end gap-2">
               <button type="button" class="btn btn-secondary" @click="affiliateBatchModal.open = false">
                 {{ t('common.cancel') }}
               </button>
@@ -6295,8 +6534,8 @@
                 {{ affiliateBatchModal.saving ? t('common.saving') : t('common.save') }}
               </button>
             </div>
-          </div>
-        </div>
+          </template>
+        </BaseDialog>
 
         </div><!-- /Tab: Features -->
 
@@ -6347,7 +6586,10 @@
                     {{ t("admin.settings.payment.enabledHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.payment_enabled" />
+                <Toggle
+                  v-model="form.payment_enabled"
+                  :aria-label="t('admin.settings.payment.enabled')"
+                />
               </div>
               <template v-if="form.payment_enabled">
                 <div class="grid gap-4 md:grid-cols-2">
@@ -6356,21 +6598,30 @@
                       <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.instantEnabled") }}</label>
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.instantEnabledHint") }}</p>
                     </div>
-                    <Toggle v-model="form.payment_instant_enabled" />
+                    <Toggle
+                      v-model="form.payment_instant_enabled"
+                      :aria-label="t('admin.settings.payment.instantEnabled')"
+                    />
                   </div>
                   <div class="flex items-start justify-between rounded-lg border border-gray-200 p-4 dark:border-dark-700">
                     <div class="pr-4">
                       <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.cardEnabled") }}</label>
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.cardEnabledHint") }}</p>
                     </div>
-                    <Toggle v-model="form.payment_card_enabled" />
+                    <Toggle
+                      v-model="form.payment_card_enabled"
+                      :aria-label="t('admin.settings.payment.cardEnabled')"
+                    />
                   </div>
                   <div class="flex items-start justify-between rounded-lg border border-gray-200 p-4 dark:border-dark-700">
                     <div class="pr-4">
                       <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.iframeEnabled") }}</label>
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.iframeEnabledHint") }}</p>
                     </div>
-                    <Toggle v-model="form.purchase_subscription_enabled" />
+                    <Toggle
+                      v-model="form.purchase_subscription_enabled"
+                      :aria-label="t('admin.settings.payment.iframeEnabled')"
+                    />
                   </div>
                 </div>
                 <div v-if="form.purchase_subscription_enabled">
@@ -6384,7 +6635,7 @@
                   <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.iframeUrlHint") }}</p>
                 </div>
                 <!-- Row 1: Product name -->
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div>
                     <label class="input-label">{{
                       t("admin.settings.payment.productNamePrefix")
@@ -6423,7 +6674,7 @@
                   </div>
                 </div>
                 <!-- Row 2: Balance toggle + amounts -->
-                <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div>
                     <label class="input-label">{{
                       t("admin.settings.payment.minAmount")
@@ -6612,7 +6863,7 @@
                 </div>
                 <!-- Row 3: Pending orders + load balance + cancel rate limit (all in one row) -->
                 <div class="flex flex-wrap items-end gap-4">
-                  <div class="w-28">
+                  <div class="w-full sm:w-28">
                     <label class="input-label">{{
                       t("admin.settings.payment.maxPendingOrders")
                     }}</label
@@ -6623,23 +6874,26 @@
                       class="input"
                     />
                   </div>
-                  <div>
+                  <div class="w-full sm:w-auto">
                     <label class="input-label">{{
                       t("admin.settings.payment.loadBalanceStrategy")
                     }}</label>
                     <Select
                       v-model="form.payment_load_balance_strategy"
                       :options="loadBalanceOptions"
-                      class="w-40"
+                      class="w-full sm:w-40"
                     />
                   </div>
-                  <div>
+                  <div class="min-w-0 basis-full xl:flex-1">
                     <label class="input-label">{{
                       t("admin.settings.payment.cancelRateLimit")
                     }}</label>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
+                        role="switch"
+                        :aria-label="t('admin.settings.payment.cancelRateLimit')"
+                        :aria-checked="form.payment_cancel_rate_limit_enabled"
                         :class="[
                           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
                           form.payment_cancel_rate_limit_enabled
@@ -6723,13 +6977,16 @@
                       >
                     </div>
                   </div>
-                  <div>
+                  <div class="w-full xl:w-auto">
                     <label class="input-label">{{
                       t("admin.settings.payment.alipayForceQRCode")
                     }}</label>
                     <div class="flex items-center gap-2">
                       <button
                         type="button"
+                        role="switch"
+                        :aria-label="t('admin.settings.payment.alipayForceQRCode')"
+                        :aria-checked="form.payment_alipay_force_qrcode"
                         :class="[
                           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
                           form.payment_alipay_force_qrcode
@@ -6803,7 +7060,7 @@
                   </p>
                 </div>
                 <!-- Row 5: Help image + text -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
                     <label class="input-label">{{
                       t("admin.settings.payment.helpImage")
@@ -7034,7 +7291,10 @@
                     {{ t("admin.settings.smtp.useTlsHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.smtp_use_tls" />
+                <Toggle
+                  v-model="form.smtp_use_tls"
+                  :aria-label="t('admin.settings.smtp.useTls')"
+                />
               </div>
             </div>
           </div>
@@ -7130,12 +7390,15 @@
                     {{ t("admin.settings.subscriptionExpiryNotify.enabledHint") }}
                   </p>
                 </div>
-                <Toggle v-model="form.subscription_expiry_notify_enabled" />
+                <Toggle
+                  v-model="form.subscription_expiry_notify_enabled"
+                  :aria-label="t('admin.settings.subscriptionExpiryNotify.enabled')"
+                />
               </div>
             </div>
           </div>
 
-          <EmailTemplateEditor />
+          <EmailTemplateEditor ref="emailTemplateEditorRef" />
 
           <!-- Balance Low Notification -->
           <div class="card">
@@ -7155,7 +7418,10 @@
                   class="mb-0 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >{{ t("admin.settings.balanceNotify.enabled") }}</label
                 >
-                <Toggle v-model="form.balance_low_notify_enabled" />
+                <Toggle
+                  v-model="form.balance_low_notify_enabled"
+                  :aria-label="t('admin.settings.balanceNotify.enabled')"
+                />
               </div>
               <div v-if="form.balance_low_notify_enabled">
                 <label
@@ -7215,7 +7481,10 @@
                   class="mb-0 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >{{ t("admin.settings.quotaNotify.enabled") }}</label
                 >
-                <Toggle v-model="form.account_quota_notify_enabled" />
+                <Toggle
+                  v-model="form.account_quota_notify_enabled"
+                  :aria-label="t('admin.settings.quotaNotify.enabled')"
+                />
               </div>
               <div v-if="form.account_quota_notify_enabled">
                 <label
@@ -7347,6 +7616,15 @@
         @confirm="handleAffiliateConfirm"
         @cancel="cancelAffiliateConfirm"
       />
+      <ConfirmDialog
+        :show="settingsConfirmDialog.show"
+        :title="settingsConfirmDialog.title"
+        :message="settingsConfirmDialog.message"
+        :confirm-text="settingsConfirmDialog.confirmText"
+        :danger="settingsConfirmDialog.danger"
+        @confirm="handleSettingsConfirm"
+        @cancel="cancelSettingsConfirm"
+      />
     </div>
   </AppLayout>
 </template>
@@ -7354,6 +7632,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { adminAPI } from "@/api";
 import {
   appendAuthSourceDefaultsToUpdateRequest,
@@ -7388,6 +7667,7 @@ import type { ProviderInstance } from "@/types/payment";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import Icon from "@/components/icons/Icon.vue";
 import Select from "@/components/common/Select.vue";
+import BaseDialog from "@/components/common/BaseDialog.vue";
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import PaymentProviderList from "@/components/payment/PaymentProviderList.vue";
 import PaymentProviderDialog from "@/components/payment/PaymentProviderDialog.vue";
@@ -7448,7 +7728,29 @@ type SettingsTab =
   | "payment"
   | "email"
   | "backup";
-const activeTab = ref<SettingsTab>("general");
+const route = useRoute();
+const router = useRouter();
+
+function isSettingsTab(value: unknown): value is SettingsTab {
+  if (typeof value !== "string") return false;
+  return [
+    "general",
+    "agreement",
+    "features",
+    "security",
+    "users",
+    "gateway",
+    "payment",
+    "email",
+    "backup",
+  ].includes(value);
+}
+
+const initialSettingsTab = isSettingsTab(route.query.section)
+  ? route.query.section
+  : "general";
+const activeTab = ref<SettingsTab>(initialSettingsTab);
+const emailTemplateEditorRef = ref<InstanceType<typeof EmailTemplateEditor> | null>(null);
 const settingsTabs = [
   { key: "general" as SettingsTab, icon: "home" as const },
   { key: "agreement" as SettingsTab, icon: "document" as const },
@@ -7470,9 +7772,36 @@ const settingsTabKeyboardActions = {
   End: "last",
 } as const;
 
-function selectSettingsTab(tab: SettingsTab): void {
+async function selectSettingsTab(
+  tab: SettingsTab,
+  updateRoute = true,
+): Promise<boolean> {
+  if (activeTab.value === "email" && tab !== "email") {
+    const canLeave =
+      (await emailTemplateEditorRef.value?.requestDiscardChanges()) ?? true;
+    if (!canLeave) return false;
+  }
+
   activeTab.value = tab;
+  if (!updateRoute) return true;
+
+  const query = { ...route.query };
+  if (tab === "general") {
+    delete query.section;
+  } else {
+    query.section = tab;
+  }
+  await router.replace({ query });
+  return true;
 }
+
+watch(
+  () => route.query.section,
+  (section) => {
+    const nextTab = isSettingsTab(section) ? section : "general";
+    if (nextTab !== activeTab.value) void selectSettingsTab(nextTab, false);
+  },
+);
 
 function focusSettingsTab(tab: SettingsTab): void {
   window.requestAnimationFrame(() => {
@@ -7480,7 +7809,15 @@ function focusSettingsTab(tab: SettingsTab): void {
   });
 }
 
-function handleSettingsTabKeydown(event: KeyboardEvent, tab: SettingsTab): void {
+async function handleSettingsTabClick(tab: SettingsTab): Promise<void> {
+  const changed = await selectSettingsTab(tab);
+  if (!changed) focusSettingsTab(activeTab.value);
+}
+
+async function handleSettingsTabKeydown(
+  event: KeyboardEvent,
+  tab: SettingsTab,
+): Promise<void> {
   const action =
     settingsTabKeyboardActions[
       event.key as keyof typeof settingsTabKeyboardActions
@@ -7507,8 +7844,8 @@ function handleSettingsTabKeydown(event: KeyboardEvent, tab: SettingsTab): void 
     return;
   }
 
-  selectSettingsTab(nextTab);
-  focusSettingsTab(nextTab);
+  const changed = await selectSettingsTab(nextTab);
+  focusSettingsTab(changed ? nextTab : activeTab.value);
 }
 
 const { copyToClipboard } = useClipboard();
@@ -8529,22 +8866,70 @@ function quotaPercentage(provider: WebSearchProviderConfig): number {
   return ((provider.quota_used ?? 0) / provider.quota_limit) * 100;
 }
 
-async function resetWebSearchUsage(idx: number) {
+const settingsConfirmDialog = reactive<{
+  show: boolean;
+  title: string;
+  message: string;
+  confirmText: string;
+  danger: boolean;
+  pending: (() => Promise<void>) | null;
+}>({
+  show: false,
+  title: "",
+  message: "",
+  confirmText: "",
+  danger: false,
+  pending: null,
+});
+
+function openSettingsConfirm(
+  title: string,
+  message: string,
+  confirmText: string,
+  danger: boolean,
+  pending: () => Promise<void>,
+) {
+  settingsConfirmDialog.title = title;
+  settingsConfirmDialog.message = message;
+  settingsConfirmDialog.confirmText = confirmText;
+  settingsConfirmDialog.danger = danger;
+  settingsConfirmDialog.pending = pending;
+  settingsConfirmDialog.show = true;
+}
+
+function cancelSettingsConfirm() {
+  settingsConfirmDialog.show = false;
+  settingsConfirmDialog.pending = null;
+}
+
+async function handleSettingsConfirm() {
+  const pending = settingsConfirmDialog.pending;
+  cancelSettingsConfirm();
+  if (pending) await pending();
+}
+
+function resetWebSearchUsage(idx: number) {
   const provider = webSearchConfig.providers[idx];
   if (!provider) return;
-  if (!confirm(t("admin.settings.webSearchEmulation.resetUsageConfirm")))
-    return;
-  try {
-    await adminAPI.settings.resetWebSearchUsage({
-      provider_type: provider.type,
-    });
-    provider.quota_used = 0;
-    appStore.showSuccess(
-      t("admin.settings.webSearchEmulation.resetUsageSuccess"),
-    );
-  } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t("common.error")));
-  }
+  openSettingsConfirm(
+    t("admin.settings.webSearchEmulation.resetUsage"),
+    t("admin.settings.webSearchEmulation.resetUsageConfirm"),
+    t("admin.settings.webSearchEmulation.resetUsage"),
+    true,
+    async () => {
+      try {
+        await adminAPI.settings.resetWebSearchUsage({
+          provider_type: provider.type,
+        });
+        provider.quota_used = 0;
+        appStore.showSuccess(
+          t("admin.settings.webSearchEmulation.resetUsageSuccess"),
+        );
+      } catch (err: unknown) {
+        appStore.showError(extractApiErrorMessage(err, t("common.error")));
+      }
+    },
+  );
 }
 
 async function copyApiKey(idx: number) {
@@ -9879,13 +10264,27 @@ async function createAdminApiKey() {
   }
 }
 
-async function regenerateAdminApiKey() {
-  if (!confirm(t("admin.settings.adminApiKey.regenerateConfirm"))) return;
-  await createAdminApiKey();
+function regenerateAdminApiKey() {
+  openSettingsConfirm(
+    t("admin.settings.adminApiKey.regenerate"),
+    t("admin.settings.adminApiKey.regenerateConfirm"),
+    t("admin.settings.adminApiKey.regenerate"),
+    true,
+    createAdminApiKey,
+  );
 }
 
-async function deleteAdminApiKey() {
-  if (!confirm(t("admin.settings.adminApiKey.deleteConfirm"))) return;
+function deleteAdminApiKey() {
+  openSettingsConfirm(
+    t("admin.settings.adminApiKey.delete"),
+    t("admin.settings.adminApiKey.deleteConfirm"),
+    t("admin.settings.adminApiKey.delete"),
+    true,
+    performDeleteAdminApiKey,
+  );
+}
+
+async function performDeleteAdminApiKey() {
   adminApiKeyOperating.value = true;
   try {
     await adminAPI.settings.deleteAdminApiKey();
@@ -10996,11 +11395,16 @@ watch(
 
 /* ============ 系统设置 Tab 导航 ============ */
 .settings-tabs-shell {
-  @apply sticky z-20 -mx-1 rounded-2xl border border-white/80 bg-white/90 p-1.5 backdrop-blur-xl;
-  top: 4.75rem;
-  box-shadow:
-    0 12px 28px rgb(15 23 42 / 0.07),
-    0 1px 0 rgb(255 255 255 / 0.9) inset;
+  position: sticky;
+  top: calc(var(--app-header-height, 64px) + 10px);
+  z-index: 20;
+  margin-inline: -1px;
+  padding: 4px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-surface, #fff) 94%, transparent);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+  backdrop-filter: blur(12px);
 }
 
 .settings-tabs-scroll {
@@ -11014,11 +11418,31 @@ watch(
 }
 
 .settings-tabs {
-  @apply flex min-w-max items-center gap-1;
+  display: flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 2px;
 }
 
 .settings-tab {
-  @apply relative isolate flex h-10 min-w-[6.75rem] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-transparent px-3 text-sm font-medium text-gray-600 outline-none transition-colors duration-200 ease-out dark:text-gray-300;
+  position: relative;
+  display: flex;
+  min-width: 6.75rem;
+  height: 38px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-inline: 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ui-text-muted, #667085);
+  outline: none;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
 @media (min-width: 768px) {
@@ -11027,7 +11451,10 @@ watch(
   }
 
   .settings-tab {
-    @apply min-w-0 flex-1 basis-0 overflow-hidden px-2 text-[13px];
+    min-width: 0;
+    flex: 1 1 0;
+    overflow: hidden;
+    padding-inline: 8px;
   }
 
   .settings-tab-icon {
@@ -11036,25 +11463,29 @@ watch(
 }
 
 .settings-tab::before {
-  @apply absolute inset-0 -z-10 rounded-xl opacity-0 transition-opacity duration-200;
-  content: "";
-  background: linear-gradient(135deg, rgb(248 250 252 / 0.95), rgb(241 245 249 / 0.8));
+  content: none;
 }
 
 .settings-tab:hover::before,
 .settings-tab:focus-visible::before {
-  opacity: 1;
+  opacity: 0;
+}
+
+.settings-tab:hover {
+  background: var(--ui-surface-subtle, #f4f7fb);
+  color: var(--ui-text, #0f172a);
 }
 
 .settings-tab:focus-visible {
-  @apply ring-2 ring-primary-500/40 ring-offset-2 ring-offset-white dark:ring-offset-dark-900;
+  outline: 2px solid var(--ui-focus, #2563eb);
+  outline-offset: -2px;
 }
 
 .settings-tab-active {
-  @apply border-primary-200/80 bg-white text-primary-700 shadow-sm dark:border-primary-400/30 dark:bg-dark-700/95 dark:text-primary-200;
-  box-shadow:
-    0 8px 18px rgb(15 23 42 / 0.08),
-    0 1px 0 rgb(255 255 255 / 0.92) inset;
+  border-color: var(--ui-border-strong, #c7d3e2);
+  background: var(--ui-surface, #fff);
+  color: var(--ui-text, #0f172a);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
 }
 
 .settings-tab-active::before {
@@ -11063,26 +11494,33 @@ watch(
 
 .settings-tab-active::after {
   position: absolute;
-  right: 0.75rem;
-  bottom: 0.25rem;
-  left: 0.75rem;
+  right: 10px;
+  bottom: 2px;
+  left: 10px;
   height: 2px;
-  border-radius: 9999px;
+  border-radius: 2px;
   content: "";
-  background: linear-gradient(90deg, #14b8a6, #0ea5e9);
+  background: var(--ui-text, #0f172a);
 }
 
 .settings-tab-icon {
-  @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors duration-200 dark:text-gray-400;
+  display: flex;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-text-subtle, #8793a3);
+  transition: color 150ms ease;
 }
 
 .settings-tab:hover .settings-tab-icon,
 .settings-tab:focus-visible .settings-tab-icon {
-  @apply text-gray-700 dark:text-gray-200;
+  color: var(--ui-text, #0f172a);
 }
 
 .settings-tab-active .settings-tab-icon {
-  @apply bg-primary-50 text-primary-600 dark:bg-primary-400/10 dark:text-primary-300;
+  color: var(--ui-text, #0f172a);
 }
 
 .settings-tab-label {
@@ -11095,20 +11533,16 @@ watch(
    because Vue's scoped-CSS compiler was dropping the `:global(.dark) ...`
    rules in the production build, leaving inactive tabs unreadable on dark. */
 .dark .settings-tabs-shell {
-  border-color: rgb(51 65 85 / 0.65);
-  background: rgb(15 23 42 / 0.86);
-  box-shadow:
-    0 16px 36px rgb(0 0 0 / 0.28),
-    0 1px 0 rgb(255 255 255 / 0.06) inset;
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface) 94%, transparent);
+  box-shadow: var(--ui-shadow-xs);
 }
 
 .dark .settings-tab::before {
-  background: linear-gradient(135deg, rgb(30 41 59 / 0.9), rgb(51 65 85 / 0.62));
+  content: none;
 }
 
 .dark .settings-tab-active {
-  box-shadow:
-    0 12px 26px rgb(0 0 0 / 0.22),
-    0 1px 0 rgb(255 255 255 / 0.08) inset;
+  box-shadow: var(--ui-shadow-xs);
 }
 </style>

@@ -71,6 +71,8 @@ describe('admin order currency display', () => {
     expect(text).toContain('¥108.00')
     expect(text).toContain('$100.00')
     expect(text).toContain('$25.00')
+    expect(wrapper.find('dl').exists()).toBe(true)
+    expect(wrapper.get('button').attributes('type')).toBe('button')
   })
 
   it('uses order currency for pay_amount and USD for refundable balance amounts', () => {
@@ -97,6 +99,34 @@ describe('admin order currency display', () => {
     expect(text).toContain('$20.00')
     expect(text).toContain('$80.00')
     expect(text).toContain('$200.00')
+    expect((wrapper.get('#refund-amount').element as HTMLInputElement).value).toBe('80')
+    expect(wrapper.get('#refund-amount').attributes('aria-describedby')).toBe('refund-amount-limit')
+    expect(wrapper.get('#deduct-balance').attributes('aria-describedby')).toBe('deduct-balance-hint')
+  })
+
+  it('resets the refund form when the selected order changes while open', async () => {
+    const wrapper = mount(AdminRefundDialog, {
+      props: {
+        show: true,
+        order: orderFactory({ id: 1, amount: 80, pay_amount: 80, refund_amount: 0 }),
+      },
+      global: {
+        stubs: {
+          BaseDialog: BaseDialogStub,
+          Icon: true,
+        },
+      },
+    })
+
+    expect((wrapper.get('#refund-amount').element as HTMLInputElement).value).toBe('80')
+    await wrapper.get('#refund-reason').setValue('old reason')
+
+    await wrapper.setProps({
+      order: orderFactory({ id: 2, amount: 45, pay_amount: 45, refund_amount: 0 }),
+    })
+
+    expect((wrapper.get('#refund-amount').element as HTMLInputElement).value).toBe('45')
+    expect((wrapper.get('#refund-reason').element as HTMLTextAreaElement).value).toBe('')
   })
 
   it('renders payment currency consistently in the shared order table', () => {

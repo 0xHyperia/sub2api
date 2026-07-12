@@ -14,6 +14,12 @@ export default {
     login: 'Login',
     getStarted: 'Get Started',
     goToDashboard: 'Go to Dashboard',
+    customOverride: 'Custom home page',
+    openCustomPage: 'Open in new tab',
+    loadingCustomPage: 'Loading custom home page...',
+    customPageTitle: '{siteName} custom home page',
+    customPageLoadFailed: 'Custom home page could not be loaded',
+    customPageLoadFailedHint: 'The destination may be unavailable or may block embedding. Retry or open it in a new tab.',
     // User-focused value proposition
     heroSubtitle: 'One Key, All AI Models',
     heroDescription: 'No need to manage multiple subscriptions. Access Claude, GPT, Gemini and more with a single API key',

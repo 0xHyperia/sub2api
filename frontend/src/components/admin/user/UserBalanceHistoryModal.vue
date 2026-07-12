@@ -1,144 +1,153 @@
 <template>
-  <BaseDialog :show="show" :title="t('admin.users.balanceHistoryTitle')" width="wide" :close-on-click-outside="true" :z-index="40" @close="$emit('close')">
-    <div v-if="user" class="space-y-4">
+  <BaseDialog :show="show" :title="t('admin.users.balanceHistoryTitle')" width="wide" :close-on-click-outside="true" :z-index="40" @close="handleClose">
+    <div v-if="user" class="space-y-4" :aria-busy="loading">
       <!-- User header: two-row layout with full user info -->
-      <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-700">
+      <div class="rounded-panel border border-outline bg-surface-subtle p-3 sm:p-4">
         <!-- Row 1: avatar + email/username/created_at (left) + current balance (right) -->
-        <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
-            <span class="text-lg font-medium text-primary-700 dark:text-primary-300">
+        <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+          <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control border border-outline bg-surface" aria-hidden="true">
+            <span class="text-sm font-semibold text-foreground-muted">
               {{ user.email.charAt(0).toUpperCase() }}
             </span>
           </div>
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <p class="truncate font-medium text-gray-900 dark:text-white">{{ user.email }}</p>
-              <span v-if="user.deleted_at" class="flex-shrink-0 inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-rose-100 text-rose-600 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-500/30">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="min-w-0 break-all text-sm font-medium text-foreground">{{ user.email }}</p>
+              <span v-if="user.deleted_at" class="badge badge-danger flex-shrink-0 text-[10px]">
                 {{ t('admin.usage.userDeletedBadge') }}
               </span>
               <span
                 v-if="user.username"
-                class="flex-shrink-0 rounded bg-primary-50 px-1.5 py-0.5 text-xs text-primary-600 dark:bg-primary-900/20 dark:text-primary-400"
+                class="badge badge-gray max-w-full"
               >
-                {{ user.username }}
+                <span class="min-w-0 break-all">{{ user.username }}</span>
               </span>
             </div>
-            <p class="text-xs text-gray-400 dark:text-dark-500">
+            <p class="mt-0.5 break-words text-xs text-foreground-subtle">
               {{ t('admin.users.createdAt') }}: {{ formatDateTime(user.created_at) }}
             </p>
           </div>
           <!-- Current balance: prominent display on the right -->
-          <div class="flex-shrink-0 text-right">
-            <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('admin.users.currentBalance') }}</p>
-            <p class="text-xl font-bold text-gray-900 dark:text-white">
+          <div class="col-start-2 text-left sm:col-start-auto sm:text-right">
+            <p class="text-xs text-foreground-subtle">{{ t('admin.users.currentBalance') }}</p>
+            <p class="break-all text-lg font-semibold tabular-nums text-foreground">
               ${{ user.balance?.toFixed(2) || '0.00' }}
             </p>
           </div>
         </div>
         <!-- Row 2: notes + total recharged -->
-        <div class="mt-2.5 flex items-center justify-between border-t border-gray-200/60 pt-2.5 dark:border-dark-600/60">
-          <p class="min-w-0 flex-1 truncate text-xs text-gray-500 dark:text-dark-400" :title="user.notes || ''">
+        <div class="mt-2.5 flex flex-col items-start gap-1 border-t border-outline pt-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <p class="min-w-0 flex-1 break-words text-xs text-foreground-subtle" :title="user.notes || ''">
             <template v-if="user.notes">{{ t('admin.users.notes') }}: {{ user.notes }}</template>
             <template v-else>&nbsp;</template>
           </p>
-          <p class="ml-4 flex-shrink-0 text-xs text-gray-500 dark:text-dark-400">
-            {{ t('admin.users.totalRecharged') }}: <span class="font-semibold text-emerald-600 dark:text-emerald-400">${{ totalRecharged.toFixed(2) }}</span>
+          <p class="min-w-0 max-w-full break-all text-xs text-foreground-subtle sm:ml-4 sm:shrink-0">
+            {{ t('admin.users.totalRecharged') }}:
+            <span v-if="loadSucceeded" class="font-semibold tabular-nums text-success-foreground">${{ totalRecharged.toFixed(2) }}</span>
+            <span v-else>--</span>
           </p>
         </div>
       </div>
 
       <!-- Type filter + Action buttons -->
-      <div class="flex items-center gap-3">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Select
           v-model="typeFilter"
           :options="typeOptions"
-          class="w-56"
+          :aria-label="t('admin.users.allTypes')"
+          class="w-full sm:w-56 sm:flex-none"
           @change="loadHistory(1)"
         />
-        <!-- Deposit button - matches menu style -->
-        <button
-          v-if="!hideActions"
-          @click="emit('deposit')"
-          class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700"
-        >
-          <Icon name="plus" size="sm" class="text-emerald-500" :stroke-width="2" />
-          {{ t('admin.users.deposit') }}
-        </button>
-        <!-- Withdraw button - matches menu style -->
-        <button
-          v-if="!hideActions"
-          @click="emit('withdraw')"
-          class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700"
-        >
-          <svg class="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-          </svg>
-          {{ t('admin.users.withdraw') }}
-        </button>
+        <div v-if="!hideActions" class="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <!-- Deposit button - matches menu style -->
+          <button
+            type="button"
+            @click="emit('deposit')"
+            class="btn btn-secondary min-h-touch min-w-0 sm:min-h-control"
+          >
+            <Icon name="plus" size="sm" class="shrink-0 text-success-foreground" :stroke-width="2" aria-hidden="true" />
+            {{ t('admin.users.deposit') }}
+          </button>
+          <!-- Withdraw button - matches menu style -->
+          <button
+            type="button"
+            @click="emit('withdraw')"
+            class="btn btn-secondary min-h-touch min-w-0 sm:min-h-control"
+          >
+            <span class="text-lg leading-none text-warning-foreground" aria-hidden="true">-</span>
+            {{ t('admin.users.withdraw') }}
+          </button>
+        </div>
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="flex justify-center py-8">
-        <svg class="h-8 w-8 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
+      <div v-if="loading" class="flex items-center justify-center gap-2 py-8 text-sm text-foreground-subtle" role="status">
+        <Icon name="refresh" size="md" class="animate-spin" aria-hidden="true" />
+        <span>{{ t('common.loading') }}</span>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="loadError" class="flex flex-col items-center gap-3 py-8 text-center" role="alert">
+        <p class="text-sm text-danger-foreground">{{ loadError }}</p>
+        <button type="button" class="btn btn-secondary" data-testid="balance-history-retry" @click="loadHistory(currentPage)">
+          {{ t('admin.users.retry') }}
+        </button>
       </div>
 
       <!-- Empty state -->
       <div v-else-if="history.length === 0" class="py-8 text-center">
-        <p class="text-sm text-gray-500">{{ t('admin.users.noBalanceHistory') }}</p>
+        <p class="text-sm text-foreground-subtle">{{ t('admin.users.noBalanceHistory') }}</p>
       </div>
 
       <!-- History list -->
-      <div v-else class="max-h-[28rem] space-y-3 overflow-y-auto">
+      <div v-else class="max-h-[28rem] divide-y divide-outline overflow-y-auto rounded-panel border border-outline bg-surface">
         <div
           v-for="item in history"
           :key="item.id"
-          class="rounded-xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800"
+          class="p-3 sm:p-4"
         >
-          <div class="flex items-start justify-between">
+          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,8rem)] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,auto)]">
             <!-- Left: type icon + description -->
-            <div class="flex items-start gap-3">
+            <div class="flex min-w-0 items-start gap-3">
               <div
                 :class="[
-                  'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg',
+                  'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control',
                   getIconBg(item)
                 ]"
               >
-                <Icon :name="getIconName(item)" size="sm" :class="getIconColor(item)" />
+                <Icon :name="getIconName(item)" size="sm" :class="getIconColor(item)" aria-hidden="true" />
               </div>
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
+              <div class="min-w-0">
+                <p class="break-words text-sm font-medium text-foreground">
                   {{ getItemTitle(item) }}
                 </p>
                 <!-- Notes (admin adjustment reason) -->
                 <p
                   v-if="item.notes"
-                  class="mt-0.5 text-xs text-gray-500 dark:text-dark-400"
+                  class="mt-0.5 break-words text-xs text-foreground-subtle"
                   :title="item.notes"
                 >
                   {{ item.notes.length > 60 ? item.notes.substring(0, 55) + '...' : item.notes }}
                 </p>
-                <p class="mt-0.5 text-xs text-gray-400 dark:text-dark-500">
+                <p class="mt-0.5 break-words text-xs text-foreground-subtle">
                   {{ formatDateTime(item.used_at || item.created_at) }}
                 </p>
               </div>
             </div>
             <!-- Right: value -->
-            <div class="text-right">
-              <p :class="['text-sm font-semibold', getValueColor(item)]">
+            <div class="min-w-0 text-right">
+              <p :class="['break-all text-sm font-semibold tabular-nums', getValueColor(item)]">
                 {{ formatValue(item) }}
               </p>
               <p
                 v-if="isAdminType(item.type)"
-                class="text-xs text-gray-400 dark:text-dark-500"
+                class="break-words text-xs text-foreground-subtle"
               >
                 {{ t('redeem.adminAdjustment') }}
               </p>
               <p
                 v-else
-                class="font-mono text-xs text-gray-400 dark:text-dark-500"
+                class="break-all font-mono text-xs text-foreground-subtle"
               >
                 {{ item.code.slice(0, 8) }}...
               </p>
@@ -150,18 +159,20 @@
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 pt-2">
         <button
+          type="button"
           :disabled="currentPage <= 1"
-          class="btn btn-secondary px-3 py-1 text-sm"
+          class="btn btn-secondary min-h-touch px-3 text-sm sm:min-h-control"
           @click="loadHistory(currentPage - 1)"
         >
           {{ t('pagination.previous') }}
         </button>
-        <span class="text-sm text-gray-500 dark:text-dark-400">
+        <span class="whitespace-nowrap text-sm tabular-nums text-foreground-subtle">
           {{ currentPage }} / {{ totalPages }}
         </span>
         <button
+          type="button"
           :disabled="currentPage >= totalPages"
-          class="btn btn-secondary px-3 py-1 text-sm"
+          class="btn btn-secondary min-h-touch px-3 text-sm sm:min-h-control"
           @click="loadHistory(currentPage + 1)"
         >
           {{ t('pagination.next') }}
@@ -172,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI, type BalanceHistoryItem } from '@/api/admin'
 import { formatDateTime } from '@/utils/format'
@@ -187,11 +198,14 @@ const { t } = useI18n()
 
 const history = ref<BalanceHistoryItem[]>([])
 const loading = ref(false)
+const loadError = ref('')
+const loadSucceeded = ref(false)
 const currentPage = ref(1)
 const total = ref(0)
 const totalRecharged = ref(0)
 const pageSize = 15
 const typeFilter = ref('')
+let loadRequestSeq = 0
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize) || 1)
 
@@ -206,34 +220,72 @@ const typeOptions = computed(() => [
   { value: 'subscription', label: t('admin.users.typeSubscription') }
 ])
 
-// Watch modal open
-watch(() => props.show, (v) => {
-  if (v && props.user) {
-    typeFilter.value = ''
-    loadHistory(1)
-  }
-})
+function clearHistory(resetFilter = false) {
+  history.value = []
+  currentPage.value = 1
+  total.value = 0
+  totalRecharged.value = 0
+  loading.value = false
+  loadError.value = ''
+  loadSucceeded.value = false
+  if (resetFilter) typeFilter.value = ''
+}
+
+function isCurrentLoad(requestSeq: number, userId: number): boolean {
+  return requestSeq === loadRequestSeq && props.show && props.user?.id === userId
+}
 
 const loadHistory = async (page: number) => {
-  if (!props.user) return
+  const userId = props.user?.id
+  if (userId == null || !props.show) return
+  const requestSeq = ++loadRequestSeq
+  history.value = []
+  total.value = 0
+  totalRecharged.value = 0
+  loadError.value = ''
+  loadSucceeded.value = false
   loading.value = true
   currentPage.value = page
   try {
     const res = await adminAPI.users.getUserBalanceHistory(
-      props.user.id,
+      userId,
       page,
       pageSize,
       typeFilter.value || undefined
     )
+    if (!isCurrentLoad(requestSeq, userId)) return
     history.value = res.items || []
     total.value = res.total || 0
     totalRecharged.value = res.total_recharged || 0
+    loadSucceeded.value = true
   } catch (error) {
+    if (!isCurrentLoad(requestSeq, userId)) return
     console.error('Failed to load balance history:', error)
+    loadError.value = t('admin.users.failedToLoadBalanceHistory')
   } finally {
-    loading.value = false
+    if (isCurrentLoad(requestSeq, userId)) loading.value = false
   }
 }
+
+watch(
+  [() => props.show, () => props.user?.id],
+  ([show, userId]) => {
+    loadRequestSeq += 1
+    clearHistory(true)
+    if (show && userId != null) void loadHistory(1)
+  },
+  { immediate: true }
+)
+
+function handleClose() {
+  loadRequestSeq += 1
+  clearHistory(true)
+  emit('close')
+}
+
+onUnmounted(() => {
+  loadRequestSeq += 1
+})
 
 // Helper: check if admin type
 const isAdminType = (type: string) => type === 'admin_balance' || type === 'admin_concurrency'
@@ -253,41 +305,20 @@ const getIconName = (item: BalanceHistoryItem) => {
 
 // Icon background color
 const getIconBg = (item: BalanceHistoryItem) => {
-  if (isBalanceType(item.type)) {
-    return item.value >= 0
-      ? 'bg-emerald-100 dark:bg-emerald-900/30'
-      : 'bg-red-100 dark:bg-red-900/30'
-  }
-  if (isSubscriptionType(item.type)) return 'bg-purple-100 dark:bg-purple-900/30'
-  return item.value >= 0
-    ? 'bg-blue-100 dark:bg-blue-900/30'
-    : 'bg-orange-100 dark:bg-orange-900/30'
+  if (isSubscriptionType(item.type)) return 'bg-info-subtle'
+  return item.value >= 0 ? 'bg-success-subtle' : 'bg-danger-subtle'
 }
 
 // Icon text color
 const getIconColor = (item: BalanceHistoryItem) => {
-  if (isBalanceType(item.type)) {
-    return item.value >= 0
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : 'text-red-600 dark:text-red-400'
-  }
-  if (isSubscriptionType(item.type)) return 'text-purple-600 dark:text-purple-400'
-  return item.value >= 0
-    ? 'text-blue-600 dark:text-blue-400'
-    : 'text-orange-600 dark:text-orange-400'
+  if (isSubscriptionType(item.type)) return 'text-info-foreground'
+  return item.value >= 0 ? 'text-success-foreground' : 'text-danger-foreground'
 }
 
 // Value text color
 const getValueColor = (item: BalanceHistoryItem) => {
-  if (isBalanceType(item.type)) {
-    return item.value >= 0
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : 'text-red-600 dark:text-red-400'
-  }
-  if (isSubscriptionType(item.type)) return 'text-purple-600 dark:text-purple-400'
-  return item.value >= 0
-    ? 'text-blue-600 dark:text-blue-400'
-    : 'text-orange-600 dark:text-orange-400'
+  if (isSubscriptionType(item.type)) return 'text-info-foreground'
+  return item.value >= 0 ? 'text-success-foreground' : 'text-danger-foreground'
 }
 
 // Item title

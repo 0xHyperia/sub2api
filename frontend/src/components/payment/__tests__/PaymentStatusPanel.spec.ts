@@ -227,4 +227,40 @@ describe('PaymentStatusPanel', () => {
     expect(wrapper.text()).toContain('payment.result.success')
     expect(wrapper.emitted('success')).toHaveLength(1)
   })
+
+  it('shows a recoverable status warning after three polling failures', async () => {
+    pollOrderStatus.mockRejectedValue(new Error('temporarily unavailable'))
+
+    const wrapper = mount(PaymentStatusPanel, {
+      props: {
+        orderId: 42,
+        qrCode: '',
+        expiresAt: '2099-01-01T12:30:00Z',
+        paymentType: 'custom-pay',
+        orderType: 'balance',
+      },
+      global: {
+        stubs: {
+          Icon: true,
+          LoadingSpinner: true,
+        },
+      },
+    })
+
+    await vi.advanceTimersByTimeAsync(9000)
+    await flushPromises()
+
+    expect(pollOrderStatus).toHaveBeenCalledTimes(3)
+    expect(wrapper.text()).toContain('payment.qr.statusUnavailable')
+
+    pollOrderStatus.mockResolvedValue(orderFactory('PENDING'))
+    const retryButton = wrapper.findAll('button').find(button => button.text().includes('common.retry'))
+    expect(retryButton).toBeDefined()
+    await retryButton!.trigger('click')
+    await flushPromises()
+
+    expect(pollOrderStatus).toHaveBeenCalledTimes(4)
+    expect(wrapper.text()).not.toContain('payment.qr.statusUnavailable')
+    wrapper.unmount()
+  })
 })

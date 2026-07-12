@@ -7,6 +7,7 @@ import type { OpsErrorDistributionResponse } from '@/api/admin/ops'
 import type { ChartState } from '../types'
 import HelpTooltip from '@/components/common/HelpTooltip.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { useOpsChartTheme } from '../utils/useOpsChartTheme'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -21,7 +22,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 
-const isDarkMode = computed(() => document.documentElement.classList.contains('dark'))
+const { isDarkMode } = useOpsChartTheme()
 const colors = computed(() => ({
   blue: '#3b82f6',
   red: '#ef4444',
@@ -109,10 +110,10 @@ const options = computed(() => ({
 </script>
 
 <template>
-  <div class="flex h-full flex-col rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700">
+  <section class="flex min-h-[300px] flex-col rounded-panel border border-outline bg-surface p-4 shadow-card sm:p-5" aria-labelledby="ops-error-distribution-title">
     <div class="mb-4 flex items-center justify-between">
-      <h3 class="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-        <svg class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <h3 id="ops-error-distribution-title" class="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <svg class="h-4 w-4 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -125,7 +126,7 @@ const options = computed(() => ({
       </h3>
       <button
         type="button"
-        class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-2 py-1 text-[11px] font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-dark-700 dark:bg-dark-900 dark:text-gray-300 dark:hover:bg-dark-800"
+        class="btn btn-secondary btn-sm px-2"
         :disabled="state !== 'ready'"
         :title="t('admin.ops.errorTrend')"
         @click="emit('openDetails')"
@@ -157,5 +158,5 @@ const options = computed(() => ({
         <EmptyState v-else :title="t('common.noData')" :description="t('admin.ops.charts.emptyError')" />
       </div>
     </div>
-  </div>
+  </section>
 </template>

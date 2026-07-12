@@ -7,7 +7,11 @@
   >
     <!-- provider tabs -->
     <div class="mb-4 border-b border-gray-200 dark:border-dark-700">
-      <div role="tablist" class="flex gap-1">
+      <div
+        role="tablist"
+        :aria-label="t('admin.channelMonitor.template.managerTitle')"
+        class="grid grid-cols-1 gap-1 sm:grid-cols-3"
+      >
         <button
           v-for="tab in providerTabs"
           :key="tab.value"
@@ -32,7 +36,7 @@
     <!-- active provider list -->
     <div v-if="!editing" class="space-y-2">
       <div class="flex justify-end">
-        <button class="btn btn-primary btn-sm" @click="openCreateForm">
+        <button type="button" class="btn btn-primary btn-sm" @click="openCreateForm">
           <Icon name="plus" size="sm" class="mr-1" />
           {{ t('admin.channelMonitor.template.createButton') }}
         </button>
@@ -55,10 +59,10 @@
         :key="tpl.id"
         class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800"
       >
-        <div class="flex items-start justify-between gap-3">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-gray-900 dark:text-white">{{ tpl.name }}</span>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="break-words font-medium text-gray-900 dark:text-white">{{ tpl.name }}</span>
               <span
                 class="inline-flex items-center rounded-md px-1.5 py-0.5 text-xs"
                 :class="modeBadgeClass(tpl.body_override_mode)"
@@ -88,9 +92,10 @@
               }) }}
             </p>
           </div>
-          <div class="flex flex-shrink-0 gap-2">
+          <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-shrink-0">
             <button
-              class="btn btn-secondary btn-sm"
+              type="button"
+              class="btn btn-secondary btn-sm w-full sm:w-auto"
               :disabled="tpl.associated_monitors === 0"
               :title="t('admin.channelMonitor.template.applyTooltip')"
               @click="confirmApply(tpl)"
@@ -98,10 +103,10 @@
               <Icon name="refresh" size="sm" class="mr-1" />
               {{ t('admin.channelMonitor.template.applyButton') }}
             </button>
-            <button class="btn btn-secondary btn-sm" @click="openEditForm(tpl)">
+            <button type="button" class="btn btn-secondary btn-sm w-full sm:w-auto" @click="openEditForm(tpl)">
               {{ t('common.edit') }}
             </button>
-            <button class="btn btn-secondary btn-sm text-red-600" @click="handleDelete(tpl)">
+            <button type="button" class="btn btn-secondary btn-sm w-full text-red-600 sm:w-auto" @click="handleDelete(tpl)">
               {{ t('common.delete') }}
             </button>
           </div>
@@ -112,12 +117,13 @@
     <!-- edit / create form -->
     <div v-else class="space-y-4">
       <div>
-        <label class="input-label">
+        <label for="monitor-template-name" class="input-label">
           {{ t('admin.channelMonitor.template.form.name') }}
           <span class="text-red-500">*</span>
         </label>
         <input
           v-model="form.name"
+          id="monitor-template-name"
           type="text"
           required
           class="input"
@@ -126,15 +132,20 @@
       </div>
 
       <div v-if="editing === 'new'">
-        <label class="input-label">
+        <p id="monitor-template-provider-label" class="input-label">
           {{ t('admin.channelMonitor.form.provider') }}
           <span class="text-red-500">*</span>
-        </label>
-        <div class="grid grid-cols-3 gap-3">
+        </p>
+        <div
+          role="group"
+          aria-labelledby="monitor-template-provider-label"
+          class="grid grid-cols-1 gap-3 sm:grid-cols-3"
+        >
           <button
             v-for="opt in providerTabs"
             :key="opt.value"
             type="button"
+            :aria-pressed="form.provider === opt.value"
             class="rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors"
             :class="providerPickerClass(opt.value, form.provider === opt.value)"
             @click="form.provider = opt.value"
@@ -144,13 +155,16 @@
         </div>
       </div>
 
-      <div v-if="form.provider === PROVIDER_OPENAI" class="rounded-lg border border-blue-100 bg-blue-50/50 p-3 dark:border-blue-500/20 dark:bg-blue-500/10">
-        <label class="input-label">{{ t('admin.channelMonitor.form.apiMode') }}</label>
-        <div class="grid gap-3 sm:grid-cols-2">
+      <div v-if="form.provider === PROVIDER_OPENAI" class="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-dark-600 dark:bg-dark-700/50">
+        <p id="monitor-template-api-mode-label" class="input-label">
+          {{ t('admin.channelMonitor.form.apiMode') }}
+        </p>
+        <div role="group" aria-labelledby="monitor-template-api-mode-label" class="grid gap-3 sm:grid-cols-2">
           <button
             v-for="opt in apiModeOptions"
             :key="opt.value"
             type="button"
+            :aria-pressed="form.api_mode === opt.value"
             class="rounded-lg border-2 px-3 py-2 text-left transition-colors"
             :class="apiModeButtonClass(opt.value)"
             @click="form.api_mode = opt.value"
@@ -162,11 +176,12 @@
       </div>
 
       <div>
-        <label class="input-label">
+        <label for="monitor-template-description" class="input-label">
           {{ t('admin.channelMonitor.template.form.description') }}
         </label>
         <input
           v-model="form.description"
+          id="monitor-template-description"
           type="text"
           class="input"
           :placeholder="t('admin.channelMonitor.template.form.descriptionPlaceholder')"
@@ -186,19 +201,19 @@
     </div>
 
     <template #footer>
-      <div class="flex w-full items-center justify-between">
+      <div class="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
         <!-- Left: back to list / nothing -->
-        <div>
-          <button v-if="editing" class="btn btn-secondary" @click="backToList">
+        <div class="w-full sm:w-auto">
+          <button v-if="editing" type="button" class="btn btn-secondary w-full sm:w-auto" @click="backToList">
             {{ t('common.back') }}
           </button>
         </div>
         <!-- Right: save or close -->
-        <div class="flex gap-2">
-          <button class="btn btn-secondary" @click="$emit('close')">
+        <div class="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+          <button type="button" class="btn btn-secondary w-full sm:w-auto" @click="$emit('close')">
             {{ t('common.close') }}
           </button>
-          <button v-if="editing" class="btn btn-primary" :disabled="submitting" @click="handleSubmit">
+          <button v-if="editing" type="button" class="btn btn-primary w-full sm:w-auto" :disabled="submitting" @click="handleSubmit">
             {{ submitting ? t('common.submitting') : editing === 'new' ? t('common.create') : t('common.update') }}
           </button>
         </div>

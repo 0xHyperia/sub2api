@@ -2,24 +2,11 @@
   <div class="empty-state">
     <!-- Icon -->
     <div
-      class="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-dark-800"
+      class="mb-4 flex h-14 w-14 items-center justify-center rounded-panel border border-outline bg-surface-subtle text-foreground-subtle"
     >
       <slot name="icon">
-        <component v-if="icon" :is="icon" class="empty-state-icon h-10 w-10" aria-hidden="true" />
-        <svg
-          v-else
-          class="empty-state-icon h-10 w-10"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-          />
-        </svg>
+        <component v-if="icon" :is="icon" class="h-6 w-6" aria-hidden="true" />
+        <Icon v-else name="inbox" size="lg" aria-hidden="true" />
       </slot>
     </div>
 
@@ -40,6 +27,7 @@
           :is="actionTo ? 'RouterLink' : 'button'"
           v-if="actionText"
           :to="actionTo"
+          :type="actionTo ? undefined : 'button'"
           @click="!actionTo && $emit('action')"
           class="btn btn-primary"
         >
@@ -74,7 +62,7 @@ const props = withDefaults(defineProps<Props>(), {
   actionIcon: true
 })
 
-const displayTitle = computed(() => props.title || t('common.noData'))
+const displayTitle = computed(() => props.title || props.message || t('common.noData'))
 
 defineEmits(['action'])
 </script>

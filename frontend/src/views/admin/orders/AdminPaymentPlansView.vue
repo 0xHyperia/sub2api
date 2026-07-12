@@ -1,70 +1,84 @@
 <template>
   <AppLayout>
-    <div class="space-y-4">
-      <!-- Actions -->
-      <div class="flex items-center justify-end gap-2">
-        <button @click="loadPlans" :disabled="plansLoading" class="btn btn-secondary" :title="t('common.refresh')">
-          <Icon name="refresh" size="md" :class="plansLoading ? 'animate-spin' : ''" />
-        </button>
-        <button @click="openPlanEdit(null)" class="btn btn-primary">{{ t('payment.admin.createPlan') }}</button>
-      </div>
-
-      <!-- Plans Table -->
-      <DataTable :columns="planColumns" :data="plans" :loading="plansLoading">
-        <template #cell-name="{ value, row }">
-          <span class="text-sm font-medium" :class="getPlanNameClass(row.group_id)">{{ value }}</span>
-        </template>
-        <template #cell-group_id="{ value }">
-          <span v-if="isGroupMissing(value)" class="text-sm">
-            <span class="text-gray-400">#{{ value }}</span>
-            <span class="ml-1 badge badge-danger">{{ t('payment.admin.groupMissing') }}</span>
-          </span>
-          <GroupBadge
-            v-else-if="getGroup(value)"
-            :name="getGroup(value)!.name"
-            :platform="getGroup(value)!.platform"
-            :rate-multiplier="getGroup(value)!.rate_multiplier"
-          />
-          <span v-else class="text-sm text-gray-400">-</span>
-        </template>
-        <template #cell-price="{ value, row }">
-          <div class="text-sm">
-            <span class="font-medium text-gray-900 dark:text-white">${{ (value ?? 0).toFixed(2) }}</span>
-            <span v-if="row.original_price" class="ml-1 text-xs text-gray-400 line-through">${{ row.original_price.toFixed(2) }}</span>
-          </div>
-        </template>
-        <template #cell-validity_days="{ value, row }">
-          <span class="text-sm">{{ value }} {{ t('payment.admin.' + (row.validity_unit || 'days')) }}</span>
-        </template>
-        <template #cell-for_sale="{ value, row }">
+    <TablePageLayout>
+      <template #filters>
+        <div class="commerce-toolbar flex items-center justify-end gap-2">
           <button
             type="button"
-            :class="[
-              'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
-              value ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-600'
-            ]"
-            @click="toggleForSale(row)"
+            @click="loadPlans"
+            :disabled="plansLoading"
+            class="btn btn-secondary px-2.5"
+            :title="t('common.refresh')"
+            :aria-label="t('common.refresh')"
           >
-            <span :class="[
-              'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-              value ? 'translate-x-4' : 'translate-x-0'
-            ]" />
+            <Icon name="refresh" size="md" :class="plansLoading ? 'animate-spin' : ''" />
           </button>
-        </template>
-        <template #cell-actions="{ row }">
-          <div class="flex items-center gap-2">
-            <button @click="openPlanEdit(row)" class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400">
+          <button type="button" @click="openPlanEdit(null)" class="btn btn-primary">
+            <Icon name="plus" size="sm" />
+            {{ t('payment.admin.createPlan') }}
+          </button>
+        </div>
+      </template>
+
+      <template #table>
+        <DataTable :columns="planColumns" :data="plans" :loading="plansLoading">
+          <template #cell-name="{ value, row }">
+            <span class="text-sm font-medium" :class="getPlanNameClass(row.group_id)">{{ value }}</span>
+          </template>
+          <template #cell-group_id="{ value }">
+            <span v-if="isGroupMissing(value)" class="text-sm">
+              <span class="text-gray-400">#{{ value }}</span>
+              <span class="ml-1 badge badge-danger">{{ t('payment.admin.groupMissing') }}</span>
+            </span>
+            <GroupBadge
+              v-else-if="getGroup(value)"
+              :name="getGroup(value)!.name"
+              :platform="getGroup(value)!.platform"
+              :rate-multiplier="getGroup(value)!.rate_multiplier"
+            />
+            <span v-else class="text-sm text-gray-400">-</span>
+          </template>
+          <template #cell-price="{ value, row }">
+            <div class="text-sm tabular-nums">
+              <span class="font-semibold text-gray-900 dark:text-white">${{ (value ?? 0).toFixed(2) }}</span>
+              <span v-if="row.original_price" class="ml-1 text-xs text-gray-400 line-through">${{ row.original_price.toFixed(2) }}</span>
+            </div>
+          </template>
+          <template #cell-validity_days="{ value, row }">
+            <span class="text-sm">{{ value }} {{ t('payment.admin.' + (row.validity_unit || 'days')) }}</span>
+          </template>
+          <template #cell-for_sale="{ value, row }">
+            <Toggle
+              :model-value="Boolean(value)"
+              :aria-label="`${t('payment.admin.forSale')}: ${row.name}`"
+              @update:model-value="toggleForSale(row)"
+            />
+          </template>
+          <template #cell-actions="{ row }">
+            <div class="flex items-center gap-1">
+              <button
+                type="button"
+                @click="openPlanEdit(row)"
+                class="plan-action"
+                :title="t('common.edit')"
+                :aria-label="`${t('common.edit')}: ${row.name}`"
+              >
               <Icon name="edit" size="sm" />
-              <span class="text-xs">{{ t('common.edit') }}</span>
-            </button>
-            <button @click="confirmDeletePlan(row)" class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400">
-              <Icon name="trash" size="sm" />
-              <span class="text-xs">{{ t('common.delete') }}</span>
-            </button>
-          </div>
-        </template>
-      </DataTable>
-    </div>
+              </button>
+              <button
+                type="button"
+                @click="confirmDeletePlan(row)"
+                class="plan-action plan-action-danger"
+                :title="t('common.delete')"
+                :aria-label="`${t('common.delete')}: ${row.name}`"
+              >
+                <Icon name="trash" size="sm" />
+              </button>
+            </div>
+          </template>
+        </DataTable>
+      </template>
+    </TablePageLayout>
 
     <!-- Plan Edit Dialog -->
     <PlanEditDialog :show="showPlanDialog" :plan="editingPlan" :groups="groups" :payment-config="paymentConfig" @close="showPlanDialog = false" @saved="loadPlans" />
@@ -85,8 +99,10 @@ import type { SubscriptionPlan } from '@/types/payment'
 import type { AdminGroup } from '@/types'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Toggle from '@/components/common/Toggle.vue'
 import Icon from '@/components/icons/Icon.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import PlanEditDialog from './PlanEditDialog.vue'
@@ -194,3 +210,45 @@ onMounted(() => {
   loadPlans()
 })
 </script>
+
+<style scoped>
+.commerce-toolbar {
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.plan-action {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.plan-action:hover {
+  color: var(--ui-text, #0f172a);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.plan-action-danger:hover {
+  color: rgb(var(--color-danger-foreground, 185 28 28));
+  background: rgb(var(--color-danger-subtle, 254 242 242));
+}
+
+.plan-action:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 1px;
+}
+
+@media (max-width: 639px) {
+  .commerce-toolbar {
+    padding: 10px;
+  }
+}
+</style>

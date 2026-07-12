@@ -2,84 +2,97 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <div class="flex flex-wrap items-center gap-3">
-          <!-- Left: Search + Filters -->
-          <div class="relative w-full sm:w-64">
-            <Icon
-              name="search"
-              size="md"
-              class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-            />
-            <input
-              v-model="searchQuery"
-              type="text"
-              :placeholder="t('admin.proxies.searchProxies')"
-              class="input pl-10"
-              @input="handleSearch"
-            />
-          </div>
+        <div class="resource-toolbar flex flex-col gap-3 xl:flex-row xl:items-center">
+          <div class="resource-toolbar__filters flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <!-- Left: Search + Filters -->
+            <div class="relative w-full sm:w-64">
+              <Icon
+                name="search"
+                size="md"
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+              />
+              <input
+                v-model="searchQuery"
+                type="text"
+                :placeholder="t('admin.proxies.searchProxies')"
+                :aria-label="t('admin.proxies.searchProxies')"
+                autocomplete="off"
+                class="input pl-10"
+                @input="handleSearch"
+              />
+            </div>
 
-          <div class="w-full sm:w-40">
-            <Select
-              v-model="filters.protocol"
-              :options="protocolOptions"
-              :placeholder="t('admin.proxies.allProtocols')"
-              @change="loadProxies"
-            />
-          </div>
-          <div class="w-full sm:w-36">
-            <Select
-              v-model="filters.status"
-              :options="statusOptions"
-              :placeholder="t('admin.proxies.allStatus')"
-              @change="loadProxies"
-            />
+            <div class="w-full sm:w-40">
+              <Select
+                v-model="filters.protocol"
+                :options="protocolOptions"
+                :placeholder="t('admin.proxies.allProtocols')"
+                @change="loadProxies"
+              />
+            </div>
+            <div class="w-full sm:w-36">
+              <Select
+                v-model="filters.status"
+                :options="statusOptions"
+                :placeholder="t('admin.proxies.allStatus')"
+                @change="loadProxies"
+              />
+            </div>
           </div>
 
           <!-- Right: All action buttons -->
-          <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
+          <div class="resource-toolbar__actions flex w-full flex-wrap items-center justify-end gap-2 xl:w-auto">
             <button
+              type="button"
               @click="loadProxies"
               :disabled="loading"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2"
               :title="t('common.refresh')"
+              :aria-label="t('common.refresh')"
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
             </button>
             <button
+              type="button"
               @click="handleBatchTest"
               :disabled="batchTesting || loading"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2 lg:px-3"
               :title="t('admin.proxies.testConnection')"
+              :aria-label="t('admin.proxies.testConnection')"
             >
-              <Icon name="play" size="md" class="mr-2" />
-              {{ t('admin.proxies.testConnection') }}
+              <Icon name="play" size="md" class="lg:mr-2" />
+              <span class="hidden lg:inline">{{ t('admin.proxies.testConnection') }}</span>
             </button>
             <button
+              type="button"
               @click="handleBatchQualityCheck"
               :disabled="batchQualityChecking || loading"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2 lg:px-3"
               :title="t('admin.proxies.batchQualityCheck')"
+              :aria-label="t('admin.proxies.batchQualityCheck')"
             >
-              <Icon name="shield" size="md" class="mr-2" :class="batchQualityChecking ? 'animate-pulse' : ''" />
-              {{ t('admin.proxies.batchQualityCheck') }}
+              <Icon name="shield" size="md" class="lg:mr-2" :class="batchQualityChecking ? 'animate-pulse' : ''" />
+              <span class="hidden lg:inline">{{ t('admin.proxies.batchQualityCheck') }}</span>
             </button>
             <button
-              @click="openBatchDelete"
-              :disabled="selectedCount === 0"
-              class="btn btn-danger"
-              :title="t('admin.proxies.batchDeleteAction')"
+              type="button"
+              @click="showImportData = true"
+              class="btn btn-secondary px-2"
+              :title="t('admin.proxies.dataImport')"
+              :aria-label="t('admin.proxies.dataImport')"
             >
-              <Icon name="trash" size="md" class="mr-2" />
-              {{ t('admin.proxies.batchDeleteAction') }}
+              <Icon name="upload" size="md" />
             </button>
-            <button @click="showImportData = true" class="btn btn-secondary">
-              {{ t('admin.proxies.dataImport') }}
+            <button
+              type="button"
+              @click="showExportDataDialog = true"
+              class="btn btn-secondary px-2"
+              :title="selectedCount > 0 ? t('admin.proxies.dataExportSelected') : t('admin.proxies.dataExport')"
+              :aria-label="selectedCount > 0 ? t('admin.proxies.dataExportSelected') : t('admin.proxies.dataExport')"
+            >
+              <Icon name="download" size="md" />
             </button>
-            <button @click="showExportDataDialog = true" class="btn btn-secondary">
-              {{ selectedCount > 0 ? t('admin.proxies.dataExportSelected') : t('admin.proxies.dataExport') }}
-            </button>
-            <button @click="showCreateModal = true" class="btn btn-primary">
+            <button type="button" @click="showCreateModal = true" class="btn btn-primary min-w-0 flex-1 sm:flex-none">
               <Icon name="plus" size="md" class="mr-2" />
               {{ t('admin.proxies.createProxy') }}
             </button>
@@ -88,7 +101,29 @@
       </template>
 
       <template #table>
-        <div ref="proxyTableRef" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div ref="proxyTableRef" class="flex min-h-0 flex-1 flex-col overflow-visible lg:overflow-hidden">
+        <div v-if="selectedCount > 0" class="resource-selection-bar">
+          <span class="text-sm font-medium text-gray-800 dark:text-gray-100">
+            {{ t('common.selectedCount', { count: selectedCount }) }}
+          </span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              @click="clearSelectedProxies"
+            >
+              {{ t('admin.accounts.bulkActions.clear') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger btn-sm"
+              @click="openBatchDelete"
+            >
+              <Icon name="trash" size="sm" class="mr-1.5" />
+              {{ t('admin.proxies.batchDeleteAction') }}
+            </button>
+          </div>
+        </div>
         <DataTable
           :columns="columns"
           :data="proxies"
@@ -137,22 +172,35 @@
               <code class="code text-xs">{{ row.host }}:{{ row.port }}</code>
               <div class="relative">
                 <button
+                  :id="getCopyMenuTriggerId(row.id)"
                   type="button"
                   class="rounded p-0.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
                   :title="t('admin.proxies.copyProxyUrl')"
+                  :aria-label="t('admin.proxies.copyProxyUrl')"
+                  aria-haspopup="menu"
+                  :aria-expanded="copyMenuOpen && copyMenuProxyId === row.id"
+                  :aria-controls="copyMenuOpen && copyMenuProxyId === row.id ? getCopyMenuId(row.id) : undefined"
                   @click.stop="copyProxyUrl(row)"
-                  @contextmenu.prevent="toggleCopyMenu(row.id)"
+                  @contextmenu.prevent.stop="toggleCopyMenu(row.id, $event)"
+                  @keydown="handleCopyTriggerKeydown(row.id, $event)"
                 >
                   <Icon name="copy" size="sm" />
                 </button>
                 <!-- 右键展开格式选择菜单 -->
                 <div
-                  v-if="copyMenuProxyId === row.id"
-                  class="absolute left-0 top-full z-50 mt-1 w-auto min-w-[180px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-500 dark:bg-dark-700"
+                  v-if="copyMenuOpen && copyMenuProxyId === row.id"
+                  :id="getCopyMenuId(row.id)"
+                  ref="copyMenuRef"
+                  class="resource-menu absolute left-0 top-full z-50 mt-1 w-auto min-w-[180px]"
+                  role="menu"
+                  :aria-labelledby="getCopyMenuTriggerId(row.id)"
+                  @keydown="handleCopyMenuKeydown"
                 >
                   <button
                     v-for="fmt in getCopyFormats(row)"
                     :key="fmt.label"
+                    type="button"
+                    role="menuitem"
                     class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-dark-600"
                     @click.stop="copyFormat(fmt.value)"
                   >
@@ -175,6 +223,8 @@
                 v-if="row.password"
                 type="button"
                 class="ml-1 rounded p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                :aria-label="t('admin.proxies.password')"
+                :aria-pressed="visiblePasswordIds.has(row.id)"
                 @click.stop="visiblePasswordIds.has(row.id) ? visiblePasswordIds.delete(row.id) : visiblePasswordIds.add(row.id)"
               >
                 <Icon :name="visiblePasswordIds.has(row.id) ? 'eyeOff' : 'eye'" size="sm" />
@@ -268,11 +318,14 @@
           </template>
 
           <template #cell-actions="{ row }">
-            <div class="flex items-center gap-1">
+            <div class="resource-row-actions">
               <button
+                type="button"
                 @click="handleTestConnection(row)"
                 :disabled="testingProxyIds.has(row.id)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
+                class="resource-row-action"
+                :title="t('admin.proxies.testConnection')"
+                :aria-label="t('admin.proxies.testConnection')"
               >
                 <svg
                   v-if="testingProxyIds.has(row.id)"
@@ -295,12 +348,14 @@
                   ></path>
                 </svg>
                 <Icon v-else name="checkCircle" size="sm" />
-                <span class="text-xs">{{ t('admin.proxies.testConnection') }}</span>
               </button>
               <button
+                type="button"
                 @click="handleQualityCheck(row)"
                 :disabled="qualityCheckingProxyIds.has(row.id)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                class="resource-row-action"
+                :title="t('admin.proxies.qualityCheck')"
+                :aria-label="t('admin.proxies.qualityCheck')"
               >
                 <svg
                   v-if="qualityCheckingProxyIds.has(row.id)"
@@ -323,21 +378,24 @@
                   ></path>
                 </svg>
                 <Icon v-else name="shield" size="sm" />
-                <span class="text-xs">{{ t('admin.proxies.qualityCheck') }}</span>
               </button>
               <button
+                type="button"
                 @click="handleEdit(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+                class="resource-row-action"
+                :title="t('common.edit')"
+                :aria-label="t('common.edit')"
               >
                 <Icon name="edit" size="sm" />
-                <span class="text-xs">{{ t('common.edit') }}</span>
               </button>
               <button
+                type="button"
                 @click="handleDelete(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                class="resource-row-action resource-row-action--danger"
+                :title="t('common.delete')"
+                :aria-label="t('common.delete')"
               >
                 <Icon name="trash" size="sm" />
-                <span class="text-xs">{{ t('common.delete') }}</span>
               </button>
             </div>
           </template>
@@ -441,7 +499,7 @@
           <label class="input-label">{{ t('admin.proxies.protocol') }}</label>
           <Select v-model="createForm.protocol" :options="protocolSelectOptions" />
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="input-label">{{ t('admin.proxies.host') }}</label>
             <input
@@ -486,6 +544,8 @@
             <button
               type="button"
               class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              :aria-label="t('admin.proxies.password')"
+              :aria-pressed="createPasswordVisible"
               @click="createPasswordVisible = !createPasswordVisible"
             >
               <Icon :name="createPasswordVisible ? 'eyeOff' : 'eye'" size="md" />
@@ -681,7 +741,7 @@
           <label class="input-label">{{ t('admin.proxies.protocol') }}</label>
           <Select v-model="editForm.protocol" :options="protocolSelectOptions" />
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="input-label">{{ t('admin.proxies.host') }}</label>
             <input v-model="editForm.host" type="text" required class="input" />
@@ -715,6 +775,8 @@
             <button
               type="button"
               class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              :aria-label="t('admin.proxies.password')"
+              :aria-pressed="editPasswordVisible"
               @click="editPasswordVisible = !editPasswordVisible"
             >
               <Icon :name="editPasswordVisible ? 'eyeOff' : 'eye'" size="md" />
@@ -848,7 +910,7 @@
     >
       <div v-if="qualityReport" class="space-y-4">
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-700">
-          <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div>
               <div class="text-sm text-gray-500 dark:text-gray-400">
                 {{ qualityReportProxy?.name || '-' }}
@@ -857,7 +919,7 @@
                 {{ qualityReport.summary }}
               </div>
             </div>
-            <div class="text-right">
+            <div class="text-left sm:text-right">
               <div class="text-2xl font-semibold text-gray-900 dark:text-white">
                 {{ qualityReport.score }}
               </div>
@@ -866,7 +928,7 @@
               </div>
             </div>
           </div>
-          <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
+          <div class="mt-3 grid grid-cols-1 gap-2 text-xs text-gray-600 sm:grid-cols-2 dark:text-gray-300">
             <div>{{ t('admin.proxies.qualityExitIP') }}: {{ qualityReport.exit_ip || '-' }}</div>
             <div>{{ t('admin.proxies.qualityCountry') }}: {{ qualityReport.country || '-' }}</div>
             <div>
@@ -983,6 +1045,7 @@ import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformTypeBadge from '@/components/common/PlatformTypeBadge.vue'
 import { useClipboard } from '@/composables/useClipboard'
+import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import { useSwipeSelect } from '@/composables/useSwipeSelect'
 import { useTableSelection } from '@/composables/useTableSelection'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
@@ -1040,6 +1103,16 @@ const editStatusOptions = computed(() => [
 const proxies = ref<Proxy[]>([])
 const visiblePasswordIds = reactive(new Set<number>())
 const copyMenuProxyId = ref<number | null>(null)
+const {
+  open: copyMenuOpen,
+  triggerRef: copyMenuTriggerRef,
+  menuRef: copyMenuRef,
+  openMenu: openCopyDropdown,
+  closeMenu: closeCopyDropdown,
+  handleMenuKeydown: handleCopyDropdownKeydown,
+} = useDropdownMenu('admin-proxies-copy-formats')
+const getCopyMenuTriggerId = (proxyId: number) => `admin-proxies-copy-trigger-${proxyId}`
+const getCopyMenuId = (proxyId: number) => `admin-proxies-copy-menu-${proxyId}`
 const loading = ref(false)
 const searchQuery = ref('')
 const filters = reactive({
@@ -2037,31 +2110,165 @@ function getCopyFormats(row: any) {
 
 function copyProxyUrl(row: any) {
   copyToClipboard(buildProxyUrl(row), t('admin.proxies.urlCopied'))
-  copyMenuProxyId.value = null
+  closeCopyMenu()
 }
 
-function toggleCopyMenu(id: number) {
-  copyMenuProxyId.value = copyMenuProxyId.value === id ? null : id
+function toggleCopyMenu(
+  id: number,
+  event: MouseEvent | KeyboardEvent,
+  focusTarget: 'first' | 'last' = 'first',
+) {
+  if (copyMenuProxyId.value === id && copyMenuOpen.value) {
+    closeCopyMenu()
+    return
+  }
+
+  const trigger = event.currentTarget
+  if (!(trigger instanceof HTMLButtonElement)) return
+  copyMenuTriggerRef.value = trigger
+  copyMenuProxyId.value = id
+  void openCopyDropdown(focusTarget)
 }
 
 function copyFormat(value: string) {
   copyToClipboard(value, t('admin.proxies.urlCopied'))
-  copyMenuProxyId.value = null
+  closeCopyMenu(true)
 }
 
-function closeCopyMenu() {
+function closeCopyMenu(restoreTriggerFocus = false) {
   copyMenuProxyId.value = null
+  void closeCopyDropdown(restoreTriggerFocus)
+}
+
+function handleCopyTriggerKeydown(id: number, event: KeyboardEvent) {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    toggleCopyMenu(id, event, event.key === 'ArrowUp' ? 'last' : 'first')
+  } else if (event.key === 'Escape' && copyMenuOpen.value) {
+    event.preventDefault()
+    closeCopyMenu(true)
+  }
+}
+
+function handleCopyMenuKeydown(event: KeyboardEvent) {
+  handleCopyDropdownKeydown(event)
+  if (event.key === 'Escape' || event.key === 'Tab') {
+    copyMenuProxyId.value = null
+  }
+}
+
+function handleCopyClickOutside() {
+  closeCopyMenu()
 }
 
 onMounted(() => {
   loadProxies()
   loadBackupProxyOptions()
-  document.addEventListener('click', closeCopyMenu)
+  document.addEventListener('click', handleCopyClickOutside)
 })
 
 onUnmounted(() => {
   clearTimeout(searchTimeout)
   abortController?.abort()
-  document.removeEventListener('click', closeCopyMenu)
+  document.removeEventListener('click', handleCopyClickOutside)
 })
 </script>
+
+<style scoped>
+.resource-toolbar {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.resource-toolbar__filters,
+.resource-toolbar__actions {
+  min-width: 0;
+}
+
+.resource-selection-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ui-border, #dbe3ee);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.resource-menu {
+  overflow: hidden;
+  padding: 4px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface-raised, #fff);
+  box-shadow: var(--ui-shadow-lg, 0 14px 34px rgba(15, 23, 42, 0.14));
+}
+
+.resource-menu > button {
+  min-height: 36px;
+  border-radius: 6px;
+}
+
+.resource-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.resource-row-action {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.resource-row-action:hover {
+  color: var(--ui-text, #0f172a);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.resource-row-action:focus-visible,
+.resource-menu > button:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 1px;
+}
+
+.resource-row-action--danger:hover {
+  color: var(--ui-danger, #dc2626);
+  background: rgb(var(--color-danger-subtle));
+}
+
+.resource-row-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 767px) {
+  .resource-toolbar {
+    padding: 10px;
+  }
+
+  .resource-selection-bar {
+    margin-bottom: 12px;
+    border: 1px solid var(--ui-border, #dbe3ee);
+    border-radius: 8px;
+  }
+
+  .resource-row-action {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+}
+</style>

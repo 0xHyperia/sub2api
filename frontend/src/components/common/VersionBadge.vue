@@ -3,6 +3,7 @@
     <!-- Admin: Full version badge with dropdown -->
     <template v-if="isAdmin">
       <button
+        type="button"
         @click="toggleDropdown"
         class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors"
         :class="[
@@ -11,6 +12,8 @@
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-800 dark:text-dark-400 dark:hover:bg-dark-700'
         ]"
         :title="hasUpdate ? t('version.updateAvailable') : t('version.upToDate')"
+        :aria-expanded="dropdownOpen"
+        aria-haspopup="dialog"
       >
         <span v-if="currentVersion" class="font-medium">v{{ currentVersion }}</span>
         <span
@@ -19,9 +22,6 @@
         ></span>
         <!-- Update indicator -->
         <span v-if="hasUpdate" class="relative flex h-2 w-2">
-          <span
-            class="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"
-          ></span>
           <span class="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
         </span>
       </button>
@@ -31,7 +31,10 @@
         <div
           v-if="dropdownOpen"
           ref="dropdownRef"
-          class="absolute left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-dark-700 dark:bg-dark-800"
+          role="dialog"
+          :aria-label="t('version.currentVersion')"
+          class="absolute left-0 z-50 mt-2 w-[min(16rem,calc(100vw-2rem))] overflow-hidden rounded-panel border border-outline bg-surface shadow-floating"
+          @keydown.esc.stop="dropdownOpen = false"
         >
           <!-- Header with refresh button -->
           <div
@@ -41,6 +44,7 @@
               t('version.currentVersion')
             }}</span>
             <button
+              type="button"
               @click="refreshVersion(true)"
               class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700 dark:hover:text-dark-200"
               :disabled="loading"

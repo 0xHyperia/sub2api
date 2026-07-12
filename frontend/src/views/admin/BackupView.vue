@@ -1,7 +1,7 @@
 <template>
-    <div class="space-y-6">
+    <div class="overflow-hidden rounded-lg border border-outline bg-surface shadow-card">
       <!-- S3 Storage Config -->
-      <div class="card p-6">
+      <section class="border-b border-outline p-4 sm:p-5">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 class="text-base font-semibold text-gray-900 dark:text-white">
@@ -39,9 +39,9 @@
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.secretAccessKey') }}</label>
             <input v-model="s3Form.secret_access_key" type="password" class="input w-full" :placeholder="s3SecretConfigured ? t('admin.backup.s3.secretConfigured') : ''" />
           </div>
-          <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 md:col-span-2">
-            <input v-model="s3Form.force_path_style" type="checkbox" />
+          <label class="flex min-h-10 items-center justify-between gap-3 text-sm text-gray-700 dark:text-gray-300 md:col-span-2">
             <span>{{ t('admin.backup.s3.forcePathStyle') }}</span>
+            <Toggle v-model="s3Form.force_path_style" :aria-label="t('admin.backup.s3.forcePathStyle')" />
           </label>
         </div>
         <div class="mt-4 flex flex-wrap gap-2">
@@ -52,10 +52,10 @@
             {{ savingS3 ? t('common.loading') : t('common.save') }}
           </button>
         </div>
-      </div>
+      </section>
 
       <!-- Schedule Config -->
-      <div class="card p-6">
+      <section class="border-b border-outline p-4 sm:p-5">
         <div class="mb-4">
           <h3 class="text-base font-semibold text-gray-900 dark:text-white">
             {{ t('admin.backup.schedule.title') }}
@@ -65,9 +65,9 @@
           </p>
         </div>
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 md:col-span-2">
-            <input v-model="scheduleForm.enabled" type="checkbox" />
+          <label class="flex min-h-10 items-center justify-between gap-3 text-sm text-gray-700 dark:text-gray-300 md:col-span-2">
             <span>{{ t('admin.backup.schedule.enabled') }}</span>
+            <Toggle v-model="scheduleForm.enabled" :aria-label="t('admin.backup.schedule.enabled')" />
           </label>
           <div>
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.schedule.cronExpr') }}</label>
@@ -90,10 +90,10 @@
             {{ savingSchedule ? t('common.loading') : t('common.save') }}
           </button>
         </div>
-      </div>
+      </section>
 
       <!-- Backup Operations -->
-      <div class="card p-6">
+      <section class="p-4 sm:p-5">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 class="text-base font-semibold text-gray-900 dark:text-white">
@@ -117,7 +117,7 @@
           </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" role="region" :aria-label="t('admin.backup.operations.title')" tabindex="0">
           <table class="w-full min-w-[800px] text-sm">
             <thead>
               <tr class="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500 dark:border-dark-700 dark:text-gray-400">
@@ -168,14 +168,14 @@
                       type="button"
                       class="btn btn-secondary btn-xs"
                       :disabled="restoringId === record.id"
-                      @click="restoreBackup(record.id)"
+                      @click="requestRestoreBackup(record.id)"
                     >
                       {{ restoringId === record.id ? t('common.loading') : t('admin.backup.actions.restore') }}
                     </button>
                     <button
                       type="button"
                       class="btn btn-danger btn-xs"
-                      @click="removeBackup(record.id)"
+                      @click="requestRemoveBackup(record.id)"
                     >
                       {{ t('common.delete') }}
                     </button>
@@ -190,20 +190,17 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
 
     <!-- Cloudflare R2 Setup Guide Modal -->
-    <teleport to="body">
-      <transition name="modal">
-        <div v-if="showR2Guide" class="fixed inset-0 z-50 flex items-center justify-center p-4" @mousedown.self="showR2Guide = false">
-          <div class="fixed inset-0 bg-black/50" @click="showR2Guide = false"></div>
-          <div class="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl dark:bg-dark-800">
-            <button type="button" class="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" @click="showR2Guide = false">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-
-            <h2 class="mb-4 text-lg font-bold text-gray-900 dark:text-white">{{ t('admin.backup.r2Guide.title') }}</h2>
+    <BaseDialog
+      :show="showR2Guide"
+      :title="t('admin.backup.r2Guide.title')"
+      width="wide"
+      @close="showR2Guide = false"
+    >
+      <div>
             <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.backup.r2Guide.intro') }}</p>
 
             <!-- Step 1 -->
@@ -269,13 +266,23 @@
               {{ t('admin.backup.r2Guide.freeTier') }}
             </div>
 
-            <div class="mt-4 text-right">
-              <button type="button" class="btn btn-primary btn-sm" @click="showR2Guide = false">{{ t('common.close') }}</button>
-            </div>
-          </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end">
+          <button type="button" class="btn btn-primary" @click="showR2Guide = false">{{ t('common.close') }}</button>
         </div>
-      </transition>
-    </teleport>
+      </template>
+    </BaseDialog>
+
+    <ConfirmDialog
+      :show="pendingBackupAction.type !== null"
+      :title="pendingBackupAction.type === 'restore' ? t('admin.backup.actions.restore') : t('common.delete')"
+      :message="pendingBackupAction.type === 'restore' ? t('admin.backup.actions.restoreConfirm') : t('admin.backup.actions.deleteConfirm')"
+      :confirm-text="pendingBackupAction.type === 'restore' ? t('admin.backup.actions.restore') : t('common.delete')"
+      danger
+      @confirm="confirmBackupAction"
+      @cancel="cancelBackupAction"
+    />
 </template>
 
 <script setup lang="ts">
@@ -283,6 +290,9 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api'
 import { useAppStore } from '@/stores'
+import BaseDialog from '@/components/common/BaseDialog.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Toggle from '@/components/common/Toggle.vue'
 import type { BackupS3Config, BackupScheduleConfig, BackupRecord } from '@/api/admin/backup'
 
 const { t } = useI18n()
@@ -317,6 +327,10 @@ const loadingBackups = ref(false)
 const creatingBackup = ref(false)
 const restoringId = ref('')
 const manualExpireDays = ref(14)
+const pendingBackupAction = ref<{
+  type: 'restore' | 'delete' | null
+  id: string
+}>({ type: null, id: '' })
 
 // Polling
 const pollingTimer = ref<ReturnType<typeof setInterval> | null>(null)
@@ -546,8 +560,29 @@ async function downloadBackup(id: string) {
   }
 }
 
+function requestRestoreBackup(id: string) {
+  pendingBackupAction.value = { type: 'restore', id }
+}
+
+function requestRemoveBackup(id: string) {
+  pendingBackupAction.value = { type: 'delete', id }
+}
+
+function cancelBackupAction() {
+  pendingBackupAction.value = { type: null, id: '' }
+}
+
+async function confirmBackupAction() {
+  const { type, id } = pendingBackupAction.value
+  cancelBackupAction()
+  if (type === 'restore') {
+    await restoreBackup(id)
+  } else if (type === 'delete') {
+    await removeBackup(id)
+  }
+}
+
 async function restoreBackup(id: string) {
-  if (!window.confirm(t('admin.backup.actions.restoreConfirm'))) return
   const password = window.prompt(t('admin.backup.actions.restorePasswordPrompt'))
   if (!password) return
   restoringId.value = id
@@ -566,7 +601,6 @@ async function restoreBackup(id: string) {
 }
 
 async function removeBackup(id: string) {
-  if (!window.confirm(t('admin.backup.actions.deleteConfirm'))) return
   try {
     await adminAPI.backup.deleteBackup(id)
     appStore.showSuccess(t('admin.backup.actions.deleted'))
@@ -626,14 +660,3 @@ onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
-
-<style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-</style>

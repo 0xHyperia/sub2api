@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { opsAPI, type OpsAccountAvailabilityStatsResponse, type OpsConcurrencyStatsResponse, type OpsUserConcurrencyStatsResponse } from '@/api/admin/ops'
 
 interface Props {
@@ -21,11 +22,13 @@ const errorMessage = ref('')
 const concurrency = ref<OpsConcurrencyStatsResponse | null>(null)
 const availability = ref<OpsAccountAvailabilityStatsResponse | null>(null)
 const userConcurrency = ref<OpsUserConcurrencyStatsResponse | null>(null)
+let requestSequence = 0
 
 // 用户视图开关
 const showByUser = ref(false)
 
 const realtimeEnabled = computed(() => {
+  if (showByUser.value) return userConcurrency.value?.enabled ?? true
   return (concurrency.value?.enabled ?? true) && (availability.value?.enabled ?? true)
 })
 
@@ -251,6 +254,7 @@ const displayRows = computed(() => {
   if (displayDimension.value === 'group') return groupRows.value
   return platformRows.value
 })
+const hasVisibleData = computed(() => displayRows.value.length > 0)
 
 const displayTitle = computed(() => {
   if (displayDimension.value === 'user') return t('admin.ops.concurrency.byUser')
@@ -260,27 +264,34 @@ const displayTitle = computed(() => {
 })
 
 async function loadData() {
+  const requestId = ++requestSequence
+  const requestedUserMode = showByUser.value
+  const platform = props.platformFilter
+  const groupId = props.groupIdFilter
   loading.value = true
   errorMessage.value = ''
   try {
-    if (showByUser.value) {
+    if (requestedUserMode) {
       // 用户视图模式只加载用户并发数据
       const userData = await opsAPI.getUserConcurrencyStats()
+      if (requestId !== requestSequence) return
       userConcurrency.value = userData
     } else {
       // 常规模式加载账号/平台/分组数据
       const [concData, availData] = await Promise.all([
-        opsAPI.getConcurrencyStats(props.platformFilter, props.groupIdFilter),
-        opsAPI.getAccountAvailabilityStats(props.platformFilter, props.groupIdFilter)
+        opsAPI.getConcurrencyStats(platform, groupId),
+        opsAPI.getAccountAvailabilityStats(platform, groupId)
       ])
+      if (requestId !== requestSequence) return
       concurrency.value = concData
       availability.value = availData
     }
   } catch (err: any) {
+    if (requestId !== requestSequence) return
     console.error('[OpsConcurrencyCard] Failed to load data', err)
     errorMessage.value = err?.response?.data?.detail || t('admin.ops.concurrency.loadFailed')
   } finally {
-    loading.value = false
+    if (requestId === requestSequence) loading.value = false
   }
 }
 
@@ -341,11 +352,11 @@ watch(
 </script>
 
 <template>
-  <div class="flex h-full flex-col rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700">
+  <section class="flex h-full flex-col rounded-panel border border-outline bg-surface p-4 shadow-card sm:p-5" :aria-labelledby="'ops-concurrency-title'">
     <!-- 头部 -->
     <div class="mb-4 flex shrink-0 items-center justify-between gap-3">
-      <h3 class="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-        <svg class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <h3 id="ops-concurrency-title" class="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <svg class="h-4 w-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
         {{ t('admin.ops.concurrency.title') }}
@@ -353,10 +364,11 @@ watch(
       <div class="flex items-center gap-2">
         <!-- 用户视图切换按钮 -->
         <button
-          class="flex items-center justify-center rounded-lg px-2 py-1 transition-colors"
+          type="button"
+          class="flex min-h-10 min-w-10 items-center justify-center rounded-control px-2 transition-colors"
           :class="showByUser
-            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-            : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:bg-dark-700 dark:text-gray-400 dark:hover:bg-dark-600 dark:hover:text-gray-300'"
+            ? 'bg-foreground text-surface'
+            : 'bg-surface-subtle text-foreground-muted hover:text-foreground'"
           :title="showByUser ? t('admin.ops.concurrency.switchToPlatform') : t('admin.ops.concurrency.switchToUser')"
           @click="showByUser = !showByUser"
         >
@@ -366,7 +378,8 @@ watch(
         </button>
         <!-- 刷新按钮 -->
         <button
-          class="flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-dark-700 dark:text-gray-300 dark:hover:bg-dark-600"
+          type="button"
+          class="btn btn-secondary btn-sm"
           :disabled="loading"
           :title="t('common.refresh')"
           @click="loadData"
@@ -379,20 +392,42 @@ watch(
     </div>
 
     <!-- 错误提示 -->
-    <div v-if="errorMessage" class="mb-3 shrink-0 rounded-xl bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
-      {{ errorMessage }}
+    <div
+      v-if="errorMessage && hasVisibleData"
+      data-testid="concurrency-refresh-error"
+      role="alert"
+      class="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-panel border border-danger/20 bg-danger-subtle p-2.5 text-xs text-danger-foreground"
+    >
+      <span>{{ errorMessage }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" :disabled="loading" @click="loadData">
+        {{ t('common.retry') }}
+      </button>
     </div>
 
     <!-- 禁用状态 -->
     <div
       v-if="!realtimeEnabled"
-      class="flex flex-1 items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-500 dark:border-dark-700 dark:text-gray-400"
+      class="flex flex-1 items-center justify-center rounded-panel border border-dashed border-outline text-sm text-foreground-muted"
     >
       {{ t('admin.ops.concurrency.disabledHint') }}
     </div>
 
+    <div v-else-if="loading && !hasVisibleData" class="flex flex-1 items-center justify-center py-8 text-sm text-foreground-muted">
+      {{ t('admin.ops.loadingText') }}
+    </div>
+
+    <EmptyState
+      v-else-if="errorMessage && !hasVisibleData"
+      data-testid="concurrency-load-error"
+      role="alert"
+      :title="errorMessage"
+      :action-text="t('common.retry')"
+      :action-icon="false"
+      @action="loadData"
+    />
+
     <!-- 数据展示区域 -->
-    <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700">
+    <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-panel border border-outline">
       <!-- 维度标题栏 -->
       <div class="flex shrink-0 items-center justify-between border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900">
         <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -434,7 +469,7 @@ watch(
 
           <!-- 等待队列 -->
           <div v-if="row.waiting_in_queue > 0" class="mt-1.5 flex justify-end">
-            <span class="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+            <span class="rounded-control bg-warning-subtle px-1.5 py-0.5 text-[10px] font-semibold text-warning-foreground">
               {{ t('admin.ops.concurrency.queued', { count: row.waiting_in_queue }) }}
             </span>
           </div>
@@ -507,7 +542,7 @@ watch(
             <!-- 等待队列 -->
             <span
               v-if="row.waiting_in_queue > 0"
-              class="rounded-full bg-purple-100 px-1.5 py-0.5 font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+              class="rounded-control bg-warning-subtle px-1.5 py-0.5 font-semibold text-warning-foreground"
             >
               {{ t('admin.ops.concurrency.queued', { count: row.waiting_in_queue }) }}
             </span>
@@ -589,14 +624,14 @@ watch(
 
           <!-- 等待队列 -->
           <div v-if="row.waiting_in_queue > 0" class="mt-1.5 flex justify-end">
-            <span class="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+            <span class="rounded-control bg-warning-subtle px-1.5 py-0.5 text-[10px] font-semibold text-warning-foreground">
               {{ t('admin.ops.concurrency.queued', { count: row.waiting_in_queue }) }}
             </span>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <style scoped>

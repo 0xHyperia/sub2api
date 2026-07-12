@@ -1,13 +1,13 @@
 <template>
-  <div v-if="!isDesktopViewport" class="space-y-3">
+  <div v-if="!isDesktopViewport" class="min-w-0 max-w-full space-y-2">
     <template v-if="loading">
-      <div v-for="i in 5" :key="i" class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-900">
-        <div class="space-y-3">
+      <div v-for="i in 5" :key="i" class="rounded-lg border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-900">
+        <div class="space-y-2">
           <div v-for="column in dataColumns" :key="column.key" class="flex justify-between">
             <div class="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
             <div class="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
           </div>
-          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-3 dark:border-dark-700">
+          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-2 dark:border-dark-700">
             <div class="h-8 w-full animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
           </div>
         </div>
@@ -15,7 +15,7 @@
     </template>
 
     <template v-else-if="!data || data.length === 0">
-      <div class="rounded-lg border border-gray-200 bg-white p-12 text-center dark:border-dark-700 dark:bg-dark-900">
+      <div class="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-dark-700 dark:bg-dark-900">
         <slot name="empty">
           <div class="flex flex-col items-center">
             <Icon
@@ -35,26 +35,35 @@
       <div
         v-for="(row, index) in sortedData"
         :key="resolveRowKey(row, index)"
-        class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-900"
-        :class="{ 'cursor-pointer': clickableRows }"
-        @click="clickableRows && emit('rowClick', row)"
+        class="mobile-row-card relative min-w-0 rounded-lg border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-900"
+        :class="{
+          'cursor-pointer': clickableRows
+        }"
+        @click="handleRowPointerActivation($event, row)"
       >
-        <div class="space-y-3">
+        <button
+          v-if="clickableRows"
+          type="button"
+          class="mobile-row-trigger pointer-events-none absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          :aria-label="getRowAccessibleLabel(row, index)"
+          @click.stop="handleRowActivation(row)"
+        ></button>
+        <div class="space-y-2">
           <div
             v-for="column in dataColumns"
             :key="column.key"
-            class="flex items-start justify-between gap-4"
+            class="flex min-w-0 items-start justify-between gap-3"
           >
-            <span class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
+            <span class="max-w-[42%] flex-shrink-0 text-xs font-medium text-gray-500 dark:text-dark-400">
               {{ column.label }}
             </span>
-            <div class="text-right text-sm text-gray-900 dark:text-gray-100">
+            <div class="min-w-0 max-w-[58%] break-words text-right text-sm text-gray-900 dark:text-gray-100">
               <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :expanded="actionsExpanded">
                 {{ column.formatter ? column.formatter(row[column.key], row) : row[column.key] }}
               </slot>
             </div>
           </div>
-          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-3 dark:border-dark-700">
+          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-2 dark:border-dark-700">
             <slot name="cell-actions" :row="row" :value="row['actions']" :expanded="actionsExpanded"></slot>
           </div>
         </div>
@@ -80,21 +89,29 @@
             scope="col"
             :aria-sort="column.sortable ? getColumnAriaSort(column.key) : undefined"
             :class="[
-              'sticky-header-cell py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400',
+              'sticky-header-cell py-3 text-left text-xs font-semibold text-foreground-muted',
               getAdaptivePaddingClass(),
-              { 'cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700': column.sortable },
               getStickyColumnClass(column, index),
               column.class
             ]"
-            @click="column.sortable && handleSort(column.key)"
           >
-            <slot
-              :name="`header-${column.key}`"
-              :column="column"
-              :sort-key="sortKey"
-              :sort-order="sortOrder"
+            <component
+              :is="column.sortable ? 'button' : 'div'"
+              :type="column.sortable ? 'button' : undefined"
+              :aria-label="column.sortable ? getSortButtonAriaLabel(column) : undefined"
+              :class="[
+                'flex w-full items-center gap-1 text-left',
+                getHeaderContentAlignmentClass(column),
+                column.sortable && 'rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle'
+              ]"
+              @click="column.sortable && handleSort(column.key)"
             >
-              <div :class="['flex items-center space-x-1', getHeaderContentAlignmentClass(column)]">
+              <slot
+                :name="`header-${column.key}`"
+                :column="column"
+                :sort-key="sortKey"
+                :sort-order="sortOrder"
+              >
                 <span>{{ column.label }}</span>
                 <span
                   v-if="column.sortable"
@@ -118,8 +135,8 @@
                     <path d="M5 8L1.5 3.5h7L5 8z" />
                   </svg>
                 </span>
-              </div>
-            </slot>
+              </slot>
+            </component>
           </th>
         </tr>
       </thead>
@@ -168,8 +185,13 @@
             :data-index="virtualRow.index"
             :ref="measureElement"
             class="hover:bg-gray-50 dark:hover:bg-dark-800"
-            :class="{ 'cursor-pointer': clickableRows }"
-            @click="clickableRows && emit('rowClick', sortedData[virtualRow.index])"
+            :class="{
+              'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus': clickableRows
+            }"
+            :tabindex="clickableRows ? 0 : undefined"
+            :aria-label="clickableRows ? getRowAccessibleLabel(sortedData[virtualRow.index], virtualRow.index) : undefined"
+            @click="handleRowPointerActivation($event, sortedData[virtualRow.index])"
+            @keydown="handleRowKeydown($event, sortedData[virtualRow.index])"
           >
             <td
               v-for="(column, colIndex) in columns"
@@ -209,9 +231,12 @@ import { useI18n } from 'vue-i18n'
 import type { Column } from './types'
 import Icon from '@/components/icons/Icon.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const desktopViewportQuery = '(min-width: 768px)'
+const localText = (zh: string, en: string): string =>
+  String(locale?.value || 'en').startsWith('zh') ? zh : en
+
+const desktopViewportQuery = '(min-width: 1024px)'
 const isDesktopViewport = ref(
   typeof window === 'undefined' ? true : window.matchMedia(desktopViewportQuery).matches
 )
@@ -481,13 +506,21 @@ const applySortState = (state: PersistedSortState | null) => {
 
 const getSortIndicatorClass = (key: string, order: 'asc' | 'desc') => {
   return sortKey.value === key && sortOrder.value === order
-    ? 'text-primary-600 dark:text-primary-400'
-    : 'text-gray-300 transition-colors dark:text-dark-500'
+    ? 'text-foreground'
+    : 'text-foreground-subtle/45 transition-colors'
 }
 
 const getColumnAriaSort = (key: string) => {
   if (sortKey.value !== key) return 'none'
   return sortOrder.value === 'asc' ? 'ascending' : 'descending'
+}
+
+const getSortButtonAriaLabel = (column: Column) => {
+  const currentOrder = getColumnAriaSort(column.key)
+  const nextOrder = currentOrder === 'ascending' ? 'descending' : 'ascending'
+  return nextOrder === 'ascending'
+    ? localText(`按${column.label}升序排序`, `Sort ${column.label} ascending`)
+    : localText(`按${column.label}降序排序`, `Sort ${column.label} descending`)
 }
 
 const getHeaderContentAlignmentClass = (column: Column) => {
@@ -560,6 +593,73 @@ const dataColumns = computed(() => props.columns.filter((column) => column.key !
 const columnsSignature = computed(() =>
   props.columns.map((column) => `${column.key}:${column.sortable ? '1' : '0'}`).join('|')
 )
+
+const getAccessibleCellText = (column: Column, row: any): string => {
+  const rawValue = row?.[column.key]
+  const value = column.formatter ? column.formatter(rawValue, row) : rawValue
+  if (value === null || value === undefined || value === '') return ''
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return ''
+}
+
+const getRowAccessibleLabel = (row: any, index: number): string => {
+  const details = dataColumns.value
+    .filter((column) => column.key !== 'select')
+    .map((column) => {
+      const value = getAccessibleCellText(column, row)
+      return value ? `${column.label}: ${value}` : ''
+    })
+    .filter(Boolean)
+    .slice(0, 3)
+
+  return details.length > 0
+    ? localText(`${details.join('，')}。按回车打开`, `${details.join(', ')}. Press Enter to open`)
+    : localText(`第 ${index + 1} 行。按回车打开`, `Row ${index + 1}. Press Enter to open`)
+}
+
+const handleRowActivation = (row: any) => {
+  if (props.clickableRows) emit('rowClick', row)
+}
+
+const interactiveTargetSelector = [
+  'a[href]',
+  'button',
+  'input',
+  'label',
+  'select',
+  'textarea',
+  'summary',
+  '[contenteditable="true"]',
+  '[role="button"]',
+  '[role="checkbox"]',
+  '[role="link"]',
+  '[role="radio"]',
+  '[role="switch"]',
+  '[role^="menuitem"]',
+  '[tabindex]:not([tabindex="-1"])'
+].join(',')
+
+const handleRowPointerActivation = (event: MouseEvent, row: any) => {
+  if (!props.clickableRows) return
+
+  const target = event.target
+  const currentTarget = event.currentTarget
+  if (target instanceof Element && currentTarget instanceof Element) {
+    const interactiveTarget = target.closest(interactiveTargetSelector)
+    if (interactiveTarget && interactiveTarget !== currentTarget) return
+  }
+
+  emit('rowClick', row)
+}
+
+const handleRowKeydown = (event: KeyboardEvent, row: any) => {
+  if (!props.clickableRows || event.target !== event.currentTarget) return
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  emit('rowClick', row)
+}
 
 watch(
   isDesktopViewport,
@@ -769,6 +869,8 @@ defineExpose({
 .table-wrapper {
   --select-col-width: 52px; /* 勾选列宽度：px-6 (24px*2) + checkbox (16px) */
   position: relative;
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   overflow-y: auto;
   flex: 1;

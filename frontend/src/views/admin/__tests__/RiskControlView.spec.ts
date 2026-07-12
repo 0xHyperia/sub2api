@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 
 import RiskControlView from '../RiskControlView.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import type { ContentModerationConfig, UpdateContentModerationConfig } from '@/api/admin/riskControl'
 
 const {
@@ -12,6 +13,7 @@ const {
   getStatus,
   listLogs,
   getGroups,
+  clearFlaggedHashes,
   showError,
   showSuccess,
 } = vi.hoisted(() => ({
@@ -20,6 +22,7 @@ const {
   getStatus: vi.fn(),
   listLogs: vi.fn(),
   getGroups: vi.fn(),
+  clearFlaggedHashes: vi.fn(),
   showError: vi.fn(),
   showSuccess: vi.fn(),
 }))
@@ -33,7 +36,7 @@ vi.mock('@/api/admin', () => ({
       listLogs,
       testAPIKeys: vi.fn(),
       deleteFlaggedHash: vi.fn(),
-      clearFlaggedHashes: vi.fn(),
+      clearFlaggedHashes,
       unbanUser: vi.fn(),
     },
     groups: {
@@ -191,6 +194,7 @@ describe('admin RiskControlView', () => {
     getStatus.mockReset()
     listLogs.mockReset()
     getGroups.mockReset()
+    clearFlaggedHashes.mockReset()
     showError.mockReset()
     showSuccess.mockReset()
 
@@ -198,6 +202,7 @@ describe('admin RiskControlView', () => {
     getStatus.mockResolvedValue(runtimeStatus())
     listLogs.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, pages: 1 })
     getGroups.mockResolvedValue([])
+    clearFlaggedHashes.mockResolvedValue({ deleted: 3 })
     updateConfig.mockImplementation(async (payload: UpdateContentModerationConfig) => ({
       ...baseConfig(),
       ...payload,
@@ -403,5 +408,46 @@ describe('admin RiskControlView', () => {
       'max-h-[280px]',
       'overflow-y-auto',
     ]))
+  })
+
+  it('clears flagged hashes only after destructive confirmation', async () => {
+    getStatus.mockResolvedValue({ ...runtimeStatus(), flagged_hash_count: 3 })
+    const wrapper = mount(RiskControlView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          BaseDialog: BaseDialogStub,
+          Icon: true,
+          Select: true,
+          Toggle: true,
+          Pagination: true,
+          ModelWhitelistSelector: ModelWhitelistSelectorStub,
+        },
+      },
+    })
+
+    await flushPromises()
+    await findButtonByText(wrapper, 'admin.riskControl.openSettings').trigger('click')
+    await findButtonByText(wrapper, 'admin.riskControl.tabs.runtime').trigger('click')
+    await findButtonByText(wrapper, 'admin.riskControl.clearFlaggedHashes').trigger('click')
+
+    let dialog = wrapper.findComponent(ConfirmDialog)
+    expect(dialog.props('show')).toBe(true)
+    expect(dialog.props('danger')).toBe(true)
+    expect(clearFlaggedHashes).not.toHaveBeenCalled()
+
+    dialog.vm.$emit('cancel')
+    await flushPromises()
+    expect(clearFlaggedHashes).not.toHaveBeenCalled()
+
+    await findButtonByText(wrapper, 'admin.riskControl.clearFlaggedHashes').trigger('click')
+    dialog = wrapper.findComponent(ConfirmDialog)
+    dialog.vm.$emit('confirm')
+    await flushPromises()
+
+    expect(clearFlaggedHashes).toHaveBeenCalledOnce()
+    expect(showSuccess).toHaveBeenCalledWith(
+      'admin.riskControl.flaggedHashesCleared',
+    )
   })
 })

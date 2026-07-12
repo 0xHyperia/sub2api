@@ -2,6 +2,13 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import WechatPaymentCallbackView from '@/views/auth/WechatPaymentCallbackView.vue'
 
+vi.mock('@/components/auth/AuthFlowLayout.vue', () => ({
+  default: {
+    name: 'AuthLayout',
+    template: '<main><slot /><slot name="footer" /></main>',
+  },
+}))
+
 const { replaceMock, routeState, locationState, showErrorMock } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
   routeState: {

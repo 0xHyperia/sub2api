@@ -46,6 +46,28 @@ describe('Proxy ImportDataModal', () => {
     expect(showError).toHaveBeenCalledWith('admin.proxies.dataImportSelectFile')
   })
 
+  it('文件控件具有关联标签并在窄屏纵向排列', () => {
+    const wrapper = mount(ImportDataModal, {
+      props: { show: true },
+      global: {
+        stubs: {
+          BaseDialog: { template: '<div><slot /><slot name="footer" /></div>' }
+        }
+      }
+    })
+
+    const input = wrapper.get('#proxy-import-data-file')
+    const label = wrapper.get('label[for="proxy-import-data-file"]')
+    const picker = wrapper.findAll('button.btn-secondary')[0]!
+    const fileArea = picker.element.parentElement
+
+    expect(input.attributes('accept')).toContain('.json')
+    expect(label.text()).toBe('admin.proxies.dataImportFile')
+    expect(picker.classes()).toContain('w-full')
+    expect(fileArea?.classList.contains('flex-col')).toBe(true)
+    expect(fileArea?.classList.contains('sm:flex-row')).toBe(true)
+  })
+
   it('无效 JSON 时提示解析失败', async () => {
     const wrapper = mount(ImportDataModal, {
       props: { show: true },

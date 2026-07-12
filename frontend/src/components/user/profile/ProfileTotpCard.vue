@@ -1,82 +1,93 @@
 <template>
-  <div class="card">
-    <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white">
+  <section class="card min-w-0 overflow-hidden" aria-labelledby="profile-totp-title">
+    <header class="card-header">
+      <h2 id="profile-totp-title" class="text-base font-semibold text-foreground">
         {{ t('profile.totp.title') }}
       </h2>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-sm text-foreground-muted">
         {{ t('profile.totp.description') }}
       </p>
-    </div>
-    <div class="px-6 py-6">
-      <!-- Loading state -->
-      <div v-if="loading" class="flex items-center justify-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+    </header>
+    <div class="p-4 sm:p-5">
+      <div v-if="loading" class="flex min-h-24 items-center justify-center" role="status" :aria-label="t('common.loading')">
+        <span class="h-7 w-7 animate-spin rounded-full border-2 border-outline-strong border-t-foreground" aria-hidden="true" />
       </div>
 
-      <!-- Feature disabled globally -->
-      <div v-else-if="status && !status.feature_enabled" class="flex items-center gap-4 py-4">
-        <div class="flex-shrink-0 rounded-full bg-gray-100 p-3 dark:bg-dark-700">
-          <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-          </svg>
+      <div
+        v-else-if="loadFailed"
+        data-testid="profile-totp-load-error"
+        class="flex min-w-0 flex-col gap-4 rounded-panel border border-danger/20 bg-danger-subtle p-4 sm:flex-row sm:items-center sm:justify-between"
+        role="alert"
+      >
+        <div class="flex min-w-0 items-start gap-3">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-danger/20 bg-surface/60 text-danger-foreground" aria-hidden="true">
+            <Icon name="exclamationTriangle" size="md" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-danger-foreground">{{ t('profile.totp.loadFailed') }}</p>
+            <p class="mt-0.5 text-sm text-danger-foreground/80">{{ t('errors.tryAgain') }}</p>
+          </div>
         </div>
-        <div>
-          <p class="font-medium text-gray-700 dark:text-gray-300">
+        <button type="button" class="btn btn-secondary shrink-0" @click="loadStatus">
+          <Icon name="refresh" size="sm" aria-hidden="true" />
+          {{ t('common.refresh') }}
+        </button>
+      </div>
+
+      <div v-else-if="status && !status.feature_enabled" class="flex min-w-0 items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-outline bg-surface-subtle text-foreground-subtle" aria-hidden="true">
+          <Icon name="exclamationTriangle" size="md" />
+        </span>
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-foreground">
             {{ t('profile.totp.featureDisabled') }}
           </p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-0.5 text-sm text-foreground-muted">
             {{ t('profile.totp.featureDisabledHint') }}
           </p>
         </div>
       </div>
 
-      <!-- 2FA Enabled -->
-      <div v-else-if="status?.enabled" class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="flex-shrink-0 rounded-full bg-green-100 p-3 dark:bg-green-900/30">
-            <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-            </svg>
-          </div>
-          <div>
-            <p class="font-medium text-gray-900 dark:text-white">
+      <div v-else-if="status?.enabled" class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-success/20 bg-success-subtle text-success-foreground" aria-hidden="true">
+            <Icon name="shield" size="md" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-foreground">
               {{ t('profile.totp.enabled') }}
             </p>
-            <p v-if="status.enabled_at" class="text-sm text-gray-500 dark:text-gray-400">
+            <p v-if="status.enabled_at" class="mt-0.5 text-sm text-foreground-muted">
               {{ t('profile.totp.enabledAt') }}: {{ formatDate(status.enabled_at) }}
             </p>
           </div>
         </div>
         <button
           type="button"
-          class="btn btn-outline-danger"
+          class="btn btn-secondary shrink-0 text-danger-foreground"
           @click="showDisableDialog = true"
         >
           {{ t('profile.totp.disable') }}
         </button>
       </div>
 
-      <!-- 2FA Not Enabled -->
-      <div v-else class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="flex-shrink-0 rounded-full bg-gray-100 p-3 dark:bg-dark-700">
-            <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-            </svg>
-          </div>
-          <div>
-            <p class="font-medium text-gray-700 dark:text-gray-300">
+      <div v-else-if="status" class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-outline bg-surface-subtle text-foreground-muted" aria-hidden="true">
+            <Icon name="shield" size="md" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-foreground">
               {{ t('profile.totp.notEnabled') }}
             </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-0.5 text-sm text-foreground-muted">
               {{ t('profile.totp.notEnabledHint') }}
             </p>
           </div>
         </div>
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-primary shrink-0"
           @click="showSetupModal = true"
         >
           {{ t('profile.totp.enable') }}
@@ -84,26 +95,25 @@
       </div>
     </div>
 
-    <!-- Setup Modal -->
     <TotpSetupModal
       v-if="showSetupModal"
       @close="showSetupModal = false"
       @success="handleSetupSuccess"
     />
 
-    <!-- Disable Dialog -->
     <TotpDisableDialog
       v-if="showDisableDialog"
       @close="showDisableDialog = false"
       @success="handleDisableSuccess"
     />
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { totpAPI } from '@/api'
+import Icon from '@/components/icons/Icon.vue'
 import type { TotpStatus } from '@/types'
 import TotpSetupModal from './TotpSetupModal.vue'
 import TotpDisableDialog from './TotpDisableDialog.vue'
@@ -112,14 +122,17 @@ const { t } = useI18n()
 
 const loading = ref(true)
 const status = ref<TotpStatus | null>(null)
+const loadFailed = ref(false)
 const showSetupModal = ref(false)
 const showDisableDialog = ref(false)
 
 const loadStatus = async () => {
   loading.value = true
+  loadFailed.value = false
   try {
     status.value = await totpAPI.getStatus()
   } catch (error) {
+    loadFailed.value = true
     console.error('Failed to load TOTP status:', error)
   } finally {
     loading.value = false

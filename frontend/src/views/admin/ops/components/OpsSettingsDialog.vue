@@ -247,7 +247,7 @@ async function saveAllSettings() {
       </div>
 
       <!-- 数据采集频率 -->
-      <div class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-700/50">
+      <section class="border-t border-outline pt-4">
         <h4 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.ops.settings.dataCollection') }}</h4>
         <div>
           <label class="input-label">{{ t('admin.ops.settings.evaluationInterval') }}</label>
@@ -260,10 +260,10 @@ async function saveAllSettings() {
           />
           <p class="mt-1 text-xs text-gray-500">{{ t('admin.ops.settings.evaluationIntervalHint') }}</p>
         </div>
-      </div>
+      </section>
 
       <!-- 预警配置 -->
-      <div class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-700/50">
+      <section class="border-t border-outline pt-4">
         <h4 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.ops.settings.alertConfig') }}</h4>
 
         <div class="space-y-4">
@@ -271,7 +271,10 @@ async function saveAllSettings() {
             <div>
               <label class="font-medium text-gray-900 dark:text-white">{{ t('admin.ops.settings.enableAlert') }}</label>
             </div>
-            <Toggle v-model="emailConfig.alert.enabled" />
+            <Toggle
+              v-model="emailConfig.alert.enabled"
+              :aria-label="t('admin.ops.settings.enableAlert')"
+            />
           </div>
 
           <div v-if="emailConfig.alert.enabled">
@@ -292,10 +295,10 @@ async function saveAllSettings() {
               <span
                 v-for="email in emailConfig.alert.recipients"
                 :key="email"
-                class="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                class="inline-flex items-center gap-2 rounded-control border border-outline bg-surface-subtle px-3 py-1 text-xs font-medium text-foreground-muted"
               >
                 {{ email }}
-                <button type="button" class="text-blue-700/80 hover:text-blue-900" @click="removeRecipient('alert', email)">×</button>
+                <button type="button" class="rounded-sm text-foreground-muted hover:text-foreground" :aria-label="`${t('common.delete')} ${email}`" @click="removeRecipient('alert', email)">×</button>
               </span>
             </div>
             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -308,10 +311,10 @@ async function saveAllSettings() {
             <Select v-model="emailConfig.alert.min_severity" :options="severityOptions" />
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- 评估报告配置 -->
-      <div class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-700/50">
+      <section class="border-t border-outline pt-4">
         <h4 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.ops.settings.reportConfig') }}</h4>
 
         <div class="space-y-4">
@@ -319,7 +322,10 @@ async function saveAllSettings() {
             <div>
               <label class="font-medium text-gray-900 dark:text-white">{{ t('admin.ops.settings.enableReport') }}</label>
             </div>
-            <Toggle v-model="emailConfig.report.enabled" />
+            <Toggle
+              v-model="emailConfig.report.enabled"
+              :aria-label="t('admin.ops.settings.enableReport')"
+            />
           </div>
 
           <div v-if="emailConfig.report.enabled">
@@ -340,10 +346,10 @@ async function saveAllSettings() {
               <span
                 v-for="email in emailConfig.report.recipients"
                 :key="email"
-                class="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                class="inline-flex items-center gap-2 rounded-control border border-outline bg-surface-subtle px-3 py-1 text-xs font-medium text-foreground-muted"
               >
                 {{ email }}
-                <button type="button" class="text-blue-700/80 hover:text-blue-900" @click="removeRecipient('report', email)">×</button>
+                <button type="button" class="rounded-sm text-foreground-muted hover:text-foreground" :aria-label="`${t('common.delete')} ${email}`" @click="removeRecipient('report', email)">×</button>
               </span>
             </div>
             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -354,24 +360,30 @@ async function saveAllSettings() {
           <div v-if="emailConfig.report.enabled" class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div class="flex items-center justify-between">
               <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.ops.settings.dailySummary') }}</label>
-              <Toggle v-model="emailConfig.report.daily_summary_enabled" />
+              <Toggle
+                v-model="emailConfig.report.daily_summary_enabled"
+                :aria-label="t('admin.ops.settings.dailySummary')"
+              />
             </div>
             <div v-if="emailConfig.report.daily_summary_enabled">
               <input v-model="emailConfig.report.daily_summary_schedule" type="text" class="input" placeholder="0 9 * * *" />
             </div>
             <div class="flex items-center justify-between">
               <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.ops.settings.weeklySummary') }}</label>
-              <Toggle v-model="emailConfig.report.weekly_summary_enabled" />
+              <Toggle
+                v-model="emailConfig.report.weekly_summary_enabled"
+                :aria-label="t('admin.ops.settings.weeklySummary')"
+              />
             </div>
             <div v-if="emailConfig.report.weekly_summary_enabled">
               <input v-model="emailConfig.report.weekly_summary_schedule" type="text" class="input" placeholder="0 9 * * 1" />
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- 指标阈值配置 -->
-      <div class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-700/50">
+      <section class="border-t border-outline pt-4">
         <h4 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.ops.settings.metricThresholds') }}</h4>
         <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.settings.metricThresholdsHint') }}</p>
 
@@ -428,10 +440,10 @@ async function saveAllSettings() {
             <p class="mt-1 text-xs text-gray-500">{{ t('admin.ops.settings.upstreamErrorRateMaxPercentHint') }}</p>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- 高级设置 -->
-      <details class="rounded-2xl bg-gray-50 dark:bg-dark-700/50">
+      <details class="border-t border-outline">
         <summary class="cursor-pointer p-4 text-sm font-semibold text-gray-900 dark:text-white">
           {{ t('admin.ops.settings.advancedSettings') }}
         </summary>
@@ -442,7 +454,10 @@ async function saveAllSettings() {
 
             <div class="flex items-center justify-between">
               <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.ops.settings.enableCleanup') }}</label>
-              <Toggle v-model="advancedSettings.data_retention.cleanup_enabled" />
+              <Toggle
+                v-model="advancedSettings.data_retention.cleanup_enabled"
+                :aria-label="t('admin.ops.settings.enableCleanup')"
+              />
             </div>
 
             <div v-if="advancedSettings.data_retention.cleanup_enabled">
@@ -500,7 +515,10 @@ async function saveAllSettings() {
                 <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.ops.settings.enableAggregation') }}</label>
                 <p class="mt-1 text-xs text-gray-500">{{ t('admin.ops.settings.aggregationHint') }}</p>
               </div>
-              <Toggle v-model="advancedSettings.aggregation.aggregation_enabled" />
+              <Toggle
+                v-model="advancedSettings.aggregation.aggregation_enabled"
+                :aria-label="t('admin.ops.settings.enableAggregation')"
+              />
             </div>
           </div>
 
@@ -549,7 +567,10 @@ async function saveAllSettings() {
                   {{ t('admin.ops.settings.ignoreCountTokensErrorsHint') }}
                 </p>
               </div>
-              <Toggle v-model="advancedSettings.ignore_count_tokens_errors" />
+              <Toggle
+                v-model="advancedSettings.ignore_count_tokens_errors"
+                :aria-label="t('admin.ops.settings.ignoreCountTokensErrors')"
+              />
             </div>
 
             <div class="flex items-center justify-between">
@@ -559,7 +580,10 @@ async function saveAllSettings() {
                   {{ t('admin.ops.settings.ignoreContextCanceledHint') }}
                 </p>
               </div>
-              <Toggle v-model="advancedSettings.ignore_context_canceled" />
+              <Toggle
+                v-model="advancedSettings.ignore_context_canceled"
+                :aria-label="t('admin.ops.settings.ignoreContextCanceled')"
+              />
             </div>
 
             <div class="flex items-center justify-between">
@@ -569,7 +593,10 @@ async function saveAllSettings() {
                   {{ t('admin.ops.settings.ignoreNoAvailableAccountsHint') }}
                 </p>
               </div>
-              <Toggle v-model="advancedSettings.ignore_no_available_accounts" />
+              <Toggle
+                v-model="advancedSettings.ignore_no_available_accounts"
+                :aria-label="t('admin.ops.settings.ignoreNoAvailableAccounts')"
+              />
             </div>
 
             <div class="flex items-center justify-between">
@@ -579,7 +606,10 @@ async function saveAllSettings() {
                   {{ t('admin.ops.settings.ignoreInvalidApiKeyErrorsHint') }}
                 </p>
               </div>
-              <Toggle v-model="advancedSettings.ignore_invalid_api_key_errors" />
+              <Toggle
+                v-model="advancedSettings.ignore_invalid_api_key_errors"
+                :aria-label="t('admin.ops.settings.ignoreInvalidApiKeyErrors')"
+              />
             </div>
 
             <div class="flex items-center justify-between">
@@ -589,7 +619,10 @@ async function saveAllSettings() {
                   {{ t('admin.ops.settings.ignoreInsufficientBalanceErrorsHint') }}
                 </p>
               </div>
-              <Toggle v-model="advancedSettings.ignore_insufficient_balance_errors" />
+              <Toggle
+                v-model="advancedSettings.ignore_insufficient_balance_errors"
+                :aria-label="t('admin.ops.settings.ignoreInsufficientBalanceErrors')"
+              />
             </div>
           </div>
 
@@ -604,7 +637,10 @@ async function saveAllSettings() {
                   {{ t('admin.ops.settings.enableAutoRefreshHint') }}
                 </p>
               </div>
-              <Toggle v-model="advancedSettings.auto_refresh_enabled" />
+              <Toggle
+                v-model="advancedSettings.auto_refresh_enabled"
+                :aria-label="t('admin.ops.settings.enableAutoRefresh')"
+              />
             </div>
 
             <div v-if="advancedSettings.auto_refresh_enabled">
@@ -631,7 +667,10 @@ async function saveAllSettings() {
                   {{ t('admin.ops.settings.displayAlertEventsHint') }}
                 </p>
               </div>
-              <Toggle v-model="advancedSettings.display_alert_events" />
+              <Toggle
+                v-model="advancedSettings.display_alert_events"
+                :aria-label="t('admin.ops.settings.displayAlertEvents')"
+              />
             </div>
 
             <div class="flex items-center justify-between">
@@ -641,7 +680,10 @@ async function saveAllSettings() {
                   {{ t('admin.ops.settings.displayOpenAITokenStatsHint') }}
                 </p>
               </div>
-              <Toggle v-model="advancedSettings.display_openai_token_stats" />
+              <Toggle
+                v-model="advancedSettings.display_openai_token_stats"
+                :aria-label="t('admin.ops.settings.displayOpenAITokenStats')"
+              />
             </div>
           </div>
         </div>

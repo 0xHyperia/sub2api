@@ -78,6 +78,7 @@
             <input
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              :aria-label="batchImageText('selectAllJobs')"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
               @change="toggleAllVisible(($event.target as HTMLInputElement).checked)"
@@ -88,6 +89,7 @@
             <input
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              :aria-label="batchJobSelectionLabel(row)"
               :checked="selectedJobIds.has(row.id)"
               @change="toggleJobSelection(row.id, ($event.target as HTMLInputElement).checked)"
               @click.stop
@@ -196,9 +198,13 @@
               <div v-if="canRetry(row) || canDeleteRecord(row)">
                 <button
                   type="button"
+                  :id="moreMenuTriggerId(row.id)"
                   class="batch-row-action flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 dark:hover:bg-dark-700 dark:hover:text-white"
                   :class="{ 'bg-gray-100 text-gray-900 dark:bg-dark-700 dark:text-white': openMoreJobId === row.id }"
                   title="更多操作"
+                  aria-haspopup="menu"
+                  :aria-controls="moreMenuId(row.id)"
+                  :aria-expanded="openMoreJobId === row.id"
                   @click.stop="toggleMoreMenu(row, $event)"
                 >
                   <Icon name="more" size="sm" />
@@ -269,16 +275,23 @@
     <Teleport to="body">
       <div
         v-if="openMoreJobId"
-        class="fixed z-[9999] w-44 overflow-hidden rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 dark:bg-dark-800 dark:ring-white/10"
+        :id="moreMenuId(openMoreJobId)"
+        ref="moreMenuRef"
+        role="menu"
+        :aria-labelledby="moreMenuTriggerId(openMoreJobId)"
+        class="fixed z-[9999] w-44 overflow-hidden rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 dark:bg-dark-800 dark:ring-white/10"
         :style="moreMenuStyle"
         @click.stop
+        @keydown="handleMoreMenuKeydown"
       >
         <template v-for="job in batchJobs" :key="job.id">
           <template v-if="job.id === openMoreJobId">
             <button
               v-if="canRetry(job)"
               type="button"
-              class="flex w-full items-center gap-2 px-3 py-2 text-left text-gray-700 transition-colors hover:bg-amber-50 hover:text-amber-700 disabled:opacity-60 dark:text-gray-200 dark:hover:bg-amber-900/20 dark:hover:text-amber-300"
+              role="menuitem"
+              tabindex="-1"
+              class="flex w-full items-center gap-2 px-3 py-2 text-left text-gray-700 transition-colors hover:bg-amber-50 hover:text-amber-700 focus:outline-none focus-visible:bg-amber-50 focus-visible:text-amber-700 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 disabled:opacity-60 dark:text-gray-200 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 dark:focus-visible:bg-amber-900/20 dark:focus-visible:text-amber-300"
               :disabled="retryingBatchId === job.id"
               @click="retryFailedJob(job)"
             >
@@ -288,7 +301,9 @@
             <button
               v-if="canDeleteRecord(job)"
               type="button"
-              class="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-900/20"
+              role="menuitem"
+              tabindex="-1"
+              class="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus-visible:bg-red-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-900/20 dark:focus-visible:bg-red-900/20"
               :disabled="deletingBatchId === job.id"
               @click="deleteJob(job)"
             >
@@ -401,7 +416,7 @@
                 </td>
                 <td class="px-3 py-2.5 text-left" :class="isRecoveredOriginalFailure(item) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
                   <div
-                    class="batch-prompt-trigger cursor-default truncate rounded px-1 text-sm leading-6 focus:outline-none"
+                    class="batch-prompt-trigger cursor-default truncate rounded px-1 text-sm leading-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                     tabindex="0"
                     @pointerenter="schedulePromptPopoverOpen($event, item.prompt_preview || '-')"
                     @pointerleave="schedulePromptPopoverClose"
@@ -476,15 +491,15 @@
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-3">
-	          <button type="button" class="btn btn-secondary" :disabled="!currentJob || !canCancel(currentJob) || cancelling" @click="cancelSelected">
+        <div class="batch-detail-actions flex w-full flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+	          <button type="button" class="btn btn-secondary w-full sm:w-auto" :disabled="!currentJob || !canCancel(currentJob) || cancelling" @click="cancelSelected">
 	            <Icon v-if="cancelling" name="refresh" size="sm" class="mr-2 animate-spin" />
 	            取消任务
 	          </button>
 	          <button
 	            v-if="currentJob && currentDisplayJob && canRetry(currentDisplayJob)"
 	            type="button"
-	            class="btn btn-secondary inline-flex min-w-[116px] items-center justify-center"
+	            class="btn btn-secondary inline-flex w-full min-w-[116px] items-center justify-center sm:w-auto"
 	            :disabled="retryingBatchId === currentJob.id"
 	            @click="retrySelected"
 	          >
@@ -493,7 +508,7 @@
 	          </button>
 	          <button
             type="button"
-            class="btn btn-primary inline-flex min-w-[112px] items-center justify-center"
+            class="btn btn-primary inline-flex w-full min-w-[112px] items-center justify-center sm:w-auto"
             :disabled="!currentJob || !canDownload(currentJob) || downloading"
             @click="downloadSelected"
           >
@@ -736,16 +751,28 @@
         </div>
       </template>
     </BaseDialog>
+
+    <ConfirmDialog
+      :show="!!pendingConfirmation"
+      :title="confirmationDialogTitle"
+      :message="confirmationDialogMessage"
+      :confirm-text="confirmationDialogConfirmText"
+      :cancel-text="batchImageText('confirmCancel')"
+      :danger="pendingConfirmation?.type !== 'cancel'"
+      @confirm="confirmPendingAction"
+      @cancel="closeConfirmationDialog"
+    />
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select, { type SelectOption } from '@/components/common/Select.vue'
 import SearchInput from '@/components/common/SearchInput.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -793,6 +820,11 @@ type PromptRow = {
   output_count: number
   reference_images: BatchImageReferenceImage[]
 }
+
+type PendingConfirmation =
+  | { type: 'cancel'; jobId: string }
+  | { type: 'delete'; job: BatchImageJobRow }
+  | { type: 'delete-selected'; jobIds: string[] }
 
 type ReferenceImageDraft = BatchImageReferenceImage & {
   name: string
@@ -911,7 +943,9 @@ const previewImageItem = ref<BatchImageItem | null>(null)
 const availableBatchImageModels = ref<Array<{ value: string; label: string }>>([])
 const modelLoadError = ref('')
 const openMoreJobId = ref('')
+const moreMenuRef = ref<HTMLElement | null>(null)
 const moreMenuStyle = ref<Record<string, string>>({})
+const pendingConfirmation = ref<PendingConfirmation | null>(null)
 const promptPopover = reactive({
   visible: false,
   text: '',
@@ -924,6 +958,7 @@ let previewCacheCleanupTimer: ReturnType<typeof setInterval> | null = null
 let promptPopoverCloseTimer: ReturnType<typeof setTimeout> | null = null
 let promptPopoverOpenTimer: ReturnType<typeof setTimeout> | null = null
 let activePromptPopoverTarget: HTMLElement | null = null
+let moreMenuTrigger: HTMLElement | null = null
 
 const geminiApiKeys = computed(() =>
   apiKeys.value.filter((key) =>
@@ -953,6 +988,24 @@ const apiKeyFilterOptions = computed<SelectOption[]>(() => [
 
 const selectedRows = computed(() =>
   batchJobs.value.filter(job => selectedJobIds.value.has(job.id)),
+)
+
+const confirmationDialogTitle = computed(() => {
+  if (pendingConfirmation.value?.type === 'cancel') return batchImageText('cancelTitle')
+  if (pendingConfirmation.value?.type === 'delete-selected') return batchImageText('deleteSelectedTitle')
+  return batchImageText('deleteTitle')
+})
+
+const confirmationDialogMessage = computed(() => {
+  if (pendingConfirmation.value?.type === 'cancel') return batchImageText('cancelConfirm')
+  if (pendingConfirmation.value?.type === 'delete-selected') return batchImageText('deleteSelectedConfirm')
+  return batchImageText('deleteConfirm')
+})
+
+const confirmationDialogConfirmText = computed(() =>
+  pendingConfirmation.value?.type === 'cancel'
+    ? batchImageText('cancelAction')
+    : batchImageText('deleteAction')
 )
 
 const childrenByParent = computed(() => {
@@ -1379,13 +1432,40 @@ function toggleChildRows(batchId: string) {
   expandedParentIds.value = next
 }
 
-function closeMoreMenu() {
-  openMoreJobId.value = ''
+function menuDomSuffix(batchId: string): string {
+  return String(batchId).replace(/[^a-zA-Z0-9_-]/g, '-')
 }
 
-function toggleMoreMenu(job: BatchImageJobRow, event: MouseEvent) {
+function moreMenuId(batchId: string): string {
+  return `batch-job-menu-${menuDomSuffix(batchId)}`
+}
+
+function moreMenuTriggerId(batchId: string): string {
+  return `batch-job-menu-trigger-${menuDomSuffix(batchId)}`
+}
+
+function batchJobSelectionLabel(job: BatchImageJobRow): string {
+  const name = job.task_name || defaultTaskName(job.created_at)
+  return isZhLocale() ? `选择任务：${name}` : `Select job: ${name}`
+}
+
+function closeMoreMenu(restoreFocus = false) {
+  const trigger = moreMenuTrigger
+  openMoreJobId.value = ''
+  moreMenuStyle.value = {}
+  moreMenuTrigger = null
+  if (restoreFocus && trigger?.isConnected) {
+    void nextTick(() => trigger.focus())
+  }
+}
+
+function dismissMoreMenu(): void {
+  closeMoreMenu(false)
+}
+
+async function toggleMoreMenu(job: BatchImageJobRow, event: MouseEvent) {
   if (openMoreJobId.value === job.id) {
-    closeMoreMenu()
+    closeMoreMenu(true)
     return
   }
   const trigger = event.currentTarget as HTMLElement | null
@@ -1399,7 +1479,48 @@ function toggleMoreMenu(job: BatchImageJobRow, event: MouseEvent) {
     left: `${left}px`,
     top: `${Math.max(margin, top)}px`,
   }
+  moreMenuTrigger = trigger
   openMoreJobId.value = job.id
+  await nextTick()
+  moreMenuRef.value?.querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')?.focus()
+}
+
+function handleMoreMenuKeydown(event: KeyboardEvent): void {
+  const menu = moreMenuRef.value
+  if (!menu) return
+  const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])'))
+
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    closeMoreMenu(true)
+    return
+  }
+
+  if (event.key === 'Tab') {
+    closeMoreMenu(false)
+    return
+  }
+
+  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) || items.length === 0) return
+  event.preventDefault()
+  const currentIndex = items.indexOf(document.activeElement as HTMLElement)
+  if (event.key === 'Home') {
+    items[0].focus()
+  } else if (event.key === 'End') {
+    items[items.length - 1].focus()
+  } else if (event.key === 'ArrowDown') {
+    items[(currentIndex + 1 + items.length) % items.length].focus()
+  } else {
+    items[(currentIndex - 1 + items.length) % items.length].focus()
+  }
+}
+
+function handleMoreMenuDocumentKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape' && openMoreJobId.value) {
+    event.preventDefault()
+    closeMoreMenu(true)
+  }
 }
 
 function cancelPromptPopoverClose() {
@@ -1461,8 +1582,9 @@ function openPromptPopover(target: HTMLElement, value: string) {
   if (!rect) return
   const viewportWidth = window.innerWidth || 1280
   const viewportHeight = window.innerHeight || 720
-  const width = Math.min(440, Math.max(320, viewportWidth - 32))
-  const left = Math.max(16, Math.min(rect.left, viewportWidth - width - 16))
+  const horizontalMargin = 8
+  const width = Math.min(440, Math.max(0, viewportWidth - horizontalMargin * 2))
+  const left = Math.max(horizontalMargin, Math.min(rect.left, viewportWidth - width - horizontalMargin))
   const estimatedHeight = 178
   const preferredTop = rect.bottom + 8
   const top = preferredTop + estimatedHeight > viewportHeight
@@ -1473,6 +1595,7 @@ function openPromptPopover(target: HTMLElement, value: string) {
     left: `${left}px`,
     top: `${top}px`,
     width: `${width}px`,
+    maxWidth: 'calc(100vw - 16px)',
   }
   promptPopover.visible = true
 }
@@ -1755,11 +1878,16 @@ function canDeleteRecord(job: Pick<BatchImageJob, 'status'>) {
   return TERMINAL_STATUSES.has(job.status)
 }
 
-async function cancelSelected() {
+function cancelSelected(): void {
   if (!currentJob.value) return
+  if (!(keyForSelectedBatch() || requireApiKey())) return
+  pendingConfirmation.value = { type: 'cancel', jobId: currentJob.value.id }
+}
+
+async function performCancelSelected(jobId: string) {
+  if (!currentJob.value || currentJob.value.id !== jobId) return
   const key = keyForSelectedBatch() || requireApiKey()
   if (!key) return
-  if (!window.confirm(batchImageText('cancelConfirm'))) return
   cancelling.value = true
   try {
     const job = await cancelBatchImageJob(key.key, currentJob.value.id)
@@ -1890,12 +2018,17 @@ async function downloadSelectedJobs() {
   }
 }
 
-async function deleteJob(job: BatchImageJobRow) {
+function deleteJob(job: BatchImageJobRow): void {
   if (!canDeleteRecord(job) || deletingBatchId.value) return
   closeMoreMenu()
   const key = apiKeyForJob(job)
   if (!key) return
-  if (!window.confirm(batchImageText('deleteConfirm'))) return
+  pendingConfirmation.value = { type: 'delete', job }
+}
+
+async function performDeleteJob(job: BatchImageJobRow) {
+  const key = apiKeyForJob(job)
+  if (!key || !canDeleteRecord(job) || deletingBatchId.value) return
   deletingBatchId.value = job.id
   try {
     await deleteBatchImageJobRecord(key.key, job.id)
@@ -1908,10 +2041,16 @@ async function deleteJob(job: BatchImageJobRow) {
   }
 }
 
-async function deleteSelectedJobs() {
+function deleteSelectedJobs(): void {
   const rows = selectedRows.value.filter(job => canDeleteRecord(job))
   if (bulkDeleting.value || rows.length === 0) return
-  if (!window.confirm(batchImageText('deleteSelectedConfirm'))) return
+  pendingConfirmation.value = { type: 'delete-selected', jobIds: rows.map(row => row.id) }
+}
+
+async function performDeleteSelectedJobs(jobIds: string[]) {
+  const selectedIds = new Set(jobIds)
+  const rows = batchJobs.value.filter(job => selectedIds.has(job.id) && canDeleteRecord(job))
+  if (bulkDeleting.value || rows.length === 0) return
   bulkDeleting.value = true
   try {
     for (const row of rows) {
@@ -1927,6 +2066,24 @@ async function deleteSelectedJobs() {
   } finally {
     bulkDeleting.value = false
     deletingBatchId.value = ''
+  }
+}
+
+function closeConfirmationDialog(): void {
+  pendingConfirmation.value = null
+}
+
+async function confirmPendingAction(): Promise<void> {
+  const confirmation = pendingConfirmation.value
+  pendingConfirmation.value = null
+  if (!confirmation) return
+
+  if (confirmation.type === 'cancel') {
+    await performCancelSelected(confirmation.jobId)
+  } else if (confirmation.type === 'delete') {
+    await performDeleteJob(confirmation.job)
+  } else {
+    await performDeleteSelectedJobs(confirmation.jobIds)
   }
 }
 
@@ -2396,6 +2553,9 @@ type BatchImageTextKey =
   | 'submitted'
   | 'submitFailed'
   | 'refreshFailed'
+  | 'selectAllJobs'
+  | 'cancelTitle'
+  | 'cancelAction'
   | 'cancelConfirm'
   | 'cancelled'
   | 'cancelFailed'
@@ -2404,6 +2564,9 @@ type BatchImageTextKey =
 	  | 'retrySubmitted'
 	  | 'retryFailed'
 	  | 'retryMissingPrompts'
+  | 'deleteTitle'
+  | 'deleteSelectedTitle'
+  | 'deleteAction'
   | 'deleteConfirm'
   | 'deleteSelectedConfirm'
   | 'deleted'
@@ -2443,6 +2606,7 @@ type BatchImageTextKey =
   | 'disabled'
   | 'authRequired'
   | 'adminReference'
+  | 'confirmCancel'
   | 'errorReference'
 
 function isZhLocale() {
@@ -2461,6 +2625,9 @@ function batchImageText(key: BatchImageTextKey) {
     submitted: '批量任务已提交',
     submitFailed: '提交失败',
     refreshFailed: '刷新失败',
+    selectAllJobs: '选择本页全部任务',
+    cancelTitle: '取消批量任务',
+    cancelAction: '确认取消',
     cancelConfirm: '取消会请求上游取消；已被系统索引为成功的图片仍会按成功项结算扣费，其余冻结金额会释放。确定取消吗？',
     cancelled: '已请求取消任务',
     cancelFailed: '取消失败',
@@ -2469,6 +2636,9 @@ function batchImageText(key: BatchImageTextKey) {
 	    retrySubmitted: '已提交失败项重试任务',
 	    retryFailed: '重试失败项失败',
 	    retryMissingPrompts: '这个任务没有保存失败项 prompt，无法自动重试。请复制原 prompt 后重新创建任务。',
+    deleteTitle: '删除任务记录',
+    deleteSelectedTitle: '删除选中的任务记录',
+    deleteAction: '确认删除',
     deleteConfirm: '删除后这个任务会从你的列表隐藏，但账务记录仍会保留。确定删除吗？',
     deleteSelectedConfirm: '删除后选中的任务会从你的列表隐藏，但账务记录仍会保留。确定删除吗？',
     deleted: '任务记录已删除',
@@ -2508,6 +2678,7 @@ function batchImageText(key: BatchImageTextKey) {
     disabled: '批量生图功能当前未开启。',
     authRequired: '当前 API Key 不可用或已失效，请重新选择密钥。',
     adminReference: '请把错误码和请求 ID 发给管理员排查。',
+    confirmCancel: '取消',
     errorReference: '错误信息',
   }
   const en: Record<BatchImageTextKey, string> = {
@@ -2521,6 +2692,9 @@ function batchImageText(key: BatchImageTextKey) {
     submitted: 'Batch job submitted.',
     submitFailed: 'Failed to submit the batch job.',
     refreshFailed: 'Failed to refresh the job.',
+    selectAllJobs: 'Select all jobs on this page',
+    cancelTitle: 'Cancel batch job',
+    cancelAction: 'Cancel job',
     cancelConfirm: 'Cancellation will be sent upstream. Images already indexed as successful will still be billed, and the remaining hold will be released. Continue?',
     cancelled: 'Cancellation requested.',
     cancelFailed: 'Failed to cancel the job.',
@@ -2529,6 +2703,9 @@ function batchImageText(key: BatchImageTextKey) {
 	    retrySubmitted: 'Retry job submitted for failed items.',
 	    retryFailed: 'Failed to retry failed items.',
 	    retryMissingPrompts: 'This job does not have saved prompts for failed items, so it cannot be retried automatically. Recreate it with the original prompt.',
+    deleteTitle: 'Delete job record',
+    deleteSelectedTitle: 'Delete selected job records',
+    deleteAction: 'Delete',
     deleteConfirm: 'This hides the job from your list while keeping billing records. Delete it?',
     deleteSelectedConfirm: 'This hides the selected jobs from your list while keeping billing records. Delete them?',
     deleted: 'Job record deleted.',
@@ -2568,6 +2745,7 @@ function batchImageText(key: BatchImageTextKey) {
     disabled: 'Batch image generation is currently disabled.',
     authRequired: 'The current API key is unavailable or expired. Select the key again.',
     adminReference: 'Send the error code and request ID to an administrator for troubleshooting.',
+    confirmCancel: 'Cancel',
     errorReference: 'Error detail',
   }
   return (isZhLocale() ? zh : en)[key]
@@ -2712,9 +2890,10 @@ onMounted(() => {
   previewCacheCleanupTimer = setInterval(() => {
     void cleanupPreviewCache()
   }, 60 * 60 * 1000)
-  document.addEventListener('click', closeMoreMenu)
-  window.addEventListener('resize', closeMoreMenu)
-  window.addEventListener('scroll', closeMoreMenu, true)
+  document.addEventListener('click', dismissMoreMenu)
+  window.addEventListener('resize', dismissMoreMenu)
+  window.addEventListener('scroll', dismissMoreMenu, true)
+  document.addEventListener('keydown', handleMoreMenuDocumentKeydown)
   window.addEventListener('resize', closePromptPopover)
   window.addEventListener('scroll', closePromptPopover, true)
 })
@@ -2747,9 +2926,12 @@ onBeforeUnmount(() => {
     previewCacheCleanupTimer = null
   }
   clearItemPreviews()
-  document.removeEventListener('click', closeMoreMenu)
-  window.removeEventListener('resize', closeMoreMenu)
-  window.removeEventListener('scroll', closeMoreMenu, true)
+  closeMoreMenu(false)
+  closePromptPopover()
+  document.removeEventListener('click', dismissMoreMenu)
+  window.removeEventListener('resize', dismissMoreMenu)
+  window.removeEventListener('scroll', dismissMoreMenu, true)
+  document.removeEventListener('keydown', handleMoreMenuDocumentKeydown)
   window.removeEventListener('resize', closePromptPopover)
   window.removeEventListener('scroll', closePromptPopover, true)
 })
@@ -2774,12 +2956,8 @@ onBeforeUnmount(() => {
   margin-right: 0 !important;
 }
 
-.batch-prompt-trigger:focus {
-  outline: none;
-  box-shadow: none;
-}
-
 .batch-prompt-popover {
+  max-width: calc(100vw - 16px);
   user-select: text;
 }
 

@@ -1,27 +1,41 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, useTemplateRef, nextTick } from 'vue'
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+import Icon from '@/components/icons/Icon.vue'
 
 const props = withDefaults(defineProps<{
   content?: string
   trigger?: 'hover' | 'click'
   widthClass?: string
+  label?: string
+  closeLabel?: string
 }>(), {
   trigger: 'hover',
   widthClass: 'w-64',
+  label: '',
+  closeLabel: 'Close',
 })
 
 const show = ref(false)
 const triggerRef = useTemplateRef<HTMLElement>('trigger')
 const tooltipRef = useTemplateRef<HTMLElement>('tooltip')
 const tooltipStyle = ref({ top: '0px', left: '0px' })
+const placement = ref<'top' | 'bottom'>('top')
+const tooltipId = `help-tooltip-${getCurrentInstance()?.uid ?? 0}`
+const triggerLabel = computed(() => props.label || props.content || 'More information')
 
 function openTooltip() {
   show.value = true
   nextTick(updatePosition)
 }
 
-function closeTooltip() {
+function closeTooltip(restoreFocus = false) {
   show.value = false
+  if (restoreFocus) {
+    const focusTarget = triggerRef.value?.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    )
+    focusTarget?.focus()
+  }
 }
 
 function onEnter() {
@@ -31,6 +45,17 @@ function onEnter() {
 
 function onLeave() {
   if (props.trigger !== 'hover') return
+  closeTooltip()
+}
+
+function onFocusIn() {
+  if (props.trigger === 'hover') openTooltip()
+}
+
+function onFocusOut(event: FocusEvent) {
+  if (props.trigger !== 'hover') return
+  const nextTarget = event.relatedTarget as Node | null
+  if (nextTarget && triggerRef.value?.contains(nextTarget)) return
   closeTooltip()
 }
 
@@ -53,9 +78,8 @@ function onDocumentClick(event: MouseEvent) {
 }
 
 function onDocumentKeydown(event: KeyboardEvent) {
-  if (props.trigger !== 'click') return
   if (event.key === 'Escape') {
-    closeTooltip()
+    closeTooltip(props.trigger === 'click')
   }
 }
 
@@ -66,11 +90,32 @@ function onViewportChange() {
 
 function updatePosition() {
   const el = triggerRef.value
-  if (!el) return
+  const tooltip = tooltipRef.value
+  if (!el || !tooltip) return
   const rect = el.getBoundingClientRect()
+  const tooltipRect = tooltip.getBoundingClientRect()
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  const margin = 16
+  const gap = 8
+  const tooltipWidth = Math.min(
+    tooltipRect.width || 256,
+    Math.max(0, viewportWidth - margin * 2),
+  )
+  const desiredCenter = rect.left + rect.width / 2
+  const minCenter = margin + tooltipWidth / 2
+  const maxCenter = viewportWidth - margin - tooltipWidth / 2
+  const left = minCenter <= maxCenter
+    ? Math.min(maxCenter, Math.max(minCenter, desiredCenter))
+    : viewportWidth / 2
+  const tooltipHeight = tooltipRect.height || 0
+  const spaceAbove = rect.top - margin
+  const spaceBelow = viewportHeight - rect.bottom - margin
+  placement.value = spaceAbove >= tooltipHeight + gap || spaceAbove >= spaceBelow ? 'top' : 'bottom'
+
   tooltipStyle.value = {
-    top: `${rect.top + window.scrollY}px`,
-    left: `${rect.left + rect.width / 2 + window.scrollX}px`,
+    top: `${placement.value === 'top' ? rect.top - gap : rect.bottom + gap}px`,
+    left: `${left}px`,
   }
 }
 
@@ -95,23 +140,21 @@ onBeforeUnmount(() => {
     class="group relative ml-1 inline-flex items-center align-middle"
     @mouseenter="onEnter"
     @mouseleave="onLeave"
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
     @click="onClick"
   >
     <!-- Trigger Icon -->
     <slot name="trigger">
-      <svg
-        class="h-4 w-4 cursor-help text-gray-400 transition-colors hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="2"
+      <button
+        type="button"
+        class="inline-flex h-7 w-7 cursor-help items-center justify-center rounded-control text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        :aria-label="triggerLabel"
+        :aria-describedby="tooltipId"
+        :aria-expanded="show"
       >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
+        <Icon name="infoCircle" size="sm" aria-hidden="true" />
+      </button>
     </slot>
 
     <!-- Teleport to body to escape modal overflow clipping -->
@@ -119,26 +162,33 @@ onBeforeUnmount(() => {
       <div
         ref="tooltip"
         v-show="show"
+        :id="tooltipId"
         role="tooltip"
         :class="[
-          'fixed z-[99999] -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 p-3 text-xs leading-relaxed text-white shadow-xl ring-1 ring-white/10 dark:bg-gray-800',
+          'fixed z-[99999] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-panel bg-gray-900 p-3 text-xs leading-relaxed text-white shadow-xl ring-1 ring-white/10 dark:bg-gray-800',
+          placement === 'top' && '-translate-y-full',
           props.widthClass,
         ]"
-        :style="{ top: `calc(${tooltipStyle.top} - 8px)`, left: tooltipStyle.left }"
+        :style="tooltipStyle"
       >
         <button
           v-if="props.trigger === 'click'"
           type="button"
           class="absolute right-1.5 top-1.5 rounded p-1 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
-          aria-label="Close"
-          @click.stop="closeTooltip"
+          :aria-label="closeLabel"
+          @click.stop="closeTooltip(true)"
         >
           <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
         <slot>{{ content }}</slot>
-        <div class="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-900 dark:bg-gray-800"></div>
+        <div
+          :class="[
+            'absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-900 dark:bg-gray-800',
+            placement === 'top' ? '-bottom-1' : '-top-1'
+          ]"
+        ></div>
       </div>
     </Teleport>
   </div>

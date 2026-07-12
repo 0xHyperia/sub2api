@@ -13,7 +13,7 @@
 
       <div>
         <label class="input-label">{{ t('admin.channelMonitor.form.provider') }} <span class="text-red-500">*</span></label>
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3 min-[360px]:gap-3">
           <button
             v-for="opt in providerOptions"
             :key="opt.value"
@@ -49,9 +49,9 @@
 
       <div>
         <label class="input-label">{{ t('admin.channelMonitor.form.endpoint') }} <span class="text-red-500">*</span></label>
-        <div class="flex gap-2">
-          <input v-model="form.endpoint" type="text" required class="input flex-1" :placeholder="t('admin.channelMonitor.form.endpointPlaceholder')" />
-          <button type="button" @click="useCurrentDomain" class="btn btn-secondary whitespace-nowrap">
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <input v-model="form.endpoint" type="text" required class="input min-w-0 flex-1" :placeholder="t('admin.channelMonitor.form.endpointPlaceholder')" />
+          <button type="button" @click="useCurrentDomain" class="btn btn-secondary w-full whitespace-nowrap sm:w-auto">
             {{ t('admin.channelMonitor.form.useCurrentDomain') }}
           </button>
         </div>
@@ -61,15 +61,15 @@
         <label class="input-label">
           {{ t('admin.channelMonitor.form.apiKey') }}<span v-if="!editing" class="text-red-500"> *</span>
         </label>
-        <div class="flex gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row">
           <input
             v-model="form.api_key"
             type="password"
             :required="!editing"
-            class="input flex-1"
+            class="input min-w-0 flex-1"
             :placeholder="editing ? t('admin.channelMonitor.form.apiKeyEditPlaceholder') : t('admin.channelMonitor.form.apiKeyPlaceholder')"
           />
-          <button type="button" @click="openMyKeyPicker" class="btn btn-secondary whitespace-nowrap">
+          <button type="button" @click="openMyKeyPicker" class="btn btn-secondary w-full whitespace-nowrap sm:w-auto">
             {{ t('admin.channelMonitor.form.useMyKey') }}
           </button>
         </div>
@@ -117,7 +117,7 @@
 
       <div class="flex items-center justify-between">
         <label class="input-label mb-0">{{ t('admin.channelMonitor.form.enabled') }}</label>
-        <Toggle v-model="form.enabled" />
+        <Toggle v-model="form.enabled" :aria-label="t('admin.channelMonitor.form.enabled')" />
       </div>
 
       <!-- 高级设置区：请求模板 + 自定义 headers/body -->
@@ -153,7 +153,7 @@
     </form>
 
     <template #footer>
-      <div class="flex justify-end gap-3">
+      <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3">
         <button @click="$emit('close')" type="button" class="btn btn-secondary">
           {{ t('common.cancel') }}
         </button>

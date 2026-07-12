@@ -33,10 +33,12 @@ import {
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { useTheme } from '@/composables/useTheme'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
 
 const { t } = useI18n()
+const { isDark } = useTheme()
 
 const props = defineProps<{
   data: { date: string; amount: number; count: number }[]
@@ -73,7 +75,7 @@ const chartData = computed(() => {
   }
 })
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   interaction: { mode: 'index' as const, intersect: false },
@@ -82,18 +84,32 @@ const chartOptions = {
       type: 'linear' as const,
       display: true,
       position: 'left' as const,
-      title: { display: true, text: t('payment.admin.revenue') },
+      grid: { color: isDark.value ? '#374151' : '#e5e7eb' },
+      ticks: { color: isDark.value ? '#e5e7eb' : '#374151' },
+      title: {
+        display: true,
+        text: t('payment.admin.revenue'),
+        color: isDark.value ? '#e5e7eb' : '#374151',
+      },
     },
     y1: {
       type: 'linear' as const,
       display: true,
       position: 'right' as const,
-      title: { display: true, text: t('payment.admin.orderCount') },
+      ticks: { color: isDark.value ? '#e5e7eb' : '#374151' },
+      title: {
+        display: true,
+        text: t('payment.admin.orderCount'),
+        color: isDark.value ? '#e5e7eb' : '#374151',
+      },
       grid: { drawOnChartArea: false },
     }
   },
   plugins: {
-    legend: { position: 'top' as const },
+    legend: {
+      position: 'top' as const,
+      labels: { color: isDark.value ? '#e5e7eb' : '#374151' },
+    },
   }
-}
+}))
 </script>

@@ -14,6 +14,12 @@ export default {
     login: '登录',
     getStarted: '立即开始',
     goToDashboard: '进入控制台',
+    customOverride: '自定义首页',
+    openCustomPage: '新窗口打开',
+    loadingCustomPage: '正在加载自定义首页...',
+    customPageTitle: '{siteName} 自定义首页',
+    customPageLoadFailed: '自定义首页无法加载',
+    customPageLoadFailedHint: '目标页面可能暂时不可用或禁止嵌入。你可以重试，或在新窗口中打开。',
     // 新增：面向用户的价值主张
     heroSubtitle: '一个密钥，畅用多个 AI 模型',
     heroDescription: '无需管理多个订阅账号，一站式接入 Claude、GPT、Gemini 等主流 AI 服务',

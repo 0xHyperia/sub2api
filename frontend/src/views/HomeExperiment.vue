@@ -1,12 +1,19 @@
 <template>
   <div ref="homeRoot" class="usa-home" :data-theme="homeTheme">
-<header class="site-header" aria-label="主导航">
+    <header class="site-header" aria-label="主导航" @keydown.esc="closeMobileNav(true)">
       <div class="nav-shell">
         <a class="brand" href="#top" :aria-label="`${brandName} 首页`">
           <span class="brand-mark" aria-hidden="true"><img src="/home-experiment/logo.png" alt="" /></span>
           <span class="brand-name">{{ brandName }}</span>
         </a>
-        <nav class="nav-links" aria-label="页面导航">
+        <nav
+          id="home-navigation"
+          ref="mobileNavRef"
+          class="nav-links"
+          :class="{ 'is-open': mobileNavOpen }"
+          aria-label="页面导航"
+          @click="handleMobileNavNavigation"
+        >
           <a href="#overview">功能总览</a>
           <a href="#providers">模型能力</a>
           <a href="#routes">接入端点</a>
@@ -14,13 +21,40 @@
           <RouterLink to="/key-usage">Key 用量</RouterLink>
         </nav>
         <div class="nav-actions">
-          <button class="icon-button" ref="themeToggleRef" type="button" @click="toggleHomeTheme" aria-label="切换深浅色主题" title="切换主题">
+          <button
+            ref="themeToggleRef"
+            class="icon-button"
+            type="button"
+            @click="toggleHomeTheme"
+            :aria-label="homeTheme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
+            :title="homeTheme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
+          >
             <svg class="icon sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18.5a6.5 6.5 0 1 1 0-13 6.5 6.5 0 0 1 0 13Zm0-2a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9ZM11 1h2v3h-2V1Zm0 19h2v3h-2v-3ZM1 11h3v2H1v-2Zm19 0h3v2h-3v-2ZM4.22 2.81l2.12 2.12-1.41 1.41-2.12-2.12 1.41-1.41Zm14.85 14.85 2.12 2.12-1.41 1.41-2.12-2.12 1.41-1.41Zm.71-14.85 1.41 1.41-2.12 2.12-1.41-1.41 2.12-2.12ZM4.93 17.66l1.41 1.41-2.12 2.12-1.41-1.41 2.12-2.12Z" /></svg>
             <svg class="icon moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 14.69A8.5 8.5 0 0 1 9.31 3 7.1 7.1 0 1 0 21 14.69ZM12.36 1.25a10.5 10.5 0 1 0 10.39 10.39 1 1 0 0 0-1.63-.77A6.5 6.5 0 0 1 13.13 2.88a1 1 0 0 0-.77-1.63Z" /></svg>
           </button>
           <RouterLink class="primary-link" :to="entryPath">{{ entryLabel }}</RouterLink>
+          <button
+            ref="mobileNavToggleRef"
+            class="icon-button mobile-nav-toggle"
+            type="button"
+            aria-controls="home-navigation"
+            :aria-expanded="mobileNavOpen"
+            :aria-label="mobileNavOpen ? '关闭页面导航' : '打开页面导航'"
+            :title="mobileNavOpen ? '关闭导航' : '打开导航'"
+            @click="toggleMobileNav"
+          >
+            <Icon :name="mobileNavOpen ? 'x' : 'menu'" size="md" aria-hidden="true" />
+          </button>
         </div>
       </div>
+      <button
+        v-if="mobileNavOpen"
+        class="mobile-nav-backdrop"
+        type="button"
+        tabindex="-1"
+        aria-label="关闭页面导航"
+        @click="closeMobileNav(true)"
+      ></button>
     </header>
 
     <main id="top">
@@ -28,18 +62,9 @@
         <div class="hero-grid" aria-hidden="true"></div>
         <canvas class="code-flow" id="codeFlow" aria-hidden="true"></canvas>
         <div class="hero-content">
-          <p class="eyebrow hero-type hero-type-eyebrow" :class="{ 'is-typing': typedEyebrow.length > 0 && typedEyebrow.length < heroEyebrowText.length }" :aria-label="heroEyebrowText">
-            <span class="type-reserve" aria-hidden="true">{{ heroEyebrowText }}</span>
-            <span class="type-text" aria-hidden="true">{{ typedEyebrow }}</span>
-          </p>
-          <h1 id="hero-title" class="hero-type hero-type-title" :class="{ 'is-typing': typedTitle.length > 0 && typedTitle.length < brandName.length }" :aria-label="brandName">
-            <span class="type-reserve" aria-hidden="true">{{ brandName }}</span>
-            <span class="type-text" aria-hidden="true">{{ typedTitle }}</span>
-          </h1>
-          <p class="hero-copy hero-type hero-type-copy" :class="{ 'is-typing': typedSubtitle.length > 0 && typedSubtitle.length < subtitle.length, 'is-waiting': typedSubtitle === subtitle }" :aria-label="subtitle">
-            <span class="type-reserve" aria-hidden="true">{{ subtitle }}</span>
-            <span class="type-text" aria-hidden="true">{{ displaySubtitle }}</span>
-          </p>
+          <p class="eyebrow">{{ heroEyebrowText }}</p>
+          <h1 id="hero-title">{{ brandName }}</h1>
+          <p class="hero-copy">{{ subtitle }}</p>
           <div class="hero-actions" aria-label="主要操作">
             <RouterLink class="button primary" :to="entryPath">
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12.17l-5.58-5.59L13 5l8 8-8 8-1.41-1.41L17.17 14H5v-2Z" /></svg>
@@ -51,7 +76,7 @@
           </div>
         </div>
 
-        <div class="console-shell" role="img" aria-label="USA-零 API 网关控制台预览">
+        <section class="console-shell" aria-label="USA-零 API 网关控制台预览">
           <div class="console-topbar">
             <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
             <div class="route-pill">POST /v1/chat/completions</div>
@@ -92,7 +117,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </section>
         <div class="brand-reveal" aria-hidden="true">{{ brandName }}</div>
       </section>
 
@@ -125,42 +150,39 @@
           </div>
         </div>
         <div class="section-inner model-pricing-inner">
-          <div class="model-group openai-group" aria-label="OpenAI 模型价格表">
-            <div class="model-group-title"><span class="provider-symbol openai-symbol">◎</span><strong>OPENAI</strong><span>· 5 个模型</span></div>
-            <div class="pricing-table">
-              <div class="pricing-table-row head"><span>模型</span><span>输入 / 百万</span><span>输出 / 百万</span><span>缓存 / 百万</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.6 <em>最新</em><button class="copy-id" type="button" data-copy="gpt-5.6"></button></strong><small>新一代 · 通用</small></div><span>$5.00</span><span>$30.00</span><span>$0.50</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.5 <em>热门</em><button class="copy-id" type="button" data-copy="gpt-5.5"></button></strong><small>旗舰 · 通用</small></div><span>$5.00</span><span>$30.00</span><span>$0.50</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.4 <button class="copy-id" type="button" data-copy="gpt-5.4"></button></strong><small>通用 · 高性能</small></div><span>$2.50</span><span>$15.00</span><span>$0.25</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.4-mini <button class="copy-id" type="button" data-copy="gpt-5.4-mini"></button></strong><small>高性价比 · 轻量</small></div><span>$0.75</span><span>$4.50</span><span>$0.075</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gpt-5.3-codex <button class="copy-id" type="button" data-copy="gpt-5.3-codex"></button></strong><small>编程 · Codex</small></div><span>$1.75</span><span>$14.00</span><span>$0.175</span></div>
+          <section v-for="group in modelPricingGroups" :key="group.key" class="model-group">
+            <h3 :id="`pricing-${group.key}-title`" class="model-group-title">
+              <span class="provider-symbol" :class="group.symbolClass" aria-hidden="true">{{ group.symbol }}</span>
+              <strong>{{ group.name }}</strong>
+              <span>· {{ group.models.length }} 个模型</span>
+            </h3>
+            <div class="pricing-table-wrap">
+              <table class="pricing-table" :aria-labelledby="`pricing-${group.key}-title`">
+                <thead>
+                  <tr>
+                    <th scope="col">模型</th>
+                    <th v-for="label in priceColumnLabels" :key="label" scope="col">{{ label }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="model in group.models" :key="model.id">
+                    <th scope="row" class="model-cell">
+                      <strong>
+                        <span>{{ model.id }}</span>
+                        <em v-if="model.badge">{{ model.badge }}</em>
+                        <button class="copy-id" type="button" :data-copy="model.id"></button>
+                      </strong>
+                      <small>{{ model.description }}</small>
+                    </th>
+                    <td v-for="(price, index) in model.prices" :key="index" :data-label="priceColumnLabels[index]">
+                      <span>{{ price.value }}</span>
+                      <small v-if="price.note" class="price-note">{{ price.note }}</small>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-          <div class="model-group claude-group" aria-label="Claude Code 模型价格表">
-            <div class="model-group-title"><span class="provider-symbol claude-symbol">✣</span><strong>CLAUDE CODE</strong><span>· 7 个模型</span></div>
-            <div class="pricing-table">
-              <div class="pricing-table-row head"><span>模型</span><span>输入 / 百万</span><span>输出 / 百万</span><span>缓存 / 百万</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>claude-sonnet-5 <em>热门</em><button class="copy-id" type="button" data-copy="claude-sonnet-5"></button></strong><small>新一代 · 通用</small></div><span>$3.00</span><span>$15.00</span><span>$0.30</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>claude-fable-5 <em>热门</em><button class="copy-id" type="button" data-copy="claude-fable-5"></button></strong><small>新一代 · 旗舰</small></div><span>$10.00</span><span>$50.00</span><span>$1.00</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>claude-opus-4-8 <em>热门</em><button class="copy-id" type="button" data-copy="claude-opus-4-8"></button></strong><small>旗舰 · 编程</small></div><span>$5.00</span><span>$25.00</span><span>$0.50</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>claude-opus-4-7 <button class="copy-id" type="button" data-copy="claude-opus-4-7"></button></strong><small>旗舰 · 编程</small></div><span>$5.00</span><span>$25.00</span><span>$0.50</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>claude-opus-4-6 <button class="copy-id" type="button" data-copy="claude-opus-4-6"></button></strong><small>旗舰 · 编程</small></div><span>$5.00</span><span>$25.00</span><span>$0.50</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>claude-sonnet-4-6 <button class="copy-id" type="button" data-copy="claude-sonnet-4-6"></button></strong><small>通用 · 平衡</small></div><span>$3.00</span><span>$15.00</span><span>$0.30</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>claude-haiku-4-5-20251001 <button class="copy-id" type="button" data-copy="claude-haiku-4-5-20251001"></button></strong><small>高性价比 · 轻量</small></div><span>$1.00</span><span>$5.00</span><span>$0.10</span></div>
-            </div>
-          </div>
-          <div class="model-group gemini-group" aria-label="Gemini 模型价格表">
-            <div class="model-group-title"><span class="provider-symbol gemini-symbol">✦</span><strong>GEMINI</strong><span>· 6 个模型</span></div>
-            <div class="pricing-table">
-              <div class="pricing-table-row head"><span>模型</span><span>输入 / 百万</span><span>输出 / 百万</span><span>缓存 / 百万</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-3.5-flash <em>最新</em><button class="copy-id" type="button" data-copy="gemini-3.5-flash"></button></strong><small>速度优先 · 搜索与 grounding</small></div><span>$1.50</span><span>$9.00</span><span>$0.15</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-3.1-pro-preview <em>旗舰</em><button class="copy-id" type="button" data-copy="gemini-3.1-pro-preview"></button></strong><small>多模态 · Agent 与复杂任务</small></div><span>$2.00 <small class="price-note">≤200k</small></span><span>$12.00 <small class="price-note">≤200k</small></span><span>$0.20 <small class="price-note">≤200k</small></span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-3.1-flash-lite <em>低价</em><button class="copy-id" type="button" data-copy="gemini-3.1-flash-lite"></button></strong><small>高吞吐 · 翻译与轻量处理</small></div><span>$0.25</span><span>$1.50</span><span>$0.025</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-2.5-pro <button class="copy-id" type="button" data-copy="gemini-2.5-pro"></button></strong><small>推理 · 编程与复杂任务</small></div><span>$1.25 <small class="price-note">≤200k</small></span><span>$10.00 <small class="price-note">≤200k</small></span><span>$0.125 <small class="price-note">≤200k</small></span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-2.5-flash <button class="copy-id" type="button" data-copy="gemini-2.5-flash"></button></strong><small>平衡 · 1M 上下文</small></div><span>$0.30</span><span>$2.50</span><span>$0.03</span></div>
-              <div class="pricing-table-row"><div class="model-cell"><strong>gemini-2.5-flash-lite <button class="copy-id" type="button" data-copy="gemini-2.5-flash-lite"></button></strong><small>批量 · 极低成本</small></div><span>$0.10</span><span>$0.40</span><span>$0.01</span></div>
-            </div>
-          </div>
+          </section>
         </div>
       </section>
 
@@ -240,10 +262,22 @@
             <p class="eyebrow">Standard routes</p>
             <h2>常用端点保持兼容，内部路由保持弹性</h2>
           </div>
-          <div class="tabs" role="tablist" aria-label="请求示例">
-            <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="chat">Chat</button>
-            <button class="tab" type="button" role="tab" aria-selected="false" data-tab="responses">Responses</button>
-            <button class="tab" type="button" role="tab" aria-selected="false" data-tab="images">Images</button>
+          <div class="tabs" role="tablist" aria-label="请求示例" @keydown="handleTablistKeydown">
+            <button
+              v-for="tab in routeTabs"
+              :id="`route-tab-${tab.key}`"
+              :key="tab.key"
+              class="tab"
+              :class="{ active: activeTab === tab.key }"
+              type="button"
+              role="tab"
+              :aria-selected="activeTab === tab.key"
+              :aria-controls="`route-panel-${tab.key}`"
+              :tabindex="activeTab === tab.key ? 0 : -1"
+              @click="activeTab = tab.key"
+            >
+              {{ tab.label }}
+            </button>
           </div>
           <div class="route-demo">
             <div class="route-list" aria-label="标准端点">
@@ -252,11 +286,13 @@
               <div><span>GET</span><strong>/v1/models</strong><small>normalized catalog</small></div>
               <div><span>POST</span><strong>/v1/images/generations</strong><small>provider mapped</small></div>
             </div>
-            <pre class="code-window" id="tabCode"><code>{
-  "model": "auto:fast",
-  "messages": [{"role":"user","content":"写一段发布公告"}],
-  "route": {"policy":"latency-first"}
-}</code></pre>
+            <pre
+              :id="`route-panel-${activeTab}`"
+              class="code-window"
+              role="tabpanel"
+              :aria-labelledby="`route-tab-${activeTab}`"
+              tabindex="0"
+            ><code>{{ routeExamples[activeTab] }}</code></pre>
           </div>
         </div>
       </section>
@@ -316,9 +352,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getHomeMetrics } from '@/api/home'
+import Icon from '@/components/icons/Icon.vue'
+import { useTheme } from '@/composables/useTheme'
 
 const props = defineProps<{
   siteName: string
@@ -330,16 +368,84 @@ const props = defineProps<{
 const brandName = computed(() => props.siteName || 'USA-零')
 const heroEyebrowText = 'Unified Service API'
 const subtitle = computed(() => props.siteSubtitle || '统一 OpenAI、Claude、Gemini 等不同接口，把多模型调用规范成一个稳定、可计量、可治理的标准 API。')
-const displaySubtitle = computed(() => typedSubtitle.value.endsWith('。') ? typedSubtitle.value.slice(0, -1) : typedSubtitle.value)
 const entryPath = computed(() => props.isAuthenticated ? props.dashboardPath : '/login')
 const entryLabel = computed(() => props.isAuthenticated ? '进入控制台' : '开始接入')
 const entryButtonLabel = computed(() => props.isAuthenticated ? '进入控制台' : '获取 API Key')
 const baseUrl = computed(() => `${window.location.origin}/v1`)
+const { resolvedTheme: homeTheme, toggleTheme } = useTheme()
+
+interface ModelPrice {
+  value: string
+  note?: string
+}
+
+interface ModelPricingItem {
+  id: string
+  badge?: string
+  description: string
+  prices: [ModelPrice, ModelPrice, ModelPrice]
+}
+
+interface ModelPricingGroup {
+  key: string
+  name: string
+  symbol: string
+  symbolClass: string
+  models: ModelPricingItem[]
+}
+
+const priceColumnLabels = ['输入 / 百万', '输出 / 百万', '缓存 / 百万']
+const modelPricingGroups: ModelPricingGroup[] = [
+  {
+    key: 'openai',
+    name: 'OPENAI',
+    symbol: '◎',
+    symbolClass: 'openai-symbol',
+    models: [
+      { id: 'gpt-5.6', badge: '最新', description: '新一代 · 通用', prices: [{ value: '$5.00' }, { value: '$30.00' }, { value: '$0.50' }] },
+      { id: 'gpt-5.5', badge: '热门', description: '旗舰 · 通用', prices: [{ value: '$5.00' }, { value: '$30.00' }, { value: '$0.50' }] },
+      { id: 'gpt-5.4', description: '通用 · 高性能', prices: [{ value: '$2.50' }, { value: '$15.00' }, { value: '$0.25' }] },
+      { id: 'gpt-5.4-mini', description: '高性价比 · 轻量', prices: [{ value: '$0.75' }, { value: '$4.50' }, { value: '$0.075' }] },
+      { id: 'gpt-5.3-codex', description: '编程 · Codex', prices: [{ value: '$1.75' }, { value: '$14.00' }, { value: '$0.175' }] }
+    ]
+  },
+  {
+    key: 'claude',
+    name: 'CLAUDE CODE',
+    symbol: '✣',
+    symbolClass: 'claude-symbol',
+    models: [
+      { id: 'claude-sonnet-5', badge: '热门', description: '新一代 · 通用', prices: [{ value: '$3.00' }, { value: '$15.00' }, { value: '$0.30' }] },
+      { id: 'claude-fable-5', badge: '热门', description: '新一代 · 旗舰', prices: [{ value: '$10.00' }, { value: '$50.00' }, { value: '$1.00' }] },
+      { id: 'claude-opus-4-8', badge: '热门', description: '旗舰 · 编程', prices: [{ value: '$5.00' }, { value: '$25.00' }, { value: '$0.50' }] },
+      { id: 'claude-opus-4-7', description: '旗舰 · 编程', prices: [{ value: '$5.00' }, { value: '$25.00' }, { value: '$0.50' }] },
+      { id: 'claude-opus-4-6', description: '旗舰 · 编程', prices: [{ value: '$5.00' }, { value: '$25.00' }, { value: '$0.50' }] },
+      { id: 'claude-sonnet-4-6', description: '通用 · 平衡', prices: [{ value: '$3.00' }, { value: '$15.00' }, { value: '$0.30' }] },
+      { id: 'claude-haiku-4-5-20251001', description: '高性价比 · 轻量', prices: [{ value: '$1.00' }, { value: '$5.00' }, { value: '$0.10' }] }
+    ]
+  },
+  {
+    key: 'gemini',
+    name: 'GEMINI',
+    symbol: '✦',
+    symbolClass: 'gemini-symbol',
+    models: [
+      { id: 'gemini-3.5-flash', badge: '最新', description: '速度优先 · 搜索与 grounding', prices: [{ value: '$1.50' }, { value: '$9.00' }, { value: '$0.15' }] },
+      { id: 'gemini-3.1-pro-preview', badge: '旗舰', description: '多模态 · Agent 与复杂任务', prices: [{ value: '$2.00', note: '≤200k' }, { value: '$12.00', note: '≤200k' }, { value: '$0.20', note: '≤200k' }] },
+      { id: 'gemini-3.1-flash-lite', badge: '低价', description: '高吞吐 · 翻译与轻量处理', prices: [{ value: '$0.25' }, { value: '$1.50' }, { value: '$0.025' }] },
+      { id: 'gemini-2.5-pro', description: '推理 · 编程与复杂任务', prices: [{ value: '$1.25', note: '≤200k' }, { value: '$10.00', note: '≤200k' }, { value: '$0.125', note: '≤200k' }] },
+      { id: 'gemini-2.5-flash', description: '平衡 · 1M 上下文', prices: [{ value: '$0.30' }, { value: '$2.50' }, { value: '$0.03' }] },
+      { id: 'gemini-2.5-flash-lite', description: '批量 · 极低成本', prices: [{ value: '$0.10' }, { value: '$0.40' }, { value: '$0.01' }] }
+    ]
+  }
+]
 
 const homeRoot = ref<HTMLElement | null>(null)
 const themeToggleRef = ref<HTMLButtonElement | null>(null)
-const homeTheme = ref<'light' | 'dark'>('light')
-const activeTab = ref('chat')
+const mobileNavRef = ref<HTMLElement | null>(null)
+const mobileNavToggleRef = ref<HTMLButtonElement | null>(null)
+const mobileNavOpen = ref(false)
+const activeTab = ref<RouteTabKey>('chat')
 const monthlyTokenMillions = ref(40)
 const HOME_METRICS_REFRESH_MS = 60_000
 const HOME_TOKEN_STORAGE_KEY = 'usa_home_today_tokens_state'
@@ -355,9 +461,6 @@ const routeLatencyMs = ref(randomRouteLatency())
 const availabilityLabel = ref('99.98%')
 const todayTokensLabel = ref(todayTokens.value == null ? '--' : formatMetricTokens(todayTokens.value))
 const routeLatencyLabel = ref(`${routeLatencyMs.value}ms`)
-const typedEyebrow = ref('')
-const typedTitle = ref('')
-const typedSubtitle = ref('')
 const copyToastVisible = ref(false)
 const copyToastMessage = ref('已复制')
 let cleanupCallbacks: Array<() => void> = []
@@ -685,7 +788,15 @@ function animateRouteLatency(target: string) {
   })
 }
 
-const routeExamples: Record<string, string> = {
+type RouteTabKey = 'chat' | 'responses' | 'images'
+
+const routeTabs: Array<{ key: RouteTabKey; label: string }> = [
+  { key: 'chat', label: 'Chat' },
+  { key: 'responses', label: 'Responses' },
+  { key: 'images', label: 'Images' }
+]
+
+const routeExamples: Record<RouteTabKey, string> = {
   chat: `{
   "model": "auto:fast",
   "messages": [{"role":"user","content":"写一段发布公告"}],
@@ -709,8 +820,29 @@ type ElementListener = Parameters<Element['addEventListener']>[1]
 type ElementListenerOptions = Parameters<Element['addEventListener']>[2]
 
 function toggleHomeTheme() {
-  homeTheme.value = homeTheme.value === 'dark' ? 'light' : 'dark'
-  localStorage.setItem('usa-zero-theme', homeTheme.value)
+  toggleTheme()
+}
+
+function closeMobileNav(restoreFocus = false): void {
+  if (!mobileNavOpen.value) return
+  mobileNavOpen.value = false
+  if (restoreFocus) {
+    void nextTick(() => mobileNavToggleRef.value?.focus())
+  }
+}
+
+function toggleMobileNav(): void {
+  if (mobileNavOpen.value) {
+    closeMobileNav(true)
+    return
+  }
+
+  mobileNavOpen.value = true
+  void nextTick(() => mobileNavRef.value?.querySelector<HTMLElement>('a')?.focus())
+}
+
+function handleMobileNavNavigation(event: MouseEvent): void {
+  if ((event.target as Element | null)?.closest('a')) closeMobileNav(false)
 }
 
 function on(target: Window, type: string, listener: WindowListener, options?: WindowListenerOptions) {
@@ -728,26 +860,29 @@ function setupHeader() {
   const header = root?.querySelector('.site-header')
   if (!header) return
   const update = () => header.classList.toggle('is-scrolled', window.scrollY > 18)
+  const updateViewport = () => {
+    if (window.innerWidth > 900) closeMobileNav(false)
+  }
   on(window, 'scroll', update, { passive: true })
+  on(window, 'resize', updateViewport, { passive: true })
   update()
+  updateViewport()
 }
 
-function setupTabs() {
-  const root = homeRoot.value
-  if (!root) return
-  const code = root.querySelector<HTMLElement>('#tabCode code')
-  root.querySelectorAll<HTMLButtonElement>('.tab').forEach((button) => {
-    onElement(button, 'click', () => {
-      const key = button.dataset.tab || 'chat'
-      activeTab.value = key
-      root.querySelectorAll<HTMLButtonElement>('.tab').forEach((tab) => {
-        const selected = tab === button
-        tab.classList.toggle('active', selected)
-        tab.setAttribute('aria-selected', selected ? 'true' : 'false')
-      })
-      if (code) code.textContent = routeExamples[key] || routeExamples.chat
-    })
-  })
+function handleTablistKeydown(event: KeyboardEvent): void {
+  const currentIndex = routeTabs.findIndex((tab) => tab.key === activeTab.value)
+  let nextIndex = currentIndex
+
+  if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % routeTabs.length
+  else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + routeTabs.length) % routeTabs.length
+  else if (event.key === 'Home') nextIndex = 0
+  else if (event.key === 'End') nextIndex = routeTabs.length - 1
+  else return
+
+  event.preventDefault()
+  const nextTab = routeTabs[nextIndex]
+  activeTab.value = nextTab.key
+  void nextTick(() => document.getElementById(`route-tab-${nextTab.key}`)?.focus())
 }
 
 function setupPricingRange() {
@@ -807,47 +942,6 @@ function setupCopyButtons() {
       if (copied) showCopyToast('复制成功')
     })
   })
-}
-
-function typeText(source: string, target: { value: string }, delay: number, speed: number) {
-  const timer = window.setTimeout(() => {
-    const chars = Array.from(source)
-    let index = 0
-    target.value = ''
-    const tick = () => {
-      index += 1
-      target.value = chars.slice(0, index).join('')
-      if (index < chars.length) {
-        const pause = /[，。,.]/.test(chars[index - 1] || '') ? speed * 5 : speed
-        const timeout = window.setTimeout(tick, pause)
-        cleanupCallbacks.push(() => window.clearTimeout(timeout))
-      }
-    }
-    tick()
-  }, delay)
-  cleanupCallbacks.push(() => window.clearTimeout(timer))
-}
-
-function startHeroTyping() {
-  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  if (reducedMotion) {
-    typedEyebrow.value = heroEyebrowText
-    typedTitle.value = brandName.value
-    typedSubtitle.value = subtitle.value
-    return
-  }
-  typeText(heroEyebrowText, typedEyebrow, 180, 34)
-  typeText(brandName.value, typedTitle, 820, 90)
-  typeText(subtitle.value, typedSubtitle, 1420, 28)
-}
-
-function setupTheme() {
-  const stored = localStorage.getItem('usa-zero-theme')
-  if (stored === 'dark' || stored === 'light') {
-    homeTheme.value = stored
-  } else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    homeTheme.value = 'dark'
-  }
 }
 
 function startCodeFlow(canvas: HTMLCanvasElement | null) {
@@ -1029,21 +1123,13 @@ function startCtaDotMatrix(canvas: HTMLCanvasElement | null) {
 }
 
 onMounted(() => {
-  setupTheme()
   startHomeMetricsRefresh()
   startMetricIntroAnimation()
-  startHeroTyping()
   setupHeader()
-  setupTabs()
   setupPricingRange()
   setupCopyButtons()
   startCodeFlow(homeRoot.value?.querySelector<HTMLCanvasElement>('#codeFlow') || null)
   startCtaDotMatrix(homeRoot.value?.querySelector<HTMLCanvasElement>('#ctaDotMatrix') || null)
-})
-
-watch([brandName, subtitle], () => {
-  typedTitle.value = brandName.value
-  typedSubtitle.value = subtitle.value
 })
 
 watch(todayTokens, (value) => {
@@ -1142,6 +1228,11 @@ onUnmounted(() => {
 
 .usa-home svg { width: 1em; height: 1em; fill: currentColor; display: block; }
 
+.usa-home :where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 72%, #2563eb);
+  outline-offset: 3px;
+}
+
 .site-header {
   position: absolute;
   top: 0;
@@ -1154,6 +1245,8 @@ onUnmounted(() => {
 }
 
 .nav-shell {
+  position: relative;
+  z-index: 2;
   max-width: 1180px;
   min-height: 54px;
   margin: 0 auto;
@@ -1223,7 +1316,7 @@ onUnmounted(() => {
 }
 
 .nav-links a {
-  min-height: 36px;
+  min-height: 44px;
   padding: 8px 12px;
   border-radius: 999px;
   display: inline-flex;
@@ -1233,6 +1326,9 @@ onUnmounted(() => {
 .nav-links a:hover { background: var(--muted); color: var(--foreground); }
 
 .nav-actions { display: flex; align-items: center; gap: 8px; }
+
+.icon-button.mobile-nav-toggle,
+.mobile-nav-backdrop { display: none; }
 
 .icon-button, .copy-button {
   border: 1px solid var(--border);
@@ -1244,13 +1340,14 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-.icon-button { width: 38px; height: 38px; position: relative; }
+.icon-button { width: 44px; height: 44px; position: relative; }
 .icon-button .icon { position: absolute; transition: transform .18s ease, opacity .18s ease; }
+.mobile-nav-toggle svg { width: 20px; height: 20px; fill: none; }
 .usa-home[data-theme="light"] .moon { opacity: 0; transform: scale(.6) rotate(-30deg); }
 .usa-home[data-theme="dark"] .sun { opacity: 0; transform: scale(.6) rotate(30deg); }
 
 .usa-home .primary-link {
-  min-height: 38px;
+  min-height: 44px;
   padding: 9px 15px;
   border-radius: 999px;
   background: var(--foreground);
@@ -1261,7 +1358,7 @@ onUnmounted(() => {
 
 .hero {
   width: 100%;
-  min-height: 100svh;
+  min-height: calc(100svh - 24px);
   position: relative;
   overflow: hidden;
   padding: clamp(88px, 10svh, 112px) 18px clamp(16px, 2.5svh, 26px);
@@ -1334,50 +1431,6 @@ onUnmounted(() => {
   transform: translateY(clamp(12px, 2.6svh, 30px));
 }
 
-.hero-type {
-  position: relative;
-}
-
-.type-reserve {
-  visibility: hidden;
-}
-
-.type-text {
-  position: absolute;
-  inset: 0;
-  display: block;
-  color: inherit;
-  overflow-wrap: inherit;
-  white-space: inherit;
-}
-
-.hero-type.is-typing .type-text::after {
-  content: "";
-  display: inline-block;
-  width: .08em;
-  height: .86em;
-  margin-left: .08em;
-  transform: translateY(.08em);
-  background: currentColor;
-  animation: typeCursor .82s steps(2, end) infinite;
-}
-
-.hero-type-copy .type-text::after {
-  width: 2px;
-  height: 1em;
-}
-
-.hero-type-copy.is-waiting .type-text::after {
-  content: "";
-  display: inline-block;
-  width: .58em;
-  height: 2px;
-  margin-left: .1em;
-  transform: translateY(.16em);
-  background: currentColor;
-  animation: typeCursor .82s steps(2, end) infinite;
-}
-
 .eyebrow {
   margin: 0 0 12px;
   color: var(--muted-foreground);
@@ -1392,10 +1445,11 @@ onUnmounted(() => {
 
 .usa-home h1 {
   margin-bottom: 16px;
-  font-size: clamp(4rem, 12vw, 9.5rem);
+  font-size: 8rem;
   line-height: .85;
   font-weight: 900;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .hero-copy {
@@ -1463,7 +1517,7 @@ onUnmounted(() => {
 
 @supports (height: 100dvh) {
   .hero {
-    min-height: 100dvh;
+    min-height: calc(100dvh - 24px);
   }
 
   .console-shell {
@@ -1512,6 +1566,7 @@ onUnmounted(() => {
 }
 
 .request-panel, .flow-panel, .pricing-card, .endpoint-card, .code-window {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--background);
@@ -1529,8 +1584,8 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
-.copy-button { width: 30px; height: 30px; }
-.copy-button.text { width: auto; min-height: 34px; padding: 7px 12px; font-size: 13px; font-weight: 800; }
+.copy-button { width: 40px; height: 40px; }
+.copy-button.text { width: auto; min-height: 40px; padding: 8px 12px; font-size: 13px; font-weight: 800; }
 .copy-button.copied {
   border-color: color-mix(in srgb, var(--foreground) 24%, var(--border));
   background: color-mix(in srgb, var(--muted) 78%, var(--surface-raised));
@@ -1703,7 +1758,7 @@ onUnmounted(() => {
   transform: translateX(-50%);
   z-index: 0;
   color: color-mix(in srgb, var(--foreground) 13%, transparent);
-  font-size: clamp(5rem, 17vw, 17rem);
+  font-size: 14rem;
   font-weight: 950;
   line-height: .75;
   white-space: nowrap;
@@ -1773,7 +1828,7 @@ onUnmounted(() => {
 .section-title.align-left { margin: 0; text-align: left; }
 .section-title h2 {
   margin-bottom: 12px;
-  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-size: 3.25rem;
   line-height: 1.08;
   font-weight: 880;
   letter-spacing: 0;
@@ -1861,7 +1916,7 @@ onUnmounted(() => {
 }
 .api-capabilities-heading h2 {
   margin-bottom: 12px;
-  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-size: 3.25rem;
   line-height: 1.08;
   font-weight: 880;
   letter-spacing: 0;
@@ -1898,7 +1953,7 @@ onUnmounted(() => {
 .capability-item h3 {
   margin: 0 0 10px;
   color: var(--foreground);
-  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  font-size: 2rem;
   line-height: 1.18;
   font-weight: 860;
   letter-spacing: 0;
@@ -2083,7 +2138,7 @@ onUnmounted(() => {
 }
 .provider-symbol.claude-symbol { color: #f97316; }
 .provider-symbol.gemini-symbol { color: #3b82f6; }
-.pricing-table {
+.pricing-table-wrap {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   border-radius: var(--radius);
@@ -2091,44 +2146,47 @@ onUnmounted(() => {
   box-shadow: var(--soft-shadow);
   backdrop-filter: blur(14px);
 }
-.pricing-table-row {
-  display: grid;
-  grid-template-columns: minmax(280px, 1.8fr) repeat(3, minmax(92px, .75fr));
-  gap: 16px;
-  align-items: center;
-  min-height: 76px;
-  padding: 14px 26px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
-.pricing-table-row:last-child { border-bottom: 0; }
-.pricing-table-row.head {
-  min-height: 44px;
+
+.pricing-table th,
+.pricing-table td {
+  padding: 14px 26px;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.pricing-table th:first-child { width: 48%; text-align: left; }
+.pricing-table thead th {
+  height: 44px;
+  padding-block: 10px;
   background: color-mix(in srgb, var(--muted) 52%, transparent);
   color: var(--muted-foreground);
   font-size: 12px;
   font-weight: 820;
 }
-.pricing-table-row > span {
+
+.pricing-table tbody tr { border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent); }
+.pricing-table tbody td {
   color: var(--foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 14px;
-  text-align: right;
 }
-.pricing-table-row .price-note {
+
+.pricing-table .price-note {
   display: block;
   margin-top: 4px;
   color: var(--muted-foreground);
   font-size: 11px;
 }
-.pricing-table-row.head > span {
-  color: var(--muted-foreground);
-  font-family: inherit;
-}
-.pricing-table-row.head > span:first-child { text-align: left; }
+
 .model-cell {
   min-width: 0;
-  display: grid;
-  gap: 7px;
+  text-align: left;
 }
 .model-cell strong {
   min-width: 0;
@@ -2143,8 +2201,11 @@ onUnmounted(() => {
   overflow-wrap: anywhere;
 }
 .model-cell small {
+  display: block;
+  margin-top: 7px;
   color: var(--muted-foreground);
   font-size: 13px;
+  font-weight: 400;
 }
 .model-cell em {
   border-radius: 4px;
@@ -2157,10 +2218,10 @@ onUnmounted(() => {
 }
 .copy-id {
   display: inline-grid;
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  min-height: 26px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
   border-radius: 4px;
@@ -2203,7 +2264,7 @@ onUnmounted(() => {
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
 }
 .tab {
-  min-height: 34px;
+  min-height: 40px;
   padding: 7px 14px;
   border: 0;
   border-radius: 999px;
@@ -2307,7 +2368,7 @@ onUnmounted(() => {
 }
 .token-estimate div:last-child { border-right: 0; }
 .token-estimate span {
-  font-size: clamp(22px, 3.2vw, 30px);
+  font-size: 30px;
   line-height: 1.1;
 }
 .token-estimate small {
@@ -2359,7 +2420,7 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
-.band-cta h2 { margin: 0 0 14px; font-size: clamp(2rem, 5vw, 3.3rem); line-height: 1.08; }
+.band-cta h2 { margin: 0 0 14px; font-size: 3.3rem; line-height: 1.08; }
 .band-cta .cta-copy p { margin: 0; color: #64748b; line-height: 1.75; }
 .usa-home[data-theme="dark"] .band-cta .cta-copy p { color: #94a3b8; }
 .endpoint-card {
@@ -2387,7 +2448,6 @@ onUnmounted(() => {
 .site-footer { min-height: 82px; padding: 24px 18px; display: flex; justify-content: center; align-items: center; gap: 16px; color: var(--muted-foreground); border-top: 1px solid var(--border); }
 .site-footer span:first-child { color: var(--foreground); font-weight: 900; }
 
-@keyframes typeCursor { 0%, 42% { opacity: 1; } 43%, 100% { opacity: .12; } }
 @keyframes flow { 0% { transform: translateX(-120%); } 100% { transform: translateX(180%); } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2398,12 +2458,50 @@ onUnmounted(() => {
 @media (max-width: 900px) {
   .site-header { padding: 12px 10px; }
   .site-header.is-scrolled { padding: 10px; }
-  .nav-shell { align-items: flex-start; flex-wrap: wrap; }
-  .site-header.is-scrolled .nav-shell { border-radius: 18px; }
-  .nav-links { order: 3; flex: 0 0 100%; justify-content: flex-start; overflow-x: auto; padding: 0 2px 2px; }
+  .nav-shell { align-items: center; flex-wrap: nowrap; gap: 8px; }
+  .site-header.is-scrolled .nav-shell { border-radius: var(--radius); }
+  .nav-links {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    display: none;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 2px;
+    max-height: min(70dvh, 460px);
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--panel) 96%, transparent);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+  }
+  .nav-links.is-open { display: flex; background: var(--panel); }
+  .nav-links a { width: 100%; justify-content: flex-start; border-radius: 6px; padding-inline: 14px; }
   .nav-actions { margin-left: auto; }
-  .hero { padding-top: 124px; min-height: 100svh; grid-template-rows: auto auto; align-content: center; row-gap: 14px; }
+  .icon-button.mobile-nav-toggle { display: inline-grid; }
+  .mobile-nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgba(15, 23, 42, 0.28);
+    pointer-events: auto;
+  }
+  .hero { padding-top: 96px; min-height: calc(100svh - 24px); grid-template-rows: auto auto; align-content: center; row-gap: 14px; }
   .hero-content { transform: translateY(0); }
+  .usa-home h1 { font-size: 5rem; }
+  .section-watermark { font-size: 8rem; }
+  .section-title h2,
+  .api-capabilities-heading h2,
+  .band-cta h2 { font-size: 2.5rem; }
+  .capability-item h3 { font-size: 1.75rem; }
+  .token-estimate span { font-size: 26px; }
   .hero-actions { margin-top: 18px; }
   .console-shell { max-height: min(500px, 50svh); min-height: 0; margin-top: 30px; }
   .gateway-board { max-height: calc(min(500px, 50svh) - 52px); overflow: auto; }
@@ -2415,14 +2513,15 @@ onUnmounted(() => {
   .route-demo { padding: 14px; }
   .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .section-title.align-left { text-align: center; margin: 0 auto 30px; }
-  .pricing-table-row { grid-template-columns: minmax(220px, 1.35fr) repeat(3, minmax(72px, .7fr)); padding: 14px 18px; }
+  .pricing-table th,
+  .pricing-table td { padding-inline: 18px; }
 }
 
 @media (max-width: 620px) {
   .brand-name { font-size: 15px; }
   .primary-link { display: none; }
-  .hero { padding: 112px 12px 18px; row-gap: 12px; align-content: start; }
-  .usa-home h1 { margin-bottom: 10px; font-size: clamp(3rem, 16vw, 4.25rem); }
+  .hero { padding: 88px 12px 18px; row-gap: 12px; align-content: start; }
+  .usa-home h1 { margin-bottom: 10px; font-size: 3.9rem; }
   .hero-copy { max-width: 34rem; font-size: 15px; line-height: 1.58; }
   .hero-actions { margin-top: 16px; align-items: stretch; gap: 8px; }
   .button { min-height: 40px; flex: 1 1 136px; justify-content: center; padding: 9px 12px; font-size: 13px; }
@@ -2430,6 +2529,8 @@ onUnmounted(() => {
   .console-topbar { justify-content: flex-start; }
   .route-pill { display: none; }
   .gateway-board { max-height: calc(min(420px, 48svh) - 52px); padding: 10px; gap: 10px; }
+  .request-panel,
+  .flow-panel { width: 100%; overflow: hidden; }
   .panel-head { min-height: 38px; padding: 8px 10px; }
   .usa-home pre { font-size: 11px; line-height: 1.55; }
   .request-panel pre { min-height: 156px; padding: 11px; }
@@ -2443,6 +2544,10 @@ onUnmounted(() => {
   .metric-grid span { font-size: 14px; }
   .metric-grid small { font-size: 10px; }
   .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .section-watermark { font-size: 5rem; }
+  .section-title h2,
+  .api-capabilities-heading h2,
+  .band-cta h2 { font-size: 2rem; }
   .feature-card { min-height: 150px; padding: 12px; }
   .feature-card::before { height: 2px; }
   .feature-icon { width: 30px; height: 30px; margin-bottom: 10px; }
@@ -2463,10 +2568,53 @@ onUnmounted(() => {
   .access-code code { font-size: 11px; line-height: 1.6; }
   .model-pricing-inner { gap: 28px; margin-top: 42px; }
   .model-group-title { align-items: flex-start; flex-wrap: wrap; letter-spacing: .12em; }
-  .pricing-table { overflow-x: auto; }
-  .pricing-table-row { min-width: 680px; grid-template-columns: minmax(230px, 1.4fr) repeat(3, minmax(82px, .72fr)); padding: 13px 16px; }
+  .pricing-table-wrap { overflow: visible; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+  .pricing-table,
+  .pricing-table tbody { display: block; }
+  .pricing-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .pricing-table tbody { display: grid; gap: 10px; }
+  .pricing-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-raised);
+    box-shadow: var(--soft-shadow);
+  }
+  .pricing-table tbody th.model-cell {
+    display: block;
+    width: auto;
+    grid-column: 1 / -1;
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .pricing-table tbody td {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 12px 8px;
+    text-align: left;
+  }
+  .pricing-table tbody td::before {
+    color: var(--muted-foreground);
+    content: attr(data-label);
+    font-family: var(--font);
+    font-size: 10px;
+    font-weight: 700;
+  }
   .model-cell strong { font-size: 14px; }
-  .pricing-table-row > span { font-size: 13px; }
+  .pricing-table tbody td { font-size: 12px; }
   .tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
   .section { padding: 64px 12px; }
   .band-light { padding-top: 10px; }
@@ -2479,7 +2627,7 @@ onUnmounted(() => {
 }
 
 @media (max-height: 780px) and (min-width: 901px) {
-  .usa-home h1 { font-size: clamp(3.4rem, 9.5vw, 7.2rem); margin-bottom: 10px; }
+  .usa-home h1 { font-size: 6.5rem; margin-bottom: 10px; }
   .hero-copy { font-size: 17px; line-height: 1.55; }
   .hero-actions { margin-top: 16px; }
   .console-shell { transform: scale(.9); transform-origin: top center; }

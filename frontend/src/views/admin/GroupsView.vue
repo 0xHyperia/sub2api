@@ -3,10 +3,10 @@
     <TablePageLayout>
       <template #filters>
         <div
-          class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start"
+          class="resource-toolbar flex flex-col gap-3 lg:flex-row lg:items-center"
         >
           <!-- Left: fuzzy search + filters (can wrap to multiple lines) -->
-          <div class="flex flex-1 flex-wrap items-center gap-3">
+          <div class="resource-toolbar__filters flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <div class="relative w-full sm:w-64">
               <Icon
                 name="search"
@@ -17,6 +17,8 @@
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t('admin.groups.searchGroups')"
+                :aria-label="t('admin.groups.searchGroups')"
+                autocomplete="off"
                 class="input pl-10"
                 @input="handleSearch"
               />
@@ -25,34 +27,36 @@
               v-model="filters.platform"
               :options="platformFilterOptions"
               :placeholder="t('admin.groups.allPlatforms')"
-              class="w-44"
+              class="w-full sm:w-44"
               @change="loadGroups"
             />
             <Select
               v-model="filters.status"
               :options="statusOptions"
               :placeholder="t('admin.groups.allStatus')"
-              class="w-40"
+              class="w-full sm:w-40"
               @change="loadGroups"
             />
             <Select
               v-model="filters.is_exclusive"
               :options="exclusiveOptions"
               :placeholder="t('admin.groups.allGroups')"
-              class="w-44"
+              class="w-full sm:w-44"
               @change="loadGroups"
             />
           </div>
 
           <!-- Right: actions -->
           <div
-            class="flex w-full flex-shrink-0 flex-wrap items-center justify-end gap-3 lg:w-auto"
+            class="resource-toolbar__actions flex w-full flex-shrink-0 items-center justify-end gap-2 lg:w-auto"
           >
             <button
+              type="button"
               @click="loadGroups"
               :disabled="loading"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2"
               :title="t('common.refresh')"
+              :aria-label="t('common.refresh')"
             >
               <Icon
                 name="refresh"
@@ -62,22 +66,38 @@
             </button>
             <div class="relative" ref="columnDropdownRef">
               <button
-                @click="showColumnDropdown = !showColumnDropdown"
-                class="btn btn-secondary"
+                :id="columnMenuTriggerId"
+                ref="columnMenuTriggerRef"
+                type="button"
+                @click="toggleColumnMenu"
+                @keydown="handleColumnTriggerKeydown"
+                class="btn btn-secondary px-2 md:px-3"
                 :title="t('admin.groups.columnSettings')"
+                :aria-label="t('admin.groups.columnSettings')"
+                aria-haspopup="menu"
+                :aria-expanded="showColumnDropdown"
+                :aria-controls="showColumnDropdown ? columnMenuId : undefined"
               >
-                <Icon name="grid" size="md" class="mr-2" />
+                <Icon name="grid" size="md" class="md:mr-2" />
                 <span class="hidden md:inline">{{
                   t("admin.groups.columnSettings")
                 }}</span>
               </button>
               <div
                 v-if="showColumnDropdown"
-                class="absolute right-0 top-full z-50 mt-1 max-h-80 w-48 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800"
+                :id="columnMenuId"
+                ref="columnMenuRef"
+                class="resource-menu absolute right-0 top-full z-50 mt-1 max-h-80 w-48 overflow-y-auto"
+                role="menu"
+                :aria-labelledby="columnMenuTriggerId"
+                @keydown="handleColumnMenuKeydown"
               >
                 <button
                   v-for="col in toggleableColumns"
                   :key="col.key"
+                  type="button"
+                  role="menuitemcheckbox"
+                  :aria-checked="isColumnVisible(col.key)"
                   @click="toggleColumn(col.key)"
                   class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
                 >
@@ -93,16 +113,19 @@
               </div>
             </div>
             <button
+              type="button"
               @click="openSortModal"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2 md:px-3"
               :title="t('admin.groups.sortOrder')"
+              :aria-label="t('admin.groups.sortOrder')"
             >
-              <Icon name="arrowsUpDown" size="md" class="mr-2" />
-              {{ t("admin.groups.sortOrder") }}
+              <Icon name="arrowsUpDown" size="md" class="lg:mr-2" />
+              <span class="hidden lg:inline">{{ t("admin.groups.sortOrder") }}</span>
             </button>
             <button
+              type="button"
               @click="openCreateModal"
-              class="btn btn-primary"
+              class="btn btn-primary min-w-0 flex-1 sm:flex-none"
               data-tour="groups-create-btn"
             >
               <Icon name="plus" size="md" class="mr-2" />
@@ -130,18 +153,7 @@
 
           <template #cell-platform="{ value }">
             <span
-              :class="[
-                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                value === 'anthropic'
-                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                  : value === 'openai'
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : value === 'antigravity'
-                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                      : value === 'grok'
-                        ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-              ]"
+              class="badge badge-gray"
             >
               <PlatformIcon :platform="value" size="xs" />
               {{ t("admin.groups.platforms." + value) }}
@@ -153,10 +165,10 @@
               <!-- Type Badge -->
               <span
                 :class="[
-                  'inline-block rounded-full px-2 py-0.5 text-xs font-medium',
+                  'badge',
                   row.subscription_type === 'subscription'
-                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+                    ? 'badge-primary'
+                    : 'badge-gray',
                 ]"
               >
                 {{
@@ -228,45 +240,36 @@
           </template>
 
           <template #cell-account_count="{ row }">
-            <div class="space-y-0.5 text-xs">
-              <div>
+            <div class="space-y-1 text-xs tabular-nums">
+              <div class="flex items-center gap-1.5">
                 <span class="text-gray-500 dark:text-gray-400">{{
                   t("admin.groups.accountsAvailable")
                 }}</span>
                 <span
-                  class="ml-1 font-medium text-emerald-600 dark:text-emerald-400"
+                  class="font-semibold text-emerald-600 dark:text-emerald-400"
                   >{{ row.active_account_count || 0 }}</span
                 >
-                <span
-                  class="ml-1 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800 dark:bg-dark-600 dark:text-gray-300"
-                  >{{ t("admin.groups.accountsUnit") }}</span
-                >
+                <span class="text-gray-400 dark:text-gray-500">{{ t("admin.groups.accountsUnit") }}</span>
               </div>
-              <div v-if="row.rate_limited_account_count">
+              <div v-if="row.rate_limited_account_count" class="flex items-center gap-1.5">
                 <span class="text-gray-500 dark:text-gray-400">{{
                   t("admin.groups.accountsRateLimited")
                 }}</span>
                 <span
-                  class="ml-1 font-medium text-amber-600 dark:text-amber-400"
+                  class="font-semibold text-amber-600 dark:text-amber-400"
                   >{{ row.rate_limited_account_count }}</span
                 >
-                <span
-                  class="ml-1 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800 dark:bg-dark-600 dark:text-gray-300"
-                  >{{ t("admin.groups.accountsUnit") }}</span
-                >
+                <span class="text-gray-400 dark:text-gray-500">{{ t("admin.groups.accountsUnit") }}</span>
               </div>
-              <div>
+              <div class="flex items-center gap-1.5">
                 <span class="text-gray-500 dark:text-gray-400">{{
                   t("admin.groups.accountsTotal")
                 }}</span>
                 <span
-                  class="ml-1 font-medium text-gray-700 dark:text-gray-300"
+                  class="font-semibold text-gray-700 dark:text-gray-300"
                   >{{ row.account_count || 0 }}</span
                 >
-                <span
-                  class="ml-1 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800 dark:bg-dark-600 dark:text-gray-300"
-                  >{{ t("admin.groups.accountsUnit") }}</span
-                >
+                <span class="text-gray-400 dark:text-gray-500">{{ t("admin.groups.accountsUnit") }}</span>
               </div>
             </div>
           </template>
@@ -322,38 +325,42 @@
           </template>
 
           <template #cell-actions="{ row }">
-            <div class="flex items-center gap-1">
+            <div class="resource-row-actions">
               <button
+                type="button"
                 @click="handleEdit(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+                class="resource-row-action"
+                :title="t('common.edit')"
+                :aria-label="t('common.edit')"
               >
                 <Icon name="edit" size="sm" />
-                <span class="text-xs">{{ t("common.edit") }}</span>
               </button>
               <button
+                type="button"
                 @click="handleRateMultipliers(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-600 dark:hover:bg-dark-700 dark:hover:text-purple-400"
+                class="resource-row-action"
+                :title="t('admin.groups.rateMultipliers')"
+                :aria-label="t('admin.groups.rateMultipliers')"
               >
                 <Icon name="dollar" size="sm" />
-                <span class="text-xs">{{
-                  t("admin.groups.rateMultipliers")
-                }}</span>
               </button>
               <button
+                type="button"
                 @click="handleRPMOverrides(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-orange-600 dark:hover:bg-dark-700 dark:hover:text-orange-400"
+                class="resource-row-action"
+                :title="t('admin.groups.rpmOverrides')"
+                :aria-label="t('admin.groups.rpmOverrides')"
               >
                 <Icon name="bolt" size="sm" />
-                <span class="text-xs">{{
-                  t("admin.groups.rpmOverrides")
-                }}</span>
               </button>
               <button
+                type="button"
                 @click="handleDelete(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                class="resource-row-action resource-row-action--danger"
+                :title="t('common.delete')"
+                :aria-label="t('common.delete')"
               >
                 <Icon name="trash" size="sm" />
-                <span class="text-xs">{{ t("common.delete") }}</span>
               </button>
             </div>
           </template>
@@ -433,28 +440,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.copyAccounts.title") }}
             </label>
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.copyAccounts.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.copyAccounts.tooltip')"
+              :label="t('admin.groups.copyAccounts.title')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            />
           </div>
           <!-- 已选分组标签 -->
           <div
@@ -551,44 +541,31 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.form.exclusive") }}
             </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <!-- Tooltip Popover -->
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="mb-2 text-xs font-medium">
-                    {{ t("admin.groups.exclusiveTooltip.title") }}
+            <HelpTooltip
+              trigger="click"
+              :label="t('admin.groups.form.exclusive')"
+              :close-label="t('common.close')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            >
+              <div class="space-y-2 pr-6">
+                <p class="font-medium">
+                  {{ t("admin.groups.exclusiveTooltip.title") }}
+                </p>
+                <p class="leading-relaxed text-gray-300">
+                  {{ t("admin.groups.exclusiveTooltip.description") }}
+                </p>
+                <div class="rounded bg-gray-800 p-2 dark:bg-gray-700">
+                  <p class="leading-relaxed text-gray-300">
+                    <span
+                      class="inline-flex items-center gap-1 text-primary-400"
+                      ><Icon name="lightbulb" size="xs" />
+                      {{ t("admin.groups.exclusiveTooltip.example") }}</span
+                    >
+                    {{ t("admin.groups.exclusiveTooltip.exampleContent") }}
                   </p>
-                  <p class="mb-2 text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.exclusiveTooltip.description") }}
-                  </p>
-                  <div class="rounded bg-gray-800 p-2 dark:bg-gray-700">
-                    <p class="text-xs leading-relaxed text-gray-300">
-                      <span
-                        class="inline-flex items-center gap-1 text-primary-400"
-                        ><Icon name="lightbulb" size="xs" />
-                        {{ t("admin.groups.exclusiveTooltip.example") }}</span
-                      >
-                      {{ t("admin.groups.exclusiveTooltip.exampleContent") }}
-                    </p>
-                  </div>
-                  <!-- Arrow -->
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
                 </div>
               </div>
-            </div>
+            </HelpTooltip>
           </div>
           <div class="flex items-center gap-3">
             <button
@@ -805,7 +782,7 @@
               <input
                 v-model="createForm.allow_image_generation"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               {{ t("admin.groups.imagePricing.allowImageGeneration") }}
             </label>
@@ -813,7 +790,7 @@
               <input
                 v-model="createForm.image_rate_independent"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               {{ t("admin.groups.imagePricing.independentMultiplier") }}
             </label>
@@ -834,7 +811,7 @@
               placeholder="1"
             />
           </div>
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
               <label class="input-label">1K ($)</label>
               <input
@@ -876,7 +853,7 @@
             <div class="mb-1 font-medium">
               {{ t("admin.groups.imagePricing.finalPricePreview") }}
             </div>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div
                 v-for="item in createImageFinalPricePreview"
                 :key="item.label"
@@ -892,7 +869,7 @@
               <input
                 v-model="createForm.allow_batch_image_generation"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               {{ t("admin.groups.imagePricing.allowBatchImageGeneration") }}
             </label>
@@ -946,14 +923,14 @@
               <input
                 v-model="createForm.peak_rate_enabled"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               <span>{{ t("admin.groups.peakRate.enable") }}</span>
             </label>
           </div>
           <div
             v-if="createForm.peak_rate_enabled"
-            class="mb-4 grid grid-cols-3 gap-3"
+            class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3"
           >
             <div>
               <label class="input-label">{{ t("admin.groups.peakRate.peakStart") }}</label>
@@ -992,29 +969,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.supportedScopes.title") }}
             </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.supportedScopes.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.supportedScopes.tooltip')"
+              :label="t('admin.groups.supportedScopes.title')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            />
           </div>
           <div class="space-y-2">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -1066,28 +1025,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.mcpXml.title") }}
             </label>
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.mcpXml.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.mcpXml.tooltip')"
+              :label="t('admin.groups.mcpXml.title')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            />
           </div>
           <div class="flex items-center gap-3">
             <button
@@ -1123,29 +1065,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.claudeCode.title") }}
             </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.claudeCode.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.claudeCode.tooltip')"
+              :label="t('admin.groups.claudeCode.title')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            />
           </div>
           <div class="flex items-center gap-3">
             <button
@@ -1236,13 +1160,13 @@
 
           <div v-if="createForm.allow_messages_dispatch" class="mt-3">
             <div
-              class="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-800"
+              class="overflow-hidden rounded-lg border border-gray-200 bg-gray-50/40 dark:border-dark-600 dark:bg-dark-800/60"
             >
               <div
-                class="border-b border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/50"
+                class="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/40"
               >
                 <div class="flex items-center gap-2">
-                  <div class="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <div class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
                   <label
                     class="text-sm font-medium text-gray-900 dark:text-white"
                     >{{
@@ -1300,24 +1224,24 @@
             </div>
 
             <div
-              class="mt-5 relative overflow-hidden rounded-xl border border-primary-200 bg-white shadow-sm dark:border-primary-900/50 dark:bg-dark-800"
+              class="relative mt-4 overflow-hidden rounded-lg border border-gray-200 bg-gray-50/40 dark:border-dark-600 dark:bg-dark-800/60"
             >
               <div
-                class="border-b border-primary-100 bg-primary-50/80 px-4 py-3 dark:border-primary-900/40 dark:bg-primary-900/20"
+                class="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/40"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <div class="flex items-center gap-2">
-                      <div class="h-2 w-2 rounded-full bg-primary-500"></div>
+                      <div class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
                       <label
-                        class="text-sm font-medium text-primary-900 dark:text-primary-100"
+                        class="text-sm font-medium text-gray-900 dark:text-white"
                         >{{
                           t("admin.groups.openaiMessages.exactMappingTitle")
                         }}</label
                       >
                     </div>
                     <p
-                      class="mt-1 text-xs text-primary-600/90 dark:text-primary-400/90"
+                      class="mt-1 text-xs text-gray-500 dark:text-gray-400"
                     >
                       {{ t("admin.groups.openaiMessages.exactMappingHint") }}
                     </p>
@@ -1325,10 +1249,10 @@
                 </div>
               </div>
 
-              <div class="p-4 bg-gray-50/30 dark:bg-dark-800/30">
+              <div class="p-4">
                 <div
                   v-if="createForm.exact_model_mappings.length === 0"
-                  class="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-primary-200 bg-white px-5 py-4 text-sm text-primary-700 transition-colors hover:border-primary-300 dark:border-primary-900/40 dark:bg-dark-800 dark:text-primary-300 dark:hover:border-primary-800"
+                  class="flex flex-col items-start justify-between gap-3 rounded-md border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600 sm:flex-row sm:items-center dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300"
                 >
                   <span>{{
                     t("admin.groups.openaiMessages.noExactMappings")
@@ -1347,9 +1271,9 @@
                   <div
                     v-for="row in createForm.exact_model_mappings"
                     :key="getCreateMessagesDispatchRowKey(row)"
-                    class="group relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-primary-300 hover:shadow-md dark:border-dark-600 dark:bg-dark-700 dark:hover:border-primary-700"
+                    class="group relative rounded-md border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 dark:border-dark-600 dark:bg-dark-700 dark:hover:border-dark-500"
                   >
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                       <div
                         class="grid flex-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-start"
                       >
@@ -1396,7 +1320,7 @@
                       <button
                         type="button"
                         @click="removeCreateMessagesDispatchMapping(row)"
-                        class="mt-6 flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                        class="flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-md text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 sm:mt-6 sm:self-auto dark:hover:bg-red-900/20 dark:hover:text-red-400"
                         :title="
                           t('admin.groups.openaiMessages.removeExactMapping')
                         "
@@ -1409,7 +1333,7 @@
                   <button
                     type="button"
                     @click="addCreateMessagesDispatchMapping"
-                    class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-white py-3 text-sm font-medium text-gray-500 transition-all hover:border-primary-300 hover:bg-primary-50/50 hover:text-primary-600 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-400 dark:hover:border-primary-800 dark:hover:bg-primary-900/20 dark:hover:text-primary-400"
+                    class="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:border-dark-600 dark:text-gray-400 dark:hover:border-dark-500 dark:hover:bg-dark-700 dark:hover:text-gray-200"
                   >
                     <Icon name="plus" size="sm" />
                     {{ t("admin.groups.openaiMessages.addExactMapping") }}
@@ -1535,29 +1459,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.modelRouting.title") }}
             </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-80 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.modelRouting.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.modelRouting.tooltip')"
+              :label="t('admin.groups.modelRouting.title')"
+              width-class="w-[min(20rem,calc(100vw-2rem))]"
+            />
           </div>
           <!-- 启用开关 -->
           <div class="flex items-center gap-3 mb-3">
@@ -1817,28 +1723,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.copyAccounts.title") }}
             </label>
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.copyAccounts.tooltipEdit") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.copyAccounts.tooltipEdit')"
+              :label="t('admin.groups.copyAccounts.title')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            />
           </div>
           <!-- 已选分组标签 -->
           <div
@@ -1933,44 +1822,31 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.form.exclusive") }}
             </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <!-- Tooltip Popover -->
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="mb-2 text-xs font-medium">
-                    {{ t("admin.groups.exclusiveTooltip.title") }}
+            <HelpTooltip
+              trigger="click"
+              :label="t('admin.groups.form.exclusive')"
+              :close-label="t('common.close')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            >
+              <div class="space-y-2 pr-6">
+                <p class="font-medium">
+                  {{ t("admin.groups.exclusiveTooltip.title") }}
+                </p>
+                <p class="leading-relaxed text-gray-300">
+                  {{ t("admin.groups.exclusiveTooltip.description") }}
+                </p>
+                <div class="rounded bg-gray-800 p-2 dark:bg-gray-700">
+                  <p class="leading-relaxed text-gray-300">
+                    <span
+                      class="inline-flex items-center gap-1 text-primary-400"
+                      ><Icon name="lightbulb" size="xs" />
+                      {{ t("admin.groups.exclusiveTooltip.example") }}</span
+                    >
+                    {{ t("admin.groups.exclusiveTooltip.exampleContent") }}
                   </p>
-                  <p class="mb-2 text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.exclusiveTooltip.description") }}
-                  </p>
-                  <div class="rounded bg-gray-800 p-2 dark:bg-gray-700">
-                    <p class="text-xs leading-relaxed text-gray-300">
-                      <span
-                        class="inline-flex items-center gap-1 text-primary-400"
-                        ><Icon name="lightbulb" size="xs" />
-                        {{ t("admin.groups.exclusiveTooltip.example") }}</span
-                      >
-                      {{ t("admin.groups.exclusiveTooltip.exampleContent") }}
-                    </p>
-                  </div>
-                  <!-- Arrow -->
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
                 </div>
               </div>
-            </div>
+            </HelpTooltip>
           </div>
           <div class="flex items-center gap-3">
             <button
@@ -2192,7 +2068,7 @@
               <input
                 v-model="editForm.allow_image_generation"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               {{ t("admin.groups.imagePricing.allowImageGeneration") }}
             </label>
@@ -2200,7 +2076,7 @@
               <input
                 v-model="editForm.image_rate_independent"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               {{ t("admin.groups.imagePricing.independentMultiplier") }}
             </label>
@@ -2221,7 +2097,7 @@
               placeholder="1"
             />
           </div>
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
               <label class="input-label">1K ($)</label>
               <input
@@ -2263,7 +2139,7 @@
             <div class="mb-1 font-medium">
               {{ t("admin.groups.imagePricing.finalPricePreview") }}
             </div>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div
                 v-for="item in editImageFinalPricePreview"
                 :key="item.label"
@@ -2279,7 +2155,7 @@
               <input
                 v-model="editForm.allow_batch_image_generation"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               {{ t("admin.groups.imagePricing.allowBatchImageGeneration") }}
             </label>
@@ -2333,14 +2209,14 @@
               <input
                 v-model="editForm.peak_rate_enabled"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               <span>{{ t("admin.groups.peakRate.enable") }}</span>
             </label>
           </div>
           <div
             v-if="editForm.peak_rate_enabled"
-            class="mb-4 grid grid-cols-3 gap-3"
+            class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3"
           >
             <div>
               <label class="input-label">{{ t("admin.groups.peakRate.peakStart") }}</label>
@@ -2379,29 +2255,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.supportedScopes.title") }}
             </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.supportedScopes.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.supportedScopes.tooltip')"
+              :label="t('admin.groups.supportedScopes.title')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            />
           </div>
           <div class="space-y-2">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -2453,28 +2311,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.mcpXml.title") }}
             </label>
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.mcpXml.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.mcpXml.tooltip')"
+              :label="t('admin.groups.mcpXml.title')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            />
           </div>
           <div class="flex items-center gap-3">
             <button
@@ -2510,29 +2351,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.claudeCode.title") }}
             </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.claudeCode.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.claudeCode.tooltip')"
+              :label="t('admin.groups.claudeCode.title')"
+              width-class="w-[min(18rem,calc(100vw-2rem))]"
+            />
           </div>
           <div class="flex items-center gap-3">
             <button
@@ -2619,13 +2442,13 @@
 
           <div v-if="editForm.allow_messages_dispatch" class="mt-3">
             <div
-              class="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-800"
+              class="overflow-hidden rounded-lg border border-gray-200 bg-gray-50/40 dark:border-dark-600 dark:bg-dark-800/60"
             >
               <div
-                class="border-b border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/50"
+                class="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/40"
               >
                 <div class="flex items-center gap-2">
-                  <div class="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <div class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
                   <label
                     class="text-sm font-medium text-gray-900 dark:text-white"
                     >{{
@@ -2683,24 +2506,24 @@
             </div>
 
             <div
-              class="mt-5 relative overflow-hidden rounded-xl border border-primary-200 bg-white shadow-sm dark:border-primary-900/50 dark:bg-dark-800"
+              class="relative mt-4 overflow-hidden rounded-lg border border-gray-200 bg-gray-50/40 dark:border-dark-600 dark:bg-dark-800/60"
             >
               <div
-                class="border-b border-primary-100 bg-primary-50/80 px-4 py-3 dark:border-primary-900/40 dark:bg-primary-900/20"
+                class="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/40"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <div class="flex items-center gap-2">
-                      <div class="h-2 w-2 rounded-full bg-primary-500"></div>
+                      <div class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
                       <label
-                        class="text-sm font-medium text-primary-900 dark:text-primary-100"
+                        class="text-sm font-medium text-gray-900 dark:text-white"
                         >{{
                           t("admin.groups.openaiMessages.exactMappingTitle")
                         }}</label
                       >
                     </div>
                     <p
-                      class="mt-1 text-xs text-primary-600/90 dark:text-primary-400/90"
+                      class="mt-1 text-xs text-gray-500 dark:text-gray-400"
                     >
                       {{ t("admin.groups.openaiMessages.exactMappingHint") }}
                     </p>
@@ -2708,10 +2531,10 @@
                 </div>
               </div>
 
-              <div class="p-4 bg-gray-50/30 dark:bg-dark-800/30">
+              <div class="p-4">
                 <div
                   v-if="editForm.exact_model_mappings.length === 0"
-                  class="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-primary-200 bg-white px-5 py-4 text-sm text-primary-700 transition-colors hover:border-primary-300 dark:border-primary-900/40 dark:bg-dark-800 dark:text-primary-300 dark:hover:border-primary-800"
+                  class="flex flex-col items-start justify-between gap-3 rounded-md border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600 sm:flex-row sm:items-center dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300"
                 >
                   <span>{{
                     t("admin.groups.openaiMessages.noExactMappings")
@@ -2730,9 +2553,9 @@
                   <div
                     v-for="row in editForm.exact_model_mappings"
                     :key="getEditMessagesDispatchRowKey(row)"
-                    class="group relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-primary-300 hover:shadow-md dark:border-dark-600 dark:bg-dark-700 dark:hover:border-primary-700"
+                    class="group relative rounded-md border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 dark:border-dark-600 dark:bg-dark-700 dark:hover:border-dark-500"
                   >
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                       <div
                         class="grid flex-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-start"
                       >
@@ -2779,7 +2602,7 @@
                       <button
                         type="button"
                         @click="removeEditMessagesDispatchMapping(row)"
-                        class="mt-6 flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                        class="flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-md text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 sm:mt-6 sm:self-auto dark:hover:bg-red-900/20 dark:hover:text-red-400"
                         :title="
                           t('admin.groups.openaiMessages.removeExactMapping')
                         "
@@ -2792,7 +2615,7 @@
                   <button
                     type="button"
                     @click="addEditMessagesDispatchMapping"
-                    class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-white py-3 text-sm font-medium text-gray-500 transition-all hover:border-primary-300 hover:bg-primary-50/50 hover:text-primary-600 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-400 dark:hover:border-primary-800 dark:hover:bg-primary-900/20 dark:hover:text-primary-400"
+                    class="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:border-dark-600 dark:text-gray-400 dark:hover:border-dark-500 dark:hover:bg-dark-700 dark:hover:text-gray-200"
                   >
                     <Icon name="plus" size="sm" />
                     {{ t("admin.groups.openaiMessages.addExactMapping") }}
@@ -2918,29 +2741,11 @@
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.modelRouting.title") }}
             </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-80 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.modelRouting.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <HelpTooltip
+              :content="t('admin.groups.modelRouting.tooltip')"
+              :label="t('admin.groups.modelRouting.title')"
+              width-class="w-[min(20rem,calc(100vw-2rem))]"
+            />
           </div>
           <!-- 启用开关 -->
           <div class="flex items-center gap-3 mb-3">
@@ -3179,7 +2984,7 @@
           <div
             v-for="group in sortableGroups"
             :key="group.id"
-            class="flex cursor-grab items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 transition-shadow hover:shadow-md active:cursor-grabbing dark:border-dark-600 dark:bg-dark-700"
+            class="flex cursor-grab items-center gap-3 rounded-md border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 active:cursor-grabbing dark:border-dark-600 dark:bg-dark-700 dark:hover:border-dark-500"
           >
             <div class="text-gray-400">
               <Icon name="menu" size="md" />
@@ -3190,18 +2995,7 @@
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400">
                 <span
-                  :class="[
-                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                    group.platform === 'anthropic'
-                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                      : group.platform === 'openai'
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : group.platform === 'antigravity'
-                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                          : group.platform === 'grok'
-                            ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                  ]"
+                  class="badge badge-gray"
                 >
                   {{ t("admin.groups.platforms." + group.platform) }}
                 </span>
@@ -3285,6 +3079,7 @@ import Pagination from "@/components/common/Pagination.vue";
 import BaseDialog from "@/components/common/BaseDialog.vue";
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import EmptyState from "@/components/common/EmptyState.vue";
+import HelpTooltip from "@/components/common/HelpTooltip.vue";
 import Select from "@/components/common/Select.vue";
 import PlatformIcon from "@/components/common/PlatformIcon.vue";
 import Icon from "@/components/icons/Icon.vue";
@@ -3295,6 +3090,7 @@ import { VueDraggable } from "vue-draggable-plus";
 import { createStableObjectKeyResolver } from "@/utils/stableObjectKey";
 import { useKeyedDebouncedSearch } from "@/composables/useKeyedDebouncedSearch";
 import { getPersistedPageSize } from "@/composables/usePersistedPageSize";
+import { useDropdownMenu } from "@/composables/useDropdownMenu";
 import {
   createDefaultMessagesDispatchFormState,
   messagesDispatchConfigToFormState,
@@ -3362,8 +3158,18 @@ const toggleableColumns = computed(() =>
   allColumns.value.filter((col) => !ALWAYS_VISIBLE_COLUMNS.has(col.key)),
 );
 const hiddenColumns = reactive<Set<string>>(new Set());
-const showColumnDropdown = ref(false);
 const columnDropdownRef = ref<HTMLElement | null>(null);
+const {
+  open: showColumnDropdown,
+  triggerRef: columnMenuTriggerRef,
+  menuRef: columnMenuRef,
+  triggerId: columnMenuTriggerId,
+  menuId: columnMenuId,
+  closeMenu: closeColumnMenu,
+  toggleMenu: toggleColumnMenu,
+  handleTriggerKeydown: handleColumnTriggerKeydown,
+  handleMenuKeydown: handleColumnMenuKeydown,
+} = useDropdownMenu("admin-groups-columns");
 
 const getValidHiddenColumnKeys = () =>
   new Set(toggleableColumns.value.map((col) => col.key));
@@ -4751,7 +4557,7 @@ const handleClickOutside = (event: MouseEvent) => {
     });
   }
   if (columnDropdownRef.value && !columnDropdownRef.value.contains(target)) {
-    showColumnDropdown.value = false;
+    void closeColumnMenu();
   }
 };
 
@@ -4811,3 +4617,83 @@ onUnmounted(() => {
   clearAllAccountSearchState();
 });
 </script>
+
+<style scoped>
+.resource-toolbar {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.resource-toolbar__filters,
+.resource-toolbar__actions {
+  min-width: 0;
+}
+
+.resource-menu {
+  overflow: hidden;
+  padding: 4px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface-raised, #fff);
+  box-shadow: var(--ui-shadow-lg, 0 14px 34px rgba(15, 23, 42, 0.14));
+}
+
+.resource-menu > button {
+  min-height: 36px;
+  border-radius: 6px;
+}
+
+.resource-menu > button:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: -2px;
+}
+
+.resource-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.resource-row-action {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.resource-row-action:hover {
+  color: var(--ui-text, #0f172a);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.resource-row-action:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 1px;
+}
+
+.resource-row-action--danger:hover {
+  color: var(--ui-danger, #dc2626);
+  background: rgb(var(--color-danger-subtle));
+}
+
+@media (max-width: 767px) {
+  .resource-toolbar {
+    padding: 10px;
+  }
+
+  .resource-row-action {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+}
+</style>

@@ -63,5 +63,9 @@ describe('UsageStatsCards', () => {
     expect(text).toContain('12')
     expect(text).toContain('Cache Read')
     expect(text).toContain('22')
+
+    const details = wrapper.get('details')
+    expect(details.get('summary').text()).toContain('Cache: 34')
+    expect(wrapper.get('.grid').classes()).toContain('grid-cols-1')
   })
 })

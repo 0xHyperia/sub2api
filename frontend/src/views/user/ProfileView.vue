@@ -2,8 +2,17 @@
   <AppLayout>
     <div
       data-testid="profile-shell"
-      class="mx-auto max-w-[950px] space-y-6"
+      class="mx-auto min-w-0 max-w-6xl space-y-4 pb-8"
     >
+      <header class="border-b border-outline pb-4">
+        <h1 class="text-xl font-semibold text-foreground sm:text-2xl">
+          {{ t('profile.title') }}
+        </h1>
+        <p class="mt-1 text-sm text-foreground-muted">
+          {{ t('profile.description') }}
+        </p>
+      </header>
+
       <ProfileInfoCard
         :user="user"
         :linuxdo-enabled="linuxdoOAuthEnabled"
@@ -17,33 +26,38 @@
 
       <div
         v-if="contactInfo"
-        class="card border-primary-200 bg-primary-50 p-6 dark:bg-primary-900/20"
+        role="note"
+        class="flex min-w-0 items-start gap-3 rounded-panel border border-info/20 bg-info-subtle p-4 text-info-foreground"
       >
-        <div class="flex items-center gap-4">
-          <div class="rounded-xl bg-primary-100 p-3 text-primary-600">
-            <Icon name="chat" size="lg" />
-          </div>
-          <div>
-            <h3 class="font-semibold text-primary-800 dark:text-primary-200">
-              {{ t('common.contactSupport') }}
-            </h3>
-            <p class="text-sm font-medium">{{ contactInfo }}</p>
-          </div>
+        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-control border border-info/20 bg-surface/60" aria-hidden="true">
+          <Icon name="chat" size="sm" />
+        </span>
+        <div class="min-w-0">
+          <h2 class="text-sm font-semibold">{{ t('common.contactSupport') }}</h2>
+          <p class="mt-0.5 break-words text-sm">{{ contactInfo }}</p>
         </div>
       </div>
 
-      <ProfilePasswordForm />
+      <section class="space-y-4" aria-labelledby="profile-security-title">
+        <header class="border-b border-outline pb-3">
+          <h2 id="profile-security-title" class="text-base font-semibold text-foreground">
+            {{ t('profile.securityTitle') }}
+          </h2>
+        </header>
 
-      <ProfileBalanceNotifyCard
-        v-if="user && balanceLowNotifyEnabled"
-        :enabled="user.balance_notify_enabled ?? true"
-        :threshold="user.balance_notify_threshold"
-        :extra-emails="user.balance_notify_extra_emails ?? []"
-        :system-default-threshold="systemDefaultThreshold"
-        :user-email="user.email"
-      />
+        <ProfilePasswordForm />
 
-      <ProfileTotpCard />
+        <ProfileBalanceNotifyCard
+          v-if="user && balanceLowNotifyEnabled"
+          :enabled="user.balance_notify_enabled ?? true"
+          :threshold="user.balance_notify_threshold"
+          :extra-emails="user.balance_notify_extra_emails ?? []"
+          :system-default-threshold="systemDefaultThreshold"
+          :user-email="user.email"
+        />
+
+        <ProfileTotpCard />
+      </section>
     </div>
   </AppLayout>
 </template>

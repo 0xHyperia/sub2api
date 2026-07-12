@@ -2,7 +2,7 @@
   <AuthLayout>
     <div class="space-y-6">
       <!-- Title -->
-      <div class="text-center">
+      <div class="auth-form-heading">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ t('auth.resetPasswordTitle') }}
         </h2>
@@ -11,9 +11,20 @@
         </p>
       </div>
 
+      <div
+        v-if="errorMessage"
+        class="auth-flow-alert"
+        role="alert"
+        aria-live="assertive"
+      >
+        {{ errorMessage }}
+      </div>
+
       <!-- Invalid Link State -->
       <div v-if="isInvalidLink" class="space-y-6">
-        <div class="rounded-xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-800/50 dark:bg-amber-900/20">
+        <div
+          class="auth-flow-surface border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-900/20"
+        >
           <div class="flex flex-col items-center gap-4 text-center">
             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-800/50">
               <Icon name="exclamationCircle" size="lg" class="text-amber-600 dark:text-amber-400" />
@@ -41,7 +52,9 @@
 
       <!-- Success State -->
       <div v-else-if="isSuccess" class="space-y-6">
-        <div class="rounded-xl border border-green-200 bg-green-50 p-6 dark:border-green-800/50 dark:bg-green-900/20">
+        <div
+          class="auth-flow-surface border-green-200 bg-green-50 dark:border-green-800/50 dark:bg-green-900/20"
+        >
           <div class="flex flex-col items-center gap-4 text-center">
             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-800/50">
               <Icon name="checkCircle" size="lg" class="text-green-600 dark:text-green-400" />
@@ -60,7 +73,7 @@
         <div class="text-center">
           <router-link
             to="/login"
-            class="btn btn-primary inline-flex items-center gap-2"
+            class="auth-submit btn btn-primary inline-flex items-center gap-2"
           >
             <Icon name="login" size="md" />
             {{ t('auth.signIn') }}
@@ -69,7 +82,13 @@
       </div>
 
       <!-- Form State -->
-      <form v-else @submit.prevent="handleSubmit" class="space-y-5">
+      <form
+        v-else
+        class="space-y-5"
+        novalidate
+        :aria-busy="isLoading"
+        @submit.prevent="handleSubmit"
+      >
         <!-- Email (readonly) -->
         <div>
           <label for="email" class="input-label">
@@ -109,16 +128,25 @@
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
               :placeholder="t('auth.newPasswordPlaceholder')"
+              :aria-invalid="Boolean(errors.password)"
+              :aria-describedby="errors.password ? 'reset-password-error' : undefined"
+              @input="errors.password = ''"
             />
             <button
               type="button"
+              class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              :aria-label="passwordToggleLabel"
+              :title="passwordToggleLabel"
+              :aria-pressed="showPassword"
               @click="showPassword = !showPassword"
-              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
             >
               <Icon v-if="showPassword" name="eyeOff" size="md" />
               <Icon v-else name="eye" size="md" />
             </button>
           </div>
+          <p v-if="errors.password" id="reset-password-error" class="input-error-text" role="alert">
+            {{ errors.password }}
+          </p>
         </div>
 
         <!-- Confirm Password Input -->
@@ -140,23 +168,37 @@
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.confirmPassword }"
               :placeholder="t('auth.confirmPasswordPlaceholder')"
+              :aria-invalid="Boolean(errors.confirmPassword)"
+              :aria-describedby="errors.confirmPassword ? 'reset-confirm-password-error' : undefined"
+              @input="errors.confirmPassword = ''"
             />
             <button
               type="button"
+              class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              :aria-label="confirmPasswordToggleLabel"
+              :title="confirmPasswordToggleLabel"
+              :aria-pressed="showConfirmPassword"
               @click="showConfirmPassword = !showConfirmPassword"
-              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
             >
               <Icon v-if="showConfirmPassword" name="eyeOff" size="md" />
               <Icon v-else name="eye" size="md" />
             </button>
           </div>
+          <p
+            v-if="errors.confirmPassword"
+            id="reset-confirm-password-error"
+            class="input-error-text"
+            role="alert"
+          >
+            {{ errors.confirmPassword }}
+          </p>
         </div>
 
         <!-- Submit Button -->
         <button
           type="submit"
           :disabled="isLoading"
-          class="btn btn-primary w-full"
+          class="auth-submit btn btn-primary w-full"
         >
           <svg
             v-if="isLoading"
@@ -203,12 +245,12 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AuthLayout } from '@/components/layout'
+import AuthLayout from '@/components/auth/AuthFlowLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
 import { resetPassword } from '@/api/auth'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // ==================== Router & Stores ====================
 
@@ -240,6 +282,20 @@ const errors = reactive({
 const validationToastMessage = computed(
   () => errors.password || errors.confirmPassword || ''
 )
+
+const passwordToggleLabel = computed(() => {
+  const isChinese = String(locale.value).toLowerCase().startsWith('zh')
+  return showPassword.value
+    ? (isChinese ? '隐藏密码' : 'Hide password')
+    : (isChinese ? '显示密码' : 'Show password')
+})
+
+const confirmPasswordToggleLabel = computed(() => {
+  const isChinese = String(locale.value).toLowerCase().startsWith('zh')
+  return showConfirmPassword.value
+    ? (isChinese ? '隐藏确认密码' : 'Hide confirmation password')
+    : (isChinese ? '显示确认密码' : 'Show confirmation password')
+})
 
 watch(validationToastMessage, (value, previousValue) => {
   if (value && value !== previousValue) {

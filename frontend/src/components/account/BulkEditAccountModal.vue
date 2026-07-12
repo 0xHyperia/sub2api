@@ -293,10 +293,11 @@
                   />
                   <button
                     type="button"
+                    :aria-label="`${t('common.delete')} ${index + 1}`"
                     class="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                     @click="removeModelMapping(index)"
                   >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -384,6 +385,7 @@
               v-for="code in commonErrorCodes"
               :key="code.value"
               type="button"
+              :aria-pressed="selectedErrorCodes.includes(code.value)"
               :class="[
                 'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
                 selectedErrorCodes.includes(code.value)
@@ -407,17 +409,15 @@
               class="input flex-1"
               :placeholder="t('admin.accounts.enterErrorCode')"
               aria-labelledby="bulk-edit-custom-error-codes-label"
-              @keyup.enter="addCustomErrorCode"
+              @keyup.enter.prevent="addCustomErrorCode"
             />
-            <button type="button" class="btn btn-secondary px-3" @click="addCustomErrorCode">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+            <button
+              type="button"
+              class="btn btn-secondary px-3"
+              :aria-label="t('common.add')"
+              @click="addCustomErrorCode"
+            >
+              <Icon name="plus" size="sm" />
             </button>
           </div>
 
@@ -432,6 +432,7 @@
               <button
                 type="button"
                 class="hover:text-red-900 dark:hover:text-red-300"
+                :aria-label="`${t('common.delete')} ${code}`"
                 @click="removeErrorCode(code)"
               >
                 <Icon name="x" size="xs" class="h-3.5 w-3.5" :stroke-width="2" />
@@ -637,7 +638,7 @@
       </div>
 
       <!-- Concurrency & Priority -->
-      <div class="grid grid-cols-2 gap-4 border-t border-gray-200 pt-4 dark:border-dark-600 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-4 border-t border-gray-200 pt-4 dark:border-dark-600 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <div class="mb-3 flex items-center justify-between">
             <label
@@ -1244,6 +1245,17 @@
   </BaseDialog>
 
   <ConfirmDialog
+    :show="show && pendingErrorCode !== null"
+    :title="t('admin.accounts.customErrorCodes')"
+    :message="pendingErrorCodeWarning"
+    :confirm-text="t('common.confirm')"
+    :cancel-text="t('common.cancel')"
+    :danger="true"
+    @confirm="confirmErrorCode"
+    @cancel="pendingErrorCode = null"
+  />
+
+  <ConfirmDialog
     :show="showMixedChannelWarning"
     :title="t('admin.accounts.mixedChannelWarningTitle')"
     :message="mixedChannelWarningMessage"
@@ -1424,6 +1436,11 @@ const allowedModels = ref<string[]>([])
 const modelMappings = ref<ModelMapping[]>([])
 const selectedErrorCodes = ref<number[]>([])
 const customErrorCodeInput = ref<number | null>(null)
+const pendingErrorCode = ref<{ code: number; clearInput: boolean } | null>(null)
+const pendingErrorCodeWarning = computed(() => {
+  const pending = pendingErrorCode.value
+  return pending ? t(`admin.accounts.customErrorCodes${pending.code}Warning`) : ''
+})
 const interceptWarmupRequests = ref(false)
 const headerOverrideEnabled = ref(false)
 const headerOverrideRows = ref<HeaderOverrideRow[]>([])
@@ -1553,20 +1570,27 @@ const addPresetMapping = (from: string, to: string) => {
 const toggleErrorCode = (code: number) => {
   const index = selectedErrorCodes.value.indexOf(code)
   if (index === -1) {
-    // Adding code - check for 429/529 warning
-    if (code === 429) {
-      if (!confirm(t('admin.accounts.customErrorCodes429Warning'))) {
-        return
-      }
-    } else if (code === 529) {
-      if (!confirm(t('admin.accounts.customErrorCodes529Warning'))) {
-        return
-      }
-    }
-    selectedErrorCodes.value.push(code)
+    requestAddErrorCode(code, false)
   } else {
     selectedErrorCodes.value.splice(index, 1)
   }
+}
+
+const requestAddErrorCode = (code: number, clearInput: boolean) => {
+  if (code === 429 || code === 529) {
+    pendingErrorCode.value = { code, clearInput }
+    return
+  }
+  selectedErrorCodes.value.push(code)
+  if (clearInput) customErrorCodeInput.value = null
+}
+
+const confirmErrorCode = () => {
+  const pending = pendingErrorCode.value
+  pendingErrorCode.value = null
+  if (!pending || selectedErrorCodes.value.includes(pending.code)) return
+  selectedErrorCodes.value.push(pending.code)
+  if (pending.clearInput) customErrorCodeInput.value = null
 }
 
 const addCustomErrorCode = () => {
@@ -1579,18 +1603,7 @@ const addCustomErrorCode = () => {
     appStore.showInfo(t('admin.accounts.errorCodeExists'))
     return
   }
-  // Check for 429/529 warning
-  if (code === 429) {
-    if (!confirm(t('admin.accounts.customErrorCodes429Warning'))) {
-      return
-    }
-  } else if (code === 529) {
-    if (!confirm(t('admin.accounts.customErrorCodes529Warning'))) {
-      return
-    }
-  }
-  selectedErrorCodes.value.push(code)
-  customErrorCodeInput.value = null
+  requestAddErrorCode(code, true)
 }
 
 const removeErrorCode = (code: number) => {
@@ -1796,6 +1809,7 @@ const canPreCheck = () =>
   (targetSelectedPlatforms.value[0] === 'antigravity' || targetSelectedPlatforms.value[0] === 'anthropic')
 
 const handleClose = () => {
+  pendingErrorCode.value = null
   showMixedChannelWarning.value = false
   mixedChannelWarningMessage.value = ''
   pendingUpdatesForConfirm.value = null
@@ -1979,6 +1993,7 @@ watch(
       modelMappings.value = []
       selectedErrorCodes.value = []
       customErrorCodeInput.value = null
+      pendingErrorCode.value = null
       interceptWarmupRequests.value = false
       headerOverrideEnabled.value = false
       headerOverrideRows.value = []

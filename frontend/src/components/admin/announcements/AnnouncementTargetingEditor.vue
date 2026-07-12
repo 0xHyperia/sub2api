@@ -1,171 +1,265 @@
 <template>
-  <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800/50">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div class="text-sm font-medium text-gray-900 dark:text-white">
-          {{ t('admin.announcements.form.targetingMode') }}
-        </div>
-        <div class="mt-1 text-xs text-gray-500 dark:text-dark-400">
-          {{ mode === 'all' ? t('admin.announcements.form.targetingAll') : t('admin.announcements.form.targetingCustom') }}
-        </div>
-      </div>
+  <div
+    class="min-w-0 rounded-panel border border-outline bg-surface p-3 sm:p-4"
+    :aria-invalid="validationError ? 'true' : undefined"
+    :aria-describedby="validationError ? validationSummaryId : undefined"
+  >
+    <fieldset class="min-w-0 border-0 p-0">
+      <legend id="announcement-targeting-mode-label" class="text-sm font-medium text-foreground">
+        {{ t('admin.announcements.form.targetingMode') }}
+      </legend>
+      <p id="announcement-targeting-mode-description" class="input-hint">
+        {{ mode === 'all' ? t('admin.announcements.form.targetingAll') : t('admin.announcements.form.targetingCustom') }}
+      </p>
 
-      <div class="flex items-center gap-3">
-        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+      <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <label
+          :class="[
+            'flex min-h-touch cursor-pointer items-center gap-2 rounded-control border px-3 py-2 text-sm text-foreground transition-colors',
+            mode === 'all'
+              ? 'border-outline-strong bg-surface-subtle'
+              : 'border-outline bg-surface hover:bg-surface-subtle'
+          ]"
+        >
           <input
+            id="announcement-targeting-all"
             type="radio"
             name="announcement-targeting-mode"
             value="all"
             :checked="mode === 'all'"
+            aria-describedby="announcement-targeting-mode-description"
+            class="h-4 w-4 shrink-0 text-brand focus:ring-focus"
             @change="setMode('all')"
-            class="h-4 w-4"
           />
           {{ t('admin.announcements.form.targetingAll') }}
         </label>
-        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+        <label
+          :class="[
+            'flex min-h-touch cursor-pointer items-center gap-2 rounded-control border px-3 py-2 text-sm text-foreground transition-colors',
+            mode === 'custom'
+              ? 'border-outline-strong bg-surface-subtle'
+              : 'border-outline bg-surface hover:bg-surface-subtle'
+          ]"
+        >
           <input
+            id="announcement-targeting-custom"
             type="radio"
             name="announcement-targeting-mode"
             value="custom"
             :checked="mode === 'custom'"
+            aria-describedby="announcement-targeting-mode-description"
+            class="h-4 w-4 shrink-0 text-brand focus:ring-focus"
             @change="setMode('custom')"
-            class="h-4 w-4"
           />
           {{ t('admin.announcements.form.targetingCustom') }}
         </label>
       </div>
-    </div>
+    </fieldset>
 
-    <div v-if="mode === 'custom'" class="mt-4 space-y-4">
-      <div class="flex items-center justify-between">
-        <div class="text-sm font-medium text-gray-900 dark:text-white">
+    <section
+      v-if="mode === 'custom'"
+      class="mt-4 min-w-0 border-t border-outline pt-4"
+      aria-labelledby="announcement-targeting-rules-label"
+    >
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h3 id="announcement-targeting-rules-label" class="text-sm font-medium text-foreground">
           OR
-          <span class="ml-1 text-xs font-normal text-gray-500 dark:text-dark-400">
+          <span class="ml-1 text-xs font-normal text-foreground-subtle">
             ({{ anyOf.length }}/50)
           </span>
-        </div>
+        </h3>
         <button
           type="button"
-          class="btn btn-secondary"
+          class="btn btn-secondary w-full sm:w-auto"
           :disabled="anyOf.length >= 50"
           @click="addOrGroup"
         >
-          <Icon name="plus" size="sm" class="mr-1" />
+          <Icon name="plus" size="sm" aria-hidden="true" />
           {{ t('admin.announcements.form.addOrGroup') }}
         </button>
       </div>
 
-      <div v-if="anyOf.length === 0" class="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-dark-600 dark:text-dark-400">
+      <div
+        v-if="anyOf.length === 0"
+        class="mt-3 rounded-panel border border-dashed border-outline-strong px-3 py-4 text-sm text-foreground-muted"
+        role="status"
+      >
         {{ t('admin.announcements.form.targetingCustom') }}: {{ t('admin.announcements.form.addOrGroup') }}
       </div>
 
-      <div
-        v-for="(group, groupIndex) in anyOf"
-        :key="groupIndex"
-        class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ t('admin.announcements.form.targetingCustom') }} #{{ groupIndex + 1 }}
-              <span class="ml-2 text-xs font-normal text-gray-500 dark:text-dark-400">AND ({{ (group.all_of?.length || 0) }}/50)</span>
+      <div class="mt-3 divide-y divide-outline border-y border-outline">
+        <section
+          v-for="(group, groupIndex) in anyOf"
+          :key="groupIndex"
+          class="min-w-0 py-4"
+          role="group"
+          :aria-labelledby="`announcement-targeting-group-${groupIndex}-label`"
+          :aria-describedby="groupError(group) ? `announcement-targeting-group-${groupIndex}-error` : `announcement-targeting-group-${groupIndex}-description`"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <h4
+                :id="`announcement-targeting-group-${groupIndex}-label`"
+                class="text-sm font-medium text-foreground"
+              >
+                {{ t('admin.announcements.form.targetingCustom') }} #{{ groupIndex + 1 }}
+                <span class="ml-1 text-xs font-normal text-foreground-subtle">
+                  AND ({{ group.all_of?.length || 0 }}/50)
+                </span>
+              </h4>
+              <p
+                :id="`announcement-targeting-group-${groupIndex}-description`"
+                class="input-hint"
+              >
+                {{ t('admin.announcements.form.addAndCondition') }}
+              </p>
             </div>
-            <div class="mt-1 text-xs text-gray-500 dark:text-dark-400">
-              {{ t('admin.announcements.form.addAndCondition') }}
-            </div>
-          </div>
 
-          <button
-            type="button"
-            class="btn btn-secondary"
-            @click="removeOrGroup(groupIndex)"
-          >
-            <Icon name="trash" size="sm" class="mr-1" />
-            {{ t('common.delete') }}
-          </button>
-        </div>
-
-        <div class="mt-4 space-y-3">
-          <div
-            v-for="(cond, condIndex) in (group.all_of || [])"
-            :key="condIndex"
-            class="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-900/30"
-          >
-            <div class="flex flex-col gap-3 md:flex-row md:items-end">
-              <div class="w-full md:w-52">
-                <label class="input-label">{{ t('admin.announcements.form.conditionType') }}</label>
-                <Select
-                  :model-value="cond.type"
-                  :options="conditionTypeOptions"
-                  @update:model-value="(v) => setConditionType(groupIndex, condIndex, v as any)"
-                />
-              </div>
-
-              <div v-if="cond.type === 'subscription'" class="flex-1">
-                <label class="input-label">{{ t('admin.announcements.form.selectPackages') }}</label>
-                <GroupSelector
-                  v-model="subscriptionSelections[groupIndex][condIndex]"
-                  :groups="groups"
-                />
-              </div>
-
-              <div v-else class="flex flex-1 flex-col gap-3 sm:flex-row">
-                <div class="w-full sm:w-44">
-                  <label class="input-label">{{ t('admin.announcements.form.operator') }}</label>
-                  <Select
-                    :model-value="cond.operator"
-                    :options="balanceOperatorOptions"
-                    @update:model-value="(v) => setOperator(groupIndex, condIndex, v as any)"
-                  />
-                </div>
-                <div class="w-full sm:flex-1">
-                  <label class="input-label">{{ t('admin.announcements.form.balanceValue') }}</label>
-                  <input
-                    :value="String(cond.value ?? '')"
-                    type="number"
-                    step="any"
-                    class="input"
-                    @input="(e) => setBalanceValue(groupIndex, condIndex, (e.target as HTMLInputElement).value)"
-                  />
-                </div>
-              </div>
-
-              <div class="flex justify-end">
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  @click="removeAndCondition(groupIndex, condIndex)"
-                >
-                  <Icon name="trash" size="sm" class="mr-1" />
-                  {{ t('common.delete') }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex justify-end">
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-ghost btn-icon shrink-0 text-danger-foreground"
+              :aria-label="`${t('common.delete')} ${t('admin.announcements.form.targetingCustom')} ${groupIndex + 1}`"
+              :title="t('common.delete')"
+              @click="removeOrGroup(groupIndex)"
+            >
+              <Icon name="trash" size="sm" aria-hidden="true" />
+            </button>
+          </div>
+
+          <p
+            v-if="groupError(group)"
+            :id="`announcement-targeting-group-${groupIndex}-error`"
+            class="input-error-text"
+          >
+            {{ groupError(group) }}
+          </p>
+
+          <div class="mt-3 divide-y divide-outline rounded-panel bg-surface-subtle px-3">
+            <fieldset
+              v-for="(cond, condIndex) in group.all_of || []"
+              :key="condIndex"
+              class="min-w-0 border-0 py-3"
+              :aria-describedby="conditionError(cond) ? `announcement-targeting-condition-${groupIndex}-${condIndex}-error` : undefined"
+            >
+              <legend class="sr-only">
+                {{ t('admin.announcements.form.conditionType') }} #{{ condIndex + 1 }}
+              </legend>
+
+              <div class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-[12rem_minmax(0,1fr)_2.5rem] md:items-end">
+                <div class="min-w-0">
+                  <span
+                    :id="`announcement-targeting-condition-${groupIndex}-${condIndex}-type-label`"
+                    class="input-label"
+                  >
+                    {{ t('admin.announcements.form.conditionType') }}
+                  </span>
+                  <Select
+                    :model-value="cond.type"
+                    :options="conditionTypeOptions"
+                    :aria-labelledby="`announcement-targeting-condition-${groupIndex}-${condIndex}-type-label`"
+                    @update:model-value="(value) => setConditionType(groupIndex, condIndex, value as AnnouncementConditionType)"
+                  />
+                </div>
+
+                <div v-if="cond.type === 'subscription'" class="min-w-0">
+                  <span
+                    :id="`announcement-targeting-condition-${groupIndex}-${condIndex}-packages-label`"
+                    class="sr-only"
+                  >
+                    {{ t('admin.announcements.form.selectPackages') }}
+                  </span>
+                  <GroupSelector
+                    :model-value="cond.group_ids || []"
+                    :groups="groups"
+                    role="group"
+                    :aria-labelledby="`announcement-targeting-condition-${groupIndex}-${condIndex}-packages-label`"
+                    :aria-describedby="conditionError(cond) ? `announcement-targeting-condition-${groupIndex}-${condIndex}-error` : undefined"
+                    :aria-invalid="conditionError(cond) ? 'true' : undefined"
+                    @update:model-value="(value) => setSubscriptionGroups(groupIndex, condIndex, value)"
+                  />
+                  <p
+                    v-if="conditionError(cond)"
+                    :id="`announcement-targeting-condition-${groupIndex}-${condIndex}-error`"
+                    class="input-error-text"
+                  >
+                    {{ conditionError(cond) }}
+                  </p>
+                </div>
+
+                <div v-else class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div class="min-w-0">
+                    <span
+                      :id="`announcement-targeting-condition-${groupIndex}-${condIndex}-operator-label`"
+                      class="input-label"
+                    >
+                      {{ t('admin.announcements.form.operator') }}
+                    </span>
+                    <Select
+                      :model-value="cond.operator"
+                      :options="balanceOperatorOptions"
+                      :aria-labelledby="`announcement-targeting-condition-${groupIndex}-${condIndex}-operator-label`"
+                      @update:model-value="(value) => setOperator(groupIndex, condIndex, value as AnnouncementOperator)"
+                    />
+                  </div>
+                  <div class="min-w-0">
+                    <label
+                      :for="`announcement-targeting-condition-${groupIndex}-${condIndex}-value`"
+                      class="input-label"
+                    >
+                      {{ t('admin.announcements.form.balanceValue') }}
+                    </label>
+                    <input
+                      :id="`announcement-targeting-condition-${groupIndex}-${condIndex}-value`"
+                      :value="String(cond.value ?? '')"
+                      type="number"
+                      step="any"
+                      class="input"
+                      @input="(event) => setBalanceValue(groupIndex, condIndex, (event.target as HTMLInputElement).value)"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-icon justify-self-end text-danger-foreground md:self-end"
+                  :aria-label="`${t('common.delete')} ${t('admin.announcements.form.conditionType')} ${condIndex + 1}`"
+                  :title="t('common.delete')"
+                  @click="removeAndCondition(groupIndex, condIndex)"
+                >
+                  <Icon name="trash" size="sm" aria-hidden="true" />
+                </button>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="mt-3 flex justify-stretch sm:justify-end">
+            <button
+              type="button"
+              class="btn btn-secondary w-full sm:w-auto"
               :disabled="(group.all_of?.length || 0) >= 50"
               @click="addAndCondition(groupIndex)"
             >
-              <Icon name="plus" size="sm" class="mr-1" />
+              <Icon name="plus" size="sm" aria-hidden="true" />
               {{ t('admin.announcements.form.addAndCondition') }}
             </button>
           </div>
-        </div>
+        </section>
       </div>
 
-      <div v-if="validationError" class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-300">
+      <div
+        v-if="validationError"
+        :id="validationSummaryId"
+        class="mt-3 rounded-panel border border-danger/20 bg-danger-subtle p-3 text-sm text-danger-foreground"
+        role="alert"
+      >
         {{ validationError }}
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type {
   AdminGroup,
@@ -191,6 +285,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: AnnouncementTargeting): void
 }>()
 
+const validationSummaryId = 'announcement-targeting-validation-summary'
 const anyOf = computed(() => props.modelValue?.any_of ?? [])
 
 type Mode = 'all' | 'custom'
@@ -301,6 +396,16 @@ function setOperator(groupIndex: number, condIndex: number, op: AnnouncementOper
   })
 }
 
+function setSubscriptionGroups(groupIndex: number, condIndex: number, groupIds: number[]) {
+  updateTargeting((draft) => {
+    const condition = draft.any_of[groupIndex]?.all_of?.[condIndex]
+    if (!condition || condition.type !== 'subscription') return
+
+    condition.operator = 'in'
+    condition.group_ids = groupIds.slice()
+  })
+}
+
 function setBalanceValue(groupIndex: number, condIndex: number, raw: string) {
   const n = raw === '' ? 0 : Number(raw)
   updateTargeting((draft) => {
@@ -314,74 +419,17 @@ function setBalanceValue(groupIndex: number, condIndex: number, raw: string) {
   })
 }
 
-// We keep group_ids selection in a parallel reactive map because GroupSelector is numeric list.
-// Then we mirror it back to targeting.group_ids via a watcher.
-const subscriptionSelections = reactive<Record<number, Record<number, number[]>>>({})
-
-function ensureSelectionPath(groupIndex: number, condIndex: number) {
-  if (!subscriptionSelections[groupIndex]) subscriptionSelections[groupIndex] = {}
-  if (!subscriptionSelections[groupIndex][condIndex]) subscriptionSelections[groupIndex][condIndex] = []
+function groupError(group: AnnouncementConditionGroup) {
+  return (group.all_of?.length || 0) === 0
+    ? t('admin.announcements.form.addAndCondition')
+    : ''
 }
 
-// Sync from modelValue to subscriptionSelections (one-way: model -> local state)
-watch(
-  () => props.modelValue,
-  (v) => {
-    const groups = v?.any_of ?? []
-    for (let gi = 0; gi < groups.length; gi++) {
-      const allOf = groups[gi]?.all_of ?? []
-      for (let ci = 0; ci < allOf.length; ci++) {
-        const c = allOf[ci]
-        if (c?.type === 'subscription') {
-          ensureSelectionPath(gi, ci)
-          // Only update if different to avoid triggering unnecessary updates
-          const newIds = (c.group_ids ?? []).slice()
-          const currentIds = subscriptionSelections[gi]?.[ci] ?? []
-          if (JSON.stringify(newIds.sort()) !== JSON.stringify(currentIds.sort())) {
-            subscriptionSelections[gi][ci] = newIds
-          }
-        }
-      }
-    }
-  },
-  { immediate: true }
-)
-
-// Sync from subscriptionSelections to modelValue (one-way: local state -> model)
-// Use a debounced approach to avoid infinite loops
-let syncTimeout: ReturnType<typeof setTimeout> | null = null
-watch(
-  () => subscriptionSelections,
-  () => {
-    // Debounce the sync to avoid rapid fire updates
-    if (syncTimeout) clearTimeout(syncTimeout)
-
-    syncTimeout = setTimeout(() => {
-      // Build the new targeting state
-      const newTargeting: TargetingDraft = JSON.parse(JSON.stringify(props.modelValue ?? { any_of: [] }))
-      if (!newTargeting.any_of) newTargeting.any_of = []
-
-      const groups = newTargeting.any_of ?? []
-      for (let gi = 0; gi < groups.length; gi++) {
-        const allOf = groups[gi]?.all_of ?? []
-        for (let ci = 0; ci < allOf.length; ci++) {
-          const c = allOf[ci]
-          if (c?.type === 'subscription') {
-            ensureSelectionPath(gi, ci)
-            c.operator = 'in' as AnnouncementOperator
-            c.group_ids = (subscriptionSelections[gi]?.[ci] ?? []).slice()
-          }
-        }
-      }
-
-      // Only emit if there's an actual change (deep comparison)
-      if (JSON.stringify(props.modelValue) !== JSON.stringify(newTargeting)) {
-        emit('update:modelValue', newTargeting)
-      }
-    }, 0)
-  },
-  { deep: true }
-)
+function conditionError(condition: AnnouncementCondition) {
+  return condition.type === 'subscription' && (!condition.group_ids || condition.group_ids.length === 0)
+    ? t('admin.announcements.form.selectPackages')
+    : ''
+}
 
 const validationError = computed(() => {
   if (mode.value !== 'custom') return ''

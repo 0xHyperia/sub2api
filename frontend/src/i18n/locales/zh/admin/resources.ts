@@ -434,6 +434,7 @@ export default {
       readAt: '已读时间',
       unread: '未读',
       searchUsers: '搜索用户...',
+      emptyDescription: '创建公告后，可向用户发布服务更新与通知。',
       failedToLoad: '加载公告失败',
       failedToCreate: '创建公告失败',
       failedToUpdate: '更新公告失败',

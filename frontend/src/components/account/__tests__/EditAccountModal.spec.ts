@@ -55,6 +55,7 @@ vi.mock('vue-i18n', async () => {
 })
 
 import EditAccountModal from '../EditAccountModal.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const BaseDialogStub = defineComponent({
   name: 'BaseDialog',
@@ -302,6 +303,34 @@ function mountModal(account = buildAccount()) {
 describe('EditAccountModal', () => {
   beforeEach(() => {
     authIsSimpleMode.value = true
+  })
+
+  it('高风险错误码仅在共享确认框确认后加入，取消保持原值', async () => {
+    const wrapper = mountModal()
+    await wrapper
+      .get('[role="switch"][aria-labelledby="edit-custom-error-codes-label"]')
+      .trigger('click')
+
+    const codeButton = wrapper.findAll('button').find((button) => button.text().startsWith('429 '))
+    expect(codeButton).toBeTruthy()
+    expect(codeButton!.attributes('aria-pressed')).toBe('false')
+
+    await codeButton!.trigger('click')
+    let dialog = wrapper
+      .findAllComponents(ConfirmDialog)
+      .find((item) => item.props('show') && item.props('message') === 'admin.accounts.customErrorCodes429Warning')
+    expect(dialog).toBeTruthy()
+    dialog!.vm.$emit('cancel')
+    await wrapper.vm.$nextTick()
+    expect(codeButton!.attributes('aria-pressed')).toBe('false')
+
+    await codeButton!.trigger('click')
+    dialog = wrapper
+      .findAllComponents(ConfirmDialog)
+      .find((item) => item.props('show') && item.props('message') === 'admin.accounts.customErrorCodes429Warning')
+    dialog!.vm.$emit('confirm')
+    await wrapper.vm.$nextTick()
+    expect(codeButton!.attributes('aria-pressed')).toBe('true')
   })
 
   it('reopening the same account rehydrates the OpenAI whitelist from props', async () => {

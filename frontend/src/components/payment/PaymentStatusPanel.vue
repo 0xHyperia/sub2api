@@ -1,42 +1,54 @@
 <template>
   <div class="space-y-4">
-    <!-- ═══ Terminal States: show result, user clicks to return ═══ -->
+    <div
+      v-if="pollUnavailable && !outcome"
+      class="rounded-panel border border-warning/30 bg-warning-subtle p-3 text-warning-foreground"
+      role="status"
+    >
+      <p class="text-sm">{{ t('payment.qr.statusUnavailable') }}</p>
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm mt-3"
+        :disabled="retryingStatus"
+        @click="retryStatus"
+      >
+        <Icon name="refresh" size="sm" :class="{ 'animate-spin': retryingStatus }" />
+        {{ t('common.retry') }}
+      </button>
+    </div>
 
-    <!-- Success -->
     <template v-if="outcome === 'success'">
-      <div class="card p-6">
-        <div class="flex flex-col items-center space-y-4 py-4">
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <Icon name="check" size="lg" class="text-green-500" />
+      <div class="card p-4 sm:p-5" role="status" aria-live="polite">
+        <div class="flex flex-col items-center space-y-4 py-3">
+          <div class="flex h-14 w-14 items-center justify-center rounded-full bg-success-subtle">
+            <Icon name="check" size="lg" class="text-success-foreground" aria-hidden="true" />
           </div>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ props.orderType === 'subscription' ? t('payment.result.subscriptionSuccess') : t('payment.result.success') }}</p>
-          <div v-if="paidOrder" class="w-full rounded-xl bg-gray-50 p-4 dark:bg-dark-800">
-            <div class="space-y-2 text-sm">
-              <div class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">#{{ paidOrder.id }}</span>
-              </div>
-              <div v-if="paidOrder.out_trade_no" class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderNo') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ paidOrder.out_trade_no }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.amount') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ creditedAmountSymbol }}{{ paidOrder.amount.toFixed(2) }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(paidOrder.pay_amount, paidOrder.currency) }}</span>
-              </div>
+          <p class="text-lg font-semibold text-foreground">{{ props.orderType === 'subscription' ? t('payment.result.subscriptionSuccess') : t('payment.result.success') }}</p>
+          <dl v-if="paidOrder" class="w-full border-y border-outline px-1 text-sm">
+            <div class="flex justify-between gap-4 py-2">
+              <dt class="text-foreground-subtle">{{ t('payment.orders.orderId') }}</dt>
+              <dd class="font-medium text-foreground">#{{ paidOrder.id }}</dd>
             </div>
-          </div>
-          <div v-if="displayedCardCodes.length" class="w-full rounded-xl bg-gray-50 p-4 dark:bg-dark-800">
+            <div v-if="paidOrder.out_trade_no" class="flex min-w-0 justify-between gap-4 border-t border-outline py-2">
+              <dt class="text-foreground-subtle">{{ t('payment.orders.orderNo') }}</dt>
+              <dd class="min-w-0 break-all text-right font-medium text-foreground">{{ paidOrder.out_trade_no }}</dd>
+            </div>
+            <div class="flex justify-between gap-4 border-t border-outline py-2">
+              <dt class="text-foreground-subtle">{{ t('payment.orders.amount') }}</dt>
+              <dd class="font-medium tabular-nums text-foreground">{{ creditedAmountSymbol }}{{ paidOrder.amount.toFixed(2) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4 border-t border-outline py-2">
+              <dt class="text-foreground-subtle">{{ t('payment.orders.payAmount') }}</dt>
+              <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(paidOrder.pay_amount, paidOrder.currency) }}</dd>
+            </div>
+          </dl>
+          <div v-if="displayedCardCodes.length" class="w-full rounded-panel border border-outline bg-surface-subtle p-4">
             <div class="mb-2 flex items-center justify-between gap-3">
               <div>
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ cardCodesTitle }}</span>
-                <p v-if="cardCodesHint" class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ cardCodesHint }}</p>
+                <span class="text-sm font-medium text-foreground">{{ cardCodesTitle }}</span>
+                <p v-if="cardCodesHint" class="mt-0.5 text-xs text-foreground-subtle">{{ cardCodesHint }}</p>
               </div>
-              <button class="btn btn-secondary px-3 py-1 text-xs" type="button" @click="copyCardCodes">
+              <button class="btn btn-secondary btn-sm" type="button" @click="copyCardCodes">
                 {{ t('common.copy') }}
               </button>
             </div>
@@ -44,97 +56,88 @@
               <code
                 v-for="code in displayedCardCodes"
                 :key="code"
-                class="block break-all rounded-md bg-white px-3 py-2 text-sm text-gray-900 dark:bg-dark-900 dark:text-gray-100"
+                class="block break-all rounded-control border border-outline bg-surface px-3 py-2 text-sm text-foreground"
               >
                 {{ code }}
               </code>
             </div>
           </div>
-          <button class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
+          <button type="button" class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </template>
 
     <!-- Cancelled -->
     <template v-else-if="outcome === 'cancelled'">
-      <div class="card p-6">
+      <div class="card p-4 sm:p-5" role="status" aria-live="polite">
         <div class="flex flex-col items-center space-y-4 py-4">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700">
-            <svg class="h-8 w-8 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <Icon name="x" size="lg" class="text-foreground-subtle" aria-hidden="true" />
           </div>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ t('payment.qr.cancelled') }}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('payment.qr.cancelledDesc') }}</p>
-          <button class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
+          <p class="text-lg font-semibold text-foreground">{{ t('payment.qr.cancelled') }}</p>
+          <p class="text-center text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.cancelledDesc') }}</p>
+          <button type="button" class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </template>
 
     <!-- Expired / Failed -->
     <template v-else-if="outcome === 'expired'">
-      <div class="card p-6">
+      <div class="card p-4 sm:p-5" role="status" aria-live="polite">
         <div class="flex flex-col items-center space-y-4 py-4">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
-            <svg class="h-8 w-8 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Icon name="clock" size="lg" class="text-warning-foreground" aria-hidden="true" />
           </div>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ t('payment.qr.expired') }}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('payment.qr.expiredDesc') }}</p>
-          <button class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
+          <p class="text-lg font-semibold text-foreground">{{ t('payment.qr.expired') }}</p>
+          <p class="text-center text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.expiredDesc') }}</p>
+          <button type="button" class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </template>
 
-    <!-- ═══ Active States: QR or Popup waiting ═══ -->
-
-    <!-- QR Code Mode -->
     <template v-else-if="qrUrl">
-      <div class="card p-6">
+      <div class="card p-4 sm:p-5">
         <div class="flex flex-col items-center space-y-4">
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ scanTitle }}</p>
-          <div :class="['relative rounded-lg border-2 p-4', qrBorderClass]">
-            <canvas ref="qrCanvas" class="mx-auto"></canvas>
-            <!-- Brand logo overlay -->
+          <p class="text-lg font-semibold text-foreground">{{ scanTitle }}</p>
+          <div :class="['relative rounded-panel border bg-white p-4', qrBorderClass]">
+            <canvas ref="qrCanvas" class="mx-auto" role="img" :aria-label="scanTitle"></canvas>
             <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span :class="['rounded-full p-2 shadow ring-2 ring-white', qrLogoBgClass]">
                 <img :src="qrLogoIcon" alt="" class="h-5 w-5 brightness-0 invert" />
               </span>
             </div>
           </div>
-          <p v-if="scanHint" class="text-center text-sm text-gray-500 dark:text-gray-400">{{ scanHint }}</p>
-          <button v-if="payUrl" class="btn btn-secondary text-sm" @click="reopenPopup">
+          <p v-if="scanHint" class="text-center text-sm leading-6 text-foreground-subtle">{{ scanHint }}</p>
+          <button v-if="payUrl" type="button" class="btn btn-secondary text-sm" @click="reopenPopup">
             {{ t('payment.qr.openPayWindow') }}
           </button>
         </div>
       </div>
       <div class="card p-4 text-center">
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('payment.qr.expiresIn') }}</p>
-        <p class="mt-1 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{{ countdownDisplay }}</p>
-        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('payment.qr.waitingPayment') }}</p>
+        <p class="text-sm text-foreground-subtle">{{ t('payment.qr.expiresIn') }}</p>
+        <p class="mt-1 text-2xl font-semibold tabular-nums text-foreground" role="timer">{{ countdownDisplay }}</p>
+        <p class="mt-1 text-xs text-foreground-subtle">{{ t('payment.qr.waitingPayment') }}</p>
       </div>
-      <button class="btn btn-secondary w-full" :disabled="cancelling" @click="handleCancel">
+      <button type="button" class="btn btn-secondary w-full" :disabled="cancelling" @click="handleCancel">
         {{ cancelling ? t('common.processing') : t('payment.qr.cancelOrder') }}
       </button>
     </template>
 
-    <!-- Waiting for Popup/Redirect Mode -->
     <template v-else>
-      <div class="card p-6">
+      <div class="card p-4 sm:p-5">
         <div class="flex flex-col items-center space-y-4 py-4">
-          <div class="h-10 w-10 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('payment.qr.payInNewWindowHint') }}</p>
-          <button v-if="payUrl" class="btn btn-secondary text-sm" @click="reopenPopup">
+          <LoadingSpinner />
+          <p class="text-center text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.payInNewWindowHint') }}</p>
+          <button v-if="payUrl" type="button" class="btn btn-secondary" @click="reopenPopup">
             {{ t('payment.qr.openPayWindow') }}
           </button>
         </div>
       </div>
       <div class="card p-4 text-center">
-        <p class="mt-1 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{{ countdownDisplay }}</p>
-        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('payment.qr.waitingPayment') }}</p>
+        <p class="mt-1 text-2xl font-semibold tabular-nums text-foreground" role="timer">{{ countdownDisplay }}</p>
+        <p class="mt-1 text-xs text-foreground-subtle">{{ t('payment.qr.waitingPayment') }}</p>
       </div>
-      <button class="btn btn-secondary w-full" :disabled="cancelling" @click="handleCancel">
+      <button type="button" class="btn btn-secondary w-full" :disabled="cancelling" @click="handleCancel">
         {{ cancelling ? t('common.processing') : t('payment.qr.cancelOrder') }}
       </button>
     </template>
@@ -152,6 +155,7 @@ import { getPaymentPopupFeatures, isBuiltInAlipayMethod, isBuiltInWxpayMethod } 
 import { currencySymbol, formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import type { PaymentOrder } from '@/types/payment'
 import Icon from '@/components/icons/Icon.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import QRCode from 'qrcode'
 import alipayIcon from '@/assets/icons/alipay.svg'
 import wxpayIcon from '@/assets/icons/wxpay.svg'
@@ -181,6 +185,9 @@ const qrUrl = ref('')
 const remainingSeconds = ref(0)
 const cancelling = ref(false)
 const paidOrder = ref<PaymentOrder | null>(null)
+const pollFailureCount = ref(0)
+const pollUnavailable = ref(false)
+const retryingStatus = ref(false)
 const paymentCurrency = computed(() => normalizePaymentCurrency(props.currency))
 const creditedAmountSymbol = currencySymbol('USD')
 const localeCode = computed(() => {
@@ -199,6 +206,7 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let verifyAttempts = 0
 let lastVerifyAt = 0
+let pollingStatus = false
 
 const VERIFY_RETRY_INTERVAL_MS = 15000
 const VERIFY_RETRY_MAX_ATTEMPTS = 6
@@ -329,21 +337,43 @@ async function tryVerifyPendingOrder(order: PaymentOrder): Promise<PaymentOrder>
 }
 
 async function pollStatus() {
-  if (!props.orderId || outcome.value) return
-  let order = await paymentStore.pollOrderStatus(props.orderId)
-  if (!order) return
-  order = await tryVerifyPendingOrder(order)
-  if (isSuccessStatus(order.status)) {
-    cleanup()
-    paidOrder.value = order
-    setOutcome('success')
-    emit('success')
-  } else if (order.status === 'CANCELLED') {
-    cleanup()
-    setOutcome('cancelled')
-  } else if (order.status === 'EXPIRED' || order.status === 'FAILED') {
-    cleanup()
-    setOutcome('expired')
+  if (!props.orderId || outcome.value || pollingStatus) return
+  pollingStatus = true
+  try {
+    let order = await paymentStore.pollOrderStatus(props.orderId)
+    pollFailureCount.value = 0
+    pollUnavailable.value = false
+    if (!order) return
+    order = await tryVerifyPendingOrder(order)
+    if (isSuccessStatus(order.status)) {
+      cleanup()
+      paidOrder.value = order
+      setOutcome('success')
+      emit('success')
+    } else if (order.status === 'CANCELLED') {
+      cleanup()
+      setOutcome('cancelled')
+    } else if (order.status === 'EXPIRED' || order.status === 'FAILED') {
+      cleanup()
+      setOutcome('expired')
+    }
+  } catch {
+    pollFailureCount.value += 1
+    if (pollFailureCount.value >= 3) pollUnavailable.value = true
+  } finally {
+    pollingStatus = false
+  }
+}
+
+async function retryStatus() {
+  if (retryingStatus.value) return
+  retryingStatus.value = true
+  pollFailureCount.value = 0
+  pollUnavailable.value = false
+  try {
+    await pollStatus()
+  } finally {
+    retryingStatus.value = false
   }
 }
 

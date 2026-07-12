@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 
 import TokenUsageTrend from '../TokenUsageTrend.vue'
 
@@ -7,6 +8,18 @@ const messages: Record<string, string> = {
   'admin.dashboard.tokenUsageTrend': 'Token Usage Trend',
   'admin.dashboard.noDataAvailable': 'No data available',
 }
+
+const themeState = vi.hoisted(() => ({
+  isDark: null as unknown as { value: boolean },
+}))
+
+vi.mock('@/composables/useTheme', async () => {
+  const { ref } = await import('vue')
+  themeState.isDark = ref(false)
+  return {
+    useTheme: () => ({ isDark: themeState.isDark }),
+  }
+})
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
@@ -21,11 +34,15 @@ vi.mock('vue-i18n', async () => {
 vi.mock('vue-chartjs', () => ({
   Line: {
     props: ['data', 'options'],
-    template: '<div class="chart-data">{{ JSON.stringify(data) }}</div>',
+    template: '<div><div class="chart-data">{{ JSON.stringify(data) }}</div><div class="chart-options">{{ JSON.stringify(options) }}</div></div>',
   },
 }))
 
 describe('TokenUsageTrend', () => {
+  beforeEach(() => {
+    themeState.isDark.value = false
+  })
+
   it('calculates cache hit rate against all prompt tokens', () => {
     const wrapper = mount(TokenUsageTrend, {
       props: {
@@ -116,5 +133,38 @@ describe('TokenUsageTrend', () => {
     )
     // Hit rate = 500 / (200 + 500 + 300) * 100 = 50%
     expect(hitRateDataset.data[0]).toBe(50)
+  })
+
+  it('updates chart colors when the resolved theme changes', async () => {
+    const wrapper = mount(TokenUsageTrend, {
+      props: {
+        trendData: [
+          {
+            date: '2026-05-08',
+            requests: 1,
+            input_tokens: 100,
+            output_tokens: 50,
+            cache_creation_tokens: 0,
+            cache_read_tokens: 0,
+            cost: 0.01,
+            actual_cost: 0.005,
+          },
+        ],
+      },
+      global: {
+        stubs: {
+          LoadingSpinner: true,
+        },
+      },
+    })
+
+    const lightOptions = JSON.parse(wrapper.get('.chart-options').text())
+    expect(lightOptions.scales.x.ticks.color).toBe('#374151')
+
+    themeState.isDark.value = true
+    await nextTick()
+
+    const darkOptions = JSON.parse(wrapper.get('.chart-options').text())
+    expect(darkOptions.scales.x.ticks.color).toBe('#e5e7eb')
   })
 })

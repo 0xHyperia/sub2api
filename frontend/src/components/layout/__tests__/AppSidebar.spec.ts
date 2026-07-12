@@ -30,3 +30,36 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
 })
+
+describe('AppSidebar admin shell behavior', () => {
+  it('keeps collapsed navigation groups reachable by expanding the sidebar', () => {
+    expect(componentSource).toContain("resolveGroupClickAction(sidebarCollapsed.value, item.expandOnly)")
+    expect(componentSource).toContain("if (action === 'expand-sidebar')")
+    expect(componentSource).toContain('appStore.setSidebarCollapsed(false)')
+    expect(componentSource).toContain('expandedGroups.value.add(item.path)')
+  })
+
+  it('implements the mobile sidebar as an inert, dismissible drawer', () => {
+    expect(componentSource).toContain(':inert="!isDesktopViewport && !mobileOpen"')
+    expect(componentSource).toContain('class="drawer-backdrop"')
+    expect(componentSource).toContain("event.key === 'Escape'")
+    expect(componentSource).toContain("document.body.style.overflow = 'hidden'")
+    expect(componentSource).toContain('previousActiveElement.focus()')
+    expect(componentSource).toContain('@keydown="handleDrawerKeydown"')
+  })
+
+  it('organizes admin navigation by domain and removes the personal nav block', () => {
+    for (const section of ['overview', 'resources', 'observability', 'commerce', 'communication', 'system']) {
+      expect(componentSource).toContain(`id: '${section}'`)
+    }
+    expect(componentSource).not.toContain('personalNavItems')
+  })
+
+  it('keeps collapsed icon navigation named and removes the hidden brand link from focus', () => {
+    expect(componentSource).toContain(':inert="sidebarCollapsed"')
+    expect(componentSource.match(/:aria-label="sidebarCollapsed \? item\.label : undefined"/g)).toHaveLength(3)
+    expect(componentSource).toContain('focus-visible:ring-offset-surface;')
+    expect(componentSource).toContain('.sidebar-brand-title {')
+    expect(componentSource).toContain('rounded-sm text-sm font-semibold')
+  })
+})

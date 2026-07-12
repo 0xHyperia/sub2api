@@ -2,13 +2,10 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <!-- Top Toolbar: Left (search + filters) / Right (actions) -->
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <!-- Left: Fuzzy user search + filters (wrap to multiple lines) -->
+        <div class="subscription-toolbar flex flex-wrap items-start justify-between gap-3">
           <div class="flex flex-1 flex-wrap items-center gap-3">
-            <!-- User Search -->
             <div
-              class="relative w-full sm:w-64"
+              class="relative w-full md:w-64"
               data-filter-user-search
             >
               <Icon
@@ -18,11 +15,19 @@
               />
               <input
                 v-model="filterUserKeyword"
-                type="text"
+                type="search"
                 :placeholder="t('admin.users.searchUsers')"
+                :aria-label="t('admin.users.searchUsers')"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls="subscription-filter-users"
+                :aria-expanded="showFilterUserDropdown"
+                :aria-activedescendant="filterUserActiveIndex >= 0 ? `subscription-filter-user-${filterUserResults[filterUserActiveIndex]?.id}` : undefined"
+                autocomplete="off"
                 class="input pl-10 pr-8"
                 @input="debounceSearchFilterUsers"
                 @focus="showFilterUserDropdown = true"
+                @keydown="handleFilterUserKeydown"
               />
               <button
                 v-if="selectedFilterUser"
@@ -30,6 +35,7 @@
                 type="button"
                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 :title="t('common.clear')"
+                :aria-label="t('common.clear')"
               >
                 <Icon name="x" size="sm" :stroke-width="2" />
               </button>
@@ -37,7 +43,9 @@
               <!-- User Dropdown -->
               <div
                 v-if="showFilterUserDropdown && (filterUserResults.length > 0 || filterUserKeyword)"
-                class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                id="subscription-filter-users"
+                class="subscription-menu absolute z-50 mt-1 max-h-60 w-full overflow-auto"
+                role="listbox"
               >
                 <div
                   v-if="filterUserLoading"
@@ -54,9 +62,14 @@
                 <button
                   v-for="user in filterUserResults"
                   :key="user.id"
+                  :id="`subscription-filter-user-${user.id}`"
                   type="button"
+                  tabindex="-1"
                   @click="selectFilterUser(user)"
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  @mouseenter="filterUserActiveIndex = filterUserResults.indexOf(user)"
+                  class="w-full px-3 py-2 text-left text-sm"
+                  role="option"
+                  :aria-selected="filterUserResults[filterUserActiveIndex]?.id === user.id"
                 >
                   <span class="font-medium text-gray-900 dark:text-white">{{ user.email }}</span>
                   <span class="ml-2 text-gray-500 dark:text-gray-400">#{{ user.id }}</span>
@@ -91,22 +104,31 @@
             </div>
           </div>
 
-          <!-- Right: Actions -->
-          <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
+          <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
             <button
+              type="button"
               @click="loadSubscriptions"
               :disabled="loading"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2.5"
               :title="t('common.refresh')"
+              :aria-label="t('common.refresh')"
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
             </button>
             <!-- Column Settings Dropdown -->
             <div class="relative" ref="columnDropdownRef">
               <button
-                @click="showColumnDropdown = !showColumnDropdown"
+                :id="columnMenuTriggerId"
+                ref="columnMenuTriggerRef"
+                type="button"
+                @click="toggleColumnMenu"
+                @keydown="handleColumnTriggerKeydown"
                 class="btn btn-secondary px-2 md:px-3"
                 :title="t('admin.users.columnSettings')"
+                :aria-label="t('admin.users.columnSettings')"
+                aria-haspopup="menu"
+                :aria-expanded="showColumnDropdown"
+                :aria-controls="showColumnDropdown ? columnMenuId : undefined"
               >
                 <svg class="h-4 w-4 md:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" />
@@ -116,7 +138,12 @@
               <!-- Dropdown menu -->
               <div
                 v-if="showColumnDropdown"
-                class="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                :id="columnMenuId"
+                ref="columnMenuRef"
+                class="subscription-menu absolute right-0 z-50 mt-1 w-48 origin-top-right"
+                role="menu"
+                :aria-labelledby="columnMenuTriggerId"
+                @keydown="handleColumnMenuKeydown"
               >
                 <div class="p-2">
                   <!-- User column mode selection -->
@@ -125,15 +152,21 @@
                       {{ t('admin.subscriptions.columns.user') }}
                     </div>
                     <button
+                      type="button"
                       @click="setUserColumnMode('email')"
-                      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                      class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                      role="menuitemradio"
+                      :aria-checked="userColumnMode === 'email'"
                     >
                       <span>{{ t('admin.users.columns.email') }}</span>
                       <Icon v-if="userColumnMode === 'email'" name="check" size="sm" class="text-primary-500" />
                     </button>
                     <button
+                      type="button"
                       @click="setUserColumnMode('username')"
-                      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                      class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                      role="menuitemradio"
+                      :aria-checked="userColumnMode === 'username'"
                     >
                       <span>{{ t('admin.users.columns.username') }}</span>
                       <Icon v-if="userColumnMode === 'username'" name="check" size="sm" class="text-primary-500" />
@@ -143,8 +176,11 @@
                   <button
                     v-for="col in toggleableColumns"
                     :key="col.key"
+                    type="button"
                     @click="toggleColumn(col.key)"
-                    class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                    class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                    role="menuitemcheckbox"
+                    :aria-checked="isColumnVisible(col.key)"
                   >
                     <span>{{ col.label }}</span>
                     <Icon v-if="isColumnVisible(col.key)" name="check" size="sm" class="text-primary-500" />
@@ -153,14 +189,16 @@
               </div>
             </div>
             <button
+              type="button"
               @click="showGuideModal = true"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2.5"
               :title="t('admin.subscriptions.guide.showGuide')"
+              :aria-label="t('admin.subscriptions.guide.showGuide')"
             >
               <Icon name="questionCircle" size="md" />
             </button>
-            <button @click="showAssignModal = true" class="btn btn-primary">
-              <Icon name="plus" size="md" class="mr-2" />
+            <button type="button" @click="showAssignModal = true" class="btn btn-primary">
+              <Icon name="plus" size="sm" />
               {{ t('admin.subscriptions.assignSubscription') }}
             </button>
           </div>
@@ -180,10 +218,8 @@
         >
           <template #cell-user="{ row }">
             <div class="flex items-center gap-2">
-              <div
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30"
-              >
-                <span class="text-sm font-medium text-primary-700 dark:text-primary-300">
+              <div class="subscription-avatar">
+                <span class="text-sm font-medium">
                   {{ userColumnMode === 'email'
                     ? (row.user?.email?.charAt(0).toUpperCase() || '?')
                     : (row.user?.username?.charAt(0).toUpperCase() || '?')
@@ -331,10 +367,10 @@
                   !row.group?.weekly_limit_usd &&
                   !row.group?.monthly_limit_usd
                 "
-                class="flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 dark:from-emerald-900/20 dark:to-teal-900/20"
+                class="unlimited-state"
               >
-                <span class="text-lg text-emerald-600 dark:text-emerald-400">∞</span>
-                <span class="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                <span class="text-lg text-gray-500 dark:text-gray-400">∞</span>
+                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
                   {{ t('admin.subscriptions.unlimited') }}
                 </span>
               </div>
@@ -381,36 +417,44 @@
             <div class="flex items-center gap-1">
               <button
                 v-if="row.status === 'active' || row.status === 'expired'"
+                type="button"
                 @click="handleExtend(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                class="subscription-action"
+                :title="t('admin.subscriptions.adjust')"
+                :aria-label="`${t('admin.subscriptions.adjust')}: ${row.user?.email || row.user_id}`"
               >
                 <Icon name="calendar" size="sm" />
-                <span class="text-xs">{{ t('admin.subscriptions.adjust') }}</span>
               </button>
               <button
                 v-if="row.status === 'active'"
+                type="button"
                 @click="handleResetQuota(row)"
                 :disabled="resettingQuota && resettingSubscription?.id === row.id"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-900/20 dark:hover:text-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
+                class="subscription-action subscription-action-warning"
+                :title="t('admin.subscriptions.resetQuota')"
+                :aria-label="`${t('admin.subscriptions.resetQuota')}: ${row.user?.email || row.user_id}`"
               >
                 <Icon name="refresh" size="sm" />
-                <span class="text-xs">{{ t('admin.subscriptions.resetQuota') }}</span>
               </button>
               <button
                 v-if="row.status === 'active'"
+                type="button"
                 @click="handleRevoke(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                class="subscription-action subscription-action-danger"
+                :title="t('admin.subscriptions.revoke')"
+                :aria-label="`${t('admin.subscriptions.revoke')}: ${row.user?.email || row.user_id}`"
               >
                 <Icon name="ban" size="sm" />
-                <span class="text-xs">{{ t('admin.subscriptions.revoke') }}</span>
               </button>
               <button
                 v-if="row.status === 'revoked'"
+                type="button"
                 @click="handleRestore(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                class="subscription-action"
+                :title="t('admin.subscriptions.restore')"
+                :aria-label="`${t('admin.subscriptions.restore')}: ${row.user?.email || row.user_id}`"
               >
                 <Icon name="refresh" size="sm" />
-                <span class="text-xs">{{ t('admin.subscriptions.restore') }}</span>
               </button>
             </div>
           </template>
@@ -452,28 +496,39 @@
         class="space-y-5"
       >
         <div>
-          <label class="input-label">{{ t('admin.subscriptions.form.user') }}</label>
+          <label for="subscription-user-search" class="input-label">{{ t('admin.subscriptions.form.user') }}</label>
           <div class="relative" data-assign-user-search>
             <input
+              id="subscription-user-search"
               v-model="userSearchKeyword"
-              type="text"
+              type="search"
               class="input pr-8"
               :placeholder="t('admin.usage.searchUserPlaceholder')"
-              @input="debounceSearchUsers"
-              @focus="showUserDropdown = true"
+              role="combobox"
+                aria-autocomplete="list"
+                aria-controls="subscription-assign-users"
+                :aria-expanded="showUserDropdown"
+                :aria-activedescendant="userSearchActiveIndex >= 0 ? `subscription-assign-user-${userSearchResults[userSearchActiveIndex]?.id}` : undefined"
+                autocomplete="off"
+                @input="debounceSearchUsers"
+                @focus="showUserDropdown = true"
+                @keydown="handleUserSearchKeydown"
             />
             <button
               v-if="selectedUser"
               @click="clearUserSelection"
               type="button"
               class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              :aria-label="t('common.clear')"
             >
               <Icon name="x" size="sm" :stroke-width="2" />
             </button>
             <!-- User Dropdown -->
             <div
               v-if="showUserDropdown && (userSearchResults.length > 0 || userSearchKeyword)"
-              class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+              id="subscription-assign-users"
+              class="subscription-menu absolute z-50 mt-1 max-h-60 w-full overflow-auto"
+              role="listbox"
             >
               <div
                 v-if="userSearchLoading"
@@ -490,9 +545,14 @@
               <button
                 v-for="user in userSearchResults"
                 :key="user.id"
+                :id="`subscription-assign-user-${user.id}`"
                 type="button"
+                tabindex="-1"
                 @click="selectUser(user)"
-                class="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                @mouseenter="userSearchActiveIndex = userSearchResults.indexOf(user)"
+                class="w-full px-3 py-2 text-left text-sm"
+                role="option"
+                :aria-selected="userSearchResults[userSearchActiveIndex]?.id === user.id"
               >
                 <span class="font-medium text-gray-900 dark:text-white">{{ user.email }}</span>
                 <span class="ml-2 text-gray-500 dark:text-gray-400">#{{ user.id }}</span>
@@ -531,8 +591,8 @@
           <p class="input-hint">{{ t('admin.subscriptions.groupHint') }}</p>
         </div>
         <div>
-          <label class="input-label">{{ t('admin.subscriptions.form.validityDays') }}</label>
-          <input v-model.number="assignForm.validity_days" type="number" min="1" class="input" />
+          <label for="subscription-validity-days" class="input-label">{{ t('admin.subscriptions.form.validityDays') }}</label>
+          <input id="subscription-validity-days" v-model.number="assignForm.validity_days" type="number" min="1" class="input" />
           <p class="input-hint">{{ t('admin.subscriptions.validityHint') }}</p>
         </div>
       </form>
@@ -586,7 +646,7 @@
         @submit.prevent="handleExtendSubscription"
         class="space-y-5"
       >
-        <div class="rounded-lg bg-gray-50 p-4 dark:bg-dark-700">
+        <div class="subscription-context">
           <p class="text-sm text-gray-600 dark:text-gray-400">
             {{ t('admin.subscriptions.adjustingFor') }}
             <span class="font-medium text-gray-900 dark:text-white">{{
@@ -611,10 +671,11 @@
           </p>
         </div>
         <div>
-          <label class="input-label">{{ t('admin.subscriptions.form.adjustDays') }}</label>
+          <label for="subscription-adjust-days" class="input-label">{{ t('admin.subscriptions.form.adjustDays') }}</label>
           <div class="flex items-center gap-2">
             <input
               v-model.number="extendForm.days"
+              id="subscription-adjust-days"
               type="number"
               required
               class="input text-center"
@@ -674,35 +735,30 @@
       @confirm="confirmResetQuota"
       @cancel="showResetQuotaConfirm = false"
     />
-    <!-- Subscription Guide Modal -->
-    <teleport to="body">
-      <transition name="modal">
-        <div v-if="showGuideModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @mousedown.self="showGuideModal = false">
-          <div class="fixed inset-0 bg-black/50" @click="showGuideModal = false"></div>
-          <div class="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl dark:bg-dark-800">
-            <button type="button" class="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" @click="showGuideModal = false">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-
-            <h2 class="mb-4 text-lg font-bold text-gray-900 dark:text-white">{{ t('admin.subscriptions.guide.title') }}</h2>
+    <BaseDialog
+      :show="showGuideModal"
+      :title="t('admin.subscriptions.guide.title')"
+      width="wide"
+      @close="showGuideModal = false"
+    >
             <p class="mb-5 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.subscriptions.guide.subtitle') }}</p>
 
             <!-- Step 1 -->
             <div class="mb-5">
               <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">1</span>
+                <span class="guide-step-number">1</span>
                 {{ t('admin.subscriptions.guide.step1.title') }}
               </h3>
-              <ol class="ml-8 list-decimal space-y-1 text-sm text-gray-600 dark:text-gray-300">
+              <ol class="ml-5 list-decimal space-y-1 text-sm text-gray-600 dark:text-gray-300 sm:ml-8">
                 <li>{{ t('admin.subscriptions.guide.step1.line1') }}</li>
                 <li>{{ t('admin.subscriptions.guide.step1.line2') }}</li>
                 <li>{{ t('admin.subscriptions.guide.step1.line3') }}</li>
               </ol>
-              <div class="ml-8 mt-2">
+              <div class="ml-0 mt-2 sm:ml-8">
                 <router-link
                   to="/admin/groups"
                   @click="showGuideModal = false"
-                  class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                  class="guide-link"
                 >
                   {{ t('admin.subscriptions.guide.step1.link') }}
                   <Icon name="arrowRight" size="xs" />
@@ -713,10 +769,10 @@
             <!-- Step 2 -->
             <div class="mb-5">
               <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">2</span>
+                <span class="guide-step-number">2</span>
                 {{ t('admin.subscriptions.guide.step2.title') }}
               </h3>
-              <ol class="ml-8 list-decimal space-y-1 text-sm text-gray-600 dark:text-gray-300">
+              <ol class="ml-5 list-decimal space-y-1 text-sm text-gray-600 dark:text-gray-300 sm:ml-8">
                 <li>{{ t('admin.subscriptions.guide.step2.line1') }}</li>
                 <li>{{ t('admin.subscriptions.guide.step2.line2') }}</li>
                 <li>{{ t('admin.subscriptions.guide.step2.line3') }}</li>
@@ -726,10 +782,10 @@
             <!-- Step 3 -->
             <div class="mb-5">
               <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">3</span>
+                <span class="guide-step-number">3</span>
                 {{ t('admin.subscriptions.guide.step3.title') }}
               </h3>
-              <div class="ml-8 overflow-hidden rounded-lg border border-gray-200 dark:border-dark-600">
+              <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-dark-600 sm:ml-8">
                 <table class="w-full text-sm">
                   <tbody>
                     <tr v-for="(row, i) in guideActionRows" :key="i" class="border-b border-gray-100 dark:border-dark-700 last:border-0">
@@ -742,17 +798,16 @@
             </div>
 
             <!-- Tip -->
-            <div class="rounded-lg bg-blue-50 p-3 text-xs text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+            <div class="guide-tip">
               {{ t('admin.subscriptions.guide.tip') }}
             </div>
 
-            <div class="mt-4 text-right">
-              <button type="button" class="btn btn-primary btn-sm" @click="showGuideModal = false">{{ t('common.close') }}</button>
-            </div>
-          </div>
+      <template #footer>
+        <div class="flex justify-end">
+          <button type="button" class="btn btn-secondary" @click="showGuideModal = false">{{ t('common.close') }}</button>
         </div>
-      </transition>
-    </teleport>
+      </template>
+    </BaseDialog>
   </AppLayout>
 </template>
 
@@ -766,6 +821,7 @@ import type { SimpleUser } from '@/api/admin/usage'
 import type { Column } from '@/components/common/types'
 import { formatDateOnly } from '@/utils/format'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
+import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -904,8 +960,18 @@ const columns = computed<Column[]>(() =>
 )
 
 // Column dropdown state
-const showColumnDropdown = ref(false)
 const columnDropdownRef = ref<HTMLElement | null>(null)
+const {
+  open: showColumnDropdown,
+  triggerRef: columnMenuTriggerRef,
+  menuRef: columnMenuRef,
+  triggerId: columnMenuTriggerId,
+  menuId: columnMenuId,
+  closeMenu: closeColumnMenu,
+  toggleMenu: toggleColumnMenu,
+  handleTriggerKeydown: handleColumnTriggerKeydown,
+  handleMenuKeydown: handleColumnMenuKeydown,
+} = useDropdownMenu('admin-subscriptions-columns')
 
 // Filter options
 const statusOptions = computed(() => [
@@ -926,6 +992,7 @@ const filterUserResults = ref<SimpleUser[]>([])
 const filterUserLoading = ref(false)
 const showFilterUserDropdown = ref(false)
 const selectedFilterUser = ref<SimpleUser | null>(null)
+const filterUserActiveIndex = ref(-1)
 let filterUserSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 // User search state
@@ -934,6 +1001,7 @@ const userSearchResults = ref<SimpleUser[]>([])
 const userSearchLoading = ref(false)
 const showUserDropdown = ref(false)
 const selectedUser = ref<SimpleUser | null>(null)
+const userSearchActiveIndex = ref(-1)
 let userSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const filters = reactive({
@@ -1064,6 +1132,8 @@ const loadGroups = async () => {
 
 // Toolbar user filter search with debounce
 const debounceSearchFilterUsers = () => {
+  showFilterUserDropdown.value = true
+  filterUserActiveIndex.value = -1
   if (filterUserSearchTimeout) {
     clearTimeout(filterUserSearchTimeout)
   }
@@ -1082,15 +1152,18 @@ const searchFilterUsers = async () => {
 
   if (!keyword) {
     filterUserResults.value = []
+    filterUserActiveIndex.value = -1
     return
   }
 
   filterUserLoading.value = true
   try {
     filterUserResults.value = await adminAPI.usage.searchUsers(keyword)
+    filterUserActiveIndex.value = filterUserResults.value.length > 0 ? 0 : -1
   } catch (error) {
     console.error('Failed to search users:', error)
     filterUserResults.value = []
+    filterUserActiveIndex.value = -1
   } finally {
     filterUserLoading.value = false
   }
@@ -1100,6 +1173,7 @@ const selectFilterUser = (user: SimpleUser) => {
   selectedFilterUser.value = user
   filterUserKeyword.value = user.email
   showFilterUserDropdown.value = false
+  filterUserActiveIndex.value = -1
   filters.user_id = user.id
   applyFilters()
 }
@@ -1109,12 +1183,15 @@ const clearFilterUser = () => {
   filterUserKeyword.value = ''
   filterUserResults.value = []
   showFilterUserDropdown.value = false
+  filterUserActiveIndex.value = -1
   filters.user_id = null
   applyFilters()
 }
 
 // User search with debounce
 const debounceSearchUsers = () => {
+  showUserDropdown.value = true
+  userSearchActiveIndex.value = -1
   if (userSearchTimeout) {
     clearTimeout(userSearchTimeout)
   }
@@ -1132,15 +1209,18 @@ const searchUsers = async () => {
 
   if (!keyword) {
     userSearchResults.value = []
+    userSearchActiveIndex.value = -1
     return
   }
 
   userSearchLoading.value = true
   try {
     userSearchResults.value = await adminAPI.usage.searchUsers(keyword)
+    userSearchActiveIndex.value = userSearchResults.value.length > 0 ? 0 : -1
   } catch (error) {
     console.error('Failed to search users:', error)
     userSearchResults.value = []
+    userSearchActiveIndex.value = -1
   } finally {
     userSearchLoading.value = false
   }
@@ -1150,6 +1230,7 @@ const selectUser = (user: SimpleUser) => {
   selectedUser.value = user
   userSearchKeyword.value = user.email
   showUserDropdown.value = false
+  userSearchActiveIndex.value = -1
   assignForm.user_id = user.id
 }
 
@@ -1157,7 +1238,63 @@ const clearUserSelection = () => {
   selectedUser.value = null
   userSearchKeyword.value = ''
   userSearchResults.value = []
+  showUserDropdown.value = false
+  userSearchActiveIndex.value = -1
   assignForm.user_id = null
+}
+
+const moveActiveIndex = (current: number, length: number, direction: 1 | -1): number => {
+  if (length === 0) return -1
+  if (current < 0) return direction === 1 ? 0 : length - 1
+  return (current + direction + length) % length
+}
+
+const handleFilterUserKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    showFilterUserDropdown.value = true
+    filterUserActiveIndex.value = moveActiveIndex(
+      filterUserActiveIndex.value,
+      filterUserResults.value.length,
+      event.key === 'ArrowDown' ? 1 : -1
+    )
+    return
+  }
+  if (event.key === 'Enter' && filterUserActiveIndex.value >= 0) {
+    event.preventDefault()
+    const user = filterUserResults.value[filterUserActiveIndex.value]
+    if (user) selectFilterUser(user)
+    return
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    showFilterUserDropdown.value = false
+    filterUserActiveIndex.value = -1
+  }
+}
+
+const handleUserSearchKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    showUserDropdown.value = true
+    userSearchActiveIndex.value = moveActiveIndex(
+      userSearchActiveIndex.value,
+      userSearchResults.value.length,
+      event.key === 'ArrowDown' ? 1 : -1
+    )
+    return
+  }
+  if (event.key === 'Enter' && userSearchActiveIndex.value >= 0) {
+    event.preventDefault()
+    const user = userSearchResults.value[userSearchActiveIndex.value]
+    if (user) selectUser(user)
+    return
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    showUserDropdown.value = false
+    userSearchActiveIndex.value = -1
+  }
 }
 
 const handlePageChange = (page: number) => {
@@ -1420,7 +1557,7 @@ const handleClickOutside = (event: MouseEvent) => {
   if (!target.closest('[data-assign-user-search]')) showUserDropdown.value = false
   if (!target.closest('[data-filter-user-search]')) showFilterUserDropdown.value = false
   if (columnDropdownRef.value && !columnDropdownRef.value.contains(target)) {
-    showColumnDropdown.value = false
+    void closeColumnMenu()
   }
 }
 
@@ -1457,6 +1594,150 @@ onUnmounted(() => {
 }
 
 .reset-info {
-  @apply flex items-center gap-1 pl-12 text-[10px] text-blue-600 dark:text-blue-400;
+  @apply flex items-center gap-1 pl-12 text-[10px] text-gray-500 dark:text-gray-400;
+}
+
+.subscription-toolbar {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.subscription-menu {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface-raised, #fff);
+  box-shadow: var(--ui-shadow-lg, 0 14px 34px rgba(15, 23, 42, 0.14));
+}
+
+.subscription-menu button {
+  min-height: 36px;
+  border-radius: 6px;
+}
+
+.subscription-menu button:hover {
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.subscription-menu button:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: -2px;
+}
+
+.subscription-avatar {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.unlimited-state,
+.subscription-context,
+.guide-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.subscription-context {
+  display: block;
+}
+
+.guide-tip {
+  font-size: 12px;
+}
+
+.subscription-action {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.subscription-action:hover {
+  color: var(--ui-text, #0f172a);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.subscription-action-warning:hover {
+  color: rgb(var(--color-warning-foreground, 180 83 9));
+  background: rgb(var(--color-warning-subtle, 255 251 235));
+}
+
+.subscription-action-danger:hover {
+  color: rgb(var(--color-danger-foreground, 185 28 28));
+  background: rgb(var(--color-danger-subtle, 254 242 242));
+}
+
+.subscription-action:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 1px;
+}
+
+.subscription-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.guide-step-number {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  background: var(--ui-surface-subtle, #f4f7fb);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.guide-link {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 4px;
+  color: var(--ui-text, #0f172a);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.guide-link:hover {
+  text-decoration: underline;
+}
+
+.guide-link:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .subscription-toolbar {
+    padding: 10px;
+  }
 }
 </style>

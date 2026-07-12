@@ -2,14 +2,22 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="affiliate-toolbar flex flex-wrap items-center gap-3">
           <div class="relative w-full md:w-80">
             <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input v-model="filters.search" type="text" class="input pl-10" :placeholder="t('admin.affiliates.records.searchPlaceholder')" @input="debounceLoad" />
+            <input
+              v-model="filters.search"
+              type="search"
+              class="input pl-10"
+              :placeholder="t('admin.affiliates.records.searchPlaceholder')"
+              :aria-label="t('admin.affiliates.records.searchPlaceholder')"
+              autocomplete="off"
+              @input="debounceLoad"
+            />
           </div>
-          <input v-model="filters.start_at" type="date" class="input w-full sm:w-44" :title="t('admin.affiliates.records.startAt')" @change="reloadFromFirstPage" />
-          <input v-model="filters.end_at" type="date" class="input w-full sm:w-44" :title="t('admin.affiliates.records.endAt')" @change="reloadFromFirstPage" />
-          <button class="btn btn-secondary px-2 md:px-3" :disabled="loading" :title="t('common.refresh')" @click="loadRecords">
+          <input v-model="filters.start_at" type="date" class="input w-full sm:w-44" :title="t('admin.affiliates.records.startAt')" :aria-label="t('admin.affiliates.records.startAt')" @change="reloadFromFirstPage" />
+          <input v-model="filters.end_at" type="date" class="input w-full sm:w-44" :title="t('admin.affiliates.records.endAt')" :aria-label="t('admin.affiliates.records.endAt')" @change="reloadFromFirstPage" />
+          <button type="button" class="btn btn-secondary px-2.5" :disabled="loading" :title="t('common.refresh')" :aria-label="t('common.refresh')" @click="loadRecords">
             <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
           </button>
         </div>
@@ -120,22 +128,22 @@
       @close="overviewDialog = false"
     >
       <div v-if="overviewLoading" class="flex justify-center py-8">
-        <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+        <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" role="status" :aria-label="t('common.loading')"></div>
       </div>
       <div v-else-if="selectedOverview" class="space-y-4">
-        <div class="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800">
+        <div class="affiliate-identity">
           <div class="font-mono text-sm text-gray-900 dark:text-white">#{{ selectedOverview.user_id }}</div>
           <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ selectedOverview.email || '-' }}</div>
           <div class="mt-0.5 text-sm text-gray-500 dark:text-dark-400">{{ selectedOverview.username || '-' }}</div>
         </div>
-        <div class="grid gap-3 sm:grid-cols-2">
+        <dl class="affiliate-overview-grid">
           <OverviewStat :label="t('admin.affiliates.overview.affCode')" :value="selectedOverview.aff_code || '-'" mono />
           <OverviewStat :label="t('admin.affiliates.overview.rebateRate')" :value="formatPercent(selectedOverview.rebate_rate_percent)" />
           <OverviewStat :label="t('admin.affiliates.overview.invitedCount')" :value="String(selectedOverview.invited_count)" />
           <OverviewStat :label="t('admin.affiliates.overview.rebatedInviteeCount')" :value="String(selectedOverview.rebated_invitee_count)" />
           <OverviewStat :label="t('admin.affiliates.overview.availableQuota')" :value="'$' + formatAmount(selectedOverview.available_quota)" />
           <OverviewStat :label="t('admin.affiliates.overview.historyQuota')" :value="'$' + formatAmount(selectedOverview.history_quota)" />
-        </div>
+        </dl>
       </div>
     </BaseDialog>
   </AppLayout>
@@ -343,8 +351,8 @@ const UserCell = defineComponent({
     return () => h('div', { class: 'space-y-0.5' }, [
       h('div', { class: 'font-mono text-sm text-gray-900 dark:text-white' }, `#${cellProps.id}`),
       h(cellProps.clickable ? 'button' : 'div', {
-        class: cellProps.clickable
-          ? 'max-w-56 truncate text-left text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline dark:text-primary-400 dark:hover:text-primary-300'
+      class: cellProps.clickable
+          ? 'affiliate-user-link max-w-56 truncate text-left text-sm font-medium'
           : 'max-w-56 truncate text-sm text-gray-700 dark:text-gray-300',
         type: cellProps.clickable ? 'button' : undefined,
         onClick: cellProps.clickable ? () => emit('open', cellProps.id) : undefined,
@@ -362,7 +370,7 @@ const AmountText = defineComponent({
   setup(amountProps) {
     return () => h('span', {
       class: amountProps.strong
-        ? 'text-sm font-semibold text-emerald-600 dark:text-emerald-400'
+        ? 'text-sm font-semibold text-gray-900 dark:text-white'
         : 'text-sm text-gray-900 dark:text-white',
     }, `$${formatAmount(amountProps.value)}`)
   },
@@ -390,12 +398,12 @@ const OverviewStat = defineComponent({
     mono: { type: Boolean, default: false },
   },
   setup(statProps) {
-    return () => h('div', { class: 'rounded-lg border border-gray-100 bg-white p-3 dark:border-dark-700 dark:bg-dark-900' }, [
-      h('div', { class: 'text-sm text-gray-500 dark:text-dark-400' }, statProps.label),
-      h('div', {
+    return () => h('div', { class: 'affiliate-overview-stat' }, [
+      h('dt', { class: 'text-xs text-gray-500 dark:text-dark-400' }, statProps.label),
+      h('dd', {
         class: statProps.mono
-          ? 'mt-1 font-mono text-base font-semibold text-gray-900 dark:text-white'
-          : 'mt-1 text-base font-semibold text-gray-900 dark:text-white',
+          ? 'mt-1 font-mono text-sm font-semibold text-gray-900 dark:text-white'
+          : 'mt-1 text-sm font-semibold text-gray-900 dark:text-white',
       }, statProps.value),
     ])
   },
@@ -405,3 +413,59 @@ onMounted(() => {
   void loadRecords()
 })
 </script>
+
+<style scoped>
+.affiliate-toolbar {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.affiliate-identity {
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--ui-border, #dbe3ee);
+}
+
+.affiliate-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--ui-border, #dbe3ee);
+  border-left: 1px solid var(--ui-border, #dbe3ee);
+}
+
+:deep(.affiliate-overview-stat) {
+  min-width: 0;
+  padding: 12px;
+  border-right: 1px solid var(--ui-border, #dbe3ee);
+  border-bottom: 1px solid var(--ui-border, #dbe3ee);
+}
+
+:deep(.affiliate-user-link) {
+  color: var(--ui-text, #0f172a);
+  text-decoration: underline;
+  text-decoration-color: var(--ui-border-strong, #c7d3e2);
+  text-underline-offset: 3px;
+}
+
+:deep(.affiliate-user-link:hover) {
+  text-decoration-color: currentColor;
+}
+
+:deep(.affiliate-user-link:focus-visible) {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .affiliate-toolbar {
+    padding: 10px;
+  }
+
+  .affiliate-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>

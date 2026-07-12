@@ -2,9 +2,9 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+        <div class="resource-toolbar flex flex-col gap-3 lg:flex-row lg:items-center">
           <!-- Left: Search + Filters -->
-          <div class="flex flex-1 flex-wrap items-center gap-3">
+          <div class="resource-toolbar__filters flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <div class="relative w-full sm:w-64">
               <Icon
                 name="search"
@@ -15,6 +15,8 @@
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t('admin.channels.searchChannels', 'Search channels...')"
+                :aria-label="t('admin.channels.searchChannels', 'Search channels...')"
+                autocomplete="off"
                 class="input pl-10"
                 @input="handleSearch"
               />
@@ -24,22 +26,24 @@
               v-model="filters.status"
               :options="statusFilterOptions"
               :placeholder="t('admin.channels.allStatus', 'All Status')"
-              class="w-40"
+              class="w-full sm:w-40"
               @change="loadChannels"
             />
           </div>
 
           <!-- Right: Actions -->
-          <div class="flex w-full flex-shrink-0 flex-wrap items-center justify-end gap-3 lg:w-auto">
+          <div class="resource-toolbar__actions flex w-full flex-shrink-0 items-center justify-end gap-2 lg:w-auto">
             <button
+              type="button"
               @click="loadChannels"
               :disabled="loading"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2"
               :title="t('common.refresh', 'Refresh')"
+              :aria-label="t('common.refresh', 'Refresh')"
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
             </button>
-            <button @click="openCreateDialog" class="btn btn-primary">
+            <button type="button" @click="openCreateDialog" class="btn btn-primary min-w-0 flex-1 sm:flex-none">
               <Icon name="plus" size="md" class="mr-2" />
               {{ t('admin.channels.createChannel', 'Create Channel') }}
             </button>
@@ -68,6 +72,7 @@
           <template #cell-status="{ row }">
             <Toggle
               :modelValue="row.status === 'active'"
+              :aria-label="`${t('admin.channels.form.status', 'Status')}: ${row.name}`"
               @update:modelValue="toggleChannelStatus(row)"
             />
           </template>
@@ -97,20 +102,24 @@
           </template>
 
           <template #cell-actions="{ row }">
-            <div class="flex items-center gap-1">
+            <div class="resource-row-actions">
               <button
+                type="button"
                 @click="openEditDialog(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+                class="resource-row-action"
+                :title="t('common.edit', 'Edit')"
+                :aria-label="t('common.edit', 'Edit')"
               >
                 <Icon name="edit" size="sm" />
-                <span class="text-xs">{{ t('common.edit', 'Edit') }}</span>
               </button>
               <button
+                type="button"
                 @click="handleDelete(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                class="resource-row-action resource-row-action--danger"
+                :title="t('common.delete', 'Delete')"
+                :aria-label="t('common.delete', 'Delete')"
               >
                 <Icon name="trash" size="sm" />
-                <span class="text-xs">{{ t('common.delete', 'Delete') }}</span>
               </button>
             </div>
           </template>
@@ -147,10 +156,20 @@
     >
       <div class="channel-dialog-body">
         <!-- Tab Bar -->
-        <div class="flex items-center border-b border-gray-200 dark:border-dark-700 flex-shrink-0 -mx-4 sm:-mx-6 px-4 sm:px-6 -mt-3 sm:-mt-4">
+        <div
+          class="-mx-4 -mt-3 flex flex-shrink-0 items-center overflow-x-auto border-b border-gray-200 px-4 sm:-mx-6 sm:-mt-4 sm:px-6 dark:border-dark-700"
+          role="tablist"
+          :aria-label="t('admin.channels.title', 'Channels')"
+          @keydown="handleChannelTabsKeydown"
+        >
           <!-- Basic Settings Tab -->
           <button
+            id="channel-tab-basic"
             type="button"
+            role="tab"
+            aria-controls="channel-tabpanel-basic"
+            :aria-selected="activeTab === 'basic'"
+            :tabindex="activeTab === 'basic' ? 0 : -1"
             @click="activeTab = 'basic'"
             class="channel-tab"
             :class="activeTab === 'basic' ? 'channel-tab-active' : 'channel-tab-inactive'"
@@ -161,7 +180,12 @@
           <button
             v-for="section in form.platforms.filter(s => s.enabled)"
             :key="section.platform"
+            :id="`channel-tab-${section.platform}`"
             type="button"
+            role="tab"
+            :aria-controls="`channel-tabpanel-${section.platform}`"
+            :aria-selected="activeTab === section.platform"
+            :tabindex="activeTab === section.platform ? 0 : -1"
             @click="activeTab = section.platform"
             class="channel-tab group"
             :class="activeTab === section.platform ? 'channel-tab-active' : 'channel-tab-inactive'"
@@ -174,7 +198,13 @@
         <!-- Tab Content -->
         <form id="channel-form" @submit.prevent="handleSubmit" class="flex-1 overflow-y-auto pt-4">
           <!-- Basic Settings Tab -->
-          <div v-show="activeTab === 'basic'" class="space-y-5">
+          <div
+            id="channel-tabpanel-basic"
+            v-show="activeTab === 'basic'"
+            class="space-y-5"
+            role="tabpanel"
+            aria-labelledby="channel-tab-basic"
+          >
             <!-- Name -->
             <div>
               <label class="input-label">{{ t('admin.channels.form.name', 'Name') }} <span class="text-red-500">*</span></label>
@@ -265,6 +295,7 @@
                 </div>
                 <Toggle
                   :modelValue="form.apply_pricing_to_account_stats"
+                  :aria-label="t('admin.channels.form.applyPricingToAccountStats')"
                   @update:modelValue="form.apply_pricing_to_account_stats = $event"
                 />
               </div>
@@ -275,8 +306,11 @@
           <div
             v-for="(section, sIdx) in form.platforms"
             :key="'tab-' + section.platform"
+            :id="`channel-tabpanel-${section.platform}`"
             v-show="section.enabled && activeTab === section.platform"
             class="space-y-4"
+            role="tabpanel"
+            :aria-labelledby="`channel-tab-${section.platform}`"
           >
             <!-- Groups -->
             <div>
@@ -335,7 +369,10 @@
                     {{ t('admin.channels.form.webSearchEmulationHint') }}
                   </p>
                 </div>
-                <Toggle v-model="section.web_search_emulation" />
+                <Toggle
+                  v-model="section.web_search_emulation"
+                  :aria-label="t('admin.channels.form.webSearchEmulation')"
+                />
               </div>
             </div>
 
@@ -350,7 +387,10 @@
                     {{ t('admin.channels.form.codexImageGenerationBridgeHint') }}
                   </p>
                 </div>
-                <Toggle v-model="section.codex_image_generation_bridge" />
+                <Toggle
+                  v-model="section.codex_image_generation_bridge"
+                  :aria-label="t('admin.channels.form.codexImageGenerationBridge')"
+                />
               </div>
             </div>
 
@@ -365,7 +405,10 @@
                     {{ t('admin.channels.form.bedrockCCCompatHint') }}
                   </p>
                 </div>
-                <Toggle v-model="section.bedrock_cc_compat" />
+                <Toggle
+                  v-model="section.bedrock_cc_compat"
+                  :aria-label="t('admin.channels.form.bedrockCCCompat')"
+                />
               </div>
             </div>
 
@@ -408,10 +451,11 @@
                   />
                   <button
                     type="button"
+                    :aria-label="`${t('common.delete')}: ${srcModel}`"
                     @click="removeMappingEntry(sIdx, srcModel)"
                     class="rounded p-0.5 text-gray-400 hover:text-red-500"
                   >
-                    <Icon name="trash" size="sm" />
+                    <Icon name="trash" size="sm" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -738,6 +782,28 @@ const submitting = ref(false)
 const showDeleteDialog = ref(false)
 const deletingChannel = ref<Channel | null>(null)
 const activeTab = ref<string>('basic')
+
+function handleChannelTabsKeydown(event: KeyboardEvent) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+
+  const tabList = event.currentTarget as HTMLElement | null
+  const currentTab = event.target as HTMLButtonElement | null
+  if (!tabList || currentTab?.getAttribute('role') !== 'tab') return
+
+  const tabs = Array.from(tabList.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+  const currentIndex = tabs.indexOf(currentTab)
+  if (currentIndex < 0 || tabs.length === 0) return
+
+  event.preventDefault()
+  let nextIndex = currentIndex
+  if (event.key === 'Home') nextIndex = 0
+  if (event.key === 'End') nextIndex = tabs.length - 1
+  if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+  if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length
+
+  tabs[nextIndex]?.focus()
+  tabs[nextIndex]?.click()
+}
 
 // Groups
 const allGroups = ref<AdminGroup[]>([])
@@ -1609,15 +1675,67 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.resource-toolbar {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.resource-toolbar__filters,
+.resource-toolbar__actions {
+  min-width: 0;
+}
+
+.resource-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.resource-row-action {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.resource-row-action:hover {
+  color: var(--ui-text, #0f172a);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.resource-row-action:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 1px;
+}
+
+.resource-row-action--danger:hover {
+  color: var(--ui-danger, #dc2626);
+  background: rgb(var(--color-danger-subtle));
+}
+
 .channel-dialog-body {
   display: flex;
   flex-direction: column;
-  height: 70vh;
-  min-height: 400px;
+  height: min(70dvh, 720px);
+  min-height: 0;
 }
 
 .channel-tab {
-  @apply flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap;
+  @apply flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors;
+}
+
+.channel-tab:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: -2px;
 }
 
 .channel-tab-active {
@@ -1626,5 +1744,17 @@ onUnmounted(() => {
 
 .channel-tab-inactive {
   @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300;
+}
+
+@media (max-width: 767px) {
+  .resource-toolbar {
+    padding: 10px;
+  }
+
+  .resource-row-action {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
 }
 </style>

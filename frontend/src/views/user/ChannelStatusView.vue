@@ -1,23 +1,40 @@
 <template>
   <AppLayout>
-    <MonitorHero
-      :overall-status="overallStatus"
-      :interval-seconds="DEFAULT_INTERVAL_SECONDS"
-      :window="currentWindow"
-      :loading="loading"
-      :auto-refresh="autoRefresh"
-      @update:window="handleWindowChange"
-      @refresh="manualReload"
-    />
+    <div class="grid min-w-0 gap-4">
+      <div v-if="loadFailed" data-testid="channel-status-load-error" class="card" role="alert">
+        <EmptyState
+          :title="t('channelStatus.loadError')"
+          :description="t('errors.tryAgain')"
+          :action-text="t('common.refresh')"
+          :action-icon="false"
+          @action="manualReload"
+        />
+      </div>
 
-    <MonitorCardGrid
-      :items="items"
-      :window="currentWindow"
-      :countdown-seconds="countdown"
-      :loading="loading"
-      :detail-cache="detailCache"
-      @card-click="openDetail"
-    />
+      <template v-else>
+        <MonitorHero
+          v-if="items.length > 0"
+          :overall-status="overallStatus"
+          :interval-seconds="DEFAULT_INTERVAL_SECONDS"
+          :window="currentWindow"
+          :loading="loading"
+          :auto-refresh="autoRefresh"
+          @update:window="handleWindowChange"
+          @refresh="manualReload"
+        />
+
+        <div id="monitor-grid" role="tabpanel" :aria-label="t(`channelStatus.windowTab.${currentWindow}`)" class="min-w-0">
+          <MonitorCardGrid
+            :items="items"
+            :window="currentWindow"
+            :countdown-seconds="countdown"
+            :loading="loading"
+            :detail-cache="detailCache"
+            @card-click="openDetail"
+          />
+        </div>
+      </template>
+    </div>
 
     <MonitorDetailDialog
       :show="showDetail"
@@ -40,6 +57,7 @@ import {
   type UserMonitorDetail,
 } from '@/api/channelMonitor'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import MonitorHero, {
   type MonitorWindow,
   type OverallStatus,
@@ -55,6 +73,7 @@ const appStore = useAppStore()
 // ── State ──
 const items = ref<UserMonitorView[]>([])
 const loading = ref(false)
+const loadFailed = ref(false)
 const currentWindow = ref<MonitorWindow>('7d')
 const detailCache = reactive<Record<number, UserMonitorDetail>>({})
 const showDetail = ref(false)
@@ -90,14 +109,19 @@ async function reload(silent = false) {
   if (abortController) abortController.abort()
   const ctrl = new AbortController()
   abortController = ctrl
-  if (!silent) loading.value = true
+  if (!silent) {
+    loading.value = true
+    loadFailed.value = false
+  }
   try {
     const res = await listChannelMonitorViews({ signal: ctrl.signal })
     if (ctrl.signal.aborted || abortController !== ctrl) return
     items.value = res.items || []
+    loadFailed.value = false
   } catch (err: unknown) {
     const e = err as { name?: string; code?: string }
     if (e?.name === 'AbortError' || e?.code === 'ERR_CANCELED') return
+    loadFailed.value = true
     appStore.showError(extractApiErrorMessage(err, t('channelStatus.loadError')))
   } finally {
     if (abortController === ctrl) {
@@ -112,7 +136,7 @@ async function manualReload() {
   await reload(false)
   // After base reload, refresh any cached detail records so non-7d availability
   // values stay in sync without forcing the user to switch tabs again.
-  if (currentWindow.value !== '7d') {
+  if (!loadFailed.value && currentWindow.value !== '7d') {
     await Promise.all(items.value.map(it => loadDetail(it.id, true)))
   }
 }

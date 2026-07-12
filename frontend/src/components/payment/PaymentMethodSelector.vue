@@ -1,31 +1,39 @@
 <template>
-  <div>
-    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+  <fieldset>
+    <legend class="mb-2 text-sm font-medium text-foreground">
       {{ t('payment.paymentMethod') }}
-    </label>
-    <div class="grid grid-cols-2 gap-3 sm:flex">
+    </legend>
+    <div
+      class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+      role="radiogroup"
+      :aria-label="t('payment.paymentMethod')"
+    >
       <button
-        v-for="method in sortedMethods"
+        v-for="(method, index) in sortedMethods"
         :key="method.type"
         type="button"
         :disabled="!method.available"
+        role="radio"
+        :aria-checked="selected === method.type"
+        :tabindex="method.available && (selected === method.type || (!selectedMethodAvailable && index === firstAvailableIndex)) ? 0 : -1"
         :class="[
-          'relative flex h-[60px] flex-col items-center justify-center rounded-lg border px-3 transition-all sm:flex-1',
+          'relative flex min-h-[56px] min-w-0 items-center rounded-control border px-3 py-2 text-left transition-colors',
           !method.available
-            ? 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-50 dark:border-dark-700 dark:bg-dark-800/50'
+            ? 'cursor-not-allowed border-outline bg-surface-subtle opacity-50'
             : selected === method.type
               ? methodSelectedClass(method.type)
-              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200 dark:hover:border-dark-500',
+              : 'border-outline-strong bg-surface text-foreground-muted hover:border-focus hover:text-foreground',
         ]"
         @click="method.available && emit('select', method.type)"
+        @keydown="handleRadioKeydown($event, index)"
       >
-        <span class="flex items-center gap-2">
-          <img :src="methodIcon(method.type)" :alt="methodLabel(method)" class="h-7 w-7 object-contain" />
-          <span class="flex flex-col items-start leading-none">
-            <span class="text-base font-semibold">{{ methodLabel(method) }}</span>
+        <span class="flex min-w-0 items-center gap-2.5">
+          <img :src="methodIcon(method.type)" alt="" class="h-7 w-7 shrink-0 object-contain" aria-hidden="true" />
+          <span class="flex min-w-0 flex-col items-start gap-1 leading-none">
+            <span class="break-words text-sm font-semibold leading-5">{{ methodLabel(method) }}</span>
             <span
               v-if="method.fee_rate > 0"
-              class="text-[10px] tracking-wide text-gray-500 dark:text-dark-400"
+              class="text-xs text-foreground-subtle"
             >
               {{ t('payment.fee') }} {{ method.fee_rate }}%
             </span>
@@ -33,7 +41,7 @@
         </span>
       </button>
     </div>
-  </div>
+  </fieldset>
 </template>
 
 <script setup lang="ts">
@@ -81,6 +89,40 @@ const sortedMethods = computed(() => {
   })
 })
 
+const firstAvailableIndex = computed(() => sortedMethods.value.findIndex(method => method.available))
+const selectedMethodAvailable = computed(() =>
+  sortedMethods.value.some(method => method.type === props.selected && method.available)
+)
+
+function handleRadioKeydown(event: KeyboardEvent, index: number): void {
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+
+  const availableIndexes = sortedMethods.value
+    .map((method, methodIndex) => method.available ? methodIndex : -1)
+    .filter(methodIndex => methodIndex >= 0)
+  if (availableIndexes.length === 0) return
+
+  event.preventDefault()
+  const currentPosition = Math.max(0, availableIndexes.indexOf(index))
+  let nextPosition = currentPosition
+  if (event.key === 'Home') nextPosition = 0
+  else if (event.key === 'End') nextPosition = availableIndexes.length - 1
+  else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    nextPosition = (currentPosition - 1 + availableIndexes.length) % availableIndexes.length
+  } else {
+    nextPosition = (currentPosition + 1) % availableIndexes.length
+  }
+
+  const nextIndex = availableIndexes[nextPosition]
+  const nextMethod = sortedMethods.value[nextIndex]
+  if (!nextMethod) return
+  emit('select', nextMethod.type)
+  const radioGroup = (event.currentTarget as HTMLElement).parentElement
+  window.requestAnimationFrame(() => {
+    radioGroup?.querySelectorAll<HTMLElement>('[role="radio"]')[nextIndex]?.focus()
+  })
+}
+
 function methodIcon(type: string): string {
   if (isBuiltInAlipayMethod(type)) return METHOD_ICONS.alipay
   if (isBuiltInWxpayMethod(type)) return METHOD_ICONS.wxpay
@@ -93,10 +135,10 @@ function methodLabel(method: PaymentMethodOption): string {
 }
 
 function methodSelectedClass(type: string): string {
-  if (isBuiltInAlipayMethod(type)) return 'border-[#02A9F1] bg-blue-50 text-gray-900 shadow-sm dark:bg-blue-950 dark:text-gray-100'
-  if (isBuiltInWxpayMethod(type)) return 'border-[#09BB07] bg-green-50 text-gray-900 shadow-sm dark:bg-green-950 dark:text-gray-100'
-  if (type === 'stripe') return 'border-[#676BE5] bg-indigo-50 text-gray-900 shadow-sm dark:bg-indigo-950 dark:text-gray-100'
-  if (type === 'airwallex') return 'border-[#FF6B3D] bg-orange-50 text-gray-900 shadow-sm dark:border-[#FF8E3C] dark:bg-orange-950 dark:text-gray-100'
-  return 'border-primary-500 bg-primary-50 text-gray-900 shadow-sm dark:bg-primary-950 dark:text-gray-100'
+  if (isBuiltInAlipayMethod(type)) return 'border-[#02A9F1] bg-info-subtle text-foreground'
+  if (isBuiltInWxpayMethod(type)) return 'border-[#09BB07] bg-success-subtle text-foreground'
+  if (type === 'stripe') return 'border-[#676BE5] bg-surface-subtle text-foreground'
+  if (type === 'airwallex') return 'border-[#FF6B3D] bg-warning-subtle text-foreground'
+  return 'border-primary-500 bg-info-subtle text-foreground'
 }
 </script>

@@ -59,7 +59,7 @@ const paidOrder = {
   refund_amount: 0,
 }
 
-describe('PaymentQRDialog currency display', () => {
+describe('PaymentQRDialog', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     pollOrderStatus.mockReset().mockResolvedValue(paidOrder)
@@ -101,5 +101,46 @@ describe('PaymentQRDialog currency display', () => {
     expect(pollOrderStatus).toHaveBeenCalledWith(42)
     expect(wrapper.text()).toContain('$100.00')
     expect(wrapper.text()).toContain('¥108.00')
+  })
+
+  it('keeps polling failures visible and retryable inside the dialog', async () => {
+    pollOrderStatus.mockRejectedValue(new Error('temporarily unavailable'))
+
+    const wrapper = mount(PaymentQRDialog, {
+      props: {
+        show: false,
+        orderId: 42,
+        qrCode: '',
+        expiresAt: '2099-01-01T10:30:00Z',
+        paymentType: 'custom-pay',
+      },
+      global: {
+        stubs: {
+          BaseDialog: {
+            props: ['show'],
+            template: '<div v-if="show"><slot /><slot name="footer" /></div>',
+          },
+          Icon: true,
+        },
+      },
+    })
+
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(9000)
+    await flushPromises()
+
+    expect(pollOrderStatus).toHaveBeenCalledTimes(3)
+    expect(wrapper.text()).toContain('payment.qr.statusUnavailable')
+
+    pollOrderStatus.mockResolvedValue({ ...paidOrder, status: 'PENDING' })
+    const retryButton = wrapper.findAll('button').find(button => button.text().includes('common.retry'))
+    expect(retryButton).toBeDefined()
+    await retryButton!.trigger('click')
+    await flushPromises()
+
+    expect(pollOrderStatus).toHaveBeenCalledTimes(4)
+    expect(wrapper.text()).not.toContain('payment.qr.statusUnavailable')
+    wrapper.unmount()
   })
 })

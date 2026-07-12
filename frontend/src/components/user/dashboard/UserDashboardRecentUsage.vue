@@ -1,43 +1,55 @@
 <template>
-  <div class="card">
-    <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('dashboard.recentUsage') }}</h2>
+  <section class="card min-w-0 overflow-hidden" aria-labelledby="dashboard-recent-usage-title">
+    <header class="flex min-h-[3.25rem] items-center justify-between gap-3 border-b border-outline bg-surface-subtle px-4 py-3 sm:px-5">
+      <h2 id="dashboard-recent-usage-title" class="text-sm font-semibold text-foreground">{{ t('dashboard.recentUsage') }}</h2>
       <span class="badge badge-gray">{{ t('dashboard.last7Days') }}</span>
-    </div>
-    <div class="p-6">
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <LoadingSpinner size="lg" />
+    </header>
+    <div>
+      <div v-if="error" class="px-4 py-8 sm:px-5" role="alert">
+        <EmptyState
+          :title="t('dashboard.recentUsageLoadFailed')"
+          :description="t('errors.tryAgain')"
+          :action-text="t('common.retry')"
+          :action-icon="false"
+          @action="$emit('retry')"
+        />
       </div>
-      <div v-else-if="data.length === 0" class="py-8">
+      <div v-else-if="loading" class="flex min-h-56 items-center justify-center" role="status">
+        <LoadingSpinner size="lg" />
+        <span class="sr-only">{{ t('common.loading') }}</span>
+      </div>
+      <div v-else-if="data.length === 0" class="px-4 py-8 sm:px-5">
         <EmptyState :title="t('dashboard.noUsageRecords')" :description="t('dashboard.startUsingApi')" />
       </div>
-      <div v-else class="space-y-3">
-        <div v-for="log in data" :key="log.id" class="flex items-center justify-between rounded-xl bg-gray-50 p-4 transition-colors hover:bg-gray-100 dark:bg-dark-800/50 dark:hover:bg-dark-800">
-          <div class="flex items-center gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/30">
-              <Icon name="beaker" size="md" class="text-primary-600 dark:text-primary-400" />
+      <template v-else>
+        <ul class="divide-y divide-outline">
+          <li v-for="log in data" :key="log.id" class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-subtle sm:px-5">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-outline bg-surface-subtle text-foreground-muted" aria-hidden="true">
+                <Icon name="beaker" size="sm" />
+              </span>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-foreground" :title="log.model">{{ log.model }}</p>
+                <p class="text-xs text-foreground-subtle">{{ formatDateTime(log.created_at) }}</p>
+              </div>
             </div>
-            <div>
-              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ log.model }}</p>
-              <p class="text-xs text-gray-500 dark:text-dark-400">{{ formatDateTime(log.created_at) }}</p>
+            <div class="min-w-0 max-w-48 text-right tabular-nums">
+              <p class="break-all text-sm font-semibold text-success-foreground">
+                <span :title="t('dashboard.actual')">${{ formatCost(log.actual_cost) }}</span>
+                <span class="font-normal text-foreground-subtle" :title="t('dashboard.standard')"> / ${{ formatCost(log.total_cost) }}</span>
+              </p>
+              <p class="text-xs text-foreground-subtle">{{ (log.input_tokens + log.output_tokens).toLocaleString() }} tokens</p>
             </div>
-          </div>
-          <div class="text-right">
-            <p class="text-sm font-semibold">
-              <span class="text-green-600 dark:text-green-400" :title="t('dashboard.actual')">${{ formatCost(log.actual_cost) }}</span>
-              <span class="font-normal text-gray-400 dark:text-gray-500" :title="t('dashboard.standard')"> / ${{ formatCost(log.total_cost) }}</span>
-            </p>
-            <p class="text-xs text-gray-500 dark:text-dark-400">{{ (log.input_tokens + log.output_tokens).toLocaleString() }} tokens</p>
-          </div>
-        </div>
+          </li>
+        </ul>
 
-        <router-link to="/usage" class="flex items-center justify-center gap-2 py-3 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+        <router-link to="/usage" class="flex min-h-11 items-center justify-center gap-2 border-t border-outline px-4 py-2 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus">
           {{ t('dashboard.viewAllUsage') }}
           <Icon name="arrowRight" size="sm" />
         </router-link>
-      </div>
+      </template>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -51,7 +63,9 @@ import type { UsageLog } from '@/types'
 defineProps<{
   data: UsageLog[]
   loading: boolean
+  error?: boolean
 }>()
+defineEmits<{ retry: [] }>()
 const { t } = useI18n()
 const formatCost = (c: number) => c.toFixed(4)
 </script>

@@ -1,70 +1,77 @@
 <template>
   <BaseDialog :show="show" :title="t('usage.errors.detail.title')" width="wide" @close="emit('update:show', false)">
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-10">
-      <svg class="h-7 w-7 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-      </svg>
+    <div v-if="loading" class="flex justify-center py-10" role="status" :aria-label="t('common.loading')">
+      <LoadingSpinner />
     </div>
 
     <!-- Error state -->
-    <div v-else-if="loadError" class="py-8 text-center text-sm text-red-500">
-      {{ t('usage.errors.detail.loadFailed') }}
+    <div
+      v-else-if="loadError"
+      class="flex min-h-40 flex-col items-center justify-center gap-3 rounded-panel border border-danger/30 bg-danger-subtle p-5 text-center text-danger-foreground"
+      role="alert"
+      data-testid="user-error-detail-load-error"
+    >
+      <Icon name="exclamationTriangle" size="lg" aria-hidden="true" />
+      <p class="text-sm font-medium">{{ t('usage.errors.detail.loadFailed') }}</p>
+      <button type="button" class="btn btn-secondary btn-sm" @click="loadCurrentDetail">
+        <Icon name="refresh" size="sm" aria-hidden="true" />
+        {{ t('common.retry') }}
+      </button>
     </div>
 
     <!-- Detail content -->
-    <div v-else-if="detail" class="space-y-4 text-sm">
-      <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+    <div v-else-if="detail" class="min-w-0 space-y-4 text-sm">
+      <dl class="grid grid-cols-1 gap-x-6 gap-y-3 min-[420px]:grid-cols-2">
         <!-- Time -->
-        <div>
-          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.time') }}</span>
-          <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ formatDateTime(detail.created_at) }}</p>
+        <div class="min-w-0">
+          <dt class="font-medium text-foreground-muted">{{ t('usage.errors.time') }}</dt>
+          <dd class="mt-0.5 break-words text-foreground">{{ formatDateTime(detail.created_at) }}</dd>
         </div>
         <!-- Model -->
-        <div>
-          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.model') }}</span>
-          <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ detail.model || '-' }}</p>
+        <div class="min-w-0">
+          <dt class="font-medium text-foreground-muted">{{ t('usage.errors.model') }}</dt>
+          <dd class="mt-0.5 break-all text-foreground">{{ detail.model || '-' }}</dd>
         </div>
         <!-- Endpoint -->
-        <div>
-          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.endpoint') }}</span>
-          <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ detail.inbound_endpoint || '-' }}</p>
+        <div class="min-w-0">
+          <dt class="font-medium text-foreground-muted">{{ t('usage.errors.endpoint') }}</dt>
+          <dd class="mt-0.5 break-all text-foreground">{{ detail.inbound_endpoint || '-' }}</dd>
         </div>
         <!-- Status Code -->
-        <div>
-          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.status') }}</span>
-          <p class="mt-0.5">
+        <div class="min-w-0">
+          <dt class="font-medium text-foreground-muted">{{ t('usage.errors.status') }}</dt>
+          <dd class="mt-0.5">
             <span class="badge" :class="statusClass(detail.status_code)">{{ detail.status_code || '-' }}</span>
-          </p>
+          </dd>
         </div>
         <!-- Category -->
-        <div>
-          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.category') }}</span>
-          <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ t('usage.errors.categories.' + detail.category) }}</p>
+        <div class="min-w-0">
+          <dt class="font-medium text-foreground-muted">{{ t('usage.errors.category') }}</dt>
+          <dd class="mt-0.5 break-words text-foreground">{{ t('usage.errors.categories.' + detail.category) }}</dd>
         </div>
         <!-- Platform -->
-        <div>
-          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.platform') }}</span>
-          <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ detail.platform || '-' }}</p>
+        <div class="min-w-0">
+          <dt class="font-medium text-foreground-muted">{{ t('usage.errors.platform') }}</dt>
+          <dd class="mt-0.5 break-all text-foreground">{{ detail.platform || '-' }}</dd>
         </div>
         <!-- Upstream status code -->
-        <div v-if="detail.upstream_status_code != null">
-          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.detail.upstreamStatus') }}</span>
-          <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ detail.upstream_status_code }}</p>
+        <div v-if="detail.upstream_status_code != null" class="min-w-0">
+          <dt class="font-medium text-foreground-muted">{{ t('usage.errors.detail.upstreamStatus') }}</dt>
+          <dd class="mt-0.5 text-foreground">{{ detail.upstream_status_code }}</dd>
         </div>
-      </div>
+      </dl>
 
       <!-- Message -->
       <div v-if="detail.message">
-        <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.message') }}</span>
-        <p class="mt-0.5 text-gray-900 dark:text-dark-100 break-all">{{ detail.message }}</p>
+        <span class="font-medium text-foreground-muted">{{ t('usage.errors.message') }}</span>
+        <p class="mt-0.5 break-all text-foreground">{{ detail.message }}</p>
       </div>
 
       <!-- Error Body -->
       <div v-if="detail.error_body">
-        <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.detail.responseBody') }}</span>
-        <pre class="mt-1 overflow-auto max-h-[40vh] whitespace-pre-wrap break-all rounded-lg bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 p-3 text-xs text-gray-800 dark:text-dark-200">{{ detail.error_body }}</pre>
+        <span class="font-medium text-foreground-muted">{{ t('usage.errors.detail.responseBody') }}</span>
+        <pre class="mt-1 max-h-[40vh] max-w-full overflow-auto whitespace-pre-wrap break-all rounded-panel border border-outline bg-surface-subtle p-3 text-xs text-foreground">{{ detail.error_body }}</pre>
       </div>
     </div>
   </BaseDialog>
@@ -74,6 +81,8 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import Icon from '@/components/icons/Icon.vue'
 import { getMyErrorDetail } from '@/api/usage'
 import { formatDateTime } from '@/utils/format'
 import type { UserErrorRequestDetail } from '@/types'
@@ -92,30 +101,46 @@ const { t } = useI18n()
 const loading = ref(false)
 const loadError = ref(false)
 const detail = ref<UserErrorRequestDetail | null>(null)
+let requestSequence = 0
 
 watch(
   () => [props.show, props.errorId] as const,
   ([show, id]) => {
     if (show && id != null) {
-      fetchDetail(id)
+      detail.value = null
+      void fetchDetail(id)
     } else if (!show) {
+      requestSequence += 1
       detail.value = null
       loadError.value = false
+      loading.value = false
     }
-  }
+  },
+  { immediate: true }
 )
 
 async function fetchDetail(id: number) {
+  const sequence = ++requestSequence
   loading.value = true
   loadError.value = false
-  detail.value = null
   try {
-    detail.value = await getMyErrorDetail(id)
+    const response = await getMyErrorDetail(id)
+    if (sequence !== requestSequence || !props.show || props.errorId !== id) return
+    detail.value = response
   } catch (e) {
+    if (sequence !== requestSequence) return
     console.error('[UserErrorDetailModal] Failed to load error detail:', e)
     loadError.value = true
   } finally {
-    loading.value = false
+    if (sequence === requestSequence) {
+      loading.value = false
+    }
+  }
+}
+
+function loadCurrentDetail() {
+  if (props.errorId != null) {
+    void fetchDetail(props.errorId)
   }
 }
 

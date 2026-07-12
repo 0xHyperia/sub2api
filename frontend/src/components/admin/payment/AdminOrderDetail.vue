@@ -5,106 +5,111 @@
     width="wide"
     @close="emit('close')"
   >
-    <div v-if="order" class="space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</p>
-          <p class="font-mono text-sm font-medium text-gray-900 dark:text-white">#{{ order.id }}</p>
+    <div v-if="order" class="min-w-0 space-y-4">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-3 min-[420px]:grid-cols-2">
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.orderId') }}</dt>
+          <dd class="break-all font-mono text-sm font-medium text-foreground">#{{ order.id }}</dd>
         </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.status') }}</p>
-          <span :class="['badge', statusBadgeClass(order.status)]">
-            {{ t('payment.status.' + order.status.toLowerCase(), order.status) }}
-          </span>
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.status') }}</dt>
+          <dd class="mt-0.5">
+            <span :class="['badge', statusBadgeClass(order.status)]">
+              {{ t('payment.status.' + order.status.toLowerCase(), order.status) }}
+            </span>
+          </dd>
         </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.baseAmount') }}</p>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ paymentAmountSymbol }}{{ baseAmount.toFixed(2) }}</p>
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.baseAmount') }}</dt>
+          <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ baseAmount.toFixed(2) }}</dd>
         </div>
-        <div v-if="order.fee_rate > 0">
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.fee') }} ({{ order.fee_rate }}%)</p>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ paymentAmountSymbol }}{{ feeAmount.toFixed(2) }}</p>
+        <div v-if="order.fee_rate > 0" class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.fee') }} ({{ order.fee_rate }}%)</dt>
+          <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ feeAmount.toFixed(2) }}</dd>
         </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</p>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ paymentAmountSymbol }}{{ order.pay_amount.toFixed(2) }}</p>
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.payAmount') }}</dt>
+          <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ order.pay_amount.toFixed(2) }}</dd>
         </div>
-        <div v-if="order.amount !== order.pay_amount">
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.creditedAmount') }}</p>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ creditedAmountSymbol }}{{ order.amount.toFixed(2) }}</p>
+        <div v-if="order.amount !== order.pay_amount" class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.creditedAmount') }}</dt>
+          <dd class="break-all text-sm font-medium text-foreground">{{ creditedAmountSymbol }}{{ order.amount.toFixed(2) }}</dd>
         </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.paymentMethod') }}</p>
-          <p class="text-sm text-gray-700 dark:text-gray-300">
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.paymentMethod') }}</dt>
+          <dd class="break-words text-sm text-foreground">
             {{ t('payment.methods.' + order.payment_type, order.payment_type) }}
-          </p>
+          </dd>
         </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.admin.orderType') }}</p>
-          <p class="text-sm text-gray-700 dark:text-gray-300">
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.admin.orderType') }}</dt>
+          <dd class="break-words text-sm text-foreground">
             {{ t('payment.admin.' + order.order_type + 'Order', order.order_type) }}
-          </p>
+          </dd>
         </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.userId') }}</p>
-          <p class="text-sm text-gray-700 dark:text-gray-300">#{{ order.user_id }}</p>
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.userId') }}</dt>
+          <dd class="break-all text-sm text-foreground">#{{ order.user_id }}</dd>
         </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.createdAt') }}</p>
-          <p class="text-sm text-gray-700 dark:text-gray-300">{{ formatDateTime(order.created_at) }}</p>
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.createdAt') }}</dt>
+          <dd class="break-words text-sm text-foreground">{{ formatDateTime(order.created_at) }}</dd>
         </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.admin.expiresAt') }}</p>
-          <p class="text-sm text-gray-700 dark:text-gray-300">{{ formatDateTime(order.expires_at) }}</p>
+        <div class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.admin.expiresAt') }}</dt>
+          <dd class="break-words text-sm text-foreground">{{ formatDateTime(order.expires_at) }}</dd>
         </div>
-        <div v-if="order.paid_at">
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.admin.paidAt') }}</p>
-          <p class="text-sm text-gray-700 dark:text-gray-300">{{ formatDateTime(order.paid_at) }}</p>
+        <div v-if="order.paid_at" class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.admin.paidAt') }}</dt>
+          <dd class="break-words text-sm text-foreground">{{ formatDateTime(order.paid_at) }}</dd>
         </div>
-        <div v-if="order.completed_at">
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.admin.completedAt') }}</p>
-          <p class="text-sm text-gray-700 dark:text-gray-300">{{ formatDateTime(order.completed_at) }}</p>
+        <div v-if="order.completed_at" class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.admin.completedAt') }}</dt>
+          <dd class="break-words text-sm text-foreground">{{ formatDateTime(order.completed_at) }}</dd>
         </div>
-      </div>
+      </dl>
 
       <div
         v-if="order.refund_amount"
-        class="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20"
+        class="rounded-panel border border-danger/30 bg-danger-subtle p-3 text-danger-foreground"
       >
-        <h4 class="mb-2 text-sm font-semibold text-red-700 dark:text-red-400">
+        <h4 class="mb-2 text-sm font-semibold">
           {{ t('payment.admin.refundInfo') }}
         </h4>
-        <div class="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <span class="text-red-600 dark:text-red-400">{{ t('payment.admin.refundAmount') }}:</span>
-            <span class="ml-1 font-medium text-red-700 dark:text-red-300">{{ creditedAmountSymbol }}{{ order.refund_amount.toFixed(2) }}</span>
+        <div class="grid grid-cols-1 gap-2 text-sm min-[420px]:grid-cols-2">
+          <div class="min-w-0">
+            <span>{{ t('payment.admin.refundAmount') }}:</span>
+            <span class="ml-1 break-all font-medium">{{ creditedAmountSymbol }}{{ order.refund_amount.toFixed(2) }}</span>
           </div>
-          <div v-if="order.refund_reason" class="col-span-2">
-            <span class="text-red-600 dark:text-red-400">{{ t('payment.admin.refundReason') }}:</span>
-            <span class="ml-1 text-red-700 dark:text-red-300">{{ order.refund_reason }}</span>
+          <div v-if="order.refund_reason" class="min-w-0 min-[420px]:col-span-2">
+            <span>{{ t('payment.admin.refundReason') }}:</span>
+            <span class="ml-1 break-words">{{ order.refund_reason }}</span>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-2 border-t border-gray-200 pt-4 dark:border-dark-700">
+      <div class="flex flex-col-reverse gap-2 border-t border-outline pt-4 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end">
         <button
           v-if="order.status === 'PENDING'"
+          type="button"
           @click="emit('cancel', order)"
-          class="btn btn-sm rounded-md bg-yellow-50 px-3 py-1.5 text-sm text-yellow-600 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400 dark:hover:bg-yellow-900/30"
+          class="btn btn-secondary btn-sm w-full text-warning-foreground min-[420px]:w-auto"
         >
           {{ t('payment.orders.cancel') }}
         </button>
         <button
           v-if="order.status === 'FAILED'"
+          type="button"
           @click="emit('retry', order)"
-          class="btn btn-sm btn-secondary"
+          class="btn btn-sm btn-secondary w-full min-[420px]:w-auto"
         >
           {{ t('payment.admin.retry') }}
         </button>
         <button
           v-if="canRefund(order)"
+          type="button"
           @click="emit('refund', order)"
-          class="btn btn-sm rounded-md bg-red-50 px-3 py-1.5 text-sm text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
+          class="btn btn-danger btn-sm w-full min-[420px]:w-auto"
         >
           {{ t('payment.admin.refund') }}
         </button>

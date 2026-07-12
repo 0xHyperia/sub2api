@@ -77,7 +77,7 @@ export const usePaymentStore = defineStore('payment', () => {
       return order
     } catch (error: unknown) {
       console.error('[payment] Failed to poll order status:', error)
-      return null
+      throw error
     }
   }
 

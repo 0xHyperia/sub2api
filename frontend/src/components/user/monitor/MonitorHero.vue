@@ -1,45 +1,49 @@
 <template>
-  <section class="py-3 md:py-4">
-    <div class="flex items-center justify-end gap-3 flex-wrap">
+  <section class="rounded-lg border border-outline bg-surface px-3 py-2 shadow-card">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <span
+        class="inline-flex min-h-8 items-center rounded-md px-2.5 text-xs font-semibold"
+        :class="overallChipClass"
+      >
+        <span class="mr-1.5 h-1.5 w-1.5 rounded-full" :class="overallDotClass"></span>
+        {{ overallLabel }}
+      </span>
+
+      <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
       <div
         role="tablist"
-        class="inline-flex p-0.5 rounded-xl bg-gray-100 dark:bg-dark-800 border border-gray-200/60 dark:border-dark-700/60 text-xs"
+        :aria-label="t('channelStatus.detailColumns.availability7d')"
+        class="inline-flex max-w-full overflow-x-auto rounded-lg border border-outline bg-surface-subtle p-0.5 text-xs"
       >
         <button
           v-for="opt in windowOptions"
           :key="opt.value"
+          :id="`monitor-window-${opt.value}`"
           type="button"
           role="tab"
           :aria-selected="window === opt.value"
-          class="px-3 py-1 rounded-lg transition-colors"
+          :tabindex="window === opt.value ? 0 : -1"
+          aria-controls="monitor-grid"
+          class="min-h-8 whitespace-nowrap rounded-md px-3 py-1 transition-colors"
           :class="window === opt.value
-            ? 'bg-white dark:bg-dark-700 shadow-sm text-gray-900 dark:text-white font-semibold'
-            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            ? 'bg-surface text-foreground shadow-card font-semibold'
+            : 'text-foreground-muted hover:text-foreground'"
           @click="emit('update:window', opt.value)"
+          @keydown="handleWindowKeydown($event, opt.value)"
         >
           {{ opt.label }}
         </button>
       </div>
 
-      <span
-        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold tracking-wider uppercase"
-        :class="overallChipClass"
-      >
-        <span
-          class="w-1.5 h-1.5 rounded-full mr-1.5"
-          :class="overallDotClass"
-        ></span>
-        {{ overallLabel }}
-      </span>
-
       <button
         type="button"
-        class="h-8 w-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-dark-700 transition-colors disabled:opacity-50"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground disabled:opacity-50"
         :disabled="loading"
         :title="t('common.refresh')"
+        :aria-label="t('common.refresh')"
         @click="emit('refresh')"
       >
-        <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
+        <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
       </button>
 
       <AutoRefreshButton
@@ -51,6 +55,7 @@
         @update:enabled="autoRefresh.setEnabled"
         @update:interval="autoRefresh.setInterval"
       />
+      </div>
     </div>
   </section>
 </template>
@@ -106,11 +111,28 @@ const overallChipClass = computed(() => {
 const overallDotClass = computed(() => {
   switch (props.overallStatus) {
     case 'operational':
-      return 'bg-emerald-500 animate-pulse'
+      return 'bg-emerald-500'
     case 'degraded':
     default:
-      return 'bg-amber-500 animate-pulse'
+      return 'bg-amber-500'
   }
 })
+
+const handleWindowKeydown = (event: KeyboardEvent, current: MonitorWindow) => {
+  const values = windowOptions.value.map((option) => option.value)
+  const index = values.indexOf(current)
+  let nextIndex: number | null = null
+
+  if (event.key === 'ArrowLeft') nextIndex = (index - 1 + values.length) % values.length
+  else if (event.key === 'ArrowRight') nextIndex = (index + 1) % values.length
+  else if (event.key === 'Home') nextIndex = 0
+  else if (event.key === 'End') nextIndex = values.length - 1
+  if (nextIndex === null) return
+
+  event.preventDefault()
+  const value = values[nextIndex]
+  emit('update:window', value)
+  window.requestAnimationFrame(() => document.getElementById(`monitor-window-${value}`)?.focus())
+}
 
 </script>

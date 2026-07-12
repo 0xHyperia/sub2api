@@ -216,4 +216,31 @@ describe('AccountTestModal', () => {
       mode: 'compact'
     })
   })
+
+  it('shows a retryable error when available models fail to load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    getAvailableModels
+      .mockRejectedValueOnce(new Error('models unavailable'))
+      .mockResolvedValueOnce([{ id: 'gpt-5.4', display_name: 'GPT-5.4' }])
+
+    const wrapper = mountModal({
+      id: 42,
+      name: 'OpenAI OAuth',
+      platform: 'openai',
+      type: 'oauth',
+      status: 'active'
+    })
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    const errorState = wrapper.get('[data-testid="account-test-models-error"]')
+    expect(errorState.text()).toContain('admin.accounts.testModelsLoadFailed')
+
+    await errorState.get('button').trigger('click')
+    await flushPromises()
+
+    expect(getAvailableModels).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-testid="account-test-models-error"]').exists()).toBe(false)
+    consoleError.mockRestore()
+  })
 })

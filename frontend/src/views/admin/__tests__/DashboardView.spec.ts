@@ -26,6 +26,16 @@ vi.mock('@/stores/app', () => ({
   })
 }))
 
+vi.mock('@/composables/useBatchImageAccess', async () => {
+  const { ref } = await import('vue')
+  return {
+    useBatchImageAccess: () => ({
+      canUseBatchImage: ref(false),
+      refreshBatchImageAccess: vi.fn().mockResolvedValue(undefined)
+    })
+  }
+})
+
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: vi.fn()
@@ -139,5 +149,40 @@ describe('admin DashboardView', () => {
       end_date: formatLocalDate(now),
       granularity: 'hour'
     }))
+  })
+
+  it('keeps an initial load failure visible and retryable', async () => {
+    getSnapshotV2.mockRejectedValueOnce(new Error('unavailable'))
+
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="dashboard-load-error"]').text()).toContain('admin.dashboard.failedToLoad')
+
+    getSnapshotV2.mockResolvedValueOnce({
+      stats: createDashboardStats(),
+      trend: [],
+      models: []
+    })
+    await wrapper.get('[data-testid="dashboard-load-error"] button').trigger('click')
+    await flushPromises()
+
+    expect(getSnapshotV2).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-testid="dashboard-load-error"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('admin.dashboard.todayRequests')
   })
 })

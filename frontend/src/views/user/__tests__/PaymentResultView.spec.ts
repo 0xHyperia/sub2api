@@ -236,6 +236,41 @@ describe('PaymentResultView', () => {
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toBeNull()
   })
 
+  it('stops automatic refresh after the retry budget and offers a manual retry', async () => {
+    vi.useFakeTimers()
+    routeState.query = {
+      resume_token: 'resume-slow',
+    }
+    resolveOrderPublicByResumeToken.mockResolvedValue({
+      data: orderFactory('PENDING'),
+    })
+
+    const wrapper = mount(PaymentResultView, {
+      global: {
+        stubs: {
+          OrderStatusBadge: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(30_000)
+    await flushPromises()
+
+    expect(resolveOrderPublicByResumeToken).toHaveBeenCalledTimes(16)
+    expect(wrapper.text()).toContain('payment.result.confirmationDelayed')
+    expect(wrapper.text()).toContain('common.retry')
+
+    const retryButton = wrapper.findAll('button').find(button => button.text().includes('common.retry'))
+    expect(retryButton).toBeDefined()
+    await retryButton!.trigger('click')
+    await flushPromises()
+
+    expect(resolveOrderPublicByResumeToken).toHaveBeenCalledTimes(17)
+    expect(wrapper.text()).not.toContain('payment.result.confirmationDelayed')
+    wrapper.unmount()
+  })
+
   it('falls back to order_id polling when resume-token recovery fails', async () => {
     routeState.query = {
       resume_token: 'resume-fail',

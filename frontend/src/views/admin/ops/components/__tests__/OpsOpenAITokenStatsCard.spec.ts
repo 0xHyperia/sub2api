@@ -43,9 +43,22 @@ const EmptyStateStub = defineComponent({
   props: {
     title: { type: String, default: '' },
     description: { type: String, default: '' },
+    actionText: { type: String, default: '' },
+    actionIcon: { type: Boolean, default: true },
   },
-  template: '<div class="empty-state">{{ title }}|{{ description }}</div>',
+  emits: ['action'],
+  template: '<div class="empty-state">{{ title }}|{{ description }}<button v-if="actionText" class="retry-action" @click="$emit(\'action\')">{{ actionText }}</button></div>',
 })
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
 
 const sampleResponse = {
   time_range: '30d' as const,
@@ -213,8 +226,10 @@ describe('OpsOpenAITokenStatsCard', () => {
     expect(wrapper.find('.max-h-\\[420px\\]').exists()).toBe(true)
   })
 
-  it('接口异常时显示错误提示', async () => {
-    mockGetOpenAITokenStats.mockRejectedValue(new Error('加载失败'))
+  it('接口异常时显示可重试错误而不是空态', async () => {
+    mockGetOpenAITokenStats
+      .mockRejectedValueOnce(new Error('加载失败'))
+      .mockResolvedValueOnce(sampleResponse)
 
     const wrapper = mount(OpsOpenAITokenStatsCard, {
       props: { refreshToken: 0 },
@@ -228,5 +243,65 @@ describe('OpsOpenAITokenStatsCard', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('加载失败')
+    expect(wrapper.text()).not.toContain('admin.ops.openaiTokenStats.empty')
+    await wrapper.find('.retry-action').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('gpt-4o-mini')
+  })
+
+  it('刷新失败时保留已有统计数据', async () => {
+    mockGetOpenAITokenStats
+      .mockResolvedValueOnce(sampleResponse)
+      .mockRejectedValueOnce(new Error('刷新失败'))
+
+    const wrapper = mount(OpsOpenAITokenStatsCard, {
+      props: { refreshToken: 0 },
+      global: {
+        stubs: {
+          Select: SelectStub,
+          EmptyState: EmptyStateStub,
+        },
+      },
+    })
+    await flushPromises()
+
+    await wrapper.setProps({ refreshToken: 1 })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('gpt-4o-mini')
+    expect(wrapper.text()).toContain('刷新失败')
+    expect(wrapper.find('[data-testid="openai-token-refresh-error"]').exists()).toBe(true)
+  })
+
+  it('丢弃晚到的旧筛选响应', async () => {
+    const staleRequest = deferred<typeof sampleResponse>()
+    mockGetOpenAITokenStats
+      .mockImplementationOnce(() => staleRequest.promise)
+      .mockResolvedValueOnce({
+        ...sampleResponse,
+        items: [{ ...sampleResponse.items[0], model: 'current-model' }],
+      })
+
+    const wrapper = mount(OpsOpenAITokenStatsCard, {
+      props: { refreshToken: 0 },
+      global: {
+        stubs: {
+          Select: SelectStub,
+          EmptyState: EmptyStateStub,
+        },
+      },
+    })
+    await wrapper.setProps({ refreshToken: 1 })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('current-model')
+    staleRequest.resolve({
+      ...sampleResponse,
+      items: [{ ...sampleResponse.items[0], model: 'stale-model' }],
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('current-model')
+    expect(wrapper.text()).not.toContain('stale-model')
   })
 })

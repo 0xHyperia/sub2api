@@ -2,38 +2,41 @@
   <div class="space-y-4">
     <!-- Headers key-value rows -->
     <div>
-      <label class="input-label">{{ t('admin.channelMonitor.advanced.headers') }}</label>
+      <p id="monitor-advanced-headers-label" class="input-label">
+        {{ t('admin.channelMonitor.advanced.headers') }}
+      </p>
       <div class="space-y-1.5">
         <div
           v-for="(row, i) in headerRows"
           :key="i"
-          class="flex items-center gap-2"
+          class="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_2rem] sm:items-center"
         >
           <input
             v-model="row.name"
             type="text"
             spellcheck="false"
+            :aria-label="`${t('admin.channelMonitor.advanced.headers')} ${i + 1}: ${t('admin.channelMonitor.advanced.headerNamePlaceholder')}`"
             :placeholder="t('admin.channelMonitor.advanced.headerNamePlaceholder')"
-            class="input w-52 flex-none font-mono text-xs"
+            class="input min-w-0 w-full font-mono text-xs"
             @blur="commitHeaders"
           />
           <input
             v-model="row.value"
             type="text"
             spellcheck="false"
+            :aria-label="`${t('admin.channelMonitor.advanced.headers')} ${i + 1}: ${t('admin.channelMonitor.advanced.headerValuePlaceholder')}`"
             :placeholder="t('admin.channelMonitor.advanced.headerValuePlaceholder')"
-            class="input flex-1 font-mono text-xs"
+            class="input min-w-0 w-full font-mono text-xs"
             @blur="commitHeaders"
           />
           <button
             type="button"
-            class="flex-none rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+            class="inline-flex h-8 w-8 flex-none items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+            :aria-label="`${t('common.delete')} ${t('admin.channelMonitor.advanced.headers')} ${i + 1}`"
             :title="t('common.delete')"
             @click="removeRow(i)"
           >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <Icon name="x" size="sm" />
           </button>
         </div>
         <button
@@ -41,13 +44,11 @@
           class="inline-flex items-center gap-1 rounded border border-dashed border-gray-300 px-2 py-1 text-xs text-gray-500 hover:border-primary-400 hover:text-primary-600 dark:border-dark-600 dark:text-gray-400 dark:hover:border-primary-500 dark:hover:text-primary-400"
           @click="addRow"
         >
-          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
+          <Icon name="plus" size="sm" />
           {{ t('admin.channelMonitor.advanced.headerAddRow') }}
         </button>
       </div>
-      <p v-if="headersError" class="mt-1 text-xs text-red-500">{{ headersError }}</p>
+      <p v-if="headersError" role="alert" class="mt-1 text-xs text-red-500">{{ headersError }}</p>
       <p v-else class="mt-1 text-xs text-gray-400">
         {{ t('admin.channelMonitor.advanced.headersHint') }}
       </p>
@@ -55,12 +56,19 @@
 
     <!-- Body mode radio -->
     <div>
-      <label class="input-label">{{ t('admin.channelMonitor.advanced.bodyMode') }}</label>
-      <div class="grid grid-cols-3 gap-3">
+      <p id="monitor-advanced-body-mode-label" class="input-label">
+        {{ t('admin.channelMonitor.advanced.bodyMode') }}
+      </p>
+      <div
+        role="group"
+        aria-labelledby="monitor-advanced-body-mode-label"
+        class="grid grid-cols-1 gap-3 sm:grid-cols-3"
+      >
         <button
           v-for="opt in bodyModeOptions"
           :key="opt.value"
           type="button"
+          :aria-pressed="bodyOverrideMode === opt.value"
           class="rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors"
           :class="bodyModeButtonClass(opt.value)"
           @click="updateBodyMode(opt.value)"
@@ -76,7 +84,9 @@
     <!-- Body JSON (仅当 mode != off) -->
     <div v-if="bodyOverrideMode !== 'off'">
       <div class="mb-1 flex items-center justify-between">
-        <label class="input-label !mb-0">{{ t('admin.channelMonitor.advanced.bodyJson') }}</label>
+        <label for="monitor-advanced-body-json" class="input-label !mb-0">
+          {{ t('admin.channelMonitor.advanced.bodyJson') }}
+        </label>
         <button
           type="button"
           class="text-xs text-primary-600 hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline dark:text-primary-400"
@@ -88,14 +98,16 @@
       </div>
       <textarea
         v-model="bodyText"
+        id="monitor-advanced-body-json"
         rows="10"
         :placeholder="bodyPlaceholder"
-        class="input font-mono text-xs"
+        class="input max-w-full min-w-0 font-mono text-xs"
+        :aria-invalid="!!bodyError"
         style="white-space: pre; overflow-wrap: normal; overflow-x: auto;"
         spellcheck="false"
         @blur="commitBody"
       />
-      <p v-if="bodyError" class="mt-1 text-xs text-red-500">{{ bodyError }}</p>
+      <p v-if="bodyError" role="alert" class="mt-1 text-xs text-red-500">{{ bodyError }}</p>
       <p v-else class="mt-1 text-xs text-gray-400">
         {{ t('admin.channelMonitor.advanced.bodyJsonHint') }}
       </p>
@@ -106,6 +118,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Icon from '@/components/icons/Icon.vue'
 import type { APIMode, BodyOverrideMode, Provider } from '@/api/admin/channelMonitor'
 import {
   API_MODE_RESPONSES,

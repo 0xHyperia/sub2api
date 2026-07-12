@@ -3,7 +3,7 @@
     <TablePageLayout>
       <!-- Single Row: Search, Filters, and Actions -->
       <template #filters>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="resource-toolbar flex flex-wrap items-center gap-3">
           <!-- Left: Search + Active Filters -->
           <div class="flex flex-1 flex-wrap items-center gap-3">
             <!-- Search Box -->
@@ -17,6 +17,8 @@
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t('admin.users.searchUsers')"
+                :aria-label="t('admin.users.searchUsers')"
+                autocomplete="off"
                 class="input pl-10"
                 @input="handleSearch"
               />
@@ -129,19 +131,29 @@
             <div class="flex items-center gap-2 md:contents">
               <!-- Refresh Button -->
               <button
+                type="button"
                 @click="loadUsers"
                 :disabled="loading"
                 class="btn btn-secondary px-2 md:px-3"
                 :title="t('common.refresh')"
+                :aria-label="t('common.refresh')"
               >
                 <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
               </button>
               <!-- Filter Settings Dropdown -->
               <div class="relative" ref="filterDropdownRef">
                 <button
-                  @click="showFilterDropdown = !showFilterDropdown"
+                  :id="filterMenuTriggerId"
+                  ref="filterMenuTriggerRef"
+                  type="button"
+                  @click="toggleFilterMenu"
+                  @keydown="handleFilterTriggerKeydown"
                   class="btn btn-secondary px-2 md:px-3"
                   :title="t('admin.users.filterSettings')"
+                  :aria-label="t('admin.users.filterSettings')"
+                  aria-haspopup="menu"
+                  :aria-expanded="showFilterDropdown"
+                  :aria-controls="showFilterDropdown ? filterMenuId : undefined"
                 >
                   <Icon name="filter" size="sm" class="md:mr-1.5" />
                   <span class="hidden md:inline">{{ t('admin.users.filterSettings') }}</span>
@@ -149,12 +161,20 @@
                 <!-- Dropdown menu -->
                 <div
                   v-if="showFilterDropdown"
-                  class="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800"
+                  :id="filterMenuId"
+                  ref="filterMenuRef"
+                  class="resource-menu absolute right-0 top-full z-50 mt-1 w-48"
+                  role="menu"
+                  :aria-labelledby="filterMenuTriggerId"
+                  @keydown="handleFilterMenuKeydown"
                 >
                   <!-- Built-in filters -->
                   <button
                     v-for="filter in builtInFilters"
                     :key="filter.key"
+                    type="button"
+                    role="menuitemcheckbox"
+                    :aria-checked="visibleFilters.has(filter.key)"
                     @click="toggleBuiltInFilter(filter.key)"
                     class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
                   >
@@ -176,6 +196,9 @@
                   <button
                     v-for="attr in filterableAttributes"
                     :key="attr.id"
+                    type="button"
+                    role="menuitemcheckbox"
+                    :aria-checked="visibleFilters.has(`attr_${attr.id}`)"
                     @click="toggleAttributeFilter(attr)"
                     class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
                   >
@@ -193,9 +216,17 @@
               <!-- Column Settings Dropdown -->
               <div class="relative" ref="columnDropdownRef">
                 <button
-                  @click="showColumnDropdown = !showColumnDropdown"
+                  :id="columnMenuTriggerId"
+                  ref="columnMenuTriggerRef"
+                  type="button"
+                  @click="toggleColumnMenu"
+                  @keydown="handleColumnTriggerKeydown"
                   class="btn btn-secondary px-2 md:px-3"
                   :title="t('admin.users.columnSettings')"
+                  :aria-label="t('admin.users.columnSettings')"
+                  aria-haspopup="menu"
+                  :aria-expanded="showColumnDropdown"
+                  :aria-controls="showColumnDropdown ? columnMenuId : undefined"
                 >
                   <svg class="h-4 w-4 md:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" />
@@ -205,11 +236,19 @@
                 <!-- Dropdown menu -->
                 <div
                   v-if="showColumnDropdown"
-                  class="absolute right-0 top-full z-50 mt-1 max-h-80 w-48 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800"
+                  :id="columnMenuId"
+                  ref="columnMenuRef"
+                  class="resource-menu absolute right-0 top-full z-50 mt-1 max-h-80 w-48 overflow-y-auto"
+                  role="menu"
+                  :aria-labelledby="columnMenuTriggerId"
+                  @keydown="handleColumnMenuKeydown"
                 >
                   <button
                     v-for="col in toggleableColumns"
                     :key="col.key"
+                    type="button"
+                    role="menuitemcheckbox"
+                    :aria-checked="isColumnVisible(col.key)"
                     :disabled="isForcedVisibleColumn(col.key)"
                     @click="toggleColumn(col.key)"
                     :class="[
@@ -233,6 +272,7 @@
               </div>
               <!-- Attributes Config Button -->
               <button
+                type="button"
                 @click="showAttributesModal = true"
                 class="btn btn-secondary px-2 md:px-3"
                 :title="t('admin.users.attributes.configButton')"
@@ -243,7 +283,7 @@
             </div>
 
             <!-- Create User Button (full width on mobile, auto width on desktop) -->
-            <button @click="showCreateModal = true" class="btn btn-primary flex-1 md:flex-initial">
+            <button type="button" @click="showCreateModal = true" class="btn btn-primary flex-1 md:flex-initial">
               <Icon name="plus" size="md" class="mr-2" />
               {{ t('admin.users.createUser') }}
             </button>
@@ -454,14 +494,20 @@
               <span>{{ column.label }}</span>
               <div class="usage-sort-trigger relative">
                 <button
+                  :id="getUsageSortTriggerId(usageKey)"
                   type="button"
                   class="flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-gray-200 dark:hover:bg-dark-700"
                   :class="usageSort && usageSort.key === usageKey
                     ? 'text-primary-600 dark:text-primary-400'
                     : 'text-gray-400 dark:text-dark-500'"
                   :title="t('admin.users.sortBy')"
+                  :aria-label="`${column.label}: ${t('admin.users.sortBy')}`"
+                  aria-haspopup="menu"
+                  :aria-expanded="usageSortMenuOpen && openUsageSortMenu === usageKey"
+                  :aria-controls="usageSortMenuOpen && openUsageSortMenu === usageKey ? getUsageSortMenuId(usageKey) : undefined"
                   :data-test="`usage-sort-trigger-${usageKey}`"
-                  @click.stop="toggleUsageSortMenu(usageKey)"
+                  @click.stop="toggleUsageSortMenu(usageKey, $event)"
+                  @keydown="handleUsageSortTriggerKeydown(usageKey, $event)"
                 >
                   <span
                     v-if="usageSort && usageSort.key === usageKey"
@@ -486,13 +532,20 @@
                 </button>
                 <!-- 弹出菜单：今日 / 近30天，点击进行三态循环切换。 -->
                 <div
-                  v-if="openUsageSortMenu === usageKey"
-                  class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800"
+                  v-if="usageSortMenuOpen && openUsageSortMenu === usageKey"
+                  :id="getUsageSortMenuId(usageKey)"
+                  ref="usageSortMenuRef"
+                  role="menu"
+                  :aria-labelledby="getUsageSortTriggerId(usageKey)"
+                  class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-panel border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800"
+                  @keydown="handleUsageSortMenuKeydown"
                 >
                   <button
                     v-for="metric in (['today', 'total'] as const)"
                     :key="metric"
                     type="button"
+                    role="menuitemradio"
+                    :aria-checked="isUsageSortActive(usageKey, metric)"
                     class="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-xs normal-case tracking-normal hover:bg-gray-100 dark:hover:bg-dark-700"
                     :class="isUsageSortActive(usageKey, metric)
                       ? 'font-medium text-primary-600 dark:text-primary-400'
@@ -515,7 +568,7 @@
                       />
                     </svg>
                   </button>
-                  <div class="mt-1 border-t border-gray-100 px-3 py-1 text-[10px] normal-case tracking-normal text-gray-400 dark:border-dark-700 dark:text-dark-500">
+                  <div role="presentation" class="mt-1 border-t border-gray-100 px-3 py-1 text-[10px] normal-case tracking-normal text-gray-400 dark:border-dark-700 dark:text-dark-500">
                     {{ t('admin.users.sortCurrentPageOnly') }}
                   </div>
                 </div>
@@ -613,9 +666,15 @@
 
               <!-- More Actions Menu Trigger -->
               <button
+                :id="getActionMenuTriggerId(row.id)"
+                type="button"
                 @click="openActionMenu(row, $event)"
+                @keydown="handleActionTriggerKeydown(row, $event)"
                 class="action-menu-trigger flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-dark-700 dark:hover:text-white"
                 :class="{ 'bg-gray-100 text-gray-900 dark:bg-dark-700 dark:text-white': activeMenuId === row.id }"
+                aria-haspopup="menu"
+                :aria-expanded="actionMenuOpen && activeMenuId === row.id"
+                :aria-controls="actionMenuOpen && activeMenuId === row.id ? actionMenuId : undefined"
               >
                 <Icon name="more" size="sm" />
                 <span class="text-xs">{{ t('common.more') }}</span>
@@ -650,15 +709,22 @@
     <!-- Action Menu (Teleported) -->
     <Teleport to="body">
       <div
-        v-if="activeMenuId !== null && menuPosition"
-        class="action-menu-content fixed z-[9999] w-48 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5 dark:bg-dark-800 dark:ring-white/10"
+        v-if="actionMenuOpen && activeMenuId !== null && menuPosition"
+        :id="actionMenuId"
+        ref="actionMenuRef"
+        role="menu"
+        :aria-labelledby="getActionMenuTriggerId(activeMenuId)"
+        class="action-menu-content fixed z-[9999] w-52 overflow-hidden rounded-panel border border-outline bg-surface shadow-floating"
         :style="{ top: menuPosition.top + 'px', left: menuPosition.left + 'px' }"
+        @keydown="handleActionMenuKeydown"
       >
         <div class="py-1">
           <template v-for="user in users" :key="user.id">
             <template v-if="user.id === activeMenuId">
               <!-- View API Keys -->
               <button
+                type="button"
+                role="menuitem"
                 @click="handleViewApiKeys(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
               >
@@ -668,6 +734,8 @@
 
               <!-- Allowed Groups -->
               <button
+                type="button"
+                role="menuitem"
                 @click="handleAllowedGroups(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
               >
@@ -679,6 +747,8 @@
 
               <!-- Deposit -->
               <button
+                type="button"
+                role="menuitem"
                 @click="handleDeposit(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
               >
@@ -688,6 +758,8 @@
 
               <!-- Withdraw -->
               <button
+                type="button"
+                role="menuitem"
                 @click="handleWithdraw(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
               >
@@ -699,6 +771,8 @@
 
               <!-- Platform Quotas -->
               <button
+                type="button"
+                role="menuitem"
                 @click="handlePlatformQuota(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
               >
@@ -708,6 +782,8 @@
 
               <!-- Balance History -->
               <button
+                type="button"
+                role="menuitem"
                 @click="handleBalanceHistory(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
               >
@@ -720,6 +796,8 @@
               <!-- Delete (not for admin) -->
               <button
                 v-if="user.role !== 'admin'"
+                type="button"
+                role="menuitem"
                 @click="handleDelete(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
               >
@@ -755,6 +833,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
+import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import { formatDateTime } from '@/utils/format'
 import Icon from '@/components/icons/Icon.vue'
 
@@ -1095,13 +1174,31 @@ const activeAttributeFilters = reactive<Record<number, string>>({})
 // Keys: 'role', 'status', 'attr_${id}'
 const visibleFilters = reactive<Set<string>>(new Set())
 
-// Dropdown states
-const showFilterDropdown = ref(false)
-const showColumnDropdown = ref(false)
-
 // Dropdown refs for click outside detection
 const filterDropdownRef = ref<HTMLElement | null>(null)
 const columnDropdownRef = ref<HTMLElement | null>(null)
+const {
+  open: showFilterDropdown,
+  triggerRef: filterMenuTriggerRef,
+  menuRef: filterMenuRef,
+  triggerId: filterMenuTriggerId,
+  menuId: filterMenuId,
+  closeMenu: closeFilterMenu,
+  toggleMenu: toggleFilterMenu,
+  handleTriggerKeydown: handleFilterTriggerKeydown,
+  handleMenuKeydown: handleFilterMenuKeydown,
+} = useDropdownMenu('admin-users-filters')
+const {
+  open: showColumnDropdown,
+  triggerRef: columnMenuTriggerRef,
+  menuRef: columnMenuRef,
+  triggerId: columnMenuTriggerId,
+  menuId: columnMenuId,
+  closeMenu: closeColumnMenu,
+  toggleMenu: toggleColumnMenu,
+  handleTriggerKeydown: handleColumnTriggerKeydown,
+  handleMenuKeydown: handleColumnMenuKeydown,
+} = useDropdownMenu('admin-users-columns')
 
 // localStorage keys
 const FILTER_VALUES_KEY = 'user-filter-values'
@@ -1184,6 +1281,16 @@ type UsageSortState = { key: string; metric: UsageMetric; order: 'asc' | 'desc' 
 const USAGE_SORT_STORAGE_KEY = 'admin-users-usage-sort'
 // 列头排序按钮点击后弹出的"今日/近30天"选择菜单，同时只允许一个列展开。
 const openUsageSortMenu = ref<string | null>(null)
+const {
+  open: usageSortMenuOpen,
+  triggerRef: usageSortMenuTriggerRef,
+  menuRef: usageSortMenuRef,
+  openMenu: openUsageSortDropdown,
+  closeMenu: closeUsageSortDropdown,
+  handleMenuKeydown: handleUsageSortDropdownKeydown,
+} = useDropdownMenu('admin-users-usage-sort')
+const getUsageSortTriggerId = (key: string) => `admin-users-usage-sort-trigger-${key}`
+const getUsageSortMenuId = (key: string) => `admin-users-usage-sort-menu-${key}`
 
 const loadInitialUsageSort = (): UsageSortState => {
   try {
@@ -1213,7 +1320,7 @@ const persistUsageSort = () => {
 const clearUsageSort = () => {
   if (!usageSort.value) return
   usageSort.value = null
-  openUsageSortMenu.value = null
+  closeUsageSortMenu()
   persistUsageSort()
 }
 
@@ -1232,12 +1339,57 @@ const toggleUsageSort = (key: string, metric: UsageMetric) => {
     usageSort.value = { key, metric, order: 'desc' }
   }
   persistUsageSort()
-  openUsageSortMenu.value = null
+  closeUsageSortMenu(true)
 }
 
 // 点击图标本身不触发排序，仅开关菜单；首次排序由用户在菜单内选择 metric 触发（默认 desc，详见 toggleUsageSort）。
-const toggleUsageSortMenu = (key: string) => {
-  openUsageSortMenu.value = openUsageSortMenu.value === key ? null : key
+const toggleUsageSortMenu = (key: string, event: MouseEvent) => {
+  if (openUsageSortMenu.value === key && usageSortMenuOpen.value) {
+    closeUsageSortMenu()
+    return
+  }
+
+  const trigger = event.currentTarget
+  if (!(trigger instanceof HTMLButtonElement)) return
+  usageSortMenuTriggerRef.value = trigger
+  openUsageSortMenu.value = key
+  void openUsageSortDropdown('first')
+}
+
+const openUsageSortMenuFromKeyboard = (
+  key: string,
+  event: KeyboardEvent,
+  focusTarget: ActionMenuFocusTarget,
+) => {
+  const trigger = event.currentTarget
+  if (!(trigger instanceof HTMLButtonElement)) return
+  usageSortMenuTriggerRef.value = trigger
+  openUsageSortMenu.value = key
+  void openUsageSortDropdown(focusTarget)
+}
+
+const closeUsageSortMenu = (restoreTriggerFocus = false) => {
+  openUsageSortMenu.value = null
+  void closeUsageSortDropdown(restoreTriggerFocus)
+}
+
+const handleUsageSortTriggerKeydown = (key: string, event: KeyboardEvent) => {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    event.stopPropagation()
+    openUsageSortMenuFromKeyboard(key, event, event.key === 'ArrowUp' ? 'last' : 'first')
+  } else if (event.key === 'Escape' && usageSortMenuOpen.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    closeUsageSortMenu(true)
+  }
+}
+
+const handleUsageSortMenuKeydown = (event: KeyboardEvent) => {
+  handleUsageSortDropdownKeydown(event)
+  if (event.key === 'Escape' || event.key === 'Tab') {
+    openUsageSortMenu.value = null
+  }
 }
 
 const getUsageValue = (userId: number, key: string, metric: UsageMetric): number => {
@@ -1388,13 +1540,29 @@ const refreshCurrentPageSecondaryData = () => {
 // Action Menu State
 const activeMenuId = ref<number | null>(null)
 const menuPosition = ref<{ top: number; left: number } | null>(null)
+const {
+  open: actionMenuOpen,
+  triggerRef: actionMenuTriggerRef,
+  menuRef: actionMenuRef,
+  menuId: actionMenuId,
+  openMenu: openActionDropdown,
+  closeMenu: closeActionDropdown,
+  handleMenuKeydown: handleActionDropdownKeydown,
+} = useDropdownMenu('admin-users-actions')
 
-const openActionMenu = (user: AdminUser, e: MouseEvent) => {
-  if (activeMenuId.value === user.id) {
+const getActionMenuTriggerId = (userId: number) => `admin-users-actions-trigger-${userId}`
+type ActionMenuFocusTarget = 'first' | 'last'
+
+const openActionMenu = (
+  user: AdminUser,
+  event: MouseEvent | KeyboardEvent,
+  focusTarget: ActionMenuFocusTarget = 'first',
+) => {
+  if (activeMenuId.value === user.id && actionMenuOpen.value) {
     closeActionMenu()
   } else {
-    const target = e.currentTarget as HTMLElement
-    if (!target) {
+    const target = event.currentTarget
+    if (!(target instanceof HTMLButtonElement)) {
       closeActionMenu()
       return
     }
@@ -1428,23 +1596,44 @@ const openActionMenu = (user: AdminUser, e: MouseEvent) => {
       }
     } else {
       left = Math.max(padding, Math.min(
-        e.clientX - menuWidth,
+        (event instanceof MouseEvent ? event.clientX : rect.right) - menuWidth,
         viewportWidth - menuWidth - padding
       ))
-      top = e.clientY
+      top = event instanceof MouseEvent ? event.clientY : rect.bottom + 4
       if (top + menuHeight > viewportHeight - padding) {
         top = viewportHeight - menuHeight - padding
       }
     }
 
+    actionMenuTriggerRef.value = target
     menuPosition.value = { top, left }
     activeMenuId.value = user.id
+    void openActionDropdown(focusTarget)
   }
 }
 
-const closeActionMenu = () => {
+const closeActionMenu = (restoreTriggerFocus = false) => {
   activeMenuId.value = null
   menuPosition.value = null
+  void closeActionDropdown(restoreTriggerFocus)
+}
+
+const handleActionTriggerKeydown = (user: AdminUser, event: KeyboardEvent) => {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    openActionMenu(user, event, event.key === 'ArrowUp' ? 'last' : 'first')
+  } else if (event.key === 'Escape' && actionMenuOpen.value) {
+    event.preventDefault()
+    closeActionMenu(true)
+  }
+}
+
+const handleActionMenuKeydown = (event: KeyboardEvent) => {
+  handleActionDropdownKeydown(event)
+  if (event.key === 'Escape' || event.key === 'Tab') {
+    activeMenuId.value = null
+    menuPosition.value = null
+  }
 }
 
 // Close menu when clicking outside
@@ -1455,15 +1644,15 @@ const handleClickOutside = (event: MouseEvent) => {
   }
   // Close filter dropdown when clicking outside
   if (filterDropdownRef.value && !filterDropdownRef.value.contains(target)) {
-    showFilterDropdown.value = false
+    void closeFilterMenu()
   }
   // Close column dropdown when clicking outside
   if (columnDropdownRef.value && !columnDropdownRef.value.contains(target)) {
-    showColumnDropdown.value = false
+    void closeColumnMenu()
   }
   // Close usage sort dropdown when clicking outside any usage-sort-trigger
   if (openUsageSortMenu.value !== null && !target.closest('.usage-sort-trigger')) {
-    openUsageSortMenu.value = null
+    closeUsageSortMenu()
   }
   // Close expanded group dropdown when clicking outside
   if (expandedGroupUserId.value !== null) {
@@ -1807,3 +1996,39 @@ onUnmounted(() => {
   abortController?.abort()
 })
 </script>
+
+<style scoped>
+.resource-toolbar {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.resource-menu {
+  overflow: hidden;
+  padding: 4px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface-raised, #fff);
+  box-shadow: var(--ui-shadow-lg, 0 14px 34px rgba(15, 23, 42, 0.14));
+}
+
+.resource-menu > button {
+  min-height: 36px;
+  border-radius: 6px;
+}
+
+.resource-menu > button:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: -2px;
+}
+
+@media (max-width: 767px) {
+  .resource-toolbar {
+    padding: 10px;
+  }
+}
+</style>

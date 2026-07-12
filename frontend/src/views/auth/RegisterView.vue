@@ -12,16 +12,43 @@
       <EmailVerificationStep v-if="verificationMode" @back="handleVerificationBack" />
 
       <template v-else>
+      <div
+        v-if="settingsLoadError"
+        class="rounded-panel border border-danger/30 bg-danger-subtle p-4 text-danger-foreground"
+        role="alert"
+      >
+        <div class="flex items-start gap-3">
+          <Icon name="exclamationCircle" size="md" class="mt-0.5 flex-shrink-0" />
+          <div class="min-w-0 flex-1">
+            <p class="text-sm">{{ settingsLoadError }}</p>
+            <button type="button" class="btn btn-secondary btn-sm mt-3" @click="loadRegistrationSettings">
+              <Icon name="refresh" size="sm" />
+              {{ t('common.retry') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-else-if="!settingsLoaded"
+        class="flex min-h-32 items-center justify-center"
+        role="status"
+        :aria-label="t('common.loading')"
+      >
+        <Icon name="refresh" size="lg" class="animate-spin text-foreground-subtle" />
+      </div>
+
       <!-- Registration Disabled Message -->
       <div
-        v-if="settingsLoaded && !registrationEnabled"
-        class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20"
+        v-else-if="!registrationEnabled"
+        class="rounded-panel border border-warning/30 bg-warning-subtle p-4 text-warning-foreground"
+        role="status"
       >
         <div class="flex items-start gap-3">
           <div class="flex-shrink-0">
-            <Icon name="exclamationCircle" size="md" class="text-amber-500" />
+            <Icon name="exclamationCircle" size="md" />
           </div>
-          <p class="text-sm text-amber-700 dark:text-amber-400">
+          <p class="text-sm">
             {{ t('auth.registrationDisabled') }}
           </p>
         </div>
@@ -29,7 +56,7 @@
 
       <!-- Registration Form -->
       <form
-        v-else-if="settingsLoaded && registrationEnabled"
+        v-else
         @submit.prevent="handleRegister"
         class="space-y-5"
       >
@@ -53,8 +80,13 @@
               class="input pl-11"
               :class="{ 'input-error': errors.email }"
               :placeholder="t('auth.emailPlaceholder')"
+              :aria-invalid="!!errors.email"
+              :aria-describedby="errors.email ? 'register-email-error' : undefined"
             />
           </div>
+          <p v-if="errors.email" id="register-email-error" class="input-error-text" role="alert">
+            {{ errors.email }}
+          </p>
         </div>
 
         <!-- Password Input -->
@@ -76,18 +108,25 @@
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
               :placeholder="t('auth.createPasswordPlaceholder')"
+              :aria-invalid="!!errors.password"
+              :aria-describedby="errors.password ? 'register-password-error' : 'register-password-hint'"
             />
             <button
               type="button"
               :disabled="registrationActionDisabled"
               @click="showPassword = !showPassword"
               class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              :aria-label="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
+              :aria-pressed="showPassword"
             >
               <Icon v-if="showPassword" name="eyeOff" size="md" />
               <Icon v-else name="eye" size="md" />
             </button>
           </div>
-          <p class="input-hint">
+          <p v-if="errors.password" id="register-password-error" class="input-error-text" role="alert">
+            {{ errors.password }}
+          </p>
+          <p v-else id="register-password-hint" class="input-hint">
             {{ t('auth.passwordHint') }}
           </p>
         </div>
@@ -113,6 +152,8 @@
               }"
               :placeholder="t('auth.invitationCodePlaceholder')"
               @input="handleInvitationCodeInput"
+              :aria-invalid="invitationValidation.invalid || !!errors.invitation_code"
+              :aria-describedby="invitationValidation.valid || invitationValidation.invalid || errors.invitation_code ? 'register-invitation-feedback' : undefined"
             />
             <!-- Validation indicator -->
             <div v-if="invitationValidating" class="absolute inset-y-0 right-0 flex items-center pr-3.5">
@@ -130,11 +171,19 @@
           </div>
           <!-- Invitation code validation result -->
           <transition name="fade">
-            <div v-if="invitationValidation.valid" class="mt-2 flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 dark:bg-green-900/20">
+            <div v-if="invitationValidation.valid" id="register-invitation-feedback" class="mt-2 flex items-center gap-2 rounded-panel bg-success-subtle px-3 py-2 text-success-foreground" role="status">
               <Icon name="checkCircle" size="sm" class="text-green-600 dark:text-green-400" />
-              <span class="text-sm text-green-700 dark:text-green-400">
+              <span class="text-sm">
                 {{ t('auth.invitationCodeValid') }}
               </span>
+            </div>
+            <div
+              v-else-if="invitationValidation.invalid || errors.invitation_code"
+              id="register-invitation-feedback"
+              class="mt-2 rounded-panel bg-danger-subtle px-3 py-2 text-sm text-danger-foreground"
+              role="alert"
+            >
+              {{ invitationValidation.message || errors.invitation_code }}
             </div>
           </transition>
         </div>
@@ -161,6 +210,8 @@
               }"
               :placeholder="t('auth.promoCodePlaceholder')"
               @input="handlePromoCodeInput"
+              :aria-invalid="promoValidation.invalid"
+              :aria-describedby="promoValidation.valid || promoValidation.invalid ? 'register-promo-feedback' : undefined"
             />
             <!-- Validation indicator -->
             <div v-if="promoValidating" class="absolute inset-y-0 right-0 flex items-center pr-3.5">
@@ -178,11 +229,19 @@
           </div>
           <!-- Promo code validation result -->
           <transition name="fade">
-            <div v-if="promoValidation.valid" class="mt-2 flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 dark:bg-green-900/20">
+            <div v-if="promoValidation.valid" id="register-promo-feedback" class="mt-2 flex items-center gap-2 rounded-panel bg-success-subtle px-3 py-2 text-success-foreground" role="status">
               <Icon name="gift" size="sm" class="text-green-600 dark:text-green-400" />
-              <span class="text-sm text-green-700 dark:text-green-400">
+              <span class="text-sm">
                 {{ t('auth.promoCodeValid', { amount: promoValidation.bonusAmount?.toFixed(2) }) }}
               </span>
+            </div>
+            <div
+              v-else-if="promoValidation.invalid"
+              id="register-promo-feedback"
+              class="mt-2 rounded-panel bg-danger-subtle px-3 py-2 text-sm text-danger-foreground"
+              role="alert"
+            >
+              {{ promoValidation.message }}
             </div>
           </transition>
         </div>
@@ -341,6 +400,7 @@ const appStore = useAppStore()
 
 const isLoading = ref<boolean>(false)
 const settingsLoaded = ref<boolean>(false)
+const settingsLoadError = ref<string>('')
 const verificationMode = ref<boolean>(
   route.query.step === 'verify' && Boolean(sessionStorage.getItem('register_data'))
 )
@@ -383,6 +443,7 @@ const promoValidation = reactive({
   message: ''
 })
 let promoValidateTimeout: ReturnType<typeof setTimeout> | null = null
+let promoValidationRequestId = 0
 
 // Invitation code validation
 const invitationValidating = ref<boolean>(false)
@@ -392,6 +453,7 @@ const invitationValidation = reactive({
   message: ''
 })
 let invitationValidateTimeout: ReturnType<typeof setTimeout> | null = null
+let invitationValidationRequestId = 0
 
 const formData = reactive({
   email: '',
@@ -451,7 +513,9 @@ function syncAffiliateReferralCode(): string {
 
 // ==================== Lifecycle ====================
 
-onMounted(async () => {
+async function loadRegistrationSettings(): Promise<void> {
+  settingsLoaded.value = false
+  settingsLoadError.value = ''
   syncAffiliateReferralCode()
 
   try {
@@ -484,13 +548,16 @@ onMounted(async () => {
       }
     }
     syncAffiliateReferralCode()
-  } catch (error) {
-    console.error('Failed to load public settings:', error)
-    loginAgreementEnabled.value = false
-    agreementAccepted.value = true
-  } finally {
     settingsLoaded.value = true
+  } catch {
+    settingsLoadError.value = t('auth.settingsLoadFailed')
+    loginAgreementEnabled.value = false
+    agreementAccepted.value = false
   }
+}
+
+onMounted(() => {
+  void loadRegistrationSettings()
 })
 
 watch(
@@ -501,6 +568,8 @@ watch(
 )
 
 onUnmounted(() => {
+  promoValidationRequestId += 1
+  invitationValidationRequestId += 1
   if (promoValidateTimeout) {
     clearTimeout(promoValidateTimeout)
   }
@@ -575,6 +644,8 @@ function rejectLoginAgreement(): void {
 
 function handlePromoCodeInput(): void {
   const code = formData.promo_code.trim()
+  promoValidationRequestId += 1
+  promoValidating.value = false
 
   // Clear previous validation
   promoValidation.valid = false
@@ -583,9 +654,9 @@ function handlePromoCodeInput(): void {
   promoValidation.message = ''
 
   if (!code) {
-    promoValidating.value = false
     return
   }
+  promoValidating.value = true
 
   // Debounce validation
   if (promoValidateTimeout) {
@@ -600,10 +671,12 @@ function handlePromoCodeInput(): void {
 async function validatePromoCodeDebounced(code: string): Promise<void> {
   if (!code.trim()) return
 
+  const requestId = ++promoValidationRequestId
   promoValidating.value = true
 
   try {
     const result = await validatePromoCode(code)
+    if (requestId !== promoValidationRequestId || formData.promo_code.trim() !== code) return
 
     if (result.valid) {
       promoValidation.valid = true
@@ -618,12 +691,15 @@ async function validatePromoCodeDebounced(code: string): Promise<void> {
       promoValidation.message = getPromoErrorMessage(result.error_code)
     }
   } catch (error) {
+    if (requestId !== promoValidationRequestId || formData.promo_code.trim() !== code) return
     console.error('Failed to validate promo code:', error)
     promoValidation.valid = false
     promoValidation.invalid = true
     promoValidation.message = t('auth.promoCodeInvalid')
   } finally {
-    promoValidating.value = false
+    if (requestId === promoValidationRequestId) {
+      promoValidating.value = false
+    }
   }
 }
 
@@ -648,6 +724,8 @@ function getPromoErrorMessage(errorCode?: string): string {
 
 function handleInvitationCodeInput(): void {
   const code = formData.invitation_code.trim()
+  invitationValidationRequestId += 1
+  invitationValidating.value = false
 
   // Clear previous validation
   invitationValidation.valid = false
@@ -658,6 +736,7 @@ function handleInvitationCodeInput(): void {
   if (!code) {
     return
   }
+  invitationValidating.value = true
 
   // Debounce validation
   if (invitationValidateTimeout) {
@@ -670,10 +749,12 @@ function handleInvitationCodeInput(): void {
 }
 
 async function validateInvitationCodeDebounced(code: string): Promise<void> {
+  const requestId = ++invitationValidationRequestId
   invitationValidating.value = true
 
   try {
     const result = await validateInvitationCode(code)
+    if (requestId !== invitationValidationRequestId || formData.invitation_code.trim() !== code) return
 
     if (result.valid) {
       invitationValidation.valid = true
@@ -685,11 +766,14 @@ async function validateInvitationCodeDebounced(code: string): Promise<void> {
       invitationValidation.message = getInvitationErrorMessage(result.error_code)
     }
   } catch {
+    if (requestId !== invitationValidationRequestId || formData.invitation_code.trim() !== code) return
     invitationValidation.valid = false
     invitationValidation.invalid = true
     invitationValidation.message = t('auth.invitationCodeInvalid')
   } finally {
-    invitationValidating.value = false
+    if (requestId === invitationValidationRequestId) {
+      invitationValidating.value = false
+    }
   }
 }
 

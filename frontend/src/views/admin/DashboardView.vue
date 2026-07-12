@@ -2,290 +2,158 @@
   <AppLayout>
     <div class="space-y-6">
       <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-12">
+      <div
+        v-if="loading && !stats"
+        class="flex items-center justify-center py-12"
+        role="status"
+        :aria-label="t('common.loading')"
+      >
         <LoadingSpinner />
       </div>
 
-      <template v-else-if="stats">
-        <!-- Row 1: Core Stats -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <!-- Total API Keys -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
-                <Icon name="key" size="md" class="text-blue-600 dark:text-blue-400" :stroke-width="2" />
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.apiKeys') }}
-                </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ stats.total_api_keys }}
-                </p>
-                <p class="text-xs text-green-600 dark:text-green-400">
-                  {{ stats.active_api_keys }} {{ t('common.active') }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Service Accounts -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
-                <Icon name="server" size="md" class="text-purple-600 dark:text-purple-400" :stroke-width="2" />
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.accounts') }}
-                </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ stats.total_accounts }}
-                </p>
-                <p class="text-xs">
-                  <span class="text-green-600 dark:text-green-400"
-                    >{{ stats.normal_accounts }} {{ t('common.active') }}</span
-                  >
-                  <span v-if="stats.error_accounts > 0" class="ml-1 text-red-500"
-                    >{{ stats.error_accounts }} {{ t('common.error') }}</span
-                  >
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Today Requests -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
-                <Icon name="chart" size="md" class="text-green-600 dark:text-green-400" :stroke-width="2" />
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.todayRequests') }}
-                </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ stats.today_requests }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('common.total') }}: {{ formatNumber(stats.total_requests) }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- New Users Today -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/30">
-                <Icon name="userPlus" size="md" class="text-emerald-600 dark:text-emerald-400" :stroke-width="2" />
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.users') }}
-                </p>
-                <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                  +{{ stats.today_new_users }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('common.total') }}: {{ formatNumber(stats.total_users) }}
-                </p>
-              </div>
-            </div>
+      <template v-else>
+        <div
+          v-if="dashboardError"
+          class="dashboard-load-error"
+          role="alert"
+          data-testid="dashboard-load-error"
+        >
+          <Icon name="exclamationTriangle" size="md" aria-hidden="true" />
+          <div>
+            <p>{{ t('admin.dashboard.failedToLoad') }}</p>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              :disabled="loading || chartsLoading"
+              @click="loadDashboardStats"
+            >
+              <Icon name="refresh" size="sm" :class="{ 'animate-spin': loading || chartsLoading }" />
+              {{ t('common.retry') }}
+            </button>
           </div>
         </div>
 
-        <!-- Row 2: Token Stats -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <!-- Today Tokens -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30">
-                <Icon name="cube" size="md" class="text-amber-600 dark:text-amber-400" :stroke-width="2" />
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.todayTokens') }}
-                </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ formatTokens(stats.today_tokens) }}
-                </p>
-                <p class="text-xs">
-                  <span
-                    class="text-green-600 dark:text-green-400"
-                    :title="t('admin.dashboard.actual')"
-                    >${{ formatCost(stats.today_actual_cost) }}</span
-                  >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-orange-500 dark:text-orange-400"
-                    :title="t('admin.dashboard.accountCost')"
-                    >${{ formatCost(stats.today_account_cost) }}</span
-                  >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-gray-400 dark:text-gray-500"
-                    :title="t('admin.dashboard.standard')"
-                    >${{ formatCost(stats.today_cost) }}</span
-                  >
-                </p>
-              </div>
+        <template v-if="stats">
+        <section class="dashboard-kpi-strip" :aria-label="t('admin.dashboard.title')">
+          <DashboardMetric
+            :label="t('admin.dashboard.todayRequests')"
+            :value="formatNumber(stats.today_requests)"
+            :detail="`${t('common.total')}: ${formatNumber(stats.total_requests)}`"
+            icon="chart"
+            tone="success"
+          />
+          <DashboardMetric
+            :label="t('admin.dashboard.todayTokens')"
+            :value="formatTokens(stats.today_tokens)"
+            :detail="`${t('admin.dashboard.actual')}: $${formatCost(stats.today_actual_cost)}`"
+            icon="cube"
+          />
+          <DashboardMetric
+            :label="t('admin.dashboard.performance')"
+            :value="`${formatTokens(stats.rpm)} RPM`"
+            :detail="`${formatTokens(stats.tpm)} TPM`"
+            icon="bolt"
+          />
+          <DashboardMetric
+            :label="t('admin.dashboard.avgResponse')"
+            :value="formatDuration(stats.average_duration_ms)"
+            :detail="`${stats.active_users} ${t('admin.dashboard.activeUsers')}`"
+            icon="clock"
+            :tone="stats.average_duration_ms > 5000 ? 'warning' : 'neutral'"
+          />
+        </section>
+
+        <section class="dashboard-health-panel">
+          <div class="dashboard-section-heading">
+            <div>
+              <p class="dashboard-eyebrow">{{ t('admin.dashboard.performance') }}</p>
+              <h2>{{ t('admin.dashboard.accounts') }}</h2>
+            </div>
+            <span
+              class="dashboard-health-state"
+              :data-state="stats.error_accounts > 0 ? 'warning' : 'healthy'"
+            >
+              <span aria-hidden="true"></span>
+              {{ stats.error_accounts > 0 ? t('common.error') : t('common.active') }}
+            </span>
+          </div>
+
+          <div class="dashboard-health-grid">
+            <div>
+              <span>{{ t('admin.dashboard.accounts') }}</span>
+              <strong>{{ formatNumber(stats.normal_accounts) }} / {{ formatNumber(stats.total_accounts) }}</strong>
+            </div>
+            <div>
+              <span>{{ t('admin.dashboard.apiKeys') }}</span>
+              <strong>{{ formatNumber(stats.active_api_keys) }} / {{ formatNumber(stats.total_api_keys) }}</strong>
+            </div>
+            <div>
+              <span>{{ t('admin.dashboard.users') }}</span>
+              <strong>{{ formatNumber(stats.active_users) }} / {{ formatNumber(stats.total_users) }}</strong>
+            </div>
+            <div>
+              <span>{{ t('admin.dashboard.totalTokens') }}</span>
+              <strong>{{ formatTokens(stats.total_tokens) }}</strong>
             </div>
           </div>
 
-          <!-- Total Tokens -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
-                <Icon name="database" size="md" class="text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.totalTokens') }}
-                </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ formatTokens(stats.total_tokens) }}
-                </p>
-                <p class="text-xs">
-                  <span
-                    class="text-green-600 dark:text-green-400"
-                    :title="t('admin.dashboard.actual')"
-                    >${{ formatCost(stats.total_actual_cost) }}</span
-                  >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-orange-500 dark:text-orange-400"
-                    :title="t('admin.dashboard.accountCost')"
-                    >${{ formatCost(stats.total_account_cost) }}</span
-                  >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-gray-400 dark:text-gray-500"
-                    :title="t('admin.dashboard.standard')"
-                    >${{ formatCost(stats.total_cost) }}</span
-                  >
-                </p>
-              </div>
+          <div v-if="stats.error_accounts > 0" class="dashboard-alert" role="status">
+            <Icon name="exclamationTriangle" size="sm" aria-hidden="true" />
+            <span>{{ stats.error_accounts }} {{ t('common.error') }}</span>
+            <button type="button" @click="router.push('/admin/accounts')">
+              {{ t('admin.dashboard.manageAccounts') }}
+            </button>
+          </div>
+        </section>
+
+        <section class="dashboard-actions-panel" :aria-label="t('admin.dashboard.quickActions')">
+          <div class="dashboard-section-heading dashboard-section-heading-compact">
+            <div>
+              <p class="dashboard-eyebrow">{{ t('admin.dashboard.quickActions') }}</p>
+              <h2>{{ t('admin.dashboard.groupPricing') }}</h2>
             </div>
           </div>
-
-          <!-- Performance (RPM/TPM) -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-violet-100 p-2 dark:bg-violet-900/30">
-                <Icon name="bolt" size="md" class="text-violet-600 dark:text-violet-400" :stroke-width="2" />
-              </div>
-              <div class="flex-1">
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.performance') }}
-                </p>
-                <div class="flex items-baseline gap-2">
-                  <p class="text-xl font-bold text-gray-900 dark:text-white">
-                    {{ formatTokens(stats.rpm) }}
-                  </p>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">RPM</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                  <p class="text-sm font-semibold text-violet-600 dark:text-violet-400">
-                    {{ formatTokens(stats.tpm) }}
-                  </p>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">TPM</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Avg Response Time -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-rose-100 p-2 dark:bg-rose-900/30">
-                <Icon name="clock" size="md" class="text-rose-600 dark:text-rose-400" :stroke-width="2" />
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.avgResponse') }}
-                </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ formatDuration(stats.average_duration_ms) }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ stats.active_users }} {{ t('admin.dashboard.activeUsers') }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="card p-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-gray-900 dark:text-white">
-              {{ t('admin.dashboard.quickActions') }}
-            </h2>
-          </div>
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div class="dashboard-action-list">
+            <button type="button" @click="router.push('/admin/groups')">
+              <span class="dashboard-action-icon"><Icon name="grid" size="sm" /></span>
+              <span>
+                <strong>{{ t('admin.dashboard.groupPricing') }}</strong>
+                <small>{{ t('admin.dashboard.groupPricingDesc') }}</small>
+              </span>
+              <Icon name="chevronRight" size="sm" aria-hidden="true" />
+            </button>
             <button
               v-if="canUseBatchImage"
               type="button"
-              class="group flex items-center gap-3 rounded-lg bg-gray-50 p-3 text-left transition-colors hover:bg-sky-50 dark:bg-dark-800/50 dark:hover:bg-sky-900/20"
               @click="router.push('/batch-image')"
             >
-              <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
-                <Icon name="sparkles" size="md" :stroke-width="2" />
+              <span class="dashboard-action-icon"><Icon name="sparkles" size="sm" /></span>
+              <span>
+                <strong>{{ t('admin.dashboard.batchImage') }}</strong>
+                <small>{{ t('admin.dashboard.batchImageDesc') }}</small>
               </span>
-              <span class="min-w-0 flex-1">
-                <span class="block text-sm font-medium text-gray-900 dark:text-white">
-                  {{ t('admin.dashboard.batchImage') }}
-                </span>
-                <span class="block text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.batchImageDesc') }}
-                </span>
-              </span>
-              <Icon name="chevronRight" size="sm" class="text-gray-400 group-hover:text-sky-500" />
-            </button>
-            <button
-              type="button"
-              class="group flex items-center gap-3 rounded-lg bg-gray-50 p-3 text-left transition-colors hover:bg-emerald-50 dark:bg-dark-800/50 dark:hover:bg-emerald-900/20"
-              @click="router.push('/admin/groups')"
-            >
-              <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                <Icon name="grid" size="md" :stroke-width="2" />
-              </span>
-              <span class="min-w-0 flex-1">
-                <span class="block text-sm font-medium text-gray-900 dark:text-white">
-                  {{ t('admin.dashboard.groupPricing') }}
-                </span>
-                <span class="block text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.groupPricingDesc') }}
-                </span>
-              </span>
-              <Icon name="chevronRight" size="sm" class="text-gray-400 group-hover:text-emerald-500" />
+              <Icon name="chevronRight" size="sm" aria-hidden="true" />
             </button>
           </div>
-        </div>
+        </section>
 
-        <!-- Charts Section -->
-        <div class="space-y-6">
-          <!-- Date Range Filter -->
-          <div class="card p-4">
-            <div class="flex flex-wrap items-center gap-4">
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >{{ t('admin.dashboard.timeRange') }}:</span
-                >
+        <section class="dashboard-analytics">
+          <div class="dashboard-chart-toolbar">
+            <div class="dashboard-toolbar-copy">
+              <p class="dashboard-eyebrow">{{ t('admin.dashboard.recentUsage') }}</p>
+              <h2>{{ t('admin.dashboard.tokenUsageTrend') }}</h2>
+            </div>
+            <div class="dashboard-chart-controls">
+              <div class="dashboard-control-group">
+                <span class="dashboard-control-label">{{ t('admin.dashboard.timeRange') }}</span>
                 <DateRangePicker
                   v-model:start-date="startDate"
                   v-model:end-date="endDate"
                   @change="onDateRangeChange"
                 />
               </div>
-              <button @click="loadDashboardStats" :disabled="chartsLoading" class="btn btn-secondary">
-                {{ t('common.refresh') }}
-              </button>
-              <div class="ml-auto flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >{{ t('admin.dashboard.granularity') }}:</span
-                >
+              <div class="dashboard-control-group dashboard-granularity-control">
+                <span class="dashboard-control-label">{{ t('admin.dashboard.granularity') }}</span>
                 <div class="w-28">
                   <Select
                     v-model="granularity"
@@ -294,11 +162,19 @@
                   />
                 </div>
               </div>
+              <button
+                type="button"
+                @click="loadDashboardStats"
+                :disabled="chartsLoading"
+                class="btn btn-secondary"
+              >
+                <Icon name="refresh" size="sm" :class="chartsLoading ? 'animate-spin' : ''" />
+                {{ t('common.refresh') }}
+              </button>
             </div>
           </div>
 
-          <!-- Charts Grid -->
-          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <ModelDistributionChart
               :model-stats="modelStats"
               :enable-ranking-view="true"
@@ -316,14 +192,24 @@
             <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
           </div>
 
-          <!-- User Usage Trend (Full Width) -->
-          <div class="card p-4">
-            <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+          <div class="dashboard-chart-card">
+            <h3>
               {{ t('admin.dashboard.recentUsage') }} (Top 12)
             </h3>
             <div class="h-64">
               <div v-if="userTrendLoading" class="flex h-full items-center justify-center">
                 <LoadingSpinner size="md" />
+              </div>
+              <div
+                v-else-if="userTrendError"
+                class="flex h-full flex-col items-center justify-center gap-3 px-4 text-center text-sm text-danger-foreground"
+                role="alert"
+              >
+                <span>{{ t('admin.dashboard.failedToLoad') }}</span>
+                <button type="button" class="btn btn-secondary btn-sm" @click="loadUsersTrend">
+                  <Icon name="refresh" size="sm" />
+                  {{ t('common.retry') }}
+                </button>
               </div>
               <Line v-else-if="userTrendChartData" :data="userTrendChartData" :options="lineOptions" />
               <div
@@ -334,7 +220,8 @@
               </div>
             </div>
           </div>
-        </div>
+        </section>
+        </template>
       </template>
     </div>
   </AppLayout>
@@ -356,6 +243,7 @@ import type {
   UserSpendingRankingItem
 } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import DashboardMetric from '@/components/admin/DashboardMetric.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
@@ -363,6 +251,7 @@ import Select from '@/components/common/Select.vue'
 import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
+import { useTheme } from '@/composables/useTheme'
 
 import {
   Chart as ChartJS,
@@ -390,10 +279,13 @@ ChartJS.register(
 const appStore = useAppStore()
 const router = useRouter()
 const { canUseBatchImage, refreshBatchImageAccess } = useBatchImageAccess()
+const { isDark } = useTheme()
 const stats = ref<DashboardStats | null>(null)
 const loading = ref(false)
 const chartsLoading = ref(false)
+const dashboardError = ref(false)
 const userTrendLoading = ref(false)
+const userTrendError = ref(false)
 const rankingLoading = ref(false)
 const rankingError = ref(false)
 
@@ -436,15 +328,10 @@ const granularityOptions = computed(() => [
   { value: 'hour', label: t('admin.dashboard.hour') }
 ])
 
-// Dark mode detection
-const isDarkMode = computed(() => {
-  return document.documentElement.classList.contains('dark')
-})
-
 // Chart colors
 const chartColors = computed(() => ({
-  text: isDarkMode.value ? '#e5e7eb' : '#374151',
-  grid: isDarkMode.value ? '#374151' : '#e5e7eb'
+  text: isDark.value ? '#e5e7eb' : '#374151',
+  grid: isDark.value ? '#374151' : '#e5e7eb'
 }))
 
 // Line chart options (for user trend chart)
@@ -650,6 +537,7 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
     loading.value = true
   }
   chartsLoading.value = true
+  dashboardError.value = false
   try {
     const response = await adminAPI.dashboard.getSnapshotV2({
       start_date: startDate.value,
@@ -665,10 +553,14 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
     if (includeStats && response.stats) {
       stats.value = response.stats
     }
+    if (includeStats && !stats.value) {
+      throw new Error('Dashboard snapshot did not include statistics')
+    }
     trendData.value = response.trend || []
     modelStats.value = response.models || []
   } catch (error) {
     if (currentSeq !== chartLoadSeq) return
+    dashboardError.value = true
     appStore.showError(t('admin.dashboard.failedToLoad'))
     console.error('Error loading dashboard snapshot:', error)
   } finally {
@@ -682,6 +574,7 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
 const loadUsersTrend = async () => {
   const currentSeq = ++usersTrendLoadSeq
   userTrendLoading.value = true
+  userTrendError.value = false
   try {
     const response = await adminAPI.dashboard.getUserUsageTrend({
       start_date: startDate.value,
@@ -691,10 +584,12 @@ const loadUsersTrend = async () => {
     })
     if (currentSeq !== usersTrendLoadSeq) return
     userTrend.value = response.trend || []
+    userTrendError.value = false
   } catch (error) {
     if (currentSeq !== usersTrendLoadSeq) return
     console.error('Error loading users trend:', error)
     userTrend.value = []
+    userTrendError.value = true
   } finally {
     if (currentSeq === usersTrendLoadSeq) {
       userTrendLoading.value = false
@@ -755,4 +650,371 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.dashboard-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.dashboard-load-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--ui-danger, #dc2626) 30%, transparent);
+  border-radius: 8px;
+  color: var(--ui-danger-text, #b42318);
+  background: var(--ui-danger-subtle, #fef3f2);
+}
+
+.dashboard-load-error > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-load-error p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 479px) {
+  .dashboard-load-error > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.dashboard-health-panel,
+.dashboard-actions-panel,
+.dashboard-chart-toolbar,
+.dashboard-chart-card {
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.dashboard-health-panel,
+.dashboard-actions-panel {
+  overflow: hidden;
+}
+
+.dashboard-section-heading {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ui-border, #dbe3ee);
+}
+
+.dashboard-section-heading-compact {
+  min-height: 56px;
+}
+
+.dashboard-section-heading h2,
+.dashboard-chart-toolbar h2 {
+  margin: 2px 0 0;
+  color: var(--ui-text, #0f172a);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.dashboard-eyebrow {
+  margin: 0;
+  color: var(--ui-text-subtle, #8793a3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.dashboard-health-state {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 9px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 999px;
+  color: var(--ui-text-muted, #667085);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.dashboard-health-state > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ui-success, #059669);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-success, #059669) 12%, transparent);
+}
+
+.dashboard-health-state[data-state='warning'] > span {
+  background: var(--ui-warning, #d97706);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-warning, #d97706) 12%, transparent);
+}
+
+.dashboard-health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-health-grid > div {
+  min-width: 0;
+  padding: 15px 16px 16px;
+  border-right: 1px solid var(--ui-border, #dbe3ee);
+}
+
+.dashboard-health-grid > div:last-child {
+  border-right: 0;
+}
+
+.dashboard-health-grid span,
+.dashboard-health-grid strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-health-grid span {
+  color: var(--ui-text-muted, #667085);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dashboard-health-grid strong {
+  margin-top: 7px;
+  color: var(--ui-text, #0f172a);
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-alert {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--ui-warning, #d97706) 24%, var(--ui-border, #dbe3ee));
+  background: color-mix(in srgb, var(--ui-warning, #d97706) 6%, var(--ui-surface, #fff));
+  color: var(--ui-warning-strong, #9a5805);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dashboard-alert button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-action-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-action-list > button {
+  display: grid;
+  min-height: 70px;
+  grid-template-columns: 32px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 16px;
+  border: 0;
+  border-right: 1px solid var(--ui-border, #dbe3ee);
+  background: transparent;
+  color: var(--ui-text-muted, #667085);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.dashboard-action-list > button:last-child {
+  border-right: 0;
+}
+
+.dashboard-action-list > button:hover {
+  background: var(--ui-surface-subtle, #f4f7fb);
+  color: var(--ui-text, #0f172a);
+}
+
+.dashboard-action-list > button:focus-visible,
+.dashboard-alert button:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: -3px;
+}
+
+.dashboard-action-icon {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 7px;
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.dashboard-action-list strong,
+.dashboard-action-list small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-action-list strong {
+  color: var(--ui-text, #0f172a);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dashboard-action-list small {
+  margin-top: 3px;
+  color: var(--ui-text-muted, #667085);
+  font-size: 11px;
+}
+
+.dashboard-analytics {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboard-chart-toolbar {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 12px 10px 16px;
+}
+
+.dashboard-chart-controls,
+.dashboard-control-group {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-chart-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.dashboard-control-group {
+  gap: 8px;
+}
+
+.dashboard-control-label {
+  color: var(--ui-text-muted, #667085);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.dashboard-chart-card {
+  padding: 16px;
+}
+
+.dashboard-chart-card h3 {
+  margin: 0 0 14px;
+  color: var(--ui-text, #0f172a);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-kpi-strip,
+  .dashboard-health-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-kpi-strip :deep(.dashboard-metric:nth-child(2)),
+  .dashboard-health-grid > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .dashboard-kpi-strip :deep(.dashboard-metric:nth-child(-n + 2)),
+  .dashboard-health-grid > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--ui-border, #dbe3ee);
+  }
+
+  .dashboard-chart-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-chart-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-section-heading {
+    align-items: flex-start;
+  }
+
+  .dashboard-health-grid > div {
+    padding: 13px 14px;
+  }
+
+  .dashboard-health-grid > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .dashboard-action-list {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-action-list > button {
+    min-height: 64px;
+    border-right: 0;
+    border-bottom: 1px solid var(--ui-border, #dbe3ee);
+  }
+
+  .dashboard-action-list > button:last-child {
+    border-bottom: 0;
+  }
+
+  .dashboard-chart-toolbar {
+    padding: 14px;
+  }
+
+  .dashboard-chart-controls,
+  .dashboard-control-group {
+    width: 100%;
+  }
+
+  .dashboard-control-group {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-granularity-control > div,
+  .dashboard-chart-controls > .btn {
+    width: 100%;
+  }
+}
 </style>

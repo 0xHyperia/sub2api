@@ -2,67 +2,84 @@
   <BaseDialog :show="show" :title="dialogTitle" width="narrow" @close="handleClose">
     <!-- QR Code + Polling State -->
     <div v-if="!success" class="flex flex-col items-center space-y-4">
+      <div
+        v-if="pollUnavailable"
+        class="w-full rounded-panel border border-warning/30 bg-warning-subtle p-3 text-warning-foreground"
+        role="status"
+      >
+        <p class="text-sm">{{ t('payment.qr.statusUnavailable') }}</p>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm mt-3"
+          :disabled="retryingStatus"
+          @click="retryStatus"
+        >
+          <Icon name="refresh" size="sm" :class="{ 'animate-spin': retryingStatus }" />
+          {{ t('common.retry') }}
+        </button>
+      </div>
+
       <!-- QR Code mode -->
       <template v-if="qrUrl">
-        <div class="rounded-2xl bg-white p-4 shadow-sm dark:bg-dark-800">
-          <canvas ref="qrCanvas" class="mx-auto"></canvas>
+        <div class="w-full max-w-64 rounded-panel border border-outline bg-white p-3">
+          <canvas ref="qrCanvas" class="mx-auto block h-auto w-full max-w-[220px]" role="img" :aria-label="dialogTitle"></canvas>
         </div>
-        <p v-if="scanHint" class="text-center text-sm text-gray-500 dark:text-gray-400">
+        <p v-if="scanHint" class="text-center text-sm text-foreground-muted">
           {{ scanHint }}
         </p>
       </template>
       <!-- Popup window waiting mode (no QR code) -->
       <template v-else>
         <div class="flex flex-col items-center py-4">
-          <div class="h-10 w-10 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
-          <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ t('payment.qr.payInNewWindowHint') }}</p>
-          <button v-if="payUrl" class="btn btn-secondary mt-3 text-sm" @click="reopenPopup">
+          <Icon name="refresh" size="lg" class="animate-spin text-foreground-subtle" />
+          <p class="mt-4 text-center text-sm text-foreground-muted">{{ t('payment.qr.payInNewWindowHint') }}</p>
+          <button v-if="payUrl" type="button" class="btn btn-secondary mt-3 text-sm" @click="reopenPopup">
             {{ t('payment.qr.openPayWindow') }}
           </button>
         </div>
       </template>
       <!-- Countdown -->
       <div v-if="expired" class="text-center">
-        <p class="text-lg font-medium text-red-500">{{ t('payment.qr.expired') }}</p>
+        <p class="text-lg font-medium text-danger-foreground">{{ t('payment.qr.expired') }}</p>
       </div>
       <div v-else class="text-center">
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ qrUrl ? t('payment.qr.expiresIn') : '' }}</p>
-        <p class="mt-1 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{{ countdownDisplay }}</p>
-        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('payment.qr.waitingPayment') }}</p>
+        <p class="text-sm text-foreground-muted">{{ qrUrl ? t('payment.qr.expiresIn') : '' }}</p>
+        <p class="mt-1 text-2xl font-semibold tabular-nums text-foreground" role="timer">{{ countdownDisplay }}</p>
+        <p class="mt-1 text-xs text-foreground-subtle">{{ t('payment.qr.waitingPayment') }}</p>
       </div>
     </div>
     <!-- Success State -->
     <div v-else class="flex flex-col items-center space-y-4 py-4">
-      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-        <Icon name="check" size="lg" class="text-green-500" />
+      <div class="flex h-14 w-14 items-center justify-center rounded-panel bg-success-subtle">
+        <Icon name="check" size="lg" class="text-success-foreground" />
       </div>
-      <p class="text-lg font-bold text-gray-900 dark:text-white">{{ t('payment.result.success') }}</p>
-      <div v-if="paidOrder" class="w-full rounded-xl bg-gray-50 p-4 dark:bg-dark-800">
-        <div class="space-y-2 text-sm">
+      <p class="text-lg font-semibold text-foreground">{{ t('payment.result.success') }}</p>
+      <div v-if="paidOrder" class="w-full rounded-panel border border-outline bg-surface-subtle p-4">
+        <dl class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
-            <span class="font-medium text-gray-900 dark:text-white">#{{ paidOrder.id }}</span>
+            <dt class="text-foreground-muted">{{ t('payment.orders.orderId') }}</dt>
+            <dd class="font-medium text-foreground">#{{ paidOrder.id }}</dd>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.amount') }}</span>
-            <span class="font-medium text-gray-900 dark:text-white">{{ creditedAmountSymbol }}{{ paidOrder.amount.toFixed(2) }}</span>
+            <dt class="text-foreground-muted">{{ t('payment.orders.amount') }}</dt>
+            <dd class="font-medium text-foreground">{{ creditedAmountSymbol }}{{ paidOrder.amount.toFixed(2) }}</dd>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
-            <span class="font-medium text-gray-900 dark:text-white">{{ paymentAmountSymbol(paidOrder) }}{{ paidOrder.pay_amount.toFixed(2) }}</span>
+            <dt class="text-foreground-muted">{{ t('payment.orders.payAmount') }}</dt>
+            <dd class="font-medium text-foreground">{{ paymentAmountSymbol(paidOrder) }}{{ paidOrder.pay_amount.toFixed(2) }}</dd>
           </div>
-        </div>
+        </dl>
       </div>
     </div>
     <template #footer>
       <div class="flex justify-end gap-3">
-        <button v-if="!success && !expired" class="btn btn-secondary" :disabled="cancelling" @click="handleCancel">
+        <button v-if="!success && !expired" type="button" class="btn btn-secondary" :disabled="cancelling" @click="handleCancel">
           {{ cancelling ? t('common.processing') : t('payment.qr.cancelOrder') }}
         </button>
-        <button v-if="success" class="btn btn-primary" @click="handleDone">
+        <button v-if="success" type="button" class="btn btn-primary" @click="handleDone">
           {{ t('common.confirm') }}
         </button>
-        <button v-if="expired" class="btn btn-primary" @click="handleClose">
+        <button v-if="expired" type="button" class="btn btn-primary" @click="handleClose">
           {{ t('payment.result.backToRecharge') }}
         </button>
       </div>
@@ -112,12 +129,16 @@ const expired = ref(false)
 const cancelling = ref(false)
 const success = ref(false)
 const paidOrder = ref<PaymentOrder | null>(null)
+const pollFailureCount = ref(0)
+const pollUnavailable = ref(false)
+const retryingStatus = ref(false)
 const creditedAmountSymbol = currencySymbol('USD')
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let verifyAttempts = 0
 let lastVerifyAt = 0
+let pollingStatus = false
 
 const VERIFY_RETRY_INTERVAL_MS = 15000
 const VERIFY_RETRY_MAX_ATTEMPTS = 6
@@ -196,18 +217,40 @@ async function renderQR() {
 }
 
 async function pollStatus() {
-  if (!props.orderId) return
-  let order = await paymentStore.pollOrderStatus(props.orderId)
-  if (!order) return
-  order = await tryRecoverPendingOrder(order)
-  if (order.status === 'COMPLETED' || order.status === 'PAID') {
-    cleanup()
-    paidOrder.value = order
-    success.value = true
-    emit('success')
-  } else if (order.status === 'EXPIRED' || order.status === 'CANCELLED' || order.status === 'FAILED') {
-    cleanup()
-    expired.value = true
+  if (!props.orderId || pollingStatus) return
+  pollingStatus = true
+  try {
+    let order = await paymentStore.pollOrderStatus(props.orderId)
+    pollFailureCount.value = 0
+    pollUnavailable.value = false
+    if (!order) return
+    order = await tryRecoverPendingOrder(order)
+    if (order.status === 'COMPLETED' || order.status === 'PAID') {
+      cleanup()
+      paidOrder.value = order
+      success.value = true
+      emit('success')
+    } else if (order.status === 'EXPIRED' || order.status === 'CANCELLED' || order.status === 'FAILED') {
+      cleanup()
+      expired.value = true
+    }
+  } catch {
+    pollFailureCount.value += 1
+    if (pollFailureCount.value >= 3) pollUnavailable.value = true
+  } finally {
+    pollingStatus = false
+  }
+}
+
+async function retryStatus() {
+  if (retryingStatus.value) return
+  retryingStatus.value = true
+  pollFailureCount.value = 0
+  pollUnavailable.value = false
+  try {
+    await pollStatus()
+  } finally {
+    retryingStatus.value = false
   }
 }
 

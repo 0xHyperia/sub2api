@@ -1,26 +1,26 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+  <main class="flex min-h-screen items-center justify-center bg-canvas p-4 text-foreground">
     <div
-      class="w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+      class="w-full max-w-md space-y-5 rounded-panel border border-outline bg-surface p-5 shadow-modal sm:p-6"
     >
       <!-- Amount + Order ID -->
       <div v-if="amount" class="text-center">
-        <p class="text-3xl font-bold" :style="{ color: methodColor }">¥{{ amount }}</p>
-        <p v-if="orderId" class="mt-1 text-sm text-gray-500 dark:text-slate-400">
+        <p class="text-3xl font-semibold tabular-nums text-foreground">¥{{ amount }}</p>
+        <p v-if="orderId" class="mt-1 break-all text-sm text-foreground-muted">
           {{ t('payment.orders.orderId') }}: {{ orderId }}
         </p>
       </div>
 
       <!-- Error -->
-      <div v-if="error" class="space-y-3">
+      <div v-if="error" class="space-y-3" role="alert">
         <div
-          class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-700 dark:bg-red-900/30 dark:text-red-400"
+          class="rounded-panel border border-danger/30 bg-danger-subtle p-3 text-sm text-danger-foreground"
         >
           {{ error }}
         </div>
         <button
-          class="w-full text-sm underline dark:text-blue-400 dark:hover:text-blue-300"
-          :style="{ color: methodColor }"
+          type="button"
+          class="btn btn-secondary w-full"
           @click="closeWindow"
         >
           {{ t('common.close') }}
@@ -28,12 +28,14 @@
       </div>
 
       <!-- Success -->
-      <div v-else-if="success" class="space-y-3 py-4 text-center">
-        <div class="text-5xl text-green-600 dark:text-green-400">✓</div>
-        <p class="text-sm text-gray-500 dark:text-slate-400">{{ t('payment.result.success') }}</p>
+      <div v-else-if="success" class="space-y-3 py-4 text-center" role="status">
+        <span class="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-panel bg-success-subtle text-success-foreground">
+          <Icon name="check" size="lg" />
+        </span>
+        <p class="font-semibold text-foreground">{{ t('payment.result.success') }}</p>
         <button
-          class="text-sm underline dark:text-blue-400 dark:hover:text-blue-300"
-          :style="{ color: methodColor }"
+          type="button"
+          class="btn btn-secondary"
           @click="closeWindow"
         >
           {{ t('common.close') }}
@@ -41,15 +43,12 @@
       </div>
 
       <!-- Loading / Redirecting -->
-      <div v-else class="flex items-center justify-center py-8">
-        <div
-          class="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
-          :style="{ borderColor: methodColor, borderTopColor: 'transparent' }"
-        />
-        <span class="ml-3 text-sm text-gray-500 dark:text-slate-400">{{ hint }}</span>
+      <div v-else class="flex items-center justify-center py-8" role="status">
+        <Icon name="refresh" size="lg" class="animate-spin" :style="{ color: methodColor }" />
+        <span class="ml-3 text-sm text-foreground-muted">{{ hint }}</span>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -59,6 +58,7 @@ import { useRoute } from 'vue-router'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
 import { buildApiUrl } from '@/api/client'
+import Icon from '@/components/icons/Icon.vue'
 
 interface StripeWithWechatPay {
   confirmWechatPayPayment(clientSecret: string, options: Record<string, unknown>): Promise<{ error?: { message?: string }; paymentIntent?: { status: string } }>
@@ -84,23 +84,32 @@ const success = ref(false)
 const hint = ref(t('payment.stripePopup.redirecting'))
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
+let handshakeTimer: ReturnType<typeof setTimeout> | null = null
+let messageHandler: ((event: MessageEvent) => void) | null = null
 
 function closeWindow() { window.close() }
 
 onMounted(() => {
-  const handler = (event: MessageEvent) => {
+  messageHandler = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return
     if (event.data?.type !== 'STRIPE_POPUP_INIT') return
-    window.removeEventListener('message', handler)
+    if (messageHandler) window.removeEventListener('message', messageHandler)
+    messageHandler = null
+    if (handshakeTimer) {
+      clearTimeout(handshakeTimer)
+      handshakeTimer = null
+    }
+    error.value = ''
     initStripe(event.data.clientSecret, event.data.publishableKey)
   }
-  window.addEventListener('message', handler)
+  window.addEventListener('message', messageHandler)
 
   if (window.opener) {
     window.opener.postMessage({ type: 'STRIPE_POPUP_READY' }, window.location.origin)
   }
 
-  setTimeout(() => {
+  handshakeTimer = setTimeout(() => {
+    handshakeTimer = null
     if (!error.value && !success.value) {
       error.value = t('payment.stripePopup.timeout')
     }
@@ -109,6 +118,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
+  if (handshakeTimer) clearTimeout(handshakeTimer)
+  if (messageHandler) window.removeEventListener('message', messageHandler)
 })
 
 async function initStripe(clientSecret: string, publishableKey: string) {

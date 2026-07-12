@@ -1,176 +1,169 @@
 <template>
-  <BaseDialog :show="show" :title="t('admin.users.groupConfig')" width="wide" @close="$emit('close')">
-    <div v-if="user" class="space-y-6">
+  <BaseDialog :show="show" :title="t('admin.users.groupConfig')" width="wide" @close="handleClose">
+    <div v-if="user" class="space-y-5" :aria-busy="loading">
       <!-- 用户信息头部 -->
-      <div class="flex items-center gap-4 rounded-2xl bg-gradient-to-r from-primary-50 to-primary-100 p-5 dark:from-primary-900/30 dark:to-primary-800/20">
-        <div class="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm dark:bg-dark-700">
-          <span class="text-2xl font-semibold text-primary-600 dark:text-primary-400">{{ user.email.charAt(0).toUpperCase() }}</span>
+      <div class="flex min-w-0 items-start gap-3 rounded-panel border border-outline bg-surface-subtle p-3 sm:items-center sm:p-4">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-outline bg-surface text-sm font-semibold text-foreground-muted" aria-hidden="true">
+          {{ user.email.charAt(0).toUpperCase() }}
         </div>
-        <div class="flex-1">
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ user.email }}</p>
-          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ t('admin.users.groupConfigHint', { email: user.email }) }}</p>
+        <div class="min-w-0 flex-1">
+          <p class="break-all text-sm font-medium text-foreground">{{ user.email }}</p>
+          <p class="mt-0.5 break-words text-xs leading-5 text-foreground-subtle">
+            {{ t('admin.users.groupConfigHint', { email: user.email }) }}
+          </p>
         </div>
       </div>
 
       <!-- 加载状态 -->
-      <div v-if="loading" class="flex justify-center py-12">
-        <svg class="h-10 w-10 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
+      <div v-if="loading" class="flex items-center justify-center gap-2 py-10 text-sm text-foreground-subtle" role="status">
+        <Icon name="refresh" size="md" class="animate-spin" aria-hidden="true" />
+        <span>{{ t('common.loading') }}</span>
       </div>
 
-      <div v-else class="space-y-6">
-        <!-- 专属分组区域 -->
-        <div v-if="exclusiveGroups.length > 0">
-          <div class="mb-3 flex items-center gap-2">
-            <div class="h-1.5 w-1.5 rounded-full bg-purple-500"></div>
-            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t('admin.users.exclusiveGroups') }}</h4>
-            <span class="text-xs text-gray-400">({{ exclusiveGroupConfigs.filter(c => c.isSelected).length }}/{{ exclusiveGroupConfigs.length }})</span>
+      <div v-else-if="loadError" class="flex flex-col items-center gap-3 py-10 text-center" role="alert">
+        <p class="text-sm text-danger-foreground">{{ loadError }}</p>
+        <button type="button" class="btn btn-secondary" data-testid="allowed-groups-retry" @click="load()">
+          {{ t('admin.users.retry') }}
+        </button>
+      </div>
+
+      <div v-else class="space-y-5">
+        <p v-if="saveError" class="rounded-panel border border-danger/20 bg-danger-subtle px-3 py-2 text-sm text-danger-foreground" role="alert">
+          {{ saveError }}
+        </p>
+        <section v-if="exclusiveGroups.length > 0" aria-labelledby="exclusive-groups-heading">
+          <div class="mb-2 flex min-w-0 items-center justify-between gap-2">
+            <h4 id="exclusive-groups-heading" class="min-w-0 text-sm font-semibold text-foreground">
+              {{ t('admin.users.exclusiveGroups') }}
+            </h4>
+            <span class="badge badge-gray shrink-0 tabular-nums">
+              {{ selectedExclusiveGroupCount }}/{{ exclusiveGroupConfigs.length }}
+            </span>
           </div>
-          <div class="grid gap-3">
+
+          <div class="divide-y divide-outline overflow-hidden rounded-panel border border-outline bg-surface">
             <div
               v-for="config in exclusiveGroupConfigs"
               :key="config.groupId"
-              class="group relative overflow-hidden rounded-xl border-2 p-4 transition-all duration-200"
-              :class="config.isSelected
-                ? 'border-primary-400 bg-primary-50/50 shadow-sm dark:border-primary-500 dark:bg-primary-900/20'
-                : 'border-gray-200 bg-white hover:border-gray-300 dark:border-dark-600 dark:bg-dark-800 dark:hover:border-dark-500'"
+              class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-2 p-3 transition-colors focus-within:ring-2 focus-within:ring-inset focus-within:ring-focus/30 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-3"
+              :class="config.isSelected ? 'bg-surface-subtle' : 'bg-surface'"
             >
-              <div class="flex items-center gap-4">
-                <!-- 复选框 -->
-                <div class="flex-shrink-0">
-                  <label class="relative flex h-6 w-6 cursor-pointer items-center justify-center">
-                    <input
-                      type="checkbox"
-                      :checked="config.isSelected"
-                      @change="toggleExclusiveGroup(config.groupId)"
-                      class="peer sr-only"
-                    />
-                    <div class="h-5 w-5 rounded-md border-2 border-gray-300 transition-all peer-checked:border-primary-500 peer-checked:bg-primary-500 dark:border-dark-500 peer-checked:dark:border-primary-500">
-                      <svg v-if="config.isSelected" class="h-full w-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </label>
-                </div>
+              <label :for="`exclusive-group-${config.groupId}`" class="flex h-touch w-touch cursor-pointer items-center justify-center rounded-control">
+                <input
+                  :id="`exclusive-group-${config.groupId}`"
+                  type="checkbox"
+                  :checked="config.isSelected"
+                  :aria-label="`${t('admin.users.exclusiveGroups')}: ${config.groupName}`"
+                  class="h-5 w-5 rounded-control border-outline-strong accent-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
+                  @change="toggleExclusiveGroup(config.groupId)"
+                />
+              </label>
 
-                <!-- 分组信息 -->
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-base font-semibold text-gray-900 dark:text-white">{{ config.groupName }}</span>
-                    <span class="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
-                      {{ t('admin.groups.exclusive') }}
-                    </span>
-                  </div>
-                  <div class="mt-1.5 flex items-center gap-3 text-sm">
-                    <span class="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                      <PlatformIcon :platform="config.platform" size="xs" />
-                      <span>{{ config.platform }}</span>
-                    </span>
-                    <span class="text-gray-300 dark:text-dark-500">•</span>
-                    <span class="text-gray-500 dark:text-gray-400">
-                      {{ t('admin.users.defaultRate') }}: <span class="font-medium text-gray-700 dark:text-gray-300">{{ config.defaultRate }}x</span>
-                    </span>
-                  </div>
+              <div class="min-w-0">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
+                  <span class="min-w-0 break-words text-sm font-medium text-foreground">{{ config.groupName }}</span>
+                  <span class="badge badge-gray shrink-0">{{ t('admin.groups.exclusive') }}</span>
                 </div>
+                <p :id="`group-rate-meta-${config.groupId}`" class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground-subtle">
+                  <span class="inline-flex items-center gap-1">
+                    <PlatformIcon :platform="config.platform" size="xs" />
+                    <span class="break-all">{{ config.platform }}</span>
+                  </span>
+                  <span aria-hidden="true">/</span>
+                  <span>{{ t('admin.users.defaultRate') }}: <strong class="font-medium text-foreground-muted">{{ config.defaultRate }}x</strong></span>
+                </p>
+              </div>
 
-                <!-- 专属倍率输入 -->
-                <div class="flex flex-shrink-0 items-center gap-3">
-                  <label class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ t('admin.users.customRate') }}</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="0.001"
-                    :value="config.customRate ?? ''"
-                    @input="updateCustomRate(config.groupId, ($event.target as HTMLInputElement).value)"
-                    :placeholder="String(config.defaultRate)"
-                    class="hide-spinner w-24 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-dark-500 dark:bg-dark-700 dark:focus:border-primary-500"
-                  />
-                </div>
+              <div class="col-span-2 grid min-w-0 grid-cols-[minmax(0,1fr)_7rem] items-center gap-2 sm:col-span-1 sm:flex sm:w-56 sm:shrink-0">
+                <label :for="`exclusive-rate-${config.groupId}`" class="min-w-0 text-xs font-medium text-foreground-muted sm:flex-1">
+                  {{ t('admin.users.customRate') }}
+                </label>
+                <input
+                  :id="`exclusive-rate-${config.groupId}`"
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  :value="config.customRate ?? ''"
+                  :placeholder="String(config.defaultRate)"
+                  :aria-describedby="`group-rate-meta-${config.groupId}`"
+                  class="input hide-spinner min-w-0 tabular-nums sm:w-28"
+                  @input="updateCustomRate(config.groupId, ($event.target as HTMLInputElement).value)"
+                />
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- 公开分组区域 -->
-        <div v-if="publicGroups.length > 0">
-          <div class="mb-3 flex items-center gap-2">
-            <div class="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t('admin.users.publicGroups') }}</h4>
-            <span class="text-xs text-gray-400">({{ publicGroupConfigs.length }})</span>
+        <section v-if="publicGroups.length > 0" aria-labelledby="public-groups-heading">
+          <div class="mb-2 flex min-w-0 items-center justify-between gap-2">
+            <h4 id="public-groups-heading" class="min-w-0 text-sm font-semibold text-foreground">
+              {{ t('admin.users.publicGroups') }}
+            </h4>
+            <span class="badge badge-success shrink-0 tabular-nums">{{ publicGroupConfigs.length }}</span>
           </div>
-          <div class="grid gap-3">
+
+          <div class="divide-y divide-outline overflow-hidden rounded-panel border border-outline bg-surface">
             <div
               v-for="config in publicGroupConfigs"
               :key="config.groupId"
-              class="relative overflow-hidden rounded-xl border-2 border-green-200 bg-green-50/50 p-4 dark:border-green-800/50 dark:bg-green-900/10"
+              class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-2 p-3 focus-within:ring-2 focus-within:ring-inset focus-within:ring-focus/30 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-3"
             >
-              <div class="flex items-center gap-4">
-                <!-- 复选框（禁用状态） -->
-                <div class="flex-shrink-0">
-                  <div class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-green-400 bg-green-500 dark:border-green-600 dark:bg-green-600">
-                    <svg class="h-full w-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                </div>
+              <div class="flex h-touch w-touch items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked
+                  disabled
+                  :aria-label="`${t('admin.users.publicGroups')}: ${config.groupName}`"
+                  class="h-5 w-5 rounded-control border-outline-strong accent-success"
+                />
+              </div>
 
-                <!-- 分组信息 -->
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-base font-semibold text-gray-900 dark:text-white">{{ config.groupName }}</span>
-                  </div>
-                  <div class="mt-1.5 flex items-center gap-3 text-sm">
-                    <span class="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                      <PlatformIcon :platform="config.platform" size="xs" />
-                      <span>{{ config.platform }}</span>
-                    </span>
-                    <span class="text-gray-300 dark:text-dark-500">•</span>
-                    <span class="text-gray-500 dark:text-gray-400">
-                      {{ t('admin.users.defaultRate') }}: <span class="font-medium text-gray-700 dark:text-gray-300">{{ config.defaultRate }}x</span>
-                    </span>
-                  </div>
-                </div>
+              <div class="min-w-0">
+                <span class="block min-w-0 break-words text-sm font-medium text-foreground">{{ config.groupName }}</span>
+                <p :id="`group-rate-meta-${config.groupId}`" class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground-subtle">
+                  <span class="inline-flex items-center gap-1">
+                    <PlatformIcon :platform="config.platform" size="xs" />
+                    <span class="break-all">{{ config.platform }}</span>
+                  </span>
+                  <span aria-hidden="true">/</span>
+                  <span>{{ t('admin.users.defaultRate') }}: <strong class="font-medium text-foreground-muted">{{ config.defaultRate }}x</strong></span>
+                </p>
+              </div>
 
-                <!-- 专属倍率输入 -->
-                <div class="flex flex-shrink-0 items-center gap-3">
-                  <label class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ t('admin.users.customRate') }}</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="0.001"
-                    :value="config.customRate ?? ''"
-                    @input="updateCustomRate(config.groupId, ($event.target as HTMLInputElement).value)"
-                    :placeholder="String(config.defaultRate)"
-                    class="hide-spinner w-24 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-dark-500 dark:bg-dark-700 dark:focus:border-primary-500"
-                  />
-                </div>
+              <div class="col-span-2 grid min-w-0 grid-cols-[minmax(0,1fr)_7rem] items-center gap-2 sm:col-span-1 sm:flex sm:w-56 sm:shrink-0">
+                <label :for="`public-rate-${config.groupId}`" class="min-w-0 text-xs font-medium text-foreground-muted sm:flex-1">
+                  {{ t('admin.users.customRate') }}
+                </label>
+                <input
+                  :id="`public-rate-${config.groupId}`"
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  :value="config.customRate ?? ''"
+                  :placeholder="String(config.defaultRate)"
+                  :aria-describedby="`group-rate-meta-${config.groupId}`"
+                  class="input hide-spinner min-w-0 tabular-nums sm:w-28"
+                  @input="updateCustomRate(config.groupId, ($event.target as HTMLInputElement).value)"
+                />
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- 无分组提示 -->
-        <div v-if="groups.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
-          <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700">
-            <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+        <div v-if="groups.length === 0" class="flex flex-col items-center justify-center py-10 text-center">
+          <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-panel border border-outline bg-surface-subtle text-foreground-subtle">
+            <Icon name="inbox" size="lg" aria-hidden="true" />
           </div>
-          <p class="text-gray-500 dark:text-gray-400">{{ t('common.noGroupsAvailable') }}</p>
+          <p class="text-sm text-foreground-subtle">{{ t('common.noGroupsAvailable') }}</p>
         </div>
       </div>
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-3">
-        <button @click="$emit('close')" class="btn btn-secondary px-5">{{ t('common.cancel') }}</button>
-        <button @click="handleSave" :disabled="submitting" class="btn btn-primary px-6">
-          <svg v-if="submitting" class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+      <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3">
+        <button type="button" class="btn btn-secondary sm:px-5" @click="handleClose">{{ t('common.cancel') }}</button>
+        <button type="button" class="btn btn-primary sm:px-6" :disabled="submitting || !canSave" data-testid="allowed-groups-save" @click="handleSave">
+          <Icon v-if="submitting" name="refresh" size="sm" class="animate-spin" aria-hidden="true" />
           {{ submitting ? t('common.saving') : t('common.save') }}
         </button>
       </div>
@@ -179,13 +172,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
 import type { AdminUser, Group, GroupPlatform } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
+import Icon from '@/components/icons/Icon.vue'
 
 interface GroupRateConfig {
   groupId: number
@@ -207,6 +201,11 @@ const groupConfigs = ref<GroupRateConfig[]>([])
 const originalGroupRates = ref<Record<number, number>>({}) // 记录原始专属倍率，用于检测删除
 const loading = ref(false)
 const submitting = ref(false)
+const loadError = ref('')
+const saveError = ref('')
+const loadedUserId = ref<number | null>(null)
+let loadRequestSeq = 0
+let saveRequestSeq = 0
 
 // 分离专属分组和公开分组
 const exclusiveGroups = computed(() => groups.value.filter((g) => g.is_exclusive))
@@ -214,27 +213,56 @@ const publicGroups = computed(() => groups.value.filter((g) => !g.is_exclusive))
 
 const exclusiveGroupConfigs = computed(() => groupConfigs.value.filter((c) => c.isExclusive))
 const publicGroupConfigs = computed(() => groupConfigs.value.filter((c) => !c.isExclusive))
-
-watch(
-  () => props.show,
-  (v) => {
-    if (v && props.user) {
-      load()
-    }
-  }
+const selectedExclusiveGroupCount = computed(() => exclusiveGroupConfigs.value.filter((config) => config.isSelected).length)
+const canSave = computed(
+  () => loadedUserId.value != null && loadedUserId.value === props.user?.id && !loading.value && !loadError.value
 )
 
-const load = async () => {
+watch(
+  [() => props.show, () => props.user?.id],
+  ([show, userId]) => {
+    loadRequestSeq += 1
+    saveRequestSeq += 1
+    clearData()
+    if (show && userId != null) void load(userId)
+  },
+  { immediate: true }
+)
+
+function clearData() {
+  groups.value = []
+  groupConfigs.value = []
+  originalGroupRates.value = {}
+  loading.value = false
+  submitting.value = false
+  loadError.value = ''
+  saveError.value = ''
+  loadedUserId.value = null
+}
+
+function isCurrentLoad(requestSeq: number, userId: number): boolean {
+  return requestSeq === loadRequestSeq && props.show && props.user?.id === userId
+}
+
+async function load(userId = props.user?.id) {
+  if (userId == null || !props.show) return
+  const requestSeq = ++loadRequestSeq
+  const userAllowedGroups = [...(props.user?.allowed_groups || [])]
+  const userGroupRates = { ...(props.user?.group_rates || {}) }
+  groups.value = []
+  groupConfigs.value = []
+  originalGroupRates.value = {}
+  loadError.value = ''
+  saveError.value = ''
+  loadedUserId.value = null
   loading.value = true
   try {
     const res = await adminAPI.groups.list(1, 1000)
+    if (!isCurrentLoad(requestSeq, userId)) return
     // 只显示标准类型且活跃的分组
     groups.value = res.items.filter((g) => g.subscription_type === 'standard' && g.status === 'active')
 
     // 初始化配置
-    const userAllowedGroups = props.user?.allowed_groups || []
-    const userGroupRates = props.user?.group_rates || {}
-
     // 保存原始专属倍率，用于检测删除操作
     originalGroupRates.value = { ...userGroupRates }
 
@@ -249,10 +277,13 @@ const load = async () => {
       // 公开分组：始终选中
       isSelected: g.is_exclusive ? userAllowedGroups.includes(g.id) : true,
     }))
+    loadedUserId.value = userId
   } catch (error) {
+    if (!isCurrentLoad(requestSeq, userId)) return
     console.error('Failed to load groups:', error)
+    loadError.value = t('admin.users.failedToLoadGroups')
   } finally {
-    loading.value = false
+    if (isCurrentLoad(requestSeq, userId)) loading.value = false
   }
 }
 
@@ -276,7 +307,10 @@ const updateCustomRate = (groupId: number, value: string) => {
 }
 
 const handleSave = async () => {
-  if (!props.user) return
+  const userId = props.user?.id
+  if (userId == null || !canSave.value || loadedUserId.value !== userId) return
+  const requestSeq = ++saveRequestSeq
+  saveError.value = ''
   submitting.value = true
 
   try {
@@ -299,20 +333,37 @@ const handleSave = async () => {
       }
     }
 
-    await adminAPI.users.update(props.user.id, {
+    await adminAPI.users.update(userId, {
       allowed_groups: allowedGroups,
       group_rates: Object.keys(groupRates).length > 0 ? groupRates : undefined,
     })
 
+    if (requestSeq !== saveRequestSeq || !props.show || props.user?.id !== userId) return
     appStore.showSuccess(t('admin.users.groupConfigUpdated'))
     emit('success')
     emit('close')
   } catch (error) {
-    console.error('Failed to update user group config:', error)
+    if (requestSeq === saveRequestSeq && props.show && props.user?.id === userId) {
+      console.error('Failed to update user group config:', error)
+      saveError.value = t('admin.users.failedToUpdateAllowedGroups')
+      appStore.showError(saveError.value)
+    }
   } finally {
-    submitting.value = false
+    if (requestSeq === saveRequestSeq) submitting.value = false
   }
 }
+
+function handleClose() {
+  loadRequestSeq += 1
+  saveRequestSeq += 1
+  clearData()
+  emit('close')
+}
+
+onUnmounted(() => {
+  loadRequestSeq += 1
+  saveRequestSeq += 1
+})
 </script>
 
 <style scoped>

@@ -1208,6 +1208,7 @@ export default {
       startingTestForAccount: '开始测试账号：{name}',
       testAccountTypeLabel: '账号类型：{type}',
       selectTestModel: '选择测试模型',
+      testModelsLoadFailed: '可用测试模型加载失败。',
       testModel: '测试模型',
       testPrompt: '提示词："hi"',
       imagePromptLabel: '生图提示词',
@@ -1249,7 +1250,8 @@ export default {
         todayTokens: '今日 Token',
         todayCost: '今日费用',
         usageTrend: '30天费用与请求趋势',
-        noData: '该账号暂无使用数据'
+        noData: '该账号暂无使用数据',
+        failedToLoad: '账号使用统计加载失败。'
       }
     },
 

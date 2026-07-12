@@ -56,7 +56,7 @@
         <template #cell-group="{ row }">
           <span
             v-if="row.group_id"
-            class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+            class="inline-flex items-center rounded-control border border-outline bg-surface-subtle px-2 py-0.5 text-xs font-medium text-foreground-muted"
             :title="t('admin.ops.errorLog.id') + ' ' + row.group_id"
           >
             {{ row.group_name || '#' + row.group_id }}
@@ -68,7 +68,7 @@
           <div v-if="row.user_id" class="text-sm">
             <button
               v-if="userClickable && row.user_email"
-              class="font-medium text-primary-600 underline decoration-dashed underline-offset-2 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+              class="font-medium text-info-foreground underline decoration-dashed underline-offset-2 transition-colors hover:brightness-75"
               :title="t('admin.usage.clickToViewBalance')"
               @click.stop="emit('userClick', row.user_id, row.user_email)"
             >
@@ -81,7 +81,7 @@
           <div v-else-if="row.deleted_key_owner_user_id" class="text-sm">
             <button
               v-if="userClickable && row.deleted_key_owner_email"
-              class="font-medium text-primary-600 underline decoration-dashed underline-offset-2 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+              class="font-medium text-info-foreground underline decoration-dashed underline-offset-2 transition-colors hover:brightness-75"
               :title="t('admin.usage.clickToViewBalance')"
               @click.stop="emit('userClick', row.deleted_key_owner_user_id, row.deleted_key_owner_email ?? undefined)"
             >
@@ -166,7 +166,7 @@
         <template #cell-actions="{ row }">
           <button
             type="button"
-            class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-600 dark:hover:text-primary-400"
+            class="btn btn-ghost btn-icon"
             :title="t('admin.ops.errorLog.details')"
             @click.stop="emit('openErrorDetail', row.id)"
           >
@@ -275,10 +275,10 @@ function getTypeBadge(log: OpsErrorLog): { label: string; className: string } {
     return { label: t('admin.ops.errorLog.typeRequest'), className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' }
   }
   if (phase === 'auth' && owner === 'client') {
-    return { label: t('admin.ops.errorLog.typeAuth'), className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' }
+    return { label: t('admin.ops.errorLog.typeAuth'), className: 'border border-info/20 bg-info-subtle text-info-foreground' }
   }
   if (phase === 'routing' && owner === 'platform') {
-    return { label: t('admin.ops.errorLog.typeRouting'), className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' }
+    return { label: t('admin.ops.errorLog.typeRouting'), className: 'border border-outline bg-surface-subtle text-foreground-muted' }
   }
   if (phase === 'internal' && owner === 'platform') {
     return { label: t('admin.ops.errorLog.typeInternal'), className: 'bg-gray-100 text-gray-800 dark:bg-dark-700 dark:text-gray-200' }

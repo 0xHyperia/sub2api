@@ -10,7 +10,19 @@
 
     <div class="space-y-6">
       <!-- Login Form -->
-      <form @submit.prevent="handleLogin" class="space-y-5">
+      <form class="space-y-5" novalidate :aria-busy="isLoading" @submit.prevent="handleLogin">
+        <div
+          v-if="errorMessage"
+          id="login-form-error"
+          ref="serverErrorRef"
+          class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm leading-5 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
+          role="alert"
+          aria-live="assertive"
+          tabindex="-1"
+        >
+          {{ errorMessage }}
+        </div>
+
         <!-- Email Input -->
         <div>
           <label for="email" class="input-label">
@@ -22,6 +34,7 @@
             </div>
             <input
               id="email"
+              ref="emailInputRef"
               v-model="formData.email"
               type="email"
               required
@@ -31,8 +44,14 @@
               class="input pl-11"
               :class="{ 'input-error': errors.email }"
               :placeholder="t('auth.emailPlaceholder')"
+              :aria-invalid="Boolean(errors.email)"
+              :aria-describedby="errors.email ? 'login-email-error' : undefined"
+              @input="errors.email = ''"
             />
           </div>
+          <p v-if="errors.email" id="login-email-error" class="input-error-text" role="alert">
+            {{ errors.email }}
+          </p>
         </div>
 
         <!-- Password Input -->
@@ -46,6 +65,7 @@
             </div>
             <input
               id="password"
+              ref="passwordInputRef"
               v-model="formData.password"
               :type="showPassword ? 'text' : 'password'"
               required
@@ -54,17 +74,26 @@
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
               :placeholder="t('auth.passwordPlaceholder')"
+              :aria-invalid="Boolean(errors.password)"
+              :aria-describedby="errors.password ? 'login-password-error' : undefined"
+              @input="errors.password = ''"
             />
             <button
               type="button"
-              @click="showPassword = !showPassword"
               :disabled="authActionDisabled"
-              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              :aria-label="passwordToggleLabel"
+              :title="passwordToggleLabel"
+              :aria-pressed="showPassword"
+              @click="showPassword = !showPassword"
             >
               <Icon v-if="showPassword" name="eyeOff" size="md" />
               <Icon v-else name="eye" size="md" />
             </button>
           </div>
+          <p v-if="errors.password" id="login-password-error" class="input-error-text" role="alert">
+            {{ errors.password }}
+          </p>
           <div class="mt-1 flex items-center justify-between">
             <span></span>
             <router-link
@@ -78,7 +107,11 @@
         </div>
 
         <!-- Turnstile Widget -->
-        <div v-if="turnstileEnabled && turnstileSiteKey">
+        <div
+          v-if="turnstileEnabled && turnstileSiteKey"
+          role="group"
+          :aria-describedby="errors.turnstile ? 'login-turnstile-error' : undefined"
+        >
           <TurnstileWidget
             ref="turnstileRef"
             :site-key="turnstileSiteKey"
@@ -86,6 +119,9 @@
             @expire="onTurnstileExpire"
             @error="onTurnstileError"
           />
+          <p v-if="errors.turnstile" id="login-turnstile-error" class="input-error-text" role="alert">
+            {{ errors.turnstile }}
+          </p>
         </div>
 
         <!-- Submit Button -->
@@ -185,7 +221,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted, watch } from 'vue'
+import { computed, nextTick, ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import GatewayAuthLayout from '@/components/auth/GatewayAuthLayout.vue'
@@ -204,7 +240,7 @@ import type { LoginAgreementDocument, TotpLoginResponse } from '@/types'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import { clearAllAffiliateReferralCodes } from '@/utils/oauthAffiliate'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const LOGIN_AGREEMENT_STORAGE_KEY = 'sub2api_login_agreement_consent'
 
 // ==================== Router & Stores ====================
@@ -249,6 +285,9 @@ const show2FAModal = ref<boolean>(false)
 const totpTempToken = ref<string>('')
 const totpUserEmailMasked = ref<string>('')
 const totpModalRef = ref<InstanceType<typeof TotpLoginModal> | null>(null)
+const emailInputRef = ref<HTMLInputElement | null>(null)
+const passwordInputRef = ref<HTMLInputElement | null>(null)
+const serverErrorRef = ref<HTMLElement | null>(null)
 
 const formData = reactive({
   email: '',
@@ -264,6 +303,12 @@ const errors = reactive({
 const validationToastMessage = computed(
   () => errors.email || errors.password || errors.turnstile || ''
 )
+
+const passwordToggleLabel = computed(() => {
+  const isChinese = String(locale.value).toLowerCase().startsWith('zh')
+  if (showPassword.value) return isChinese ? '隐藏密码' : 'Hide password'
+  return isChinese ? '显示密码' : 'Show password'
+})
 
 const agreementGateActive = computed(
   () => loginAgreementEnabled.value && !agreementAccepted.value
@@ -457,6 +502,9 @@ async function handleLogin(): Promise<void> {
 
   // Validate form
   if (!validateForm()) {
+    await nextTick()
+    if (errors.email) emailInputRef.value?.focus()
+    else if (errors.password) passwordInputRef.value?.focus()
     return
   }
 
@@ -495,6 +543,9 @@ async function handleLogin(): Promise<void> {
     }
 
     errorMessage.value = extractI18nErrorMessage(error, t, 'auth.errors', t('auth.loginFailed'))
+
+    await nextTick()
+    serverErrorRef.value?.focus()
 
     // Also show error toast
     appStore.showError(errorMessage.value)

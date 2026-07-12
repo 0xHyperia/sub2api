@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <TablePageLayout>
+    <TablePageLayout class="channel-monitor-page">
       <template #filters>
         <MonitorFiltersBar
           v-model:search="searchQuery"
@@ -26,7 +26,7 @@
           </template>
 
           <template #cell-provider="{ row }">
-            <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium" :class="providerBadgeClass(row.provider)">
+            <span class="inline-flex items-center rounded-control px-2 py-0.5 text-xs font-medium" :class="providerBadgeClass(row.provider)">
               {{ providerLabel(row.provider) }}
             </span>
           </template>
@@ -36,15 +36,19 @@
           </template>
 
           <template #cell-availability_7d="{ row }">
-            <span class="text-sm text-gray-900 dark:text-gray-100">{{ formatAvailability(row) }}</span>
+            <span class="font-mono text-sm tabular-nums text-foreground">{{ formatAvailability(row) }}</span>
           </template>
 
           <template #cell-latency="{ row }">
-            <span class="text-sm text-gray-900 dark:text-gray-100">{{ formatLatency(row.primary_latency_ms) }}</span>
+            <span class="font-mono text-sm tabular-nums text-foreground">{{ formatLatency(row.primary_latency_ms) }}</span>
           </template>
 
           <template #cell-enabled="{ row }">
-            <Toggle :modelValue="row.enabled" @update:modelValue="toggleEnabled(row)" />
+            <Toggle
+              :modelValue="row.enabled"
+              :aria-label="`${t('admin.channelMonitor.columns.enabled')}: ${row.name}`"
+              @update:modelValue="toggleEnabled(row)"
+            />
           </template>
 
           <template #cell-actions="{ row }">

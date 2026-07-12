@@ -1,43 +1,43 @@
 <template>
   <div class="space-y-4">
-    <!-- Quick Amount Buttons -->
-    <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+    <fieldset>
+      <legend class="mb-2 text-sm font-medium text-foreground">
         {{ t('payment.quickAmounts') }}
-      </label>
-      <div class="grid grid-cols-3 gap-2">
+      </legend>
+      <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
         <button
           v-for="amt in filteredAmounts"
           :key="amt"
           type="button"
+          :aria-pressed="modelValue === amt"
           :class="[
-            'rounded-lg border-2 px-4 py-3 text-center font-medium transition-colors',
+            'min-h-control rounded-control border px-2 py-2 text-center text-sm font-medium tabular-nums transition-colors',
             modelValue === amt
-              ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/40 dark:text-primary-300'
-              : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200 dark:hover:border-dark-500',
+              ? 'border-focus bg-info-subtle text-info-foreground'
+              : 'border-outline-strong bg-surface text-foreground-muted hover:border-focus hover:text-foreground',
           ]"
           @click="selectAmount(amt)"
         >
           {{ amt }}
         </button>
       </div>
-    </div>
+    </fieldset>
 
-    <!-- Custom Amount Input -->
     <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+      <label for="custom-payment-amount" class="mb-2 block text-sm font-medium text-foreground">
         {{ t('payment.customAmount') }}
       </label>
       <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-dark-500">
+        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" aria-hidden="true">
           $
         </span>
         <input
+          id="custom-payment-amount"
           type="text"
           inputmode="decimal"
           :value="customText"
           :placeholder="placeholderText"
-          class="input w-full py-3 pl-8 pr-4"
+          class="input w-full pl-8"
           @input="handleInput"
         />
       </div>
@@ -88,8 +88,12 @@ function selectAmount(amt: number) {
 }
 
 function handleInput(e: Event) {
-  const val = (e.target as HTMLInputElement).value
-  if (!AMOUNT_PATTERN.test(val)) return
+  const target = e.target as HTMLInputElement
+  const val = target.value
+  if (!AMOUNT_PATTERN.test(val)) {
+    target.value = customText.value
+    return
+  }
   customText.value = val
   if (val === '') {
     emit('update:modelValue', null)

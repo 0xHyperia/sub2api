@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { defineComponent } from 'vue'
 import BulkEditAccountModal from '../BulkEditAccountModal.vue'
 import ModelWhitelistSelector from '../ModelWhitelistSelector.vue'
 import { adminAPI } from '@/api/admin'
@@ -35,6 +36,19 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
+const ConfirmDialogStub = defineComponent({
+  name: 'ConfirmDialog',
+  props: {
+    show: Boolean,
+    message: {
+      type: String,
+      default: ''
+    }
+  },
+  emits: ['confirm', 'cancel'],
+  template: '<div v-if="show" data-testid="confirm-dialog" />'
+})
+
 function mountModal(extraProps: Record<string, unknown> = {}) {
   return mount(BulkEditAccountModal, {
     props: {
@@ -49,7 +63,7 @@ function mountModal(extraProps: Record<string, unknown> = {}) {
     global: {
       stubs: {
         BaseDialog: { template: '<div><slot /><slot name="footer" /></div>' },
-        ConfirmDialog: true,
+        ConfirmDialog: ConfirmDialogStub,
         Select: {
           props: ['modelValue', 'options'],
           emits: ['update:modelValue'],
@@ -86,6 +100,34 @@ describe('BulkEditAccountModal', () => {
     vi.mocked(adminAPI.accounts.checkMixedChannelRisk).mockResolvedValue({
       has_risk: false
     } as any)
+  })
+
+  it('批量编辑高风险错误码经共享确认框确认后才加入', async () => {
+    const wrapper = mountModal({
+      selectedPlatforms: ['anthropic'],
+      selectedTypes: ['apikey']
+    })
+    await wrapper.get('#bulk-edit-custom-error-codes-enabled').setValue(true)
+
+    const codeButton = wrapper.findAll('button').find((button) => button.text().startsWith('529 '))
+    expect(codeButton).toBeTruthy()
+    await codeButton!.trigger('click')
+
+    let dialog = wrapper
+      .findAllComponents(ConfirmDialogStub)
+      .find((item) => item.props('show') && item.props('message') === 'admin.accounts.customErrorCodes529Warning')
+    expect(dialog).toBeTruthy()
+    dialog!.vm.$emit('cancel')
+    await wrapper.vm.$nextTick()
+    expect(codeButton!.attributes('aria-pressed')).toBe('false')
+
+    await codeButton!.trigger('click')
+    dialog = wrapper
+      .findAllComponents(ConfirmDialogStub)
+      .find((item) => item.props('show') && item.props('message') === 'admin.accounts.customErrorCodes529Warning')
+    dialog!.vm.$emit('confirm')
+    await wrapper.vm.$nextTick()
+    expect(codeButton!.attributes('aria-pressed')).toBe('true')
   })
 
   it('antigravity 白名单包含 Gemini 图片模型且过滤掉普通 GPT 模型', async () => {

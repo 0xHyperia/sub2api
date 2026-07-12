@@ -24,6 +24,7 @@ const { t } = useI18n()
 const loading = ref(false)
 const errorMessage = ref('')
 const response = ref<OpsOpenAITokenStatsResponse | null>(null)
+let requestSequence = 0
 
 const timeRange = ref<OpsOpenAITokenStatsTimeRange>('30d')
 const viewMode = ref<ViewMode>('topn')
@@ -93,21 +94,31 @@ function buildParams() {
 }
 
 async function loadData() {
+  const requestId = ++requestSequence
+  const params = buildParams()
+  const requestedMode = viewMode.value
   loading.value = true
   errorMessage.value = ''
   try {
-    response.value = await opsAPI.getOpenAITokenStats(buildParams())
-    // 防御：若 total 变化导致当前页超出最大页，则回退到末页并重新拉取一次。
-    if (viewMode.value === 'pagination' && page.value > totalPages.value) {
-      page.value = totalPages.value
-      response.value = await opsAPI.getOpenAITokenStats(buildParams())
+    const nextResponse = await opsAPI.getOpenAITokenStats(params)
+    if (requestId !== requestSequence) return
+
+    // 防御：若 total 变化导致当前页超出最大页，则回退到末页；page watcher 会发起新请求。
+    if (requestedMode === 'pagination') {
+      const size = typeof params.page_size === 'number' && params.page_size > 0 ? params.page_size : 20
+      const maxPage = Math.max(1, Math.ceil(nextResponse.total / size))
+      if (typeof params.page === 'number' && params.page > maxPage) {
+        page.value = maxPage
+        return
+      }
     }
+    response.value = nextResponse
   } catch (err: any) {
+    if (requestId !== requestSequence) return
     console.error('[OpsOpenAITokenStatsCard] Failed to load data', err)
-    response.value = null
-    errorMessage.value = err?.message || t('admin.ops.openaiTokenStats.failedToLoad')
+    errorMessage.value = err?.response?.data?.detail || err?.message || t('admin.ops.openaiTokenStats.failedToLoad')
   } finally {
-    loading.value = false
+    if (requestId === requestSequence) loading.value = false
   }
 }
 
@@ -154,19 +165,19 @@ function onNextPage() {
 </script>
 
 <template>
-  <section class="card p-4 md:p-5">
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+  <section class="card p-4 md:p-5" aria-labelledby="ops-openai-token-title">
+    <div class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <h3 id="ops-openai-token-title" class="text-sm font-semibold text-foreground">
         {{ t('admin.ops.openaiTokenStats.title') }}
       </h3>
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="w-36">
+      <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+        <div class="w-full sm:w-36">
           <Select v-model="timeRange" :options="timeRangeOptions" />
         </div>
-        <div class="w-36">
+        <div class="w-full sm:w-36">
           <Select v-model="viewMode" :options="viewModeOptions" />
         </div>
-        <div v-if="viewMode === 'topn'" class="w-28">
+        <div v-if="viewMode === 'topn'" class="col-span-2 w-full sm:col-span-1 sm:w-28">
           <Select v-model="topN" :options="topNOptions" />
         </div>
         <template v-else>
@@ -194,13 +205,31 @@ function onNextPage() {
       </div>
     </div>
 
-    <div v-if="errorMessage" class="mb-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
-      {{ errorMessage }}
+    <div
+      v-if="errorMessage && items.length > 0"
+      data-testid="openai-token-refresh-error"
+      role="alert"
+      class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-panel border border-danger/20 bg-danger-subtle px-3 py-2 text-xs text-danger-foreground"
+    >
+      <span>{{ errorMessage }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" :disabled="loading" @click="loadData">
+        {{ t('common.retry') }}
+      </button>
     </div>
 
-    <div v-if="loading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+    <div v-if="loading && items.length === 0" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
       {{ t('admin.ops.loadingText') }}
     </div>
+
+    <EmptyState
+      v-else-if="errorMessage && items.length === 0"
+      data-testid="openai-token-load-error"
+      role="alert"
+      :title="errorMessage"
+      :action-text="t('common.retry')"
+      :action-icon="false"
+      @action="loadData"
+    />
 
     <EmptyState
       v-else-if="items.length === 0"
@@ -209,7 +238,7 @@ function onNextPage() {
     />
 
     <div v-else class="space-y-3">
-      <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700">
+      <div class="overflow-hidden rounded-panel border border-outline">
         <div class="max-h-[420px] overflow-auto">
           <table class="min-w-full text-left text-xs md:text-sm">
             <thead class="sticky top-0 z-10 bg-white dark:bg-dark-800">

@@ -95,6 +95,34 @@ function mountDialog(options: { editing?: ProviderInstance | null } = {}) {
 }
 
 describe('PaymentProviderDialog payment guide', () => {
+  it('uses mobile-first form grids and exposes control relationships', async () => {
+    const wrapper = mountDialog()
+
+    const nameInput = wrapper.get('#payment-provider-name')
+    expect(wrapper.get('label[for="payment-provider-name"]').exists()).toBe(true)
+    expect(nameInput.element.closest('.grid')?.classList.contains('grid-cols-1')).toBe(true)
+
+    ;(wrapper.vm as unknown as { reset: (key: string) => void }).reset('easypay')
+    await nextTick()
+    await wrapper.find('button.btn-sm').trigger('click')
+    await nextTick()
+
+    expect(wrapper.get('label[for="easypay-method-type-0"]').exists()).toBe(true)
+    expect(wrapper.get('#easypay-method-type-0').exists()).toBe(true)
+
+    ;(wrapper.vm as unknown as { reset: (key: string) => void }).reset('stripe')
+    await nextTick()
+
+    const limitsTrigger = wrapper.get('button[aria-controls="payment-provider-limits"]')
+    expect(limitsTrigger.attributes('aria-expanded')).toBe('false')
+    await limitsTrigger.trigger('click')
+    expect(limitsTrigger.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('label[for="payment-limit-stripe-single-min"]').exists()).toBe(true)
+
+    const modeButtons = wrapper.findAll('[aria-pressed]')
+    expect(modeButtons.length).toBeGreaterThan(0)
+  })
+
   it('shows no payment guide for providers without a flow guide', () => {
     const wrapper = mountDialog()
 

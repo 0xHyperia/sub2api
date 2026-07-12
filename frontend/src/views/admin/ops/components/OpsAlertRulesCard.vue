@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import Select, { type SelectOption } from '@/components/common/Select.vue'
 import { adminAPI } from '@/api'
 import { opsAPI } from '@/api/admin/ops'
@@ -15,18 +16,25 @@ const { t } = useI18n()
 const appStore = useAppStore()
 
 const loading = ref(false)
+const loadError = ref('')
 const rules = ref<AlertRule[]>([])
+let loadRequestSequence = 0
 
 async function load() {
+  const requestId = ++loadRequestSequence
   loading.value = true
+  loadError.value = ''
   try {
-    rules.value = await opsAPI.listAlertRules()
+    const nextRules = await opsAPI.listAlertRules()
+    if (requestId !== loadRequestSequence) return
+    rules.value = nextRules
   } catch (err: any) {
+    if (requestId !== loadRequestSequence) return
     console.error('[OpsAlertRulesCard] Failed to load rules', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertRules.loadFailed'))
-    rules.value = []
+    loadError.value = err?.response?.data?.detail || t('admin.ops.alertRules.loadFailed')
+    appStore.showError(loadError.value)
   } finally {
-    loading.value = false
+    if (requestId === loadRequestSequence) loading.value = false
   }
 }
 
@@ -387,10 +395,10 @@ function cancelDelete() {
 </script>
 
 <template>
-  <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700">
-    <div class="mb-4 flex items-start justify-between gap-4">
+  <section class="rounded-panel border border-outline bg-surface p-4 shadow-card sm:p-5" aria-labelledby="ops-alert-rules-title">
+    <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ t('admin.ops.alertRules.title') }}</h3>
+        <h3 id="ops-alert-rules-title" class="text-sm font-semibold text-foreground">{{ t('admin.ops.alertRules.title') }}</h3>
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.alertRules.description') }}</p>
       </div>
 
@@ -399,7 +407,8 @@ function cancelDelete() {
           {{ t('admin.ops.alertRules.create') }}
         </button>
         <button
-          class="flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-dark-700 dark:text-gray-300 dark:hover:bg-dark-600"
+          type="button"
+          class="btn btn-secondary btn-sm"
           :disabled="loading"
           @click="load"
         >
@@ -411,17 +420,39 @@ function cancelDelete() {
       </div>
     </div>
 
-    <div v-if="loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+    <div
+      v-if="loadError && sortedRules.length > 0"
+      data-testid="alert-rules-refresh-error"
+      role="alert"
+      class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-panel border border-danger/20 bg-danger-subtle px-3 py-2 text-xs text-danger-foreground"
+    >
+      <span>{{ loadError }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" :disabled="loading" @click="load">
+        {{ t('common.retry') }}
+      </button>
+    </div>
+
+    <div v-if="loading && sortedRules.length === 0" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
       {{ t('admin.ops.alertRules.loading') }}
     </div>
 
-    <div v-else-if="sortedRules.length === 0" class="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 dark:border-dark-700 dark:text-gray-400">
+    <EmptyState
+      v-else-if="loadError && sortedRules.length === 0"
+      data-testid="alert-rules-load-error"
+      role="alert"
+      :title="loadError"
+      :action-text="t('common.retry')"
+      :action-icon="false"
+      @action="load"
+    />
+
+    <div v-else-if="sortedRules.length === 0" class="rounded-panel border border-dashed border-outline p-8 text-center text-sm text-foreground-muted">
       {{ t('admin.ops.alertRules.empty') }}
     </div>
 
-    <div v-else class="max-h-[520px] overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700">
-      <div class="max-h-[520px] overflow-y-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
+    <div v-else class="max-h-[520px] overflow-x-auto rounded-panel border border-outline">
+      <div class="max-h-[520px] min-w-[680px] overflow-y-auto">
+        <table class="min-w-full divide-y divide-outline">
           <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-dark-900">
             <tr>
               <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -480,7 +511,7 @@ function cancelDelete() {
       @close="showEditor = false"
     >
       <div class="space-y-4">
-        <div v-if="!editorValidation.valid" class="rounded-xl bg-red-50 p-4 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+        <div v-if="!editorValidation.valid" class="rounded-panel border border-danger/20 bg-danger-subtle p-4 text-xs text-danger-foreground">
           <div class="font-bold">{{ t('admin.ops.alertRules.validation.title') }}</div>
           <ul class="mt-1 list-disc pl-5">
             <li v-for="e in editorValidation.errors" :key="e">{{ e }}</li>
@@ -562,15 +593,15 @@ function cancelDelete() {
             <input v-model.number="draft!.cooldown_minutes" class="input" type="number" min="0" max="1440" />
           </div>
 
-          <div class="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3 dark:bg-dark-800/50 md:col-span-2">
+          <label class="flex min-h-12 items-center justify-between border-t border-outline px-1 py-3 md:col-span-2">
             <span class="text-xs font-bold text-gray-700 dark:text-gray-200">{{ t('admin.ops.alertRules.form.enabled') }}</span>
-            <input v-model="draft!.enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-          </div>
+            <input v-model="draft!.enabled" type="checkbox" class="h-4 w-4 rounded border-outline-strong text-foreground focus:ring-focus" />
+          </label>
 
-          <div class="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3 dark:bg-dark-800/50 md:col-span-2">
+          <label class="flex min-h-12 items-center justify-between border-t border-outline px-1 py-3 md:col-span-2">
             <span class="text-xs font-bold text-gray-700 dark:text-gray-200">{{ t('admin.ops.alertRules.form.notifyEmail') }}</span>
-            <input v-model="draft!.notify_email" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-          </div>
+            <input v-model="draft!.notify_email" type="checkbox" class="h-4 w-4 rounded border-outline-strong text-foreground focus:ring-focus" />
+          </label>
         </div>
       </div>
 
@@ -595,5 +626,5 @@ function cancelDelete() {
       @confirm="confirmDelete"
       @cancel="cancelDelete"
     />
-  </div>
+  </section>
 </template>

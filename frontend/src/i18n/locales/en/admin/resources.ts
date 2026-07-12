@@ -373,6 +373,7 @@ export default {
       readAt: 'Read at',
       unread: 'Unread',
       searchUsers: 'Search users...',
+      emptyDescription: 'Create an announcement to communicate updates to your users.',
       failedToLoad: 'Failed to load announcements',
       failedToCreate: 'Failed to create announcement',
       failedToUpdate: 'Failed to update announcement',

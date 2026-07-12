@@ -49,6 +49,7 @@ vi.mock('@/components/common/BaseDialog.vue', () => ({
 }))
 
 import UserPlatformQuotaModal from '../UserPlatformQuotaModal.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import type { UserSubscription } from '@/types'
 
 function makeUser(overrides: { subscriptions?: UserSubscription[] } = {}) {
@@ -127,7 +128,6 @@ describe('UserPlatformQuotaModal', () => {
   })
 
   it('全部清空把所有 limit 置 null（确认通过）', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
         { platform: 'anthropic', daily_limit_usd: 10, weekly_limit_usd: 50, monthly_limit_usd: 100,
@@ -139,17 +139,18 @@ describe('UserPlatformQuotaModal', () => {
     const clearBtn = buttons.find((b) => b.text() === 'admin.users.platformQuota.clearAll')
     expect(clearBtn).toBeTruthy()
     await clearBtn!.trigger('click')
+    const dialog = w.findComponent(ConfirmDialog)
+    expect(dialog.props('show')).toBe(true)
+    expect(dialog.props('message')).toBe('admin.users.platformQuota.clearAllConfirm')
+    dialog.vm.$emit('confirm')
     await flushPromises()
-    expect(confirmSpy).toHaveBeenCalledTimes(1)
     const inputs = w.findAll('input[type=number]')
     for (const inp of inputs) {
       expect((inp.element as HTMLInputElement).value).toBe('')
     }
-    confirmSpy.mockRestore()
   })
 
-  it('全部清空 confirm 取消则保持原值', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('全部清空确认框取消则保持原值', async () => {
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
         { platform: 'anthropic', daily_limit_usd: 10, weekly_limit_usd: 50, monthly_limit_usd: 100,
@@ -159,34 +160,37 @@ describe('UserPlatformQuotaModal', () => {
     const w = await mountAndOpen()
     const clearBtn = w.findAll('button').find((b) => b.text() === 'admin.users.platformQuota.clearAll')
     await clearBtn!.trigger('click')
+    const dialog = w.findComponent(ConfirmDialog)
+    expect(dialog.props('show')).toBe(true)
+    dialog.vm.$emit('cancel')
     await flushPromises()
-    expect(confirmSpy).toHaveBeenCalledTimes(1)
     // anthropic daily 应保持 10（未被清空）
     const inputs = w.findAll('input[type=number]')
     const dailyVal = (inputs[0].element as HTMLInputElement).value
     expect(dailyVal).toBe('10')
-    confirmSpy.mockRestore()
   })
 
-  it('重置按钮 confirm 取消则不调用 API', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('重置确认框取消则不调用 API', async () => {
     const w = await mountAndOpen()
-    const resetBtns = w.findAll('button').filter((b) => b.text() === '↻')
+    const resetBtns = w.findAll('button[aria-label="admin.users.platformQuota.reset.confirm"]')
     expect(resetBtns.length).toBeGreaterThan(0)
     await resetBtns[0].trigger('click')
+    const dialog = w.findComponent(ConfirmDialog)
+    expect(dialog.props('show')).toBe(true)
+    dialog.vm.$emit('cancel')
     await flushPromises()
     expect(apiMocks.resetPlatformQuotaWindow).not.toHaveBeenCalled()
-    confirmSpy.mockRestore()
   })
 
-  it('重置按钮 confirm 确认则调用 API', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('重置确认框确认后调用 API', async () => {
     const w = await mountAndOpen()
-    const resetBtns = w.findAll('button').filter((b) => b.text() === '↻')
+    const resetBtns = w.findAll('button[aria-label="admin.users.platformQuota.reset.confirm"]')
     await resetBtns[0].trigger('click') // 第一个是 anthropic.daily
+    const dialog = w.findComponent(ConfirmDialog)
+    expect(dialog.props('message')).toContain('admin.users.platformQuota.reset.confirm')
+    dialog.vm.$emit('confirm')
     await flushPromises()
     expect(apiMocks.resetPlatformQuotaWindow).toHaveBeenCalledWith(99, 'anthropic', 'daily')
-    confirmSpy.mockRestore()
   })
 
   describe('subscription warning banner', () => {

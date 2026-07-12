@@ -3,9 +3,9 @@
     :is="props.embedded ? 'div' : AuthLayout"
     :class="{ 'email-verification-step': props.embedded }"
   >
-    <div class="space-y-6">
+    <div class="space-y-6" :aria-busy="isLoading || isSendingCode">
       <!-- Title -->
-      <div class="text-center">
+      <div class="auth-form-heading">
         <h2 v-if="!props.embedded" class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ t('auth.verifyYourEmail') }}
         </h2>
@@ -15,10 +15,20 @@
         </p>
       </div>
 
+      <div
+        v-if="errorMessage"
+        class="auth-flow-alert"
+        role="alert"
+        aria-live="assertive"
+      >
+        {{ errorMessage }}
+      </div>
+
       <!-- No Data Warning -->
       <div
         v-if="!hasRegisterData"
         class="verification-notice rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20"
+        role="alert"
       >
         <div class="flex items-start gap-3">
           <div class="flex-shrink-0">
@@ -32,13 +42,19 @@
       </div>
 
       <!-- Verification Form -->
-      <form v-else @submit.prevent="handleVerify" class="space-y-5">
+      <form v-else class="space-y-5" novalidate @submit.prevent="handleVerify">
         <!-- Verification Code Input -->
         <div>
           <label for="code" class="input-label text-center">
             {{ t('auth.verificationCode') }}
           </label>
-          <div class="verification-code-grid" @paste="handleVerificationPaste">
+          <div
+            class="verification-code-grid"
+            role="group"
+            :aria-label="t('auth.verificationCode')"
+            :aria-describedby="errors.code ? 'email-verification-code-error' : undefined"
+            @paste="handleVerificationPaste"
+          >
             <input
               v-for="(_, index) in verificationDigits"
               :id="index === 0 ? 'code' : `code-${index + 1}`"
@@ -62,6 +78,14 @@
               @focus="($event.target as HTMLInputElement).select()"
             />
           </div>
+          <p
+            v-if="errors.code"
+            id="email-verification-code-error"
+            class="input-error-text text-center"
+            role="alert"
+          >
+            {{ errors.code }}
+          </p>
           <p class="input-hint text-center">{{ t('auth.verificationCodeHint') }}</p>
         </div>
 
@@ -69,6 +93,8 @@
         <div
           v-if="codeSent"
           class="verification-notice rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800/50 dark:bg-green-900/20"
+          role="status"
+          aria-live="polite"
         >
           <div class="flex items-start gap-3">
             <div class="flex-shrink-0">
@@ -81,7 +107,11 @@
         </div>
 
         <!-- Turnstile Widget for Resend -->
-        <div v-if="turnstileEnabled && turnstileSiteKey && showResendTurnstile">
+        <div
+          v-if="turnstileEnabled && turnstileSiteKey && showResendTurnstile"
+          role="group"
+          :aria-describedby="errors.turnstile ? 'email-verification-turnstile-error' : undefined"
+        >
           <TurnstileWidget
             ref="turnstileRef"
             :site-key="turnstileSiteKey"
@@ -89,6 +119,14 @@
             @expire="onTurnstileExpire"
             @error="onTurnstileError"
           />
+          <p
+            v-if="errors.turnstile"
+            id="email-verification-turnstile-error"
+            class="input-error-text"
+            role="alert"
+          >
+            {{ errors.turnstile }}
+          </p>
         </div>
 
         <!-- Submit Button -->
@@ -178,7 +216,7 @@
 import { computed, nextTick, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AuthLayout } from '@/components/layout'
+import AuthLayout from '@/components/auth/AuthFlowLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'

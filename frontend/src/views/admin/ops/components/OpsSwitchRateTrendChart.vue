@@ -18,6 +18,7 @@ import type { ChartState } from '../types'
 import { formatHistoryLabel, sumNumbers } from '../utils/opsFormatters'
 import HelpTooltip from '@/components/common/HelpTooltip.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { useOpsChartTheme } from '../utils/useOpsChartTheme'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, LinearScale, PointElement, CategoryScale, Filler)
 
@@ -31,7 +32,7 @@ interface Props {
 const props = defineProps<Props>()
 const { t } = useI18n()
 
-const isDarkMode = computed(() => document.documentElement.classList.contains('dark'))
+const { isDarkMode } = useOpsChartTheme()
 const colors = computed(() => ({
   teal: '#14b8a6',
   tealAlpha: '#14b8a620',
@@ -128,10 +129,10 @@ const options = computed(() => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700">
+  <section class="flex h-full min-h-[320px] flex-col rounded-panel border border-outline bg-surface p-4 shadow-card sm:min-h-0 sm:p-5" aria-labelledby="ops-switch-rate-title">
     <div class="mb-4 flex shrink-0 items-center justify-between">
-      <h3 class="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-        <svg class="h-4 w-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <h3 id="ops-switch-rate-title" class="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <svg class="h-4 w-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 12h6m-6 5h3" />
         </svg>
         {{ t('admin.ops.switchRateTrend') }}
@@ -146,5 +147,5 @@ const options = computed(() => {
         <EmptyState v-else :title="t('common.noData')" :description="t('admin.ops.charts.emptyRequest')" />
       </div>
     </div>
-  </div>
+  </section>
 </template>

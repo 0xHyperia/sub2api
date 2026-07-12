@@ -1,7 +1,10 @@
 <template>
-  <AuthLayout>
+  <AuthLayout
+    :busy="isProcessing"
+    :busy-label="t('auth.oidc.callbackProcessing', { providerName })"
+  >
     <div class="space-y-6">
-      <div class="text-center">
+      <div class="auth-form-heading">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ t('auth.oidc.callbackTitle', { providerName }) }}
         </h2>
@@ -12,6 +15,15 @@
               : t('auth.oidc.callbackHint')
           }}
         </p>
+      </div>
+
+      <div
+        v-if="errorMessage || invitationError || totpError"
+        class="auth-flow-alert"
+        role="alert"
+        aria-live="assertive"
+      >
+        {{ errorMessage || invitationError || totpError }}
       </div>
 
       <transition name="fade">
@@ -28,7 +40,7 @@
         >
           <div
             v-if="adoptionRequired && (suggestedDisplayName || suggestedAvatarUrl)"
-            class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60"
+            class="auth-flow-surface"
           >
             <div class="space-y-3">
               <div class="space-y-1">
@@ -104,7 +116,7 @@
             </button>
 
             <div
-              class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60"
+              class="auth-flow-surface"
             >
               <div class="space-y-3">
                 <div class="space-y-1">
@@ -145,7 +157,7 @@
 
           <template v-else-if="needsChooser">
             <div
-              class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60"
+              class="auth-flow-surface"
             >
               <div class="space-y-4">
                 <div class="space-y-1">
@@ -217,7 +229,7 @@
             </p>
             <div
               v-if="hasCurrentAuthToken"
-              class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60"
+              class="auth-flow-surface"
             >
               <div class="space-y-3">
                 <div class="space-y-1">
@@ -319,7 +331,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AuthLayout } from '@/components/layout'
+import AuthLayout from '@/components/auth/AuthFlowLayout.vue'
 import PendingOAuthCreateAccountForm, {
   type PendingOAuthCreateAccountPayload
 } from '@/components/auth/PendingOAuthCreateAccountForm.vue'

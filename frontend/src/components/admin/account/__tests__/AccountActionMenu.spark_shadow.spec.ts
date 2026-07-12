@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AccountActionMenu from '../AccountActionMenu.vue'
 import type { Account } from '@/types'
@@ -47,6 +47,10 @@ const position = { top: 100, left: 100 }
 // AccountActionMenu uses <Teleport to="body">; content is rendered in document.body, not in wrapper.
 const getBodyText = () => document.body.textContent ?? ''
 const getBodyButtons = () => Array.from(document.body.querySelectorAll('button'))
+
+afterEach(() => {
+  document.body.innerHTML = ''
+})
 
 describe('AccountActionMenu — spark shadow 按钮可见性', () => {
   it('OpenAI OAuth 母账号（无 parent_account_id）显示「创建 spark 影子」按钮', () => {
@@ -122,6 +126,76 @@ describe('AccountActionMenu — spark shadow 按钮可见性', () => {
     expect(emitted).toBeTruthy()
     expect(emitted![0][0]).toMatchObject({ id: account.id, platform: 'openai' })
 
+    wrapper.unmount()
+  })
+
+  it('提供 menu/menuitem 语义并支持方向键、Home、End 与 Escape 回焦', async () => {
+    const opener = document.createElement('button')
+    opener.textContent = 'open actions'
+    document.body.appendChild(opener)
+    opener.focus()
+
+    const account = makeAccount({ platform: 'openai', type: 'oauth', parent_account_id: null })
+    const wrapper = mount(AccountActionMenu, {
+      props: { show: true, account, position },
+      attachTo: document.body,
+    })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    const menu = document.body.querySelector<HTMLElement>('[role="menu"]')
+    const items = Array.from(document.body.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
+    expect(menu).not.toBeNull()
+    expect(menu?.getAttribute('aria-label')).toContain(account.name)
+    expect(items.length).toBeGreaterThan(3)
+    expect(items.every(item => item.type === 'button' && item.tabIndex === -1)).toBe(true)
+    expect(document.activeElement).toBe(items[0])
+
+    items[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    expect(document.activeElement).toBe(items[1])
+
+    items[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }))
+    expect(document.activeElement).toBe(items.at(-1))
+
+    items.at(-1)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }))
+    expect(document.activeElement).toBe(items[0])
+
+    items[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    expect(wrapper.emitted('close')).toHaveLength(1)
+
+    await wrapper.setProps({ show: false })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+    expect(document.activeElement).toBe(opener)
+
+    wrapper.unmount()
+  })
+
+  it('Tab 关闭菜单并把焦点移到触发器后的控件', async () => {
+    const opener = document.createElement('button')
+    const nextControl = document.createElement('button')
+    opener.textContent = 'open actions'
+    nextControl.textContent = 'next control'
+    document.body.append(opener, nextControl)
+    opener.focus()
+
+    const wrapper = mount(AccountActionMenu, {
+      props: {
+        show: true,
+        account: makeAccount({ platform: 'openai', type: 'oauth' }),
+        position,
+      },
+      attachTo: document.body,
+    })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    const firstItem = document.body.querySelector<HTMLButtonElement>('[role="menuitem"]')!
+    firstItem.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(document.activeElement).toBe(nextControl)
     wrapper.unmount()
   })
 })

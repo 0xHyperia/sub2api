@@ -29,6 +29,27 @@
       {{ t('common.loading') }}
     </div>
 
+    <div
+      v-else-if="checkoutError"
+      data-testid="card-payment-load-error"
+      class="flex min-w-0 flex-col gap-4 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/50 dark:bg-red-950/30"
+      role="alert"
+    >
+      <div class="flex min-w-0 items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-red-200 bg-white/60 text-red-600 dark:border-red-900/50 dark:bg-dark-800/60 dark:text-red-300" aria-hidden="true">
+          <Icon name="exclamationTriangle" size="md" />
+        </span>
+        <div class="min-w-0">
+          <p class="break-words text-sm font-medium text-red-700 dark:text-red-300">{{ checkoutError }}</p>
+          <p class="mt-0.5 text-sm text-red-600/80 dark:text-red-300/80">{{ t('errors.tryAgain') }}</p>
+        </div>
+      </div>
+      <button type="button" class="btn btn-secondary shrink-0" @click="loadCheckoutInfo">
+        <Icon name="refresh" size="sm" aria-hidden="true" />
+        {{ t('common.refresh') }}
+      </button>
+    </div>
+
     <div v-else-if="!selectedShop" class="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 dark:border-dark-700 dark:bg-dark-800">
       {{ t('payment.card.empty') }}
     </div>
@@ -75,51 +96,66 @@
           {{ t('payment.card.largeRechargeTip') }}
         </div>
 
-        <div class="grid max-w-[1158px] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          class="grid max-w-[1158px] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+          role="radiogroup"
+          :aria-label="t('payment.card.selectedGoods')"
+        >
           <article
-            v-for="goods in filteredGoods"
+            v-for="(goods, index) in filteredGoods"
             :key="goods.goods_key"
-            class="relative h-[149px] overflow-hidden rounded-[10px] border bg-white p-4 text-left transition dark:bg-dark-800"
-            :class="[
-              selectedGoods?.goods_key === goods.goods_key
-                ? 'border-primary-500 ring-2 ring-primary-100 dark:border-primary-400 dark:ring-primary-900/40'
-                : 'border-gray-200 hover:border-gray-300 dark:border-dark-700',
-              goods.stock_count <= 0 ? 'opacity-60' : 'cursor-pointer'
-            ]"
-            @click="selectGoods(goods)"
+            class="relative h-[149px]"
           >
-            <div class="grid h-full grid-rows-[20px_30px_18px_24px] gap-2">
-              <div class="flex items-start justify-between gap-4">
-                <h3 class="line-clamp-1 min-w-0 pr-16 text-[15px] font-bold leading-5 text-gray-900 dark:text-white">
-                  {{ goodsTitle(goods) }}
-                </h3>
-                <span v-if="goods.badge" class="absolute right-4 top-4 rounded bg-gray-900 px-2 py-0.5 text-[10px] font-bold leading-4 text-white dark:bg-white dark:text-gray-900">
-                  {{ goods.badge }}
-                </span>
+            <button
+              type="button"
+              role="radio"
+              :aria-checked="selectedGoods?.goods_key === goods.goods_key"
+              :disabled="goods.stock_count <= 0"
+              :tabindex="goodsTabIndex(goods, index)"
+              :data-goods-key="goods.goods_key"
+              class="relative h-full w-full overflow-hidden rounded-[10px] border bg-white p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:bg-dark-800 dark:focus-visible:ring-offset-dark-900"
+              :class="[
+                selectedGoods?.goods_key === goods.goods_key
+                  ? 'border-primary-500 ring-2 ring-primary-100 dark:border-primary-400 dark:ring-primary-900/40'
+                  : 'border-gray-200 hover:border-gray-300 dark:border-dark-700',
+                goods.stock_count <= 0 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              ]"
+              @click="selectGoods(goods)"
+              @keydown="handleGoodsRadioKeydown($event, index)"
+            >
+              <div class="grid h-full grid-rows-[20px_30px_18px_24px] gap-2">
+                <div class="flex items-start justify-between gap-4">
+                  <h3 class="line-clamp-1 min-w-0 pr-16 text-[15px] font-bold leading-5 text-gray-900 dark:text-white">
+                    {{ goodsTitle(goods) }}
+                  </h3>
+                  <span v-if="goods.badge" class="absolute right-4 top-4 rounded bg-gray-900 px-2 py-0.5 text-[10px] font-bold leading-4 text-white dark:bg-white dark:text-gray-900">
+                    {{ goods.badge }}
+                  </span>
+                </div>
+                <div class="flex min-w-0 items-baseline gap-2">
+                  <span class="text-xs font-extrabold uppercase text-gray-900 dark:text-white">CNY</span>
+                  <span class="font-mono text-2xl font-extrabold tracking-normal text-gray-900 dark:text-white">{{ goods.price.toFixed(2) }}</span>
+                  <span v-if="shouldShowReferencePrice(goods)" class="font-mono text-xl font-bold text-gray-900 line-through dark:text-white">{{ goods.reference_price!.toFixed(2) }}</span>
+                </div>
+                <p v-if="goodsDescription(goods)" class="min-w-0 truncate text-xs leading-[18px] text-gray-500 dark:text-gray-400">
+                  {{ goodsDescription(goods) }}
+                </p>
+                <div class="flex max-h-6 min-w-0 flex-wrap gap-1.5 overflow-hidden pr-8">
+                  <span class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-300">
+                    {{ stockStatusLabel(goods.stock_count) }}
+                  </span>
+                  <span
+                    v-for="tag in goods.tags?.slice(0, 2)"
+                    :key="tag"
+                    class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-300"
+                  >
+                    {{ tag }}
+                  </span>
+                </div>
               </div>
-              <div class="flex min-w-0 items-baseline gap-2">
-                <span class="text-xs font-extrabold uppercase text-gray-900 dark:text-white">CNY</span>
-                <span class="font-mono text-2xl font-extrabold tracking-normal text-gray-900 dark:text-white">{{ goods.price.toFixed(2) }}</span>
-                <span v-if="shouldShowReferencePrice(goods)" class="font-mono text-xl font-bold text-gray-900 line-through dark:text-white">{{ goods.reference_price!.toFixed(2) }}</span>
-              </div>
-              <p v-if="goodsDescription(goods)" class="min-w-0 truncate text-xs leading-[18px] text-gray-500 dark:text-gray-400">
-                {{ goodsDescription(goods) }}
-              </p>
-              <div class="flex max-h-6 min-w-0 flex-wrap gap-1.5 overflow-hidden pr-8">
-                <span class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-300">
-                  {{ stockStatusLabel(goods.stock_count) }}
-                </span>
-                <span
-                  v-for="tag in goods.tags?.slice(0, 2)"
-                  :key="tag"
-                  class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-300"
-                >
-                  {{ tag }}
-                </span>
-              </div>
-            </div>
+            </button>
 
-            <div v-if="authStore.isAdmin" class="absolute bottom-3 right-3">
+            <div v-if="authStore.isAdmin" class="absolute bottom-3 right-3 z-10">
               <button
                 type="button"
                 class="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-dark-700 dark:hover:text-gray-200"
@@ -225,6 +261,15 @@
             </div>
           </div>
 
+          <p
+            v-if="orderError"
+            data-testid="card-payment-order-error"
+            class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"
+            role="alert"
+          >
+            {{ orderError }}
+          </p>
+
           <div class="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4 dark:border-dark-700">
             <div class="min-w-0 text-sm text-gray-600 dark:text-gray-300">
               <span>{{ t('payment.card.payAmount') }}</span>
@@ -233,7 +278,7 @@
                 ({{ t('payment.card.feeIncluded', { fee: feeAmount.toFixed(2) }) }})
               </span>
             </div>
-            <button class="btn btn-primary" :disabled="submitting || !canSubmit" @click="createOrder">
+            <button data-testid="card-payment-submit" type="button" class="btn btn-primary" :disabled="submitting || !canSubmit" @click="createOrder">
               {{ submitting ? t('common.processing') : t('payment.card.buy') }}
             </button>
           </div>
@@ -279,7 +324,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminPaymentAPI } from '@/api/admin/payment'
 import { paymentAPI } from '@/api/payment'
@@ -299,6 +344,8 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const submitting = ref(false)
 const savingGoods = ref(false)
+const checkoutError = ref('')
+const orderError = ref('')
 const shops = ref<CardCheckoutShop[]>([])
 const selectedProviderId = ref('')
 const selectedCategoryId = ref(0)
@@ -328,6 +375,8 @@ const filteredGoods = computed(() => {
   if (!selectedCategoryId.value) return goods
   return goods.filter(item => item.category_id === selectedCategoryId.value)
 })
+const firstAvailableGoodsIndex = computed(() => filteredGoods.value.findIndex(goods => goods.stock_count > 0))
+const selectedFilteredGoodsAvailable = computed(() => filteredGoods.value.some(goods => goods.goods_key === selectedGoodsKey.value && goods.stock_count > 0))
 const selectedGoods = computed<CardGoods | null>(() => selectedShop.value?.goods.find(item => item.goods_key === selectedGoodsKey.value) || null)
 const enabledChannels = computed(() => (selectedShop.value?.channels || []).filter(channel => channel.status === 1))
 const trimmedCouponCode = computed(() => couponCode.value.trim())
@@ -360,6 +409,8 @@ function unwrapAPI<T>(value: T | { data: T }): T {
 
 async function loadCheckoutInfo() {
   loading.value = true
+  checkoutError.value = ''
+  orderError.value = ''
   try {
     const data = unwrapAPI(await paymentAPI.getCardCheckoutInfo())
     shops.value = data.shops || []
@@ -371,6 +422,8 @@ async function loadCheckoutInfo() {
       selectedGoodsKey.value = ''
       channelId.value = 0
     }
+  } catch (error) {
+    checkoutError.value = extractApiErrorMessage(error, t('payment.card.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -386,6 +439,42 @@ function selectShop(providerId: string) {
 function selectGoods(goods: CardGoods) {
   if (goods.stock_count <= 0) return
   selectedGoodsKey.value = goods.goods_key
+}
+
+function goodsTabIndex(goods: CardGoods, index: number) {
+  if (goods.stock_count <= 0) return -1
+  if (selectedGoodsKey.value === goods.goods_key) return 0
+  return !selectedFilteredGoodsAvailable.value && index === firstAvailableGoodsIndex.value ? 0 : -1
+}
+
+function handleGoodsRadioKeydown(event: KeyboardEvent, index: number) {
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+
+  const availableIndexes = filteredGoods.value
+    .map((goods, goodsIndex) => goods.stock_count > 0 ? goodsIndex : -1)
+    .filter(goodsIndex => goodsIndex >= 0)
+  if (availableIndexes.length === 0) return
+
+  event.preventDefault()
+  const currentPosition = Math.max(0, availableIndexes.indexOf(index))
+  let nextPosition = currentPosition
+  if (event.key === 'Home') nextPosition = 0
+  else if (event.key === 'End') nextPosition = availableIndexes.length - 1
+  else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    nextPosition = (currentPosition - 1 + availableIndexes.length) % availableIndexes.length
+  } else {
+    nextPosition = (currentPosition + 1) % availableIndexes.length
+  }
+
+  const nextIndex = availableIndexes[nextPosition]
+  const nextGoods = filteredGoods.value[nextIndex]
+  if (!nextGoods) return
+
+  const radioGroup = (event.currentTarget as HTMLElement).closest('[role="radiogroup"]')
+  selectGoods(nextGoods)
+  void nextTick(() => {
+    radioGroup?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[nextIndex]?.focus()
+  })
 }
 
 function goodsTitle(goods: CardGoods) {
@@ -511,6 +600,7 @@ async function previewPrice() {
 async function createOrder() {
   if (!canSubmit.value || !selectedGoods.value) return
   submitting.value = true
+  orderError.value = ''
   try {
     const order = unwrapAPI(await paymentAPI.createCardOrder({
       provider_instance_id: selectedProviderId.value,
@@ -525,12 +615,15 @@ async function createOrder() {
     if (order.pay_url && order.pay_amount > 0) {
       window.open(order.pay_url, '_blank', 'noopener,noreferrer')
     }
+  } catch (error) {
+    orderError.value = extractApiErrorMessage(error, t('payment.card.createFailed'))
   } finally {
     submitting.value = false
   }
 }
 
 watch([selectedProviderId, selectedGoodsKey, quantity, channelId, couponCode], () => {
+  orderError.value = ''
   if (pricePreviewTimer) {
     clearTimeout(pricePreviewTimer)
   }

@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { opsAPI, type OpsRuntimeLogConfig, type OpsSystemLog, type OpsSystemLogSinkHealth } from '@/api/admin/ops'
 import Pagination from '@/components/common/Pagination.vue'
 import Select from '@/components/common/Select.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAppStore } from '@/stores'
 
 const appStore = useAppStore()
@@ -18,10 +20,27 @@ const props = withDefaults(defineProps<{
 })
 
 const loading = ref(false)
+const loadError = ref('')
 const logs = ref<OpsSystemLog[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
+let logsRequestSequence = 0
+let healthRequestSequence = 0
+type SystemLogConfirmAction = 'reset-runtime-config' | 'cleanup-logs'
+const pendingConfirmAction = ref<SystemLogConfirmAction | null>(null)
+
+const confirmDialogTitle = computed(() => (
+  pendingConfirmAction.value === 'cleanup-logs'
+    ? t('admin.ops.systemLogs.cleanCurrentFilters')
+    : t('admin.ops.systemLogs.resetDefaults')
+))
+
+const confirmDialogMessage = computed(() => (
+  pendingConfirmAction.value === 'cleanup-logs'
+    ? t('admin.ops.systemLogs.cleanupConfirm')
+    : t('admin.ops.systemLogs.resetRuntimeConfigConfirm')
+))
 
 const health = ref<OpsSystemLogSinkHealth>({
   queue_depth: 0,
@@ -198,22 +217,30 @@ const buildQuery = () => {
 }
 
 const fetchLogs = async () => {
+  const requestId = ++logsRequestSequence
+  const query = buildQuery()
   loading.value = true
+  loadError.value = ''
   try {
-    const res = await opsAPI.listSystemLogs(buildQuery())
+    const res = await opsAPI.listSystemLogs(query)
+    if (requestId !== logsRequestSequence) return
     logs.value = res.items || []
     total.value = res.total || 0
   } catch (err: any) {
+    if (requestId !== logsRequestSequence) return
     console.error('[OpsSystemLogTable] Failed to fetch logs', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.systemLogs.loadFailed'))
+    loadError.value = err?.response?.data?.detail || t('admin.ops.systemLogs.loadFailed')
+    appStore.showError(loadError.value)
   } finally {
-    loading.value = false
+    if (requestId === logsRequestSequence) loading.value = false
   }
 }
 
 const fetchHealth = async () => {
+  const requestId = ++healthRequestSequence
   try {
-    health.value = await opsAPI.getSystemLogSinkHealth()
+    const nextHealth = await opsAPI.getSystemLogSinkHealth()
+    if (requestId === healthRequestSequence) health.value = nextHealth
   } catch {
     // 忽略健康数据读取失败，不影响主流程。
   }
@@ -257,10 +284,7 @@ const saveRuntimeConfig = async () => {
   }
 }
 
-const resetRuntimeConfig = async () => {
-  const ok = window.confirm(t('admin.ops.systemLogs.resetRuntimeConfigConfirm'))
-  if (!ok) return
-
+const applyRuntimeConfigReset = async () => {
   runtimeSaving.value = true
   try {
     const saved = await opsAPI.resetRuntimeLogConfig()
@@ -281,9 +305,7 @@ const resetRuntimeConfig = async () => {
   }
 }
 
-const cleanupCurrentFilter = async () => {
-  const ok = window.confirm(t('admin.ops.systemLogs.cleanupConfirm'))
-  if (!ok) return
+const applyCleanupCurrentFilter = async () => {
   try {
     const payload = {
       start_time: toRFC3339(filters.start_time),
@@ -306,6 +328,29 @@ const cleanupCurrentFilter = async () => {
   } catch (err: any) {
     console.error('[OpsSystemLogTable] Failed to cleanup logs', err)
     appStore.showError(err?.response?.data?.detail || t('admin.ops.systemLogs.cleanupFailed'))
+  }
+}
+
+const requestRuntimeConfigReset = () => {
+  if (runtimeSaving.value) return
+  pendingConfirmAction.value = 'reset-runtime-config'
+}
+
+const requestCurrentFilterCleanup = () => {
+  pendingConfirmAction.value = 'cleanup-logs'
+}
+
+const cancelPendingAction = () => {
+  pendingConfirmAction.value = null
+}
+
+const confirmPendingAction = async () => {
+  const action = pendingConfirmAction.value
+  cancelPendingAction()
+  if (action === 'reset-runtime-config') {
+    await applyRuntimeConfigReset()
+  } else if (action === 'cleanup-logs') {
+    await applyCleanupCurrentFilter()
   }
 }
 
@@ -367,10 +412,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-900/60">
+  <section class="rounded-panel border border-outline bg-surface p-4 shadow-card sm:p-5" aria-labelledby="ops-system-logs-title">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ t('admin.ops.systemLogs.title') }}</h3>
+        <h3 id="ops-system-logs-title" class="text-sm font-semibold text-foreground">{{ t('admin.ops.systemLogs.title') }}</h3>
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.systemLogs.description') }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2 text-xs">
@@ -381,7 +426,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-800/70">
+    <div class="mb-4 border-y border-outline bg-surface-subtle py-3">
       <div class="mb-2 flex items-center justify-between">
         <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ t('admin.ops.systemLogs.runtimeConfig') }}</div>
         <span v-if="runtimeLoading" class="text-xs text-gray-500">{{ t('common.loading') }}</span>
@@ -410,12 +455,12 @@ onMounted(async () => {
         <div class="md:col-span-2 xl:col-span-6">
           <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <label class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                <input v-model="runtimeConfig.caller" type="checkbox" />
+              <label class="inline-flex min-h-10 items-center gap-2 text-xs text-gray-600 dark:text-gray-300 sm:min-h-0">
+                <input v-model="runtimeConfig.caller" type="checkbox" class="h-4 w-4 rounded border-outline-strong" />
                 {{ t('admin.ops.systemLogs.caller') }}
               </label>
-              <label class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                <input v-model="runtimeConfig.enable_sampling" type="checkbox" />
+              <label class="inline-flex min-h-10 items-center gap-2 text-xs text-gray-600 dark:text-gray-300 sm:min-h-0">
+                <input v-model="runtimeConfig.enable_sampling" type="checkbox" class="h-4 w-4 rounded border-outline-strong" />
                 {{ t('admin.ops.systemLogs.sampling') }}
               </label>
             </div>
@@ -423,7 +468,7 @@ onMounted(async () => {
               <button type="button" class="btn btn-primary btn-sm" :disabled="runtimeSaving" @click="saveRuntimeConfig">
                 {{ runtimeSaving ? t('common.saving') : t('admin.ops.systemLogs.saveAndApply') }}
               </button>
-              <button type="button" class="btn btn-secondary btn-sm" :disabled="runtimeSaving" @click="resetRuntimeConfig">
+              <button type="button" class="btn btn-secondary btn-sm" :disabled="runtimeSaving" @click="requestRuntimeConfigReset">
                 {{ t('admin.ops.systemLogs.resetDefaults') }}
               </button>
             </div>
@@ -433,7 +478,7 @@ onMounted(async () => {
       <p v-if="health.last_error" class="mt-2 text-xs text-red-600 dark:text-red-400">{{ t('admin.ops.systemLogs.latestWriteError') }} {{ health.last_error }}</p>
     </div>
 
-    <div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <label class="text-xs text-gray-600 dark:text-gray-300">
         {{ t('admin.ops.systemLogs.timeRange') }}
         <Select v-model="filters.time_range" class="mt-1" :options="timeRangeOptions" />
@@ -491,12 +536,33 @@ onMounted(async () => {
     <div class="mb-3 flex flex-wrap gap-2">
       <button type="button" class="btn btn-primary btn-sm" @click="applyFilters">{{ t('admin.ops.systemLogs.search') }}</button>
       <button type="button" class="btn btn-secondary btn-sm" @click="resetFilters">{{ t('common.reset') }}</button>
-      <button type="button" class="btn btn-danger btn-sm" @click="cleanupCurrentFilter">{{ t('admin.ops.systemLogs.cleanCurrentFilters') }}</button>
+      <button type="button" class="btn btn-danger btn-sm" @click="requestCurrentFilterCleanup">{{ t('admin.ops.systemLogs.cleanCurrentFilters') }}</button>
       <button type="button" class="btn btn-secondary btn-sm" @click="fetchHealth">{{ t('admin.ops.systemLogs.refreshHealth') }}</button>
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700">
-      <div v-if="loading" class="px-4 py-8 text-center text-sm text-gray-500">{{ t('common.loading') }}</div>
+    <div
+      v-if="loadError && hasData"
+      data-testid="system-logs-refresh-error"
+      role="alert"
+      class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-panel border border-danger/20 bg-danger-subtle px-3 py-2 text-xs text-danger-foreground"
+    >
+      <span>{{ loadError }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" :disabled="loading" @click="fetchLogs">
+        {{ t('common.retry') }}
+      </button>
+    </div>
+
+    <div class="overflow-hidden rounded-panel border border-outline">
+      <div v-if="loading && !hasData" class="px-4 py-8 text-center text-sm text-foreground-muted">{{ t('common.loading') }}</div>
+      <EmptyState
+        v-else-if="loadError && !hasData"
+        data-testid="system-logs-load-error"
+        role="alert"
+        :title="loadError"
+        :action-text="t('common.retry')"
+        :action-icon="false"
+        @action="fetchLogs"
+      />
       <div v-else-if="!hasData" class="px-4 py-8 text-center text-sm text-gray-500">{{ t('admin.ops.systemLogs.empty') }}</div>
       <div v-else class="overflow-auto">
         <table class="min-w-full table-fixed divide-y divide-gray-200 dark:divide-dark-700">
@@ -523,6 +589,7 @@ onMounted(async () => {
         </table>
       </div>
       <Pagination
+        v-if="hasData"
         :total="total"
         :page="page"
         :page-size="pageSize"
@@ -530,5 +597,15 @@ onMounted(async () => {
         @update:page-size="onPageSizeChange"
       />
     </div>
+
+    <ConfirmDialog
+      :show="pendingConfirmAction !== null"
+      :title="confirmDialogTitle"
+      :message="confirmDialogMessage"
+      :confirm-text="confirmDialogTitle"
+      danger
+      @confirm="confirmPendingAction"
+      @cancel="cancelPendingAction"
+    />
   </section>
 </template>

@@ -203,15 +203,16 @@ watch(
     <div class="flex h-full min-h-0 flex-col">
       <!-- Filters -->
       <div class="mb-4 flex-shrink-0 border-b border-gray-200 pb-4 dark:border-dark-700">
-        <div class="grid grid-cols-8 gap-2">
-          <div class="col-span-2 compact-select">
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-8">
+          <div class="compact-select sm:col-span-2 lg:col-span-2">
             <div class="relative group">
               <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <svg
-                  class="h-3.5 w-3.5 text-gray-400 transition-colors group-focus-within:text-blue-500"
+                  class="h-4 w-4 text-foreground-subtle transition-colors group-focus-within:text-focus"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -219,7 +220,7 @@ watch(
               <input
                 v-model="q"
                 type="text"
-                class="w-full rounded-lg border-gray-200 bg-gray-50/50 py-1.5 pl-9 pr-3 text-xs font-medium text-gray-700 transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10 dark:border-dark-700 dark:bg-dark-900 dark:text-gray-300 dark:focus:bg-dark-800"
+                class="input pl-9"
                 :placeholder="t('admin.ops.errorDetails.searchPlaceholder')"
               />
             </div>
@@ -243,8 +244,8 @@ watch(
             <Select :model-value="viewMode" :options="viewModeSelectOptions" @update:model-value="viewMode = $event as any" />
           </div>
 
-          <div class="flex items-center justify-end">
-            <button type="button" class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 dark:bg-dark-700 dark:text-gray-300 dark:hover:bg-dark-600" @click="resetFilters">
+          <div class="flex items-center justify-end sm:col-span-2 lg:col-span-1">
+            <button type="button" class="btn btn-secondary w-full lg:w-auto" @click="resetFilters">
               {{ t('common.reset') }}
             </button>
           </div>
@@ -275,9 +276,3 @@ watch(
     </div>
   </BaseDialog>
 </template>
-
-<style>
-.compact-select .select-trigger {
-  @apply py-1.5 px-3 text-xs rounded-lg;
-}
-</style>

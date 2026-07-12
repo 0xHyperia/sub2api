@@ -7,6 +7,7 @@ import type { OpsLatencyHistogramResponse } from '@/api/admin/ops'
 import type { ChartState } from '../types'
 import HelpTooltip from '@/components/common/HelpTooltip.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { useOpsChartTheme } from '../utils/useOpsChartTheme'
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
@@ -18,7 +19,7 @@ interface Props {
 const props = defineProps<Props>()
 const { t } = useI18n()
 
-const isDarkMode = computed(() => document.documentElement.classList.contains('dark'))
+const { isDarkMode } = useOpsChartTheme()
 const colors = computed(() => ({
   blue: '#3b82f6',
   grid: isDarkMode.value ? '#374151' : '#f3f4f6',
@@ -74,10 +75,10 @@ const options = computed(() => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700">
+  <section class="flex min-h-[300px] flex-col rounded-panel border border-outline bg-surface p-4 shadow-card sm:p-5" aria-labelledby="ops-latency-title">
     <div class="mb-4 flex items-center justify-between">
-      <h3 class="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-        <svg class="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <h3 id="ops-latency-title" class="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <svg class="h-4 w-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -97,5 +98,5 @@ const options = computed(() => {
         <EmptyState v-else :title="t('common.noData')" :description="t('admin.ops.charts.emptyRequest')" />
       </div>
     </div>
-  </div>
+  </section>
 </template>

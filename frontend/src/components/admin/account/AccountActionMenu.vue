@@ -1,71 +1,195 @@
 <template>
   <Teleport to="body">
     <div v-if="show && position">
-      <!-- Backdrop: click anywhere outside to close -->
-      <div class="fixed inset-0 z-[9998]" @click="emit('close')"></div>
       <div
-        class="action-menu-content fixed z-[9999] w-52 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5 dark:bg-dark-800"
-        :style="{ top: position.top + 'px', left: position.left + 'px' }"
+        class="fixed inset-0 z-[9998]"
+        aria-hidden="true"
+        @click="requestClose(true)"
+      />
+      <div
+        ref="menuRef"
+        role="menu"
+        :aria-label="menuLabel"
+        class="action-menu-content fixed z-[9999] w-52 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-panel border border-outline bg-surface-raised p-1 shadow-floating"
+        :style="menuStyle"
         @click.stop
+        @keydown="handleMenuKeydown"
       >
-        <div class="py-1">
-          <template v-if="account">
-            <button @click="$emit('test', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-dark-700">
-              <Icon name="play" size="sm" class="text-green-500" :stroke-width="2" />
-              {{ t('admin.accounts.testConnection') }}
+        <template v-if="account">
+          <button
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left"
+            @click="selectAction('test')"
+          >
+            <Icon name="play" size="sm" class="text-foreground-subtle" :stroke-width="2" />
+            {{ t('admin.accounts.testConnection') }}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left"
+            @click="selectAction('stats')"
+          >
+            <Icon name="chart" size="sm" class="text-foreground-subtle" />
+            {{ t('admin.accounts.viewStats') }}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left"
+            @click="selectAction('schedule')"
+          >
+            <Icon name="clock" size="sm" class="text-foreground-subtle" />
+            {{ t('admin.scheduledTests.schedule') }}
+          </button>
+
+          <!-- Shadow accounts do not hold credentials, so credential actions are unavailable. -->
+          <template v-if="(account.type === 'oauth' || account.type === 'setup-token') && !isShadow">
+            <button
+              type="button"
+              role="menuitem"
+              tabindex="-1"
+              class="dropdown-item w-full text-left"
+              @click="selectAction('reauth')"
+            >
+              <Icon name="link" size="sm" class="text-foreground-subtle" />
+              {{ t('admin.accounts.reAuthorize') }}
             </button>
-            <button @click="$emit('stats', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-dark-700">
-              <Icon name="chart" size="sm" class="text-indigo-500" />
-              {{ t('admin.accounts.viewStats') }}
-            </button>
-            <button @click="$emit('schedule', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-dark-700">
-              <Icon name="clock" size="sm" class="text-orange-500" />
-              {{ t('admin.scheduledTests.schedule') }}
-            </button>
-            <!-- 影子账号不持凭据:重授权/刷新 token 对其无效(后端拒绝),故隐藏(外审 G4)。 -->
-            <template v-if="(account.type === 'oauth' || account.type === 'setup-token') && !isShadow">
-              <button @click="$emit('reauth', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 dark:hover:bg-dark-700">
-                <Icon name="link" size="sm" />
-                {{ t('admin.accounts.reAuthorize') }}
-              </button>
-              <button @click="$emit('refresh-token', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-purple-600 hover:bg-gray-100 dark:hover:bg-dark-700">
-                <Icon name="refresh" size="sm" />
-                {{ t('admin.accounts.refreshToken') }}
-              </button>
-            </template>
-            <button v-if="isOpenAIOAuthParent" @click="$emit('create-spark-shadow', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-amber-600 hover:bg-gray-100 dark:hover:bg-dark-700">
-              <Icon name="sparkles" size="sm" />
-              {{ t('admin.accounts.createSparkShadow') }}
-            </button>
-            <button v-if="supportsPrivacy" @click="$emit('set-privacy', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-emerald-600 hover:bg-gray-100 dark:hover:bg-dark-700">
-              <Icon name="shield" size="sm" />
-              {{ t('admin.accounts.setPrivacy') }}
-            </button>
-            <div v-if="hasRecoverableState" class="my-1 border-t border-gray-100 dark:border-dark-700"></div>
-            <button v-if="hasRecoverableState" @click="$emit('recover-state', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-emerald-600 hover:bg-gray-100 dark:hover:bg-dark-700">
-              <Icon name="sync" size="sm" />
-              {{ t('admin.accounts.recoverState') }}
-            </button>
-            <button v-if="hasQuotaLimit" @click="$emit('reset-quota', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-teal-600 hover:bg-gray-100 dark:hover:bg-dark-700">
-              <Icon name="refresh" size="sm" />
-              {{ t('admin.accounts.resetQuota') }}
+            <button
+              type="button"
+              role="menuitem"
+              tabindex="-1"
+              class="dropdown-item w-full text-left"
+              @click="selectAction('refresh-token')"
+            >
+              <Icon name="refresh" size="sm" class="text-foreground-subtle" />
+              {{ t('admin.accounts.refreshToken') }}
             </button>
           </template>
-        </div>
+          <button
+            v-if="isOpenAIOAuthParent"
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left"
+            @click="selectAction('create-spark-shadow')"
+          >
+            <Icon name="sparkles" size="sm" class="text-foreground-subtle" />
+            {{ t('admin.accounts.createSparkShadow') }}
+          </button>
+          <button
+            v-if="supportsPrivacy"
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left"
+            @click="selectAction('set-privacy')"
+          >
+            <Icon name="shield" size="sm" class="text-foreground-subtle" />
+            {{ t('admin.accounts.setPrivacy') }}
+          </button>
+          <div v-if="hasRecoverableState" role="separator" class="my-1 border-t border-outline" />
+          <button
+            v-if="hasRecoverableState"
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left"
+            @click="selectAction('recover-state')"
+          >
+            <Icon name="sync" size="sm" class="text-success" />
+            {{ t('admin.accounts.recoverState') }}
+          </button>
+          <button
+            v-if="hasQuotaLimit"
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left"
+            @click="selectAction('reset-quota')"
+          >
+            <Icon name="refresh" size="sm" class="text-foreground-subtle" />
+            {{ t('admin.accounts.resetQuota') }}
+          </button>
+        </template>
       </div>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, watch, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@/components/icons'
 import type { Account } from '@/types'
 
-const props = defineProps<{ show: boolean; account: Account | null; position: { top: number; left: number } | null }>()
-const emit = defineEmits(['close', 'test', 'stats', 'schedule', 'reauth', 'refresh-token', 'recover-state', 'reset-quota', 'set-privacy', 'create-spark-shadow'])
+type AccountAction =
+  | 'test'
+  | 'stats'
+  | 'schedule'
+  | 'reauth'
+  | 'refresh-token'
+  | 'recover-state'
+  | 'reset-quota'
+  | 'set-privacy'
+  | 'create-spark-shadow'
+
+const props = defineProps<{
+  show: boolean
+  account: Account | null
+  position: { top: number; left: number } | null
+}>()
+
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'test', account: Account): void
+  (e: 'stats', account: Account): void
+  (e: 'schedule', account: Account): void
+  (e: 'reauth', account: Account): void
+  (e: 'refresh-token', account: Account): void
+  (e: 'recover-state', account: Account): void
+  (e: 'reset-quota', account: Account): void
+  (e: 'set-privacy', account: Account): void
+  (e: 'create-spark-shadow', account: Account): void
+}>()
+
 const { t } = useI18n()
+const menuRef = ref<HTMLElement | null>(null)
+const viewportWidth = ref(typeof window === 'undefined' ? 1024 : window.innerWidth)
+const viewportHeight = ref(typeof window === 'undefined' ? 768 : window.innerHeight)
+let previousActiveElement: HTMLElement | null = null
+let restoreFocusOnClose = true
+
+const menuItems = () =>
+  Array.from(menuRef.value?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [])
+
+const menuLabel = computed(() => {
+  const accountName = props.account?.name
+  return accountName ? `${accountName}: ${t('common.more')}` : t('common.more')
+})
+
+const menuStyle = computed(() => {
+  if (!props.position) return undefined
+
+  const padding = 8
+  const width = Math.min(208, Math.max(0, viewportWidth.value - padding * 2))
+  const left = Math.max(
+    padding,
+    Math.min(props.position.left, viewportWidth.value - width - padding)
+  )
+  const top = Math.max(padding, Math.min(props.position.top, viewportHeight.value - 88))
+
+  return {
+    left: `${left}px`,
+    top: `${top}px`,
+    maxHeight: `${Math.max(80, viewportHeight.value - top - padding)}px`
+  }
+})
+
 const isRateLimited = computed(() => {
   if (props.account?.rate_limit_reset_at && new Date(props.account.rate_limit_reset_at) > new Date()) {
     return true
@@ -86,9 +210,7 @@ const hasRecoverableState = computed(() => {
 })
 const isAntigravityOAuth = computed(() => props.account?.platform === 'antigravity' && props.account?.type === 'oauth')
 const isOpenAIOAuth = computed(() => props.account?.platform === 'openai' && props.account?.type === 'oauth')
-// 影子账号(链接型,持 parent_account_id)不持凭据、type 不可变,凭据/隐私类操作对其无效。
 const isShadow = computed(() => props.account?.parent_account_id != null)
-// A "parent" OpenAI OAuth account is one that is NOT itself a shadow (parent_account_id == null)
 const isOpenAIOAuthParent = computed(() => isOpenAIOAuth.value && !isShadow.value)
 const supportsPrivacy = computed(() => (isAntigravityOAuth.value || isOpenAIOAuth.value) && !isShadow.value)
 const hasQuotaLimit = computed(() => {
@@ -99,23 +221,120 @@ const hasQuotaLimit = computed(() => {
   )
 })
 
-const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') emit('close')
+const requestClose = (restoreFocus: boolean) => {
+  restoreFocusOnClose = restoreFocus
+  emit('close')
+}
+
+const selectAction = (action: AccountAction) => {
+  const account = props.account
+  if (!account) return
+
+  restoreFocusOnClose = false
+  switch (action) {
+    case 'test': emit('test', account); break
+    case 'stats': emit('stats', account); break
+    case 'schedule': emit('schedule', account); break
+    case 'reauth': emit('reauth', account); break
+    case 'refresh-token': emit('refresh-token', account); break
+    case 'recover-state': emit('recover-state', account); break
+    case 'reset-quota': emit('reset-quota', account); break
+    case 'set-privacy': emit('set-privacy', account); break
+    case 'create-spark-shadow': emit('create-spark-shadow', account); break
+  }
+  emit('close')
+}
+
+const moveFocusAfterTrigger = async (backward: boolean) => {
+  const trigger = previousActiveElement
+  const selector = [
+    'a[href]',
+    'button:not([disabled])',
+    'input:not([disabled]):not([type="hidden"])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])'
+  ].join(',')
+  const focusable = Array.from(document.querySelectorAll<HTMLElement>(selector)).filter(element => {
+    if (menuRef.value?.contains(element) || element.closest('[hidden], [aria-hidden="true"]')) {
+      return false
+    }
+    const style = window.getComputedStyle(element)
+    return style.display !== 'none' && style.visibility !== 'hidden'
+  })
+  const currentIndex = trigger ? focusable.indexOf(trigger) : -1
+  const targetIndex = backward ? currentIndex - 1 : currentIndex + 1
+  const target = focusable[targetIndex]
+
+  requestClose(false)
+  await nextTick()
+  target?.focus()
+}
+
+const handleMenuKeydown = (event: KeyboardEvent) => {
+  const items = menuItems()
+  const currentIndex = items.indexOf(event.target as HTMLElement)
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      items[currentIndex < 0 ? 0 : (currentIndex + 1) % items.length]?.focus()
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      items[currentIndex < 0 ? items.length - 1 : (currentIndex - 1 + items.length) % items.length]?.focus()
+      break
+    case 'Home':
+      event.preventDefault()
+      items[0]?.focus()
+      break
+    case 'End':
+      event.preventDefault()
+      items[items.length - 1]?.focus()
+      break
+    case 'Escape':
+      event.preventDefault()
+      event.stopPropagation()
+      requestClose(true)
+      break
+    case 'Tab':
+      event.preventDefault()
+      void moveFocusAfterTrigger(event.shiftKey)
+      break
+  }
+}
+
+const updateViewport = () => {
+  viewportWidth.value = window.innerWidth
+  viewportHeight.value = window.innerHeight
 }
 
 watch(
-  () => props.show,
-  (visible) => {
+  () => props.show && Boolean(props.position),
+  async (visible, wasVisible) => {
     if (visible) {
-      window.addEventListener('keydown', handleKeydown)
-    } else {
-      window.removeEventListener('keydown', handleKeydown)
+      previousActiveElement = document.activeElement as HTMLElement | null
+      restoreFocusOnClose = true
+      await nextTick()
+      menuItems()[0]?.focus()
+      return
     }
+
+    if (wasVisible && restoreFocusOnClose && previousActiveElement?.isConnected) {
+      await nextTick()
+      previousActiveElement.focus()
+    }
+    previousActiveElement = null
+    restoreFocusOnClose = true
   },
   { immediate: true }
 )
 
+onMounted(() => {
+  window.addEventListener('resize', updateViewport)
+})
+
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', updateViewport)
 })
 </script>

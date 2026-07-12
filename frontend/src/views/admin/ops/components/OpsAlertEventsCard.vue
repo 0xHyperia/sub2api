@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import Select from '@/components/common/Select.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { opsAPI, type AlertEventsQuery } from '@/api/admin/ops'
 import type { AlertEvent } from '../types'
@@ -16,8 +17,13 @@ const PAGE_SIZE = 10
 
 const loading = ref(false)
 const loadingMore = ref(false)
+const loadError = ref('')
+const loadMoreError = ref('')
 const events = ref<AlertEvent[]>([])
 const hasMore = ref(true)
+let listGeneration = 0
+let detailRequestSequence = 0
+let historyRequestSequence = 0
 
 // Detail modal
 const showDetail = ref(false)
@@ -88,18 +94,24 @@ function buildQuery(overrides: Partial<AlertEventsQuery> = {}): AlertEventsQuery
 }
 
 async function loadFirstPage() {
+  const requestId = ++listGeneration
+  const query = buildQuery()
   loading.value = true
+  loadingMore.value = false
+  loadError.value = ''
+  loadMoreError.value = ''
   try {
-    const data = await opsAPI.listAlertEvents(buildQuery())
+    const data = await opsAPI.listAlertEvents(query)
+    if (requestId !== listGeneration) return
     events.value = data
     hasMore.value = data.length === PAGE_SIZE
   } catch (err: any) {
+    if (requestId !== listGeneration) return
     console.error('[OpsAlertEventsCard] Failed to load alert events', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertEvents.loadFailed'))
-    events.value = []
-    hasMore.value = false
+    loadError.value = err?.response?.data?.detail || t('admin.ops.alertEvents.loadFailed')
+    appStore.showError(loadError.value)
   } finally {
-    loading.value = false
+    if (requestId === listGeneration) loading.value = false
   }
 }
 
@@ -109,11 +121,13 @@ async function loadMore() {
   const last = events.value[events.value.length - 1]
   if (!last) return
 
+  const requestId = listGeneration
+  const query = buildQuery({ before_fired_at: last.fired_at || last.created_at, before_id: last.id })
   loadingMore.value = true
+  loadMoreError.value = ''
   try {
-    const data = await opsAPI.listAlertEvents(
-      buildQuery({ before_fired_at: last.fired_at || last.created_at, before_id: last.id })
-    )
+    const data = await opsAPI.listAlertEvents(query)
+    if (requestId !== listGeneration) return
     if (!data.length) {
       hasMore.value = false
       return
@@ -121,18 +135,24 @@ async function loadMore() {
     events.value = [...events.value, ...data]
     if (data.length < PAGE_SIZE) hasMore.value = false
   } catch (err: any) {
+    if (requestId !== listGeneration) return
     console.error('[OpsAlertEventsCard] Failed to load more alert events', err)
-    hasMore.value = false
+    loadMoreError.value = err?.response?.data?.detail || t('admin.ops.alertEvents.loadFailed')
   } finally {
-    loadingMore.value = false
+    if (requestId === listGeneration) loadingMore.value = false
   }
+}
+
+function retryLoadMore() {
+  loadMoreError.value = ''
+  void loadMore()
 }
 
 function onScroll(e: Event) {
   const el = e.target as HTMLElement | null
   if (!el) return
   const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 120
-  if (nearBottom) loadMore()
+  if (nearBottom && !loadMoreError.value) void loadMore()
 }
 
 function getDimensionString(event: AlertEvent | null | undefined, key: string): string {
@@ -189,32 +209,40 @@ function formatDimensionsSummary(event: AlertEvent): string {
 }
 
 function closeDetail() {
+  detailRequestSequence += 1
+  historyRequestSequence += 1
   showDetail.value = false
   selected.value = null
   history.value = []
 }
 
 async function openDetail(row: AlertEvent) {
+  const requestId = ++detailRequestSequence
+  historyRequestSequence += 1
   showDetail.value = true
   selected.value = row
+  history.value = []
   detailLoading.value = true
-  historyLoading.value = true
 
   try {
     const detail = await opsAPI.getAlertEvent(row.id)
+    if (requestId !== detailRequestSequence) return
     selected.value = detail
   } catch (err: any) {
+    if (requestId !== detailRequestSequence) return
     console.error('[OpsAlertEventsCard] Failed to load alert detail', err)
     appStore.showError(err?.response?.data?.detail || t('admin.ops.alertEvents.detail.loadFailed'))
   } finally {
-    detailLoading.value = false
+    if (requestId === detailRequestSequence) detailLoading.value = false
   }
 
-  await loadHistory()
+  if (requestId === detailRequestSequence) await loadHistory()
 }
 
 async function loadHistory() {
   const ev = selected.value
+  const requestId = ++historyRequestSequence
+  const requestedRange = historyRange.value
   if (!ev) {
     history.value = []
     historyLoading.value = false
@@ -229,11 +257,12 @@ async function loadHistory() {
 
     const items = await opsAPI.listAlertEvents({
       limit: 20,
-      time_range: historyRange.value,
+      time_range: requestedRange,
       platform: platform || undefined,
       group_id: groupId,
       status: ''
     })
+    if (requestId !== historyRequestSequence || selected.value?.id !== ev.id) return
 
     // Best-effort: narrow to same rule_id + dimensions
     history.value = items.filter((it) => {
@@ -246,10 +275,11 @@ async function loadHistory() {
       return (g1 ?? null) === (g2 ?? null)
     })
   } catch (err: any) {
+    if (requestId !== historyRequestSequence) return
     console.error('[OpsAlertEventsCard] Failed to load alert history', err)
     history.value = []
   } finally {
-    historyLoading.value = false
+    if (requestId === historyRequestSequence) historyLoading.value = false
   }
 }
 
@@ -318,7 +348,9 @@ onMounted(() => {
 watch([timeRange, severity, status, emailSent], () => {
   events.value = []
   hasMore.value = true
-  loadFirstPage()
+  loadError.value = ''
+  loadMoreError.value = ''
+  void loadFirstPage()
 })
 
 watch(historyRange, () => {
@@ -351,24 +383,25 @@ function formatStatusLabel(status: string | undefined): string {
   return s.toUpperCase()
 }
 
-const empty = computed(() => events.value.length === 0 && !loading.value)
+const empty = computed(() => events.value.length === 0 && !loading.value && !loadError.value)
 </script>
 
 <template>
-  <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700">
-    <div class="mb-4 flex items-start justify-between gap-4">
+  <section class="rounded-panel border border-outline bg-surface p-4 shadow-card sm:p-5" aria-labelledby="ops-alert-events-title">
+    <div class="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
       <div>
-        <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ t('admin.ops.alertEvents.title') }}</h3>
+        <h3 id="ops-alert-events-title" class="text-sm font-semibold text-foreground">{{ t('admin.ops.alertEvents.title') }}</h3>
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.alertEvents.description') }}</p>
       </div>
 
-      <div class="flex items-center gap-2">
-        <Select :model-value="timeRange" :options="timeRangeOptions" class="w-[120px]" @change="timeRange = String($event || '24h')" />
-        <Select :model-value="severity" :options="severityOptions" class="w-[88px]" @change="severity = String($event || '')" />
-        <Select :model-value="status" :options="statusOptions" class="w-[110px]" @change="status = String($event || '')" />
-        <Select :model-value="emailSent" :options="emailSentOptions" class="w-[110px]" @change="emailSent = String($event || '')" />
+      <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+        <Select :model-value="timeRange" :options="timeRangeOptions" class="w-full sm:w-[120px]" @change="timeRange = String($event || '24h')" />
+        <Select :model-value="severity" :options="severityOptions" class="w-full sm:w-[100px]" @change="severity = String($event || '')" />
+        <Select :model-value="status" :options="statusOptions" class="w-full sm:w-[120px]" @change="status = String($event || '')" />
+        <Select :model-value="emailSent" :options="emailSentOptions" class="w-full sm:w-[120px]" @change="emailSent = String($event || '')" />
         <button
-          class="flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-dark-700 dark:text-gray-300 dark:hover:bg-dark-600"
+          type="button"
+          class="btn btn-secondary col-span-2 sm:col-span-1"
           :disabled="loading"
           @click="loadFirstPage"
         >
@@ -380,7 +413,19 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
       </div>
     </div>
 
-    <div v-if="loading" class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+    <div
+      v-if="loadError && events.length > 0"
+      data-testid="alert-events-refresh-error"
+      role="alert"
+      class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-panel border border-danger/20 bg-danger-subtle px-3 py-2 text-xs text-danger-foreground"
+    >
+      <span>{{ loadError }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" :disabled="loading" @click="loadFirstPage">
+        {{ t('common.retry') }}
+      </button>
+    </div>
+
+    <div v-if="loading && events.length === 0" class="flex items-center gap-2 py-8 text-sm text-foreground-muted">
       <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -388,13 +433,23 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
       {{ t('admin.ops.alertEvents.loading') }}
     </div>
 
-    <div v-else-if="empty" class="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 dark:border-dark-700 dark:text-gray-400">
+    <EmptyState
+      v-else-if="loadError && events.length === 0"
+      data-testid="alert-events-load-error"
+      role="alert"
+      :title="loadError"
+      :action-text="t('common.retry')"
+      :action-icon="false"
+      @action="loadFirstPage"
+    />
+
+    <div v-else-if="empty" class="rounded-panel border border-dashed border-outline p-8 text-center text-sm text-foreground-muted">
       {{ t('admin.ops.alertEvents.empty') }}
     </div>
 
-    <div v-else class="overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700">
-      <div class="max-h-[600px] overflow-y-auto" @scroll="onScroll">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
+    <div v-else class="overflow-x-auto rounded-panel border border-outline">
+      <div class="max-h-[600px] min-w-[900px] overflow-y-auto" @scroll="onScroll">
+        <table class="min-w-full divide-y divide-outline">
           <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-dark-900">
             <tr>
               <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -427,9 +482,14 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
             <tr
               v-for="row in events"
               :key="row.id"
-              class="cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700/50"
+              class="cursor-pointer hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+              role="button"
+              tabindex="0"
               @click="openDetail(row)"
+              @keydown.enter.prevent="openDetail(row)"
+              @keydown.space.prevent="openDetail(row)"
               :title="row.title || ''"
+              :aria-label="row.title || t('admin.ops.alertEvents.detail.title')"
             >
               <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
                 {{ formatDateTime(row.fired_at || row.created_at) }}
@@ -494,6 +554,17 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
           </svg>
           {{ t('admin.ops.alertEvents.loading') }}
         </div>
+        <div
+          v-else-if="loadMoreError"
+          data-testid="alert-events-load-more-error"
+          role="alert"
+          class="flex items-center justify-center gap-3 bg-danger-subtle px-3 py-2 text-xs text-danger-foreground"
+        >
+          <span>{{ loadMoreError }}</span>
+          <button type="button" class="btn btn-secondary btn-sm" @click="retryLoadMore">
+            {{ t('common.retry') }}
+          </button>
+        </div>
         <div v-else-if="!hasMore && events.length > 0" class="py-3 text-center text-xs text-gray-400">
           -
         </div>
@@ -516,7 +587,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
       </div>
 
       <div v-else class="space-y-5">
-        <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900">
+        <section class="border-b border-outline pb-4">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div class="flex flex-wrap items-center gap-2">
@@ -556,18 +627,18 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900">
+          <div class="alert-detail-grid grid grid-cols-1 overflow-hidden rounded-panel border border-outline bg-surface-subtle sm:grid-cols-2">
+            <div class="alert-detail-field p-4">
               <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.alertEvents.detail.firedAt') }}</div>
               <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ formatDateTime(selected.fired_at || selected.created_at) }}</div>
             </div>
-            <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900">
+            <div class="alert-detail-field p-4">
               <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.alertEvents.detail.resolvedAt') }}</div>
               <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ selected.resolved_at ? formatDateTime(selected.resolved_at) : '-' }}</div>
             </div>
-            <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900">
+            <div class="alert-detail-field p-4">
               <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.alertEvents.detail.ruleId') }}</div>
               <div class="mt-1 flex flex-wrap items-center gap-2">
                 <div class="font-mono text-sm font-bold text-gray-900 dark:text-white">#{{ selected.rule_id }}</div>
@@ -587,7 +658,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
                 </a>
               </div>
             </div>
-            <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900">
+            <div class="alert-detail-field p-4">
               <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.alertEvents.detail.dimensions') }}</div>
               <div class="mt-1 text-sm text-gray-900 dark:text-white">
                 <div v-if="getDimensionString(selected, 'platform')">platform={{ getDimensionString(selected, 'platform') }}</div>
@@ -598,7 +669,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
           </div>
 
 
-        <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800">
+        <section class="border-t border-outline pt-4">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <div class="text-sm font-bold text-gray-900 dark:text-white">{{ t('admin.ops.alertEvents.detail.historyTitle') }}</div>
@@ -640,9 +711,33 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </div>
     </BaseDialog>
-  </div>
+  </section>
 </template>
 
+<style scoped>
+.alert-detail-field {
+  min-width: 0;
+  border-bottom: 1px solid var(--ui-border, #dbe3ee);
+}
+
+.alert-detail-field:last-child {
+  border-bottom: 0;
+}
+
+@media (min-width: 640px) {
+  .alert-detail-field {
+    border-right: 1px solid var(--ui-border, #dbe3ee);
+  }
+
+  .alert-detail-field:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .alert-detail-field:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+}
+</style>

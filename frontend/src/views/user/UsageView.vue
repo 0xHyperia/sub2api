@@ -1,21 +1,25 @@
 <template>
   <AppLayout>
-    <div class="space-y-6">
+    <div class="usage-page">
       <UsageStatsCards :stats="usageStats" :show-account-cost="false" :strike-standard-cost="true" />
 
-      <div class="space-y-4">
-        <div class="card p-4">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.dashboard.timeRange') }}:</span>
+      <section class="usage-analytics" aria-labelledby="usage-analytics-title">
+        <div class="usage-chart-toolbar">
+          <div class="usage-toolbar-copy">
+            <p>{{ t('usage.tabs.usage') }}</p>
+            <h2 id="usage-analytics-title">{{ t('admin.dashboard.tokenUsageTrend') }}</h2>
+          </div>
+          <div class="usage-chart-controls">
+            <div class="usage-control-group">
+              <span class="usage-control-label">{{ t('admin.dashboard.timeRange') }}</span>
               <DateRangePicker
                 v-model:start-date="startDate"
                 v-model:end-date="endDate"
                 @change="onDateRangeChange"
               />
             </div>
-            <div class="ml-auto flex items-center gap-2">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.dashboard.granularity') }}:</span>
+            <div class="usage-control-group usage-granularity-control">
+              <span class="usage-control-label">{{ t('admin.dashboard.granularity') }}</span>
               <div class="w-28">
                 <Select v-model="granularity" :options="granularityOptions" @change="loadChartData" />
               </div>
@@ -23,7 +27,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
           <ModelDistributionChart
             v-model:metric="modelDistributionMetric"
             :model-stats="requestedModelStats"
@@ -47,7 +51,7 @@
           />
         </div>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
           <EndpointDistributionChart
             v-model:source="endpointDistributionSource"
             v-model:metric="endpointDistributionMetric"
@@ -64,11 +68,12 @@
           />
           <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
         </div>
-      </div>
+      </section>
 
-      <div class="card p-6">
-        <div class="flex flex-wrap items-end justify-between gap-4">
-          <div v-if="activeTab === 'errors'" class="flex flex-1 flex-wrap items-end gap-4">
+      <section class="usage-records" aria-labelledby="usage-records-title">
+        <div class="usage-filters">
+          <div class="usage-filter-row">
+            <div v-if="activeTab === 'errors'" class="usage-filter-fields">
             <div class="w-full sm:w-auto sm:min-w-[220px]">
               <label class="input-label">{{ t('usage.errors.keyName') }}</label>
               <Select v-model="errorFilter.api_key_id" :options="errorKeyOptions" @change="applyErrorFilters" />
@@ -94,7 +99,7 @@
               <Select v-model="errorFilter.status_code" :options="errorStatusOptions" @change="applyErrorFilters" />
             </div>
           </div>
-          <div v-else class="flex flex-1 flex-wrap items-end gap-4">
+            <div v-else class="usage-filter-fields">
             <div class="w-full sm:w-auto sm:min-w-[220px]">
               <label class="input-label">{{ t('usage.apiKeyFilter') }}</label>
               <Select v-model="filters.api_key_id" :options="apiKeyOptions" @change="applyFilters" />
@@ -121,8 +126,16 @@
             </div>
           </div>
 
-          <div class="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
-            <button type="button" @click="refreshData" :disabled="activeTab === 'errors' ? errorLoading : loading" class="btn btn-secondary">
+            <div class="usage-filter-actions">
+            <button
+              type="button"
+              @click="refreshData"
+              :disabled="activeTab === 'errors' ? errorLoading : loading"
+              class="btn btn-secondary"
+              :aria-label="t('common.refresh')"
+              :title="t('common.refresh')"
+            >
+              <Icon name="refresh" size="sm" :class="(activeTab === 'errors' ? errorLoading : loading) ? 'animate-spin' : ''" />
               {{ t('common.refresh') }}
             </button>
             <button type="button" @click="resetFilters" class="btn btn-secondary">
@@ -130,24 +143,38 @@
             </button>
             <div class="relative" ref="columnDropdownRef">
               <button
+                :id="columnMenuTriggerId"
+                ref="columnMenuTriggerRef"
                 type="button"
-                @click="showColumnDropdown = !showColumnDropdown"
+                @click="toggleColumnMenu"
+                @keydown="handleColumnTriggerKeydown"
                 class="btn btn-secondary px-2 md:px-3"
                 :title="t('admin.users.columnSettings')"
+                :aria-label="t('admin.users.columnSettings')"
+                :aria-expanded="showColumnDropdown"
+                :aria-controls="showColumnDropdown ? columnMenuId : undefined"
+                aria-haspopup="menu"
               >
                 <Icon name="grid" size="sm" />
                 <span class="hidden md:inline">{{ t('admin.users.columnSettings') }}</span>
               </button>
               <div
                 v-if="showColumnDropdown"
-                class="absolute right-0 top-full z-50 mt-1 max-h-80 w-48 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800"
+                :id="columnMenuId"
+                ref="columnMenuRef"
+                role="menu"
+                :aria-labelledby="columnMenuTriggerId"
+                class="absolute right-0 top-full z-50 mt-1 max-h-80 w-52 overflow-y-auto rounded-panel border border-outline bg-surface py-1 shadow-floating"
+                @keydown="handleColumnMenuKeydown"
               >
                 <button
                   v-for="col in currentToggleableColumns"
                   :key="col.key"
                   type="button"
+                  role="menuitemcheckbox"
+                  :aria-checked="isCurrentColumnVisible(col.key)"
                   @click="toggleCurrentColumn(col.key)"
-                  class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+                  class="flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
                 >
                   <span>{{ col.label }}</span>
                   <Icon v-if="isCurrentColumnVisible(col.key)" name="check" size="sm" class="text-primary-500" />
@@ -155,61 +182,104 @@
               </div>
             </div>
             <button v-if="activeTab !== 'errors'" type="button" @click="exportToCSV" :disabled="exporting" class="btn btn-primary">
+              <Icon name="download" size="sm" />
               {{ exporting ? t('usage.exporting') : t('usage.exportCsv') }}
             </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div v-if="errorViewEnabled" class="flex gap-2 border-b border-gray-200 dark:border-dark-700">
-        <button class="tab" :class="{ 'tab-active': activeTab === 'usage' }" @click="activeTab = 'usage'">
-          {{ t('usage.tabs.usage') }}
-        </button>
-        <button class="tab" :class="{ 'tab-active': activeTab === 'errors' }" @click="switchToErrors">
-          {{ t('usage.tabs.errors') }}
-        </button>
-      </div>
+        <div class="usage-records-header">
+          <h2 id="usage-records-title" class="sr-only">{{ t('usage.tabs.usage') }}</h2>
+          <div v-if="errorViewEnabled" class="usage-tabs" role="tablist" :aria-label="t('usage.tabs.usage')">
+            <button
+              id="usage-tab"
+              type="button"
+              role="tab"
+              class="usage-tab"
+              :class="{ 'usage-tab-active': activeTab === 'usage' }"
+              :aria-selected="activeTab === 'usage'"
+              :tabindex="activeTab === 'usage' ? 0 : -1"
+              aria-controls="usage-panel"
+              @click="activeTab = 'usage'"
+              @keydown="handleUsageTabKeydown($event, 'usage')"
+            >
+              {{ t('usage.tabs.usage') }}
+            </button>
+            <button
+              id="errors-tab"
+              type="button"
+              role="tab"
+              class="usage-tab"
+              :class="{ 'usage-tab-active': activeTab === 'errors' }"
+              :aria-selected="activeTab === 'errors'"
+              :tabindex="activeTab === 'errors' ? 0 : -1"
+              aria-controls="errors-panel"
+              @click="switchToErrors"
+              @keydown="handleUsageTabKeydown($event, 'errors')"
+            >
+              {{ t('usage.tabs.errors') }}
+            </button>
+          </div>
+          <div v-else class="usage-tabs" aria-hidden="true">
+            <span class="usage-tab usage-tab-active">{{ t('usage.tabs.usage') }}</span>
+          </div>
+        </div>
 
-      <template v-if="activeTab === 'usage'">
-        <UsageTable
-          :data="usageLogs"
-          :loading="loading"
-          :columns="visibleColumns"
-          :server-side-sort="true"
-          :show-account-billing="false"
-          :show-upstream-endpoint="false"
-          default-sort-key="created_at"
-          default-sort-order="desc"
-          @sort="handleSort"
-          @ipGeoBatchFailed="handleIpGeoBatchFailed"
-        />
+        <div
+          id="usage-panel"
+          v-show="activeTab === 'usage'"
+          class="usage-table-panel"
+          role="tabpanel"
+          :aria-labelledby="errorViewEnabled ? 'usage-tab' : undefined"
+        >
+          <UsageTable
+            :data="usageLogs"
+            :loading="loading"
+            :columns="visibleColumns"
+            :server-side-sort="true"
+            :show-account-billing="false"
+            :show-upstream-endpoint="false"
+            default-sort-key="created_at"
+            default-sort-order="desc"
+            @sort="handleSort"
+            @ipGeoBatchFailed="handleIpGeoBatchFailed"
+          />
 
-        <Pagination
-          v-if="pagination.total > 0"
-          :page="pagination.page"
-          :total="pagination.total"
-          :page-size="pagination.page_size"
-          @update:page="handlePageChange"
-          @update:pageSize="handlePageSizeChange"
-        />
-      </template>
+          <Pagination
+            v-if="pagination.total > 0"
+            :page="pagination.page"
+            :total="pagination.total"
+            :page-size="pagination.page_size"
+            @update:page="handlePageChange"
+            @update:pageSize="handlePageSizeChange"
+          />
+        </div>
 
-      <UserErrorRequestsTable
-        v-else-if="errorViewEnabled"
-        :rows="errorRows"
-        :total="errorTotal"
-        :loading="errorLoading"
-        :page="errorPage"
-        :page-size="errorPageSize"
-        :visible-column-keys="errVisibleColumnKeys"
-        @sort="onErrorSort"
-        @update:page="onErrorPage"
-        @update:pageSize="onErrorPageSize"
-        @ipGeoBatchFailed="handleIpGeoBatchFailed"
-      />
+        <div
+          v-if="errorViewEnabled"
+          id="errors-panel"
+          v-show="activeTab === 'errors'"
+          class="usage-table-panel"
+          role="tabpanel"
+          aria-labelledby="errors-tab"
+        >
+          <UserErrorRequestsTable
+            :rows="errorRows"
+            :total="errorTotal"
+            :loading="errorLoading"
+            :page="errorPage"
+            :page-size="errorPageSize"
+            :visible-column-keys="errVisibleColumnKeys"
+            @sort="onErrorSort"
+            @update:page="onErrorPage"
+            @update:pageSize="onErrorPageSize"
+            @ipGeoBatchFailed="handleIpGeoBatchFailed"
+          />
+        </div>
+      </section>
     </div>
   </AppLayout>
-
 </template>
 
 <script setup lang="ts">
@@ -230,6 +300,7 @@ import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
 import Icon from '@/components/icons/Icon.vue'
 import UserErrorRequestsTable from '@/components/user/UserErrorRequestsTable.vue'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
+import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import { formatReasoningEffort } from '@/utils/format'
 import { BILLING_MODE_IMAGE, getBillingModeLabel } from '@/utils/billingMode'
 import { resolveUsageRequestType, requestTypeToLegacyStream } from '@/utils/usageRequestType'
@@ -792,11 +863,21 @@ const toggleCurrentColumn = (key: string) => {
   else toggleColumn(key)
 }
 
-const showColumnDropdown = ref(false)
 const columnDropdownRef = ref<HTMLElement | null>(null)
+const {
+  open: showColumnDropdown,
+  triggerRef: columnMenuTriggerRef,
+  menuRef: columnMenuRef,
+  triggerId: columnMenuTriggerId,
+  menuId: columnMenuId,
+  closeMenu: closeColumnMenu,
+  toggleMenu: toggleColumnMenu,
+  handleTriggerKeydown: handleColumnTriggerKeydown,
+  handleMenuKeydown: handleColumnMenuKeydown,
+} = useDropdownMenu('user-usage-columns')
 const handleColumnClickOutside = (event: MouseEvent) => {
   if (columnDropdownRef.value && !columnDropdownRef.value.contains(event.target as HTMLElement)) {
-    showColumnDropdown.value = false
+    void closeColumnMenu()
   }
 }
 
@@ -871,6 +952,27 @@ const switchToErrors = () => {
   if (errorRows.value.length === 0) void loadErrors()
 }
 
+const activateUsageTab = (tab: 'usage' | 'errors') => {
+  if (tab === 'errors') switchToErrors()
+  else activeTab.value = 'usage'
+}
+
+const handleUsageTabKeydown = (event: KeyboardEvent, current: 'usage' | 'errors') => {
+  let target: 'usage' | 'errors' | null = null
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    target = current === 'usage' ? 'errors' : 'usage'
+  } else if (event.key === 'Home') {
+    target = 'usage'
+  } else if (event.key === 'End') {
+    target = 'errors'
+  }
+  if (!target) return
+
+  event.preventDefault()
+  activateUsageTab(target)
+  window.requestAnimationFrame(() => document.getElementById(`${target}-tab`)?.focus())
+}
+
 onMounted(() => {
   loadSavedColumns()
   loadSavedErrColumns()
@@ -888,3 +990,239 @@ watch(endpointDistributionSource, () => {
   // Endpoint source switching is handled by the chart component using already loaded stats.
 })
 </script>
+
+<style scoped>
+.usage-page,
+.usage-analytics,
+.usage-records {
+  display: grid;
+  min-width: 0;
+  gap: 16px;
+}
+
+.usage-page {
+  gap: 24px;
+}
+
+.usage-chart-toolbar,
+.usage-filters,
+.usage-records-header,
+.usage-table-panel {
+  min-width: 0;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.usage-chart-toolbar {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 12px 10px 16px;
+}
+
+.usage-toolbar-copy p,
+.usage-toolbar-copy h2 {
+  margin: 0;
+}
+
+.usage-toolbar-copy p {
+  color: var(--ui-text-subtle, #8793a3);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.usage-toolbar-copy h2 {
+  margin-top: 3px;
+  color: var(--ui-text, #0f172a);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.usage-chart-controls,
+.usage-control-group,
+.usage-filter-actions {
+  display: flex;
+  align-items: center;
+}
+
+.usage-chart-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.usage-control-group {
+  gap: 8px;
+}
+
+.usage-control-label {
+  color: var(--ui-text-muted, #667085);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.usage-filters {
+  padding: 14px;
+}
+
+.usage-filter-row {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.usage-filter-fields {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 12px;
+}
+
+.usage-filter-fields > * {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.usage-filter-actions {
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.usage-records-header {
+  overflow: hidden;
+}
+
+.usage-tabs {
+  display: flex;
+  min-height: 44px;
+  align-items: stretch;
+  padding: 0 8px;
+}
+
+.usage-tab {
+  position: relative;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-muted, #667085);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.usage-tab::after {
+  position: absolute;
+  right: 12px;
+  bottom: 0;
+  left: 12px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  content: '';
+}
+
+.usage-tab:hover,
+.usage-tab-active {
+  color: var(--ui-text, #0f172a);
+}
+
+.usage-tab-active::after {
+  background: var(--ui-text, #0f172a);
+}
+
+.usage-table-panel {
+  overflow: hidden;
+}
+
+.usage-table-panel :deep(.card) {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.usage-table-panel :deep(.pagination-container) {
+  border-top: 1px solid var(--ui-border, #dbe3ee);
+}
+
+@media (max-width: 1279px) {
+  .usage-filter-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .usage-filter-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1023px) {
+  .usage-chart-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .usage-chart-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 639px) {
+  .usage-page {
+    gap: 20px;
+  }
+
+  .usage-chart-toolbar,
+  .usage-filters {
+    padding: 14px;
+  }
+
+  .usage-chart-controls,
+  .usage-control-group {
+    width: 100%;
+  }
+
+  .usage-control-group {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .usage-granularity-control > div {
+    width: 100%;
+  }
+
+  .usage-filter-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .usage-filter-actions {
+    justify-content: flex-start;
+  }
+
+  .usage-filter-actions > .btn {
+    flex: 1 1 auto;
+  }
+
+  .usage-table-panel {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+</style>

@@ -8,7 +8,7 @@
         id="login-agreement-consent"
         type="checkbox"
         :checked="accepted"
-        class="mt-[2px] h-4 w-4 flex-shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-900"
+        class="mt-[2px] h-5 w-5 flex-shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-900"
         @change="handleCheckboxChange"
       />
       <div class="min-w-0 flex-1">
@@ -49,7 +49,7 @@
       </div>
       <button
         type="button"
-        class="flex-shrink-0 rounded-md bg-primary-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary-700"
+        class="min-h-10 flex-shrink-0 rounded-md bg-primary-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-primary-700"
         @click="emit('open')"
       >
         {{ t('legal.loginAgreementPrompt.viewTerms') }}
@@ -61,9 +61,15 @@
     <Transition name="agreement-fade">
       <div
         v-if="dialogVisible"
+        ref="overlayRef"
         class="fixed inset-0 z-[140] flex items-center justify-center overflow-y-auto bg-gray-950/60 p-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-agreement-title"
+        aria-describedby="login-agreement-description"
+        @keydown="handleDialogKeydown"
       >
-        <div class="w-full max-w-[600px] overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 dark:bg-dark-900 dark:ring-white/10">
+        <div ref="dialogRef" class="w-full max-w-[600px] overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-black/10 dark:bg-dark-900 dark:ring-white/10" tabindex="-1">
           <div class="border-b border-gray-100 bg-white px-6 py-6 dark:border-dark-800 dark:bg-dark-900">
             <div class="flex items-start gap-4">
               <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20">
@@ -71,7 +77,7 @@
               </span>
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
-                  <h2 class="text-xl font-bold tracking-normal text-gray-950 dark:text-white">
+                  <h2 id="login-agreement-title" class="text-xl font-bold tracking-normal text-gray-950 dark:text-white">
                     {{ t('legal.loginAgreementPrompt.dialogTitle') }}
                   </h2>
                   <span
@@ -81,7 +87,7 @@
                     {{ updatedAt }}
                   </span>
                 </div>
-                <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-dark-300">
+                <p id="login-agreement-description" class="mt-2 text-sm leading-6 text-gray-600 dark:text-dark-300">
                   {{
                     t('legal.loginAgreementPrompt.dialogDescription', {
                       date: updatedAt || t('legal.loginAgreementPrompt.recently'),
@@ -103,7 +109,7 @@
                 :to="documentRoute(doc)"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="group flex min-h-[72px] w-full items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:border-primary-200 hover:bg-white hover:shadow-sm dark:border-dark-700 dark:bg-dark-800/70 dark:hover:border-primary-500/30 dark:hover:bg-dark-800"
+                class="group flex min-h-[72px] w-full items-center gap-3 rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-left transition hover:border-primary-200 hover:bg-white hover:shadow-sm dark:border-dark-700 dark:bg-dark-800/70 dark:hover:border-primary-500/30 dark:hover:bg-dark-800"
               >
                 <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-gray-200 transition group-hover:bg-primary-50 group-hover:text-primary-700 group-hover:ring-primary-100 dark:bg-dark-900 dark:text-dark-200 dark:ring-dark-700 dark:group-hover:bg-primary-500/10 dark:group-hover:text-primary-200 dark:group-hover:ring-primary-500/20">
                   <Icon :name="documentIcon(index, doc.title)" size="sm" />
@@ -122,14 +128,14 @@
             <div class="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-200 dark:hover:bg-dark-700"
-                @click="emit('reject')"
+                class="min-h-11 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-200 dark:hover:bg-dark-700"
+                @click="rejectDialog"
               >
                 {{ t('legal.loginAgreementPrompt.reject') }}
               </button>
               <button
                 type="button"
-                class="rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-primary-600/20 transition hover:bg-primary-700"
+                class="min-h-11 rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-primary-600/20 transition hover:bg-primary-700"
                 @click="emit('accept')"
               >
                 {{ t('legal.loginAgreementPrompt.accept') }}
@@ -143,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import type { LoginAgreementDocument } from '@/types'
@@ -171,6 +177,10 @@ const documents = computed(() => props.documents.filter((doc) => doc.title.trim(
 const updatedAt = computed(() => props.updatedAt || '')
 const accepted = computed(() => props.accepted)
 const mode = computed(() => props.mode === 'checkbox' ? 'checkbox' : 'modal')
+const overlayRef = ref<HTMLElement | null>(null)
+const dialogRef = ref<HTMLElement | null>(null)
+let previouslyFocusedElement: HTMLElement | null = null
+let previousBodyOverflow = ''
 
 function documentRoute(doc: LoginAgreementDocument) {
   return {
@@ -189,6 +199,67 @@ function handleCheckboxChange(event: Event): void {
     emit('reject')
   }
 }
+
+function rejectDialog(): void {
+  emit('reject')
+}
+
+function getFocusableElements(): HTMLElement[] {
+  if (!overlayRef.value) return []
+  return Array.from(
+    overlayRef.value.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  )
+}
+
+function handleDialogKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    rejectDialog()
+    return
+  }
+  if (event.key !== 'Tab') return
+
+  const focusableElements = getFocusableElements()
+  if (!focusableElements.length) {
+    event.preventDefault()
+    dialogRef.value?.focus()
+    return
+  }
+
+  const firstElement = focusableElements[0]
+  const lastElement = focusableElements[focusableElements.length - 1]
+  if (event.shiftKey && (document.activeElement === firstElement || document.activeElement === dialogRef.value)) {
+    event.preventDefault()
+    lastElement.focus()
+  } else if (!event.shiftKey && document.activeElement === lastElement) {
+    event.preventDefault()
+    firstElement.focus()
+  }
+}
+
+function restoreDialogState(): void {
+  document.body.style.overflow = previousBodyOverflow
+  previouslyFocusedElement?.focus()
+  previouslyFocusedElement = null
+}
+
+watch(dialogVisible, async (visible) => {
+  if (visible) {
+    previouslyFocusedElement = document.activeElement as HTMLElement | null
+    previousBodyOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    await nextTick()
+    dialogRef.value?.focus()
+  } else if (previouslyFocusedElement) {
+    restoreDialogState()
+  }
+}, { flush: 'post' })
+
+onBeforeUnmount(() => {
+  if (previouslyFocusedElement) restoreDialogState()
+})
 
 function documentIcon(index: number, title: string): 'document' | 'shield' | 'globe' | 'cog' {
   const normalizedTitle = title.toLowerCase()

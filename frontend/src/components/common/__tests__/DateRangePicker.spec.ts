@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 
 import DateRangePicker from '../DateRangePicker.vue'
@@ -92,5 +92,78 @@ describe('DateRangePicker', () => {
         preset: 'last24Hours'
       }
     ])
+  })
+
+  it('constrains and stacks the popup at 320px while preserving form relationships', async () => {
+    const originalWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 320 })
+    const wrapper = mount(DateRangePicker, {
+      attachTo: document.body,
+      props: {
+        startDate: '2026-07-01',
+        endDate: '2026-07-12'
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    try {
+      const trigger = wrapper.get<HTMLButtonElement>('.date-picker-trigger')
+      expect(trigger.attributes('aria-haspopup')).toBe('dialog')
+      expect(trigger.attributes('aria-expanded')).toBe('false')
+
+      await trigger.trigger('click')
+      const popup = wrapper.get('.date-picker-dropdown')
+      expect(popup.classes()).toContain('max-w-[calc(100vw-2rem)]')
+      expect(popup.attributes('role')).toBe('dialog')
+      expect(trigger.attributes('aria-controls')).toBe(popup.attributes('id'))
+      expect(popup.attributes('aria-labelledby')).toBe(trigger.attributes('id'))
+
+      const customRange = wrapper.get('.date-picker-custom')
+      expect(customRange.classes()).toContain('flex-col')
+      expect(customRange.classes()).toContain('min-[360px]:flex-row')
+
+      const inputs = wrapper.findAll<HTMLInputElement>('.date-picker-input')
+      const labels = wrapper.findAll<HTMLLabelElement>('.date-picker-label')
+      expect(inputs).toHaveLength(2)
+      expect(labels.map((label) => label.attributes('for'))).toEqual(
+        inputs.map((input) => input.attributes('id'))
+      )
+    } finally {
+      wrapper.unmount()
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth })
+    }
+  })
+
+  it('supports keyboard opening and restores trigger focus on Escape', async () => {
+    const wrapper = mount(DateRangePicker, {
+      attachTo: document.body,
+      props: {
+        startDate: '2026-07-01',
+        endDate: '2026-07-12'
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    const trigger = wrapper.get<HTMLButtonElement>('.date-picker-trigger')
+    await trigger.trigger('keydown', { key: 'ArrowUp' })
+    await flushPromises()
+
+    const presets = wrapper.findAll<HTMLButtonElement>('[data-date-picker-preset]')
+    expect(document.activeElement).toBe(presets[presets.length - 1].element)
+    expect(presets.every((preset) => preset.attributes('type') === 'button')).toBe(true)
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(trigger.element)
+    wrapper.unmount()
   })
 })

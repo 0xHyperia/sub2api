@@ -25,42 +25,75 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
-const isMobile = ref(false)
-
-const checkMobile = () => {
-  isMobile.value = window.innerWidth < 1024
-}
+const desktopViewportQuery = '(min-width: 1024px)'
+const isMobile = ref(
+  typeof window === 'undefined' ? false : !window.matchMedia(desktopViewportQuery).matches
+)
+let viewportMediaQuery: MediaQueryList | null = null
+let viewportListener: ((event: MediaQueryListEvent) => void) | null = null
 
 onMounted(() => {
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
+  viewportMediaQuery = window.matchMedia(desktopViewportQuery)
+  isMobile.value = !viewportMediaQuery.matches
+  viewportListener = (event: MediaQueryListEvent) => {
+    isMobile.value = !event.matches
+  }
+
+  if (typeof viewportMediaQuery.addEventListener === 'function') {
+    viewportMediaQuery.addEventListener('change', viewportListener)
+  } else {
+    viewportMediaQuery.addListener(viewportListener)
+  }
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile)
+  if (viewportMediaQuery && viewportListener) {
+    if (typeof viewportMediaQuery.removeEventListener === 'function') {
+      viewportMediaQuery.removeEventListener('change', viewportListener)
+    } else {
+      viewportMediaQuery.removeListener(viewportListener)
+    }
+  }
+  viewportMediaQuery = null
+  viewportListener = null
 })
 </script>
 
 <style scoped>
 /* 桌面端：Flexbox 布局 */
 .table-page-layout {
-  @apply flex flex-col gap-6;
-  height: calc(100vh - 64px - 4rem); /* 减去 header + lg:p-8 的上下padding */
+  @apply flex flex-col;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: calc(100dvh - var(--app-header-height, 64px) - (var(--page-gutter, 32px) * 2));
 }
 
 .layout-section-fixed {
   @apply flex-shrink-0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .layout-section-scrollable {
   @apply flex-1 min-h-0 flex flex-col;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* 表格滚动容器 - 增强版表体滚动方案 */
 .table-scroll-container {
-  @apply flex flex-col overflow-hidden h-full bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-dark-700 shadow-sm;
+  @apply flex h-full flex-col overflow-hidden;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
 }
 
 .table-scroll-container :deep(.table-wrapper) {
@@ -76,7 +109,7 @@ onUnmounted(() => {
 }
 
 .table-scroll-container :deep(thead) {
-  @apply bg-gray-50/80 dark:bg-dark-800/80 backdrop-blur-sm;
+  background: var(--ui-surface-subtle, #f4f7fb);
 }
 
 .table-scroll-container :deep(tbody) {
@@ -84,16 +117,29 @@ onUnmounted(() => {
 }
 
 .table-scroll-container :deep(th) {
-  @apply px-5 py-4 text-left text-sm font-medium text-gray-600 dark:text-dark-300 border-b border-gray-200 dark:border-dark-700;
+  @apply px-4 py-3 text-left text-xs font-semibold;
+  border-bottom: 1px solid var(--ui-border, #dbe3ee);
+  color: var(--ui-text-muted, #667085);
 }
 
 .table-scroll-container :deep(td) {
-  @apply px-5 py-4 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-dark-800;
+  @apply px-4 py-3 text-sm;
+  border-bottom: 1px solid var(--ui-border, #dbe3ee);
+  color: var(--ui-text, #0f172a);
 }
 
 /* 移动端：恢复正常滚动 */
+.table-page-layout.mobile-mode {
+  height: auto;
+  min-height: 0;
+  gap: 1rem;
+}
+
 .table-page-layout.mobile-mode .table-scroll-container {
   @apply h-auto overflow-visible border-none shadow-none bg-transparent;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .table-page-layout.mobile-mode .layout-section-scrollable {

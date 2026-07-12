@@ -7,7 +7,7 @@
       class="gateway-auth-theme gateway-auth-theme-floating"
       :aria-label="theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
       :title="theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
-      @click="toggleTheme"
+      @click="handleThemeToggle"
     >
       <Icon :name="theme === 'dark' ? 'sun' : 'moon'" size="md" />
     </button>
@@ -45,23 +45,23 @@
                 v-if="showRegister"
                 class="gateway-auth-tabs"
                 :data-mode="visualMode"
-                role="tablist"
+                role="group"
                 aria-label="账户入口"
               >
                 <span class="gateway-auth-tab-indicator" aria-hidden="true"></span>
                 <button
                   type="button"
-                  role="tab"
-                  :aria-selected="visualMode === 'login'"
+                  :aria-pressed="visualMode === 'login'"
                   @click="switchAuthMode('login')"
+                  @keydown.right.prevent="switchAuthMode('register')"
                 >
                   {{ t('auth.signIn') }}
                 </button>
                 <button
                   type="button"
-                  role="tab"
-                  :aria-selected="visualMode === 'register'"
+                  :aria-pressed="visualMode === 'register'"
                   @click="switchAuthMode('register')"
+                  @keydown.left.prevent="switchAuthMode('login')"
                 >
                   {{ t('auth.signUp') }}
                 </button>
@@ -88,6 +88,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
+import { useTheme } from '@/composables/useTheme'
 
 const props = withDefaults(defineProps<{
   siteName?: string
@@ -102,27 +103,15 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const displaySiteName = computed(() => props.siteName || appStore.siteName || 'Sub2API')
-const theme = ref<'light' | 'dark'>('light')
+const { resolvedTheme: theme, toggleTheme } = useTheme()
 const visualMode = ref<'login' | 'register'>(route.path === '/register' ? 'register' : 'login')
 const codeFlowCanvas = ref<HTMLCanvasElement | null>(null)
 const currentYear = new Date().getFullYear()
 let stopCodeFlow: (() => void) | null = null
 let authModeTimer: number | undefined
 
-function setupTheme(): void {
-  const storedTheme = localStorage.getItem('usa-zero-theme')
-  if (storedTheme === 'light' || storedTheme === 'dark') {
-    theme.value = storedTheme
-  } else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    theme.value = 'dark'
-  }
-}
-
-function toggleTheme(): void {
-  theme.value = theme.value === 'dark' ? 'light' : 'dark'
-  localStorage.setItem('usa-zero-theme', theme.value)
-  stopCodeFlow?.()
-  stopCodeFlow = startCodeFlow(codeFlowCanvas.value)
+function handleThemeToggle(): void {
+  toggleTheme()
 }
 
 function switchAuthMode(mode: 'login' | 'register'): void {
@@ -261,7 +250,6 @@ function startCodeFlow(canvas: HTMLCanvasElement | null): (() => void) | null {
 }
 
 onMounted(() => {
-  setupTheme()
   stopCodeFlow = startCodeFlow(codeFlowCanvas.value)
   if (!appStore.publicSettingsLoaded) {
     void appStore.fetchPublicSettings()
@@ -274,6 +262,11 @@ watch(
     visualMode.value = path === '/register' ? 'register' : 'login'
   }
 )
+
+watch(theme, () => {
+  stopCodeFlow?.()
+  stopCodeFlow = startCodeFlow(codeFlowCanvas.value)
+})
 
 onUnmounted(() => {
   stopCodeFlow?.()
@@ -393,8 +386,8 @@ onUnmounted(() => {
 
 .gateway-auth-theme {
   display: inline-grid;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -427,7 +420,7 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1.05fr) minmax(390px, 0.95fr);
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
-  border-radius: 16px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
@@ -509,7 +502,7 @@ onUnmounted(() => {
 .gateway-auth-tabs {
   position: relative;
   display: grid;
-  height: 40px;
+  height: 48px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 22px 0 24px;
   padding: 3px;
@@ -540,6 +533,7 @@ onUnmounted(() => {
   position: relative;
   z-index: 1;
   min-width: 0;
+  min-height: 40px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -551,7 +545,7 @@ onUnmounted(() => {
   transition: color 180ms ease;
 }
 
-.gateway-auth-tabs button[aria-selected="true"] {
+.gateway-auth-tabs button[aria-pressed="true"] {
   color: var(--foreground);
 }
 

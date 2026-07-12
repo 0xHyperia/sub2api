@@ -38,4 +38,48 @@ describe('TotpLoginModal', () => {
     expect(wrapper.text()).not.toContain('Invalid code')
     expect(wrapper.find('.bg-red-50').exists()).toBe(false)
   })
+
+  it('exposes dialog semantics, supports Escape, and restores focus on close', async () => {
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+
+    const wrapper = mount(TotpLoginModal, {
+      attachTo: document.body,
+      props: {
+        tempToken: 'temp-token',
+        userEmailMasked: 'u***@example.com',
+      },
+    })
+    await wrapper.vm.$nextTick()
+
+    const dialog = wrapper.get('[role="dialog"]')
+    expect(dialog.attributes('aria-modal')).toBe('true')
+    expect(dialog.attributes('aria-labelledby')).toBe('totp-login-title')
+    expect(document.activeElement).toBe(wrapper.get('input[aria-label]').element)
+
+    await dialog.trigger('keydown', { key: 'Escape' })
+    expect(wrapper.emitted('cancel')).toHaveLength(1)
+
+    wrapper.unmount()
+    expect(document.activeElement).toBe(opener)
+    opener.remove()
+  })
+
+  it('keeps keyboard focus inside the dialog', async () => {
+    const wrapper = mount(TotpLoginModal, {
+      attachTo: document.body,
+      props: {
+        tempToken: 'temp-token',
+      },
+    })
+    await wrapper.vm.$nextTick()
+
+    const cancelButton = wrapper.get('button')
+    cancelButton.element.focus()
+    await wrapper.get('[role="dialog"]').trigger('keydown', { key: 'Tab' })
+
+    expect(document.activeElement).toBe(wrapper.get('input[aria-label]').element)
+    wrapper.unmount()
+  })
 })

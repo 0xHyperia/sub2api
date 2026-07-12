@@ -1,38 +1,31 @@
 <template>
-  <div class="relative" ref="containerRef">
+  <div v-bind="rootAttrs" class="relative" ref="containerRef">
     <button
+      v-bind="triggerAttrs"
+      :id="triggerId"
       ref="triggerRef"
       type="button"
       @click="toggle"
       :disabled="disabled"
+      :role="isSearchable ? undefined : 'combobox'"
       :aria-expanded="isOpen"
-      :aria-haspopup="true"
-      aria-label="Select option"
+      aria-haspopup="listbox"
+      :aria-controls="listboxId"
+      :aria-activedescendant="!isSearchable ? focusedOptionId : undefined"
+      :aria-label="triggerAriaLabel"
       :class="[
         'select-trigger',
         isOpen && 'select-trigger-open',
         error && 'select-trigger-error',
-        disabled && 'select-trigger-disabled'
+        disabled && 'select-trigger-disabled',
+        clearable && hasValue && !disabled && 'select-trigger-clearable'
       ]"
-      @keydown.down.prevent="onTriggerKeyDown"
-      @keydown.up.prevent="onTriggerKeyDown"
+      @keydown="onTriggerKeyDown"
     >
       <span class="select-value">
         <slot name="selected" :option="selectedOption">
           {{ selectedLabel }}
         </slot>
-      </span>
-      <span
-        v-if="clearable && hasValue && !disabled"
-        class="select-clear"
-        role="button"
-        tabindex="-1"
-        aria-label="Clear selection"
-        @click.stop="clearSelection"
-        @mousedown.stop
-        @keydown.enter.stop.prevent="clearSelection"
-      >
-        <Icon name="x" size="sm" />
       </span>
       <span class="select-icon">
         <Icon
@@ -41,6 +34,16 @@
           :class="['transition-transform duration-200', isOpen && 'rotate-180']"
         />
       </span>
+    </button>
+    <button
+      v-if="clearable && hasValue && !disabled"
+      type="button"
+      class="select-clear"
+      :aria-label="t('common.clear')"
+      @click.stop="clearSelection"
+      @mousedown.stop
+    >
+      <Icon name="x" size="sm" />
     </button>
 
     <!-- Teleport dropdown to body to escape stacking context -->
@@ -52,7 +55,6 @@
           class="select-dropdown-portal"
           :class="[instanceId]"
           :style="dropdownStyle"
-          role="listbox"
           @click.stop
           @mousedown.stop
           @keydown="onDropdownKeyDown"
@@ -66,19 +68,33 @@
               type="text"
               :placeholder="searchPlaceholderText"
               class="select-search-input"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="true"
+              :aria-controls="listboxId"
+              :aria-activedescendant="focusedOptionId"
+              :aria-label="searchPlaceholderText"
               @click.stop
             />
           </div>
 
           <!-- Options list -->
-          <div class="select-options" ref="optionsListRef">
+          <div
+            :id="listboxId"
+            ref="optionsListRef"
+            class="select-options"
+            role="listbox"
+            :aria-labelledby="triggerId"
+          >
             <div
               v-for="(option, index) in filteredOptions"
               :key="`${typeof getOptionValue(option)}:${String(getOptionValue(option) ?? '')}`"
-              role="option"
-              :aria-selected="isSelected(option)"
-              :aria-disabled="isOptionDisabled(option)"
-              @click.stop="!isOptionDisabled(option) && selectOption(option)"
+              :id="getOptionId(index)"
+              :role="isGroupHeaderOption(option) ? 'presentation' : 'option'"
+              :aria-selected="isGroupHeaderOption(option) ? undefined : isSelected(option)"
+              :aria-disabled="isGroupHeaderOption(option) ? undefined : isOptionDisabled(option)"
+              :tabindex="-1"
+              @click.stop="isOptionFocusable(option) && selectOption(option)"
               @mouseenter="handleOptionMouseEnter(option, index)"
               :class="[
                 'select-option',
@@ -100,7 +116,7 @@
                   v-if="isSelected(option)"
                   name="check"
                   size="sm"
-                  class="text-primary-500"
+                  class="text-foreground"
                   :stroke-width="2"
                 />
               </slot>
@@ -118,14 +134,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
 
+defineOptions({ inheritAttrs: false })
+
+const attrs = useAttrs()
+const rootAttrs = computed(() => Object.fromEntries(
+  Object.entries(attrs).filter(([key]) => key === 'class' || key === 'style' || key.startsWith('data-'))
+))
+const triggerAttrs = computed(() => Object.fromEntries(
+  Object.entries(attrs).filter(([key]) => key !== 'class' && key !== 'style' && !key.startsWith('data-'))
+))
+
 // Instance ID for unique click-outside detection
 const instanceId = `select-${Math.random().toString(36).substring(2, 9)}`
+const triggerId = computed(() => {
+  const id = attrs.id
+  return typeof id === 'string' && id ? id : `${instanceId}-trigger`
+})
+const listboxId = `${instanceId}-listbox`
 
 export interface SelectOption {
   value: string | number | boolean | null
@@ -178,6 +209,8 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const optionsListRef = ref<HTMLElement | null>(null)
 const dropdownPosition = ref<'bottom' | 'top'>('bottom')
 const triggerRect = ref<DOMRect | null>(null)
+let typeaheadBuffer = ''
+let typeaheadTimer: number | null = null
 
 // i18n placeholders
 const placeholderText = computed(() => props.placeholder ?? t('common.selectOption'))
@@ -194,10 +227,17 @@ const dropdownStyle = computed(() => {
   if (!triggerRect.value) return {}
 
   const rect = triggerRect.value
+  const viewportPadding = 8
+  const minimumDropdownWidth = Math.max(rect.width, 200)
+  const left = Math.max(
+    viewportPadding,
+    Math.min(rect.left, window.innerWidth - minimumDropdownWidth - viewportPadding)
+  )
   const style: Record<string, string> = {
     position: 'fixed',
-    left: `${rect.left}px`,
+    left: `${left}px`,
     minWidth: `${rect.width}px`,
+    maxWidth: `calc(100vw - ${viewportPadding * 2}px)`,
     zIndex: '100000020'
   }
 
@@ -238,6 +278,10 @@ const isGroupHeaderOption = (option: any): boolean => {
   return false
 }
 
+const isOptionFocusable = (option: any): boolean => {
+  return !isOptionDisabled(option) && !isGroupHeaderOption(option)
+}
+
 const selectedOption = computed(() => {
   return props.options.find((opt) => getOptionValue(opt) === props.modelValue) || null
 })
@@ -256,6 +300,12 @@ const selectedLabel = computed(() => {
 const hasValue = computed(
   () => props.modelValue !== null && props.modelValue !== undefined && props.modelValue !== ''
 )
+
+const triggerAriaLabel = computed(() => {
+  if (attrs['aria-labelledby']) return undefined
+  if (typeof attrs['aria-label'] === 'string' && attrs['aria-label']) return attrs['aria-label']
+  return hasValue.value ? `${placeholderText.value}: ${selectedLabel.value}` : placeholderText.value
+})
 
 const filteredOptions = computed(() => {
   let opts = props.options as any[]
@@ -278,6 +328,16 @@ const filteredOptions = computed(() => {
   return opts
 })
 
+const getOptionId = (index: number): string => `${instanceId}-option-${index}`
+
+const focusedOptionId = computed(() => {
+  if (!isOpen.value || focusedIndex.value < 0 || focusedIndex.value >= filteredOptions.value.length) {
+    return undefined
+  }
+  const option = filteredOptions.value[focusedIndex.value]
+  return isOptionFocusable(option) ? getOptionId(focusedIndex.value) : undefined
+})
+
 const isSelected = (option: any): boolean => {
   return getOptionValue(option) === props.modelValue
 }
@@ -287,7 +347,7 @@ const findNextEnabledIndex = (startIndex: number): number => {
   if (opts.length === 0) return -1
   for (let offset = 0; offset < opts.length; offset++) {
     const idx = (startIndex + offset) % opts.length
-    if (!isOptionDisabled(opts[idx])) return idx
+    if (isOptionFocusable(opts[idx])) return idx
   }
   return -1
 }
@@ -297,7 +357,7 @@ const findPrevEnabledIndex = (startIndex: number): number => {
   if (opts.length === 0) return -1
   for (let offset = 0; offset < opts.length; offset++) {
     const idx = (startIndex - offset + opts.length) % opts.length
-    if (!isOptionDisabled(opts[idx])) return idx
+    if (isOptionFocusable(opts[idx])) return idx
   }
   return -1
 }
@@ -346,7 +406,7 @@ watch(isOpen, (open) => {
     } else {
       const selectedIdx = filteredOptions.value.findIndex(isSelected)
       const initialIdx = selectedIdx >= 0 ? selectedIdx : 0
-      focusedIndex.value = isOptionDisabled(filteredOptions.value[initialIdx])
+      focusedIndex.value = !isOptionFocusable(filteredOptions.value[initialIdx])
         ? findNextEnabledIndex(initialIdx + 1)
         : initialIdx
     }
@@ -365,7 +425,14 @@ watch(isOpen, (open) => {
   }
 })
 
+watch(filteredOptions, () => {
+  if (!isOpen.value) return
+  focusedIndex.value = findNextEnabledIndex(0)
+  if (focusedIndex.value >= 0) scrollToFocused()
+})
+
 const selectOption = (option: any) => {
+  if (!isOptionFocusable(option)) return
   const value = getOptionValue(option) ?? null
   emit('update:modelValue', value)
   emit('change', value, option)
@@ -379,10 +446,103 @@ const clearSelection = () => {
   emit('change', null, null)
 }
 
-// Keyboards
-const onTriggerKeyDown = () => {
-  if (!isOpen.value) {
-    isOpen.value = true
+const focusFirstOption = () => {
+  focusedIndex.value = findNextEnabledIndex(0)
+  if (focusedIndex.value >= 0) scrollToFocused()
+}
+
+const focusLastOption = () => {
+  focusedIndex.value = findPrevEnabledIndex(filteredOptions.value.length - 1)
+  if (focusedIndex.value >= 0) scrollToFocused()
+}
+
+const moveFocusedOption = (direction: 1 | -1) => {
+  focusedIndex.value = direction === 1
+    ? findNextEnabledIndex(focusedIndex.value + 1)
+    : findPrevEnabledIndex(focusedIndex.value - 1)
+  if (focusedIndex.value >= 0) scrollToFocused()
+}
+
+const selectFocusedOption = () => {
+  if (focusedIndex.value < 0 || focusedIndex.value >= filteredOptions.value.length) return
+  selectOption(filteredOptions.value[focusedIndex.value])
+}
+
+const handleTypeahead = (key: string) => {
+  if (typeaheadTimer) window.clearTimeout(typeaheadTimer)
+  typeaheadBuffer += key.toLocaleLowerCase()
+  typeaheadTimer = window.setTimeout(() => {
+    typeaheadBuffer = ''
+    typeaheadTimer = null
+  }, 500)
+
+  const options = filteredOptions.value
+  if (options.length === 0) return
+  const start = focusedIndex.value >= 0 ? focusedIndex.value + 1 : 0
+  for (let offset = 0; offset < options.length; offset += 1) {
+    const index = (start + offset) % options.length
+    const option = options[index]
+    if (!isOptionFocusable(option)) continue
+    if (getOptionLabel(option).toLocaleLowerCase().startsWith(typeaheadBuffer)) {
+      focusedIndex.value = index
+      scrollToFocused()
+      return
+    }
+  }
+}
+
+// Select-only combobox keyboard interaction keeps focus on the trigger.
+const onTriggerKeyDown = (event: KeyboardEvent) => {
+  if (props.disabled) return
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      if (!isOpen.value) isOpen.value = true
+      else moveFocusedOption(1)
+      return
+    case 'ArrowUp':
+      event.preventDefault()
+      if (!isOpen.value) isOpen.value = true
+      else moveFocusedOption(-1)
+      return
+    case 'Home':
+      if (!isOpen.value) return
+      event.preventDefault()
+      focusFirstOption()
+      return
+    case 'End':
+      if (!isOpen.value) return
+      event.preventDefault()
+      focusLastOption()
+      return
+    case 'Enter':
+    case ' ':
+      event.preventDefault()
+      if (!isOpen.value) isOpen.value = true
+      else selectFocusedOption()
+      return
+    case 'Escape':
+      if (!isOpen.value) return
+      event.preventDefault()
+      isOpen.value = false
+      return
+    case 'Tab':
+      isOpen.value = false
+      return
+    case 'Backspace':
+    case 'Delete':
+      if (!isOpen.value && props.clearable && hasValue.value) {
+        event.preventDefault()
+        clearSelection()
+      }
+      return
+    default:
+      if (!isSearchable.value && event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault()
+        if (!isOpen.value) isOpen.value = true
+        nextTick(() => handleTypeahead(event.key))
+      }
   }
 }
 
@@ -390,20 +550,23 @@ const onDropdownKeyDown = (e: KeyboardEvent) => {
   switch (e.key) {
     case 'ArrowDown':
       e.preventDefault()
-      focusedIndex.value = findNextEnabledIndex(focusedIndex.value + 1)
-      if (focusedIndex.value >= 0) scrollToFocused()
+      moveFocusedOption(1)
       break
     case 'ArrowUp':
       e.preventDefault()
-      focusedIndex.value = findPrevEnabledIndex(focusedIndex.value - 1)
-      if (focusedIndex.value >= 0) scrollToFocused()
+      moveFocusedOption(-1)
+      break
+    case 'Home':
+      e.preventDefault()
+      focusFirstOption()
+      break
+    case 'End':
+      e.preventDefault()
+      focusLastOption()
       break
     case 'Enter':
       e.preventDefault()
-      if (focusedIndex.value >= 0 && focusedIndex.value < filteredOptions.value.length) {
-        const opt = filteredOptions.value[focusedIndex.value]
-        if (!isOptionDisabled(opt)) selectOption(opt)
-      }
+      selectFocusedOption()
       break
     case 'Escape':
       e.preventDefault()
@@ -450,32 +613,55 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
   window.removeEventListener('scroll', updateTriggerRect, { capture: true })
   window.removeEventListener('resize', calculateDropdownPosition)
+  if (typeaheadTimer) window.clearTimeout(typeaheadTimer)
 })
 </script>
 
 <style scoped>
 .select-trigger {
-  @apply flex w-full items-center justify-between gap-2;
-  @apply rounded-xl px-4 py-2.5 text-sm;
-  @apply bg-white dark:bg-dark-800;
-  @apply border border-gray-200 dark:border-dark-600;
-  @apply text-gray-900 dark:text-gray-100;
-  @apply transition-all duration-200;
-  @apply focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30;
-  @apply hover:border-gray-300 dark:hover:border-dark-500;
-  @apply cursor-pointer;
+  display: flex;
+  width: 100%;
+  min-height: var(--control-height, 40px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 11px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 6px;
+  background: var(--ui-surface, #fff);
+  color: var(--ui-text, #0f172a);
+  cursor: pointer;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.select-trigger:hover {
+  border-color: var(--ui-border-strong, #c7d3e2);
+}
+
+.select-trigger:focus-visible {
+  border-color: var(--ui-focus, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-focus, #2563eb) 16%, transparent);
 }
 
 .select-trigger-open {
-  @apply border-primary-500 ring-2 ring-primary-500/30;
+  border-color: var(--ui-focus, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-focus, #2563eb) 16%, transparent);
 }
 
 .select-trigger-error {
-  @apply border-red-500 focus:border-red-500 focus:ring-red-500/30;
+  border-color: var(--ui-danger, #dc2626);
 }
 
 .select-trigger-disabled {
-  @apply cursor-not-allowed bg-gray-100 opacity-60 dark:bg-dark-900;
+  background: var(--ui-surface-subtle, #f4f7fb);
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.select-trigger-clearable {
+  padding-right: 45px;
 }
 
 .select-value {
@@ -483,59 +669,118 @@ onUnmounted(() => {
 }
 
 .select-icon {
-  @apply flex-shrink-0 text-gray-400 dark:text-dark-400;
+  flex-shrink: 0;
+  color: var(--ui-text-subtle, #8793a3);
 }
 
 .select-clear {
-  @apply flex flex-shrink-0 cursor-pointer items-center justify-center;
-  @apply rounded text-gray-400 transition-colors;
-  @apply hover:text-gray-600 dark:hover:text-gray-200;
+  position: absolute;
+  top: 50%;
+  right: 31px;
+  z-index: 1;
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ui-text-subtle, #8793a3);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.select-clear:hover {
+  background: var(--ui-surface-subtle, #f4f7fb);
+  color: var(--ui-text, #0f172a);
+}
+
+.select-clear:focus-visible {
+  outline: 2px solid var(--ui-focus, #2563eb);
+  outline-offset: 1px;
+}
+
+@media (max-width: 639px) {
+  .select-trigger {
+    min-height: var(--control-height-lg, 44px);
+  }
 }
 </style>
 
 <style>
 .select-dropdown-portal {
-  @apply w-max min-w-[200px];
-  @apply bg-white dark:bg-dark-800;
-  @apply rounded-xl;
-  @apply border border-gray-200 dark:border-dark-700;
-  @apply shadow-lg shadow-black/10 dark:shadow-black/30;
-  @apply overflow-hidden;
+  width: max-content;
+  min-width: 200px;
+  overflow: hidden;
+  padding: 4px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface-raised, #fff);
+  box-shadow: var(--ui-shadow-lg, 0 14px 34px rgba(15, 23, 42, 0.14));
   pointer-events: auto !important;
 }
 
 .select-dropdown-portal .select-search {
-  @apply flex items-center gap-2 px-3 py-2;
-  @apply border-b border-gray-100 dark:border-dark-700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  padding: 7px 8px 8px;
+  border-bottom: 1px solid var(--ui-border, #dbe3ee);
 }
 
 .select-dropdown-portal .select-search-input {
-  @apply flex-1 bg-transparent text-sm;
-  @apply text-gray-900 dark:text-gray-100;
-  @apply placeholder:text-gray-400 dark:placeholder:text-dark-400;
-  @apply focus:outline-none;
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text, #0f172a);
+  font-size: 13px;
+  outline: none;
+}
+
+.select-dropdown-portal .select-search-input::placeholder {
+  color: var(--ui-text-subtle, #8793a3);
 }
 
 .select-dropdown-portal .select-options {
-  @apply max-h-80 overflow-y-auto py-1 outline-none;
+  max-height: 20rem;
+  overflow-y: auto;
+  outline: none;
 }
 
 .select-dropdown-portal .select-option {
-  @apply flex items-center justify-between gap-2;
-  @apply px-4 py-2.5 text-sm;
-  @apply text-gray-700 dark:text-gray-300;
-  @apply cursor-pointer transition-colors duration-150;
-  @apply hover:bg-gray-50 dark:hover:bg-dark-700;
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 120ms ease, color 120ms ease;
   pointer-events: auto !important;
 }
 
+.select-dropdown-portal .select-option:hover {
+  background: var(--ui-surface-subtle, #f4f7fb);
+  color: var(--ui-text, #0f172a);
+}
+
 .select-dropdown-portal .select-option-selected {
-  @apply bg-primary-50 dark:bg-primary-900/20;
-  @apply text-primary-700 dark:text-primary-300;
+  background: var(--ui-surface-subtle, #f4f7fb);
+  color: var(--ui-text, #0f172a);
+  font-weight: 650;
 }
 
 .select-dropdown-portal .select-option-focused {
-  @apply bg-gray-100 dark:bg-dark-700;
+  background: color-mix(in srgb, var(--ui-focus, #2563eb) 10%, var(--ui-surface, #fff));
+  color: var(--ui-text, #0f172a);
 }
 
 .select-dropdown-portal .select-option-disabled {
@@ -543,14 +788,18 @@ onUnmounted(() => {
 }
 
 .select-dropdown-portal .select-option-group {
-  @apply cursor-default select-none;
-  @apply bg-gray-50 dark:bg-dark-900;
-  @apply text-[11px] font-bold uppercase tracking-wider;
-  @apply text-gray-500 dark:text-gray-400;
+  min-height: 30px;
+  background: transparent;
+  color: var(--ui-text-subtle, #8793a3);
+  cursor: default;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .select-dropdown-portal .select-option-group:hover {
-  @apply bg-gray-50 dark:bg-dark-900;
+  background: transparent;
 }
 
 .select-dropdown-portal .select-option-label {
@@ -558,18 +807,26 @@ onUnmounted(() => {
 }
 
 .select-dropdown-portal .select-empty {
-  @apply px-4 py-8 text-center text-sm;
-  @apply text-gray-500 dark:text-dark-400;
+  padding: 24px 12px;
+  color: var(--ui-text-muted, #667085);
+  text-align: center;
+  font-size: 13px;
 }
 
 .select-dropdown-enter-active,
 .select-dropdown-leave-active {
-  transition: all 0.2s ease;
+  transition: opacity 140ms ease, transform 140ms ease;
 }
 
 .select-dropdown-enter-from,
 .select-dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px) scale(0.99);
+}
+
+@media (max-width: 639px) {
+  .select-dropdown-portal .select-option {
+    min-height: 44px;
+  }
 }
 </style>

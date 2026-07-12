@@ -1,112 +1,111 @@
 <template>
   <BaseDialog :show="show" :title="t('admin.users.userApiKeys')" width="wide" @close="handleClose">
-    <div v-if="user" class="space-y-4">
-      <div class="flex items-center gap-3 rounded-xl bg-gray-50 p-4 dark:bg-dark-700">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
-          <span class="text-lg font-medium text-primary-700 dark:text-primary-300">{{ user.email.charAt(0).toUpperCase() }}</span>
+    <div v-if="user" class="space-y-4" :aria-busy="loading">
+      <div class="flex min-w-0 items-center gap-3 rounded-panel border border-outline bg-surface-subtle p-3">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-outline bg-surface text-sm font-semibold text-foreground-muted" aria-hidden="true">
+          {{ user.email.charAt(0).toUpperCase() }}
         </div>
-        <div><p class="font-medium text-gray-900 dark:text-white">{{ user.email }}</p><p class="text-sm text-gray-500 dark:text-dark-400">{{ user.username }}</p></div>
+        <div class="min-w-0 flex-1">
+          <p class="break-all text-sm font-medium text-foreground">{{ user.email }}</p>
+          <p class="mt-0.5 break-all text-xs text-foreground-subtle">{{ user.username }}</p>
+        </div>
       </div>
-      <div v-if="loading" class="flex justify-center py-8"><svg class="h-8 w-8 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
-      <div v-else-if="apiKeys.length === 0" class="py-8 text-center"><p class="text-sm text-gray-500">{{ t('admin.users.noApiKeys') }}</p></div>
-      <div v-else ref="scrollContainerRef" class="max-h-96 space-y-3 overflow-y-auto" @scroll="closeGroupSelector">
-        <div v-for="key in apiKeys" :key="key.id" class="rounded-xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800">
-          <div class="flex items-start justify-between">
-            <div class="min-w-0 flex-1">
-              <div class="mb-1 flex items-center gap-2"><span class="font-medium text-gray-900 dark:text-white">{{ key.name }}</span><span :class="['badge text-xs', key.status === 'active' ? 'badge-success' : 'badge-danger']">{{ key.status }}</span></div>
-              <p class="truncate font-mono text-sm text-gray-500">{{ key.key.substring(0, 20) }}...{{ key.key.substring(key.key.length - 8) }}</p>
-            </div>
+
+      <div v-if="loading" class="flex items-center justify-center gap-2 py-8 text-sm text-foreground-subtle" role="status">
+        <Icon name="refresh" size="md" class="animate-spin" aria-hidden="true" />
+        <span>{{ t('common.loading') }}</span>
+      </div>
+      <div v-else-if="loadError" class="flex flex-col items-center gap-3 py-8 text-center" role="alert">
+        <p class="text-sm text-danger-foreground">{{ loadError }}</p>
+        <button type="button" class="btn btn-secondary" data-testid="api-keys-retry" @click="loadData()">
+          {{ t('admin.users.retry') }}
+        </button>
+      </div>
+      <div v-else-if="apiKeys.length === 0" class="py-8 text-center">
+        <p class="text-sm text-foreground-subtle">{{ t('admin.users.noApiKeys') }}</p>
+      </div>
+      <div v-else class="max-h-[28rem] divide-y divide-outline overflow-y-auto rounded-panel border border-outline bg-surface">
+        <article v-for="key in apiKeys" :key="key.id" class="min-w-0 p-3 sm:p-4">
+          <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
+            <h4 class="min-w-0 flex-1 break-all text-sm font-medium text-foreground">{{ key.name }}</h4>
+            <span :class="['badge shrink-0', key.status === 'active' ? 'badge-success' : 'badge-danger']">
+              {{ key.status }}
+            </span>
           </div>
-          <div class="mt-3 flex flex-wrap gap-4 text-xs text-gray-500">
-            <div class="flex items-center gap-1">
-              <span>{{ t('admin.users.group') }}:</span>
-              <button
-                :ref="(el) => setGroupButtonRef(key.id, el)"
-                @click="openGroupSelector(key)"
-                class="-mx-1 -my-0.5 flex cursor-pointer items-center gap-1 rounded-md px-1 py-0.5 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700"
-                :disabled="updatingKeyIds.has(key.id)"
-              >
-                <GroupBadge
-                  v-if="key.group_id && key.group"
-                  :name="key.group.name"
-                  :platform="key.group.platform"
-                  :subscription-type="key.group.subscription_type"
-                  :rate-multiplier="key.group.rate_multiplier"
-                  :peak-rate-enabled="key.group.peak_rate_enabled"
-                  :peak-start="key.group.peak_start"
-                  :peak-end="key.group.peak_end"
-                  :peak-rate-multiplier="key.group.peak_rate_multiplier"
-                />
-                <span v-else class="text-gray-400 italic">{{ t('admin.users.none') }}</span>
-                <svg v-if="updatingKeyIds.has(key.id)" class="h-3 w-3 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                <svg v-else class="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" /></svg>
-              </button>
+          <p class="mt-1 max-w-full break-all font-mono text-xs leading-5 text-foreground-subtle" data-testid="api-key-preview">
+            {{ formatKeyPreview(key.key) }}
+          </p>
+
+          <div class="mt-3 grid min-w-0 gap-3 border-t border-outline pt-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <div class="min-w-0">
+              <span class="mb-1.5 block text-xs font-medium text-foreground-muted">{{ t('admin.users.group') }}</span>
+              <div class="flex min-w-0 items-center gap-2">
+                <Select
+                  :model-value="key.group_id ?? null"
+                  :options="groupOptions"
+                  value-key="value"
+                  label-key="label"
+                  :searchable="allGroups.length > 5"
+                  :disabled="updatingKeyIds.has(key.id)"
+                  :aria-label="`${t('admin.users.group')}: ${key.name}`"
+                  class="min-w-0 flex-1 sm:max-w-md"
+                  data-testid="api-key-group-select"
+                  @change="handleGroupChange(key, $event)"
+                >
+                  <template #selected>
+                    <span class="block min-w-0 overflow-hidden">
+                      <GroupBadge
+                        v-if="key.group_id && key.group"
+                        :name="key.group.name"
+                        :platform="key.group.platform"
+                        :subscription-type="key.group.subscription_type"
+                        :rate-multiplier="key.group.rate_multiplier"
+                        :peak-rate-enabled="key.group.peak_rate_enabled"
+                        :peak-start="key.group.peak_start"
+                        :peak-end="key.group.peak_end"
+                        :peak-rate-multiplier="key.group.peak_rate_multiplier"
+                        class="max-w-full"
+                      />
+                      <span v-else class="italic text-foreground-subtle">{{ t('admin.users.none') }}</span>
+                    </span>
+                  </template>
+                  <template #option="{ option, selected }">
+                    <span v-if="option.value === null" class="min-w-0 flex-1 text-left italic text-foreground-subtle">
+                      {{ t('admin.users.none') }}
+                    </span>
+                    <GroupOptionItem
+                      v-else
+                      :name="option.group.name"
+                      :platform="option.group.platform"
+                      :subscription-type="option.group.subscription_type"
+                      :rate-multiplier="option.group.rate_multiplier"
+                      :peak-rate-enabled="option.group.peak_rate_enabled"
+                      :peak-start="option.group.peak_start"
+                      :peak-end="option.group.peak_end"
+                      :peak-rate-multiplier="option.group.peak_rate_multiplier"
+                      :description="option.group.description"
+                      :selected="selected"
+                    />
+                  </template>
+                </Select>
+                <span v-if="updatingKeyIds.has(key.id)" class="shrink-0 text-foreground-subtle" role="status">
+                  <Icon name="refresh" size="sm" class="animate-spin" aria-hidden="true" />
+                  <span class="sr-only">{{ t('common.saving') }}</span>
+                </span>
+              </div>
             </div>
-            <div class="flex items-center gap-1"><span>{{ t('admin.users.columns.created') }}: {{ formatDateTime(key.created_at) }}</span></div>
+            <p class="min-w-0 break-words text-xs text-foreground-subtle sm:pb-2.5 sm:text-right">
+              {{ t('admin.users.columns.created') }}: {{ formatDateTime(key.created_at) }}
+            </p>
           </div>
-        </div>
+        </article>
       </div>
     </div>
   </BaseDialog>
-
-  <!-- Group Selector Dropdown -->
-  <Teleport to="body">
-    <div
-      v-if="groupSelectorKeyId !== null && dropdownPosition"
-      ref="dropdownRef"
-      class="animate-in fade-in slide-in-from-top-2 fixed z-[100000020] w-64 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5 duration-200 dark:bg-dark-800 dark:ring-white/10"
-      :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }"
-    >
-      <div class="max-h-64 overflow-y-auto p-1.5">
-        <!-- Unbind option -->
-        <button
-          @click="changeGroup(selectedKeyForGroup!, null)"
-          :class="[
-            'flex w-full items-center rounded-lg px-3 py-2 text-sm transition-colors',
-            !selectedKeyForGroup?.group_id
-              ? 'bg-primary-50 dark:bg-primary-900/20'
-              : 'hover:bg-gray-100 dark:hover:bg-dark-700'
-          ]"
-        >
-          <span class="text-gray-500 italic">{{ t('admin.users.none') }}</span>
-          <svg
-            v-if="!selectedKeyForGroup?.group_id"
-            class="ml-auto h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
-          ><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-        </button>
-        <!-- Group options -->
-        <button
-          v-for="group in allGroups"
-          :key="group.id"
-          @click="changeGroup(selectedKeyForGroup!, group.id)"
-          :class="[
-            'flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors',
-            selectedKeyForGroup?.group_id === group.id
-              ? 'bg-primary-50 dark:bg-primary-900/20'
-              : 'hover:bg-gray-100 dark:hover:bg-dark-700'
-          ]"
-        >
-          <GroupOptionItem
-            :name="group.name"
-            :platform="group.platform"
-            :subscription-type="group.subscription_type"
-            :rate-multiplier="group.rate_multiplier"
-            :peak-rate-enabled="group.peak_rate_enabled"
-            :peak-start="group.peak_start"
-            :peak-end="group.peak_end"
-            :peak-rate-multiplier="group.peak_rate_multiplier"
-            :description="group.description"
-            :selected="selectedKeyForGroup?.group_id === group.id"
-          />
-        </button>
-      </div>
-    </div>
-  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
@@ -115,6 +114,8 @@ import type { AdminUser, AdminGroup, ApiKey } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
+import Select from '@/components/common/Select.vue'
+import Icon from '@/components/icons/Icon.vue'
 
 const props = defineProps<{ show: boolean; user: AdminUser | null }>()
 const emit = defineEmits(['close'])
@@ -124,91 +125,77 @@ const appStore = useAppStore()
 const apiKeys = ref<ApiKey[]>([])
 const allGroups = ref<AdminGroup[]>([])
 const loading = ref(false)
+const loadError = ref('')
 const updatingKeyIds = ref(new Set<number>())
-const groupSelectorKeyId = ref<number | null>(null)
-const dropdownPosition = ref<{ top: number; left: number } | null>(null)
-const dropdownRef = ref<HTMLElement | null>(null)
-const scrollContainerRef = ref<HTMLElement | null>(null)
-const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
+let loadRequestSeq = 0
 
-const selectedKeyForGroup = computed(() => {
-  if (groupSelectorKeyId.value === null) return null
-  return apiKeys.value.find((k) => k.id === groupSelectorKeyId.value) || null
-})
+const groupOptions = computed(() => [
+  { value: null, label: t('admin.users.none'), group: null },
+  ...allGroups.value.map((group) => ({ value: group.id, label: group.name, group }))
+])
 
-const setGroupButtonRef = (keyId: number, el: Element | ComponentPublicInstance | null) => {
-  if (el instanceof HTMLElement) {
-    groupButtonRefs.value.set(keyId, el)
-  } else {
-    groupButtonRefs.value.delete(keyId)
-  }
+function clearData() {
+  apiKeys.value = []
+  allGroups.value = []
+  loadError.value = ''
+  loading.value = false
+  updatingKeyIds.value.clear()
 }
 
-watch(() => props.show, (v) => {
-  if (v && props.user) {
-    load()
-    loadGroups()
-  } else {
-    closeGroupSelector()
-  }
-})
+function isCurrentLoad(requestSeq: number, userId: number): boolean {
+  return requestSeq === loadRequestSeq && props.show && props.user?.id === userId
+}
 
-const load = async () => {
-  if (!props.user) return
+async function loadData(userId = props.user?.id) {
+  if (userId == null || !props.show) return
+  const requestSeq = ++loadRequestSeq
+  apiKeys.value = []
+  allGroups.value = []
+  loadError.value = ''
   loading.value = true
-  groupButtonRefs.value.clear()
   try {
-    const res = await adminAPI.users.getUserApiKeys(props.user.id)
+    const [res, groups] = await Promise.all([
+      adminAPI.users.getUserApiKeys(userId),
+      adminAPI.groups.getAll()
+    ])
+    if (!isCurrentLoad(requestSeq, userId)) return
     apiKeys.value = res.items || []
-  } catch (error) {
-    console.error('Failed to load API keys:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-const loadGroups = async () => {
-  try {
-    const groups = await adminAPI.groups.getAll()
     allGroups.value = groups
   } catch (error) {
-    console.error('Failed to load groups:', error)
+    if (!isCurrentLoad(requestSeq, userId)) return
+    console.error('Failed to load API keys:', error)
+    loadError.value = t('admin.users.failedToLoadApiKeys')
+  } finally {
+    if (isCurrentLoad(requestSeq, userId)) loading.value = false
   }
 }
 
-const DROPDOWN_HEIGHT = 272 // max-h-64 = 16rem = 256px + padding
-const DROPDOWN_GAP = 4
+watch(
+  [() => props.show, () => props.user?.id],
+  ([show, userId]) => {
+    loadRequestSeq += 1
+    clearData()
+    if (show && userId != null) void loadData(userId)
+  },
+  { immediate: true }
+)
 
-const openGroupSelector = (key: ApiKey) => {
-  if (groupSelectorKeyId.value === key.id) {
-    closeGroupSelector()
-  } else {
-    const buttonEl = groupButtonRefs.value.get(key.id)
-    if (buttonEl) {
-      const rect = buttonEl.getBoundingClientRect()
-      const spaceBelow = window.innerHeight - rect.bottom
-      const openUpward = spaceBelow < DROPDOWN_HEIGHT && rect.top > spaceBelow
-      dropdownPosition.value = {
-        top: openUpward ? rect.top - DROPDOWN_HEIGHT - DROPDOWN_GAP : rect.bottom + DROPDOWN_GAP,
-        left: rect.left
-      }
-    }
-    groupSelectorKeyId.value = key.id
-  }
-}
+const formatKeyPreview = (value: string) => `${value.substring(0, 20)}...${value.substring(Math.max(0, value.length - 8))}`
 
-const closeGroupSelector = () => {
-  groupSelectorKeyId.value = null
-  dropdownPosition.value = null
+const handleGroupChange = (key: ApiKey, value: unknown) => {
+  void changeGroup(key, typeof value === 'number' ? value : null)
 }
 
 const changeGroup = async (key: ApiKey, newGroupId: number | null) => {
-  closeGroupSelector()
   if (key.group_id === newGroupId || (!key.group_id && newGroupId === null)) return
 
+  const requestSeq = loadRequestSeq
+  const userId = props.user?.id
+  if (userId == null) return
   updatingKeyIds.value.add(key.id)
   try {
     const result = await adminAPI.apiKeys.updateApiKeyGroup(key.id, newGroupId)
+    if (!isCurrentLoad(requestSeq, userId)) return
     // Update local data
     const idx = apiKeys.value.findIndex((k) => k.id === key.id)
     if (idx !== -1) {
@@ -220,42 +207,21 @@ const changeGroup = async (key: ApiKey, newGroupId: number | null) => {
       appStore.showSuccess(t('admin.users.groupChangedSuccess'))
     }
   } catch (error: any) {
-    appStore.showError(error?.message || t('admin.users.groupChangeFailed'))
-  } finally {
-    updatingKeyIds.value.delete(key.id)
-  }
-}
-
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && groupSelectorKeyId.value !== null) {
-    event.stopPropagation()
-    closeGroupSelector()
-  }
-}
-
-const handleClickOutside = (event: MouseEvent) => {
-  const target = event.target as HTMLElement
-  if (dropdownRef.value && !dropdownRef.value.contains(target)) {
-    // Check if the click is on one of the group trigger buttons
-    for (const el of groupButtonRefs.value.values()) {
-      if (el.contains(target)) return
+    if (isCurrentLoad(requestSeq, userId)) {
+      appStore.showError(error?.message || t('admin.users.groupChangeFailed'))
     }
-    closeGroupSelector()
+  } finally {
+    if (isCurrentLoad(requestSeq, userId)) updatingKeyIds.value.delete(key.id)
   }
 }
 
 const handleClose = () => {
-  closeGroupSelector()
+  loadRequestSeq += 1
+  clearData()
   emit('close')
 }
 
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-  document.addEventListener('keydown', handleKeyDown, true)
-})
-
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-  document.removeEventListener('keydown', handleKeyDown, true)
+  loadRequestSeq += 1
 })
 </script>

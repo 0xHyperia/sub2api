@@ -497,6 +497,7 @@ export default {
       failedToDelete: 'Failed to delete user',
       failedToToggle: 'Failed to update user status',
       failedToLoadApiKeys: 'Failed to load user API keys',
+      retry: 'Retry',
       emailRequired: 'Please enter email',
       concurrencyMin: 'Concurrency must be at least 1',
       soraStorageQuota: 'Sora Storage Quota',

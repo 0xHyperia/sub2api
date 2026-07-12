@@ -7,11 +7,11 @@
   >
     <div class="space-y-4">
       <!-- Header -->
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-gray-500 dark:text-gray-400">
           {{ t('admin.errorPassthrough.description') }}
         </p>
-        <button @click="showCreateModal = true" class="btn btn-primary btn-sm">
+        <button type="button" class="btn btn-primary btn-sm" @click="showCreateModal = true">
           <Icon name="plus" size="sm" class="mr-1" />
           {{ t('admin.errorPassthrough.createRule') }}
         </button>
@@ -35,7 +35,7 @@
       </div>
 
       <div v-else class="max-h-96 overflow-auto rounded-lg border border-gray-200 dark:border-dark-600">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
+        <table class="min-w-[56rem] divide-y divide-gray-200 dark:divide-dark-700">
           <thead class="sticky top-0 bg-gray-50 dark:bg-dark-700">
             <tr>
               <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
@@ -162,16 +162,20 @@
               </td>
               <td class="px-3 py-2">
                 <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="rule.enabled"
+                  :aria-label="`${rule.name}: ${t('admin.errorPassthrough.columns.status')}`"
                   @click="toggleEnabled(rule)"
                   :class="[
-                    'relative inline-flex h-4 w-7 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
                     rule.enabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
                   ]"
                 >
                   <span
                     :class="[
-                      'pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                      rule.enabled ? 'translate-x-3' : 'translate-x-0'
+                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                      rule.enabled ? 'translate-x-5' : 'translate-x-0'
                     ]"
                   />
                 </button>
@@ -179,15 +183,19 @@
               <td class="px-3 py-2">
                 <div class="flex items-center gap-1">
                   <button
+                    type="button"
                     @click="handleEdit(rule)"
-                    class="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+                    :aria-label="`${t('common.edit')} ${rule.name}`"
                     :title="t('common.edit')"
                   >
                     <Icon name="edit" size="sm" />
                   </button>
                   <button
+                    type="button"
                     @click="handleDelete(rule)"
-                    class="p-1 text-gray-500 hover:text-red-600 dark:hover:text-red-400"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                    :aria-label="`${t('common.delete')} ${rule.name}`"
                     :title="t('common.delete')"
                   >
                     <Icon name="trash" size="sm" />
@@ -217,11 +225,14 @@
     >
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <!-- Basic Info -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label class="input-label">{{ t('admin.errorPassthrough.form.name') }}</label>
+            <label for="error-passthrough-name" class="input-label">
+              {{ t('admin.errorPassthrough.form.name') }}
+            </label>
             <input
               v-model="form.name"
+              id="error-passthrough-name"
               type="text"
               required
               class="input"
@@ -229,9 +240,12 @@
             />
           </div>
           <div>
-            <label class="input-label">{{ t('admin.errorPassthrough.form.priority') }}</label>
+            <label for="error-passthrough-priority" class="input-label">
+              {{ t('admin.errorPassthrough.form.priority') }}
+            </label>
             <input
               v-model.number="form.priority"
+              id="error-passthrough-priority"
               type="number"
               min="0"
               class="input"
@@ -241,9 +255,12 @@
         </div>
 
         <div>
-          <label class="input-label">{{ t('admin.errorPassthrough.form.description') }}</label>
+          <label for="error-passthrough-description" class="input-label">
+            {{ t('admin.errorPassthrough.form.description') }}
+          </label>
           <input
             v-model="form.description"
+            id="error-passthrough-description"
             type="text"
             class="input"
             :placeholder="t('admin.errorPassthrough.form.descriptionPlaceholder')"
@@ -256,11 +273,14 @@
             {{ t('admin.errorPassthrough.form.matchConditions') }}
           </h4>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label class="input-label text-xs">{{ t('admin.errorPassthrough.form.errorCodes') }}</label>
+              <label for="error-passthrough-codes" class="input-label text-xs">
+                {{ t('admin.errorPassthrough.form.errorCodes') }}
+              </label>
               <input
                 v-model="errorCodesInput"
+                id="error-passthrough-codes"
                 type="text"
                 class="input text-sm"
                 :placeholder="t('admin.errorPassthrough.form.errorCodesPlaceholder')"
@@ -268,9 +288,12 @@
               <p class="input-hint text-xs">{{ t('admin.errorPassthrough.form.errorCodesHint') }}</p>
             </div>
             <div>
-              <label class="input-label text-xs">{{ t('admin.errorPassthrough.form.keywords') }}</label>
+              <label for="error-passthrough-keywords" class="input-label text-xs">
+                {{ t('admin.errorPassthrough.form.keywords') }}
+              </label>
               <textarea
                 v-model="keywordsInput"
+                id="error-passthrough-keywords"
                 rows="2"
                 class="input font-mono text-xs"
                 :placeholder="t('admin.errorPassthrough.form.keywordsPlaceholder')"
@@ -328,7 +351,7 @@
             {{ t('admin.errorPassthrough.form.responseBehavior') }}
           </h4>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label class="flex items-center gap-1.5">
                 <input
@@ -341,9 +364,12 @@
                 </span>
               </label>
               <div v-if="!form.passthrough_code" class="mt-2">
-                <label class="input-label text-xs">{{ t('admin.errorPassthrough.form.responseCode') }}</label>
+                <label for="error-passthrough-response-code" class="input-label text-xs">
+                  {{ t('admin.errorPassthrough.form.responseCode') }}
+                </label>
                 <input
                   v-model.number="form.response_code"
+                  id="error-passthrough-response-code"
                   type="number"
                   min="100"
                   max="599"
@@ -364,9 +390,12 @@
                 </span>
               </label>
               <div v-if="!form.passthrough_body" class="mt-2">
-                <label class="input-label text-xs">{{ t('admin.errorPassthrough.form.customMessage') }}</label>
+                <label for="error-passthrough-custom-message" class="input-label text-xs">
+                  {{ t('admin.errorPassthrough.form.customMessage') }}
+                </label>
                 <input
                   v-model="form.custom_message"
+                  id="error-passthrough-custom-message"
                   type="text"
                   class="input text-sm"
                   :placeholder="t('admin.errorPassthrough.form.customMessagePlaceholder')"
@@ -377,7 +406,7 @@
         </div>
 
         <!-- Skip Monitoring -->
-        <div class="flex items-center gap-1.5">
+        <label class="flex items-center gap-1.5">
           <input
             type="checkbox"
             v-model="form.skip_monitoring"
@@ -386,11 +415,11 @@
           <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
             {{ t('admin.errorPassthrough.form.skipMonitoring') }}
           </span>
-        </div>
+        </label>
         <p class="input-hint text-xs -mt-3">{{ t('admin.errorPassthrough.form.skipMonitoringHint') }}</p>
 
         <!-- Enabled -->
-        <div class="flex items-center gap-1.5">
+        <label class="flex items-center gap-1.5">
           <input
             type="checkbox"
             v-model="form.enabled"
@@ -399,7 +428,7 @@
           <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
             {{ t('admin.errorPassthrough.form.enabled') }}
           </span>
-        </div>
+        </label>
       </form>
 
       <template #footer>

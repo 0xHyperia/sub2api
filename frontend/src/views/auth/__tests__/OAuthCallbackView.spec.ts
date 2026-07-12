@@ -2,6 +2,13 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import OAuthCallbackView from '@/views/auth/OAuthCallbackView.vue'
 
+vi.mock('@/components/auth/AuthFlowLayout.vue', () => ({
+  default: {
+    name: 'AuthLayout',
+    template: '<main><slot /><slot name="footer" /></main>',
+  },
+}))
+
 const {
   routeState,
   locationState,

@@ -1,22 +1,22 @@
 <template>
-  <div :class="props.embedded ? 'space-y-4' : 'card'">
+  <div :class="props.embedded ? 'min-w-0' : 'card min-w-0 overflow-hidden'">
     <div
       v-if="!props.embedded"
-      class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+      class="card-header"
     >
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white">
+      <h2 class="text-base font-semibold text-foreground">
         {{ t('profile.avatar.title') }}
       </h2>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-sm text-foreground-muted">
         {{ t('profile.avatar.description') }}
       </p>
     </div>
 
-    <div :class="props.embedded ? 'space-y-3' : 'flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-start'">
+    <div :class="['flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start', props.embedded ? '' : 'p-4 sm:p-5']">
       <div
         :class="props.embedded
-          ? 'flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-xl font-bold text-white shadow-lg shadow-primary-500/20'
-          : 'flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-3xl font-bold text-white shadow-lg shadow-primary-500/20'"
+          ? 'flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-panel border border-outline-strong bg-brand text-xl font-semibold text-brand-foreground'
+          : 'flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-panel border border-outline-strong bg-brand text-2xl font-semibold text-brand-foreground'"
       >
         <img
           v-if="avatarPreviewUrl"
@@ -28,30 +28,38 @@
         <span v-else>{{ avatarInitial }}</span>
       </div>
 
-      <div :class="props.embedded ? 'space-y-3' : 'min-w-0 flex-1 space-y-4'">
+      <div class="min-w-0 flex-1 space-y-3">
         <div class="space-y-1">
-          <p v-if="props.embedded" class="text-sm font-semibold text-gray-900 dark:text-white">
+          <p v-if="props.embedded" class="text-sm font-semibold text-foreground">
             {{ t('profile.avatar.title') }}
           </p>
-          <p v-else class="text-sm font-medium text-gray-900 dark:text-white">
+          <p v-else class="break-words text-sm font-medium text-foreground">
             {{ displayName }}
           </p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <p class="text-xs leading-5 text-foreground-subtle">
             {{ t('profile.avatar.uploadHint') }}
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <label class="btn btn-secondary btn-sm cursor-pointer">
-            <input
-              data-testid="profile-avatar-file-input"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              @change="handleAvatarFileChange"
-            >
+        <div class="flex flex-wrap items-center gap-2">
+          <input
+            ref="avatarFileInput"
+            data-testid="profile-avatar-file-input"
+            type="file"
+            accept="image/*"
+            class="sr-only"
+            tabindex="-1"
+            @change="handleAvatarFileChange"
+          >
+          <button
+            data-testid="profile-avatar-upload"
+            type="button"
+            class="btn btn-secondary btn-sm"
+            @click="openAvatarFilePicker"
+          >
+            <Icon name="upload" size="sm" aria-hidden="true" />
             {{ t('profile.avatar.uploadAction') }}
-          </label>
+          </button>
 
           <button
             data-testid="profile-avatar-save"
@@ -60,16 +68,18 @@
             :disabled="avatarSaving || !avatarDraft"
             @click="handleAvatarSave"
           >
+            <Icon name="check" size="sm" aria-hidden="true" />
             {{ t('common.save') }}
           </button>
 
           <button
             data-testid="profile-avatar-delete"
             type="button"
-            class="btn btn-secondary btn-sm"
+            class="btn btn-secondary btn-sm text-danger-foreground"
             :disabled="avatarSaving"
             @click="handleAvatarDelete"
           >
+            <Icon name="trash" size="sm" aria-hidden="true" />
             {{ t('common.delete') }}
           </button>
         </div>
@@ -81,6 +91,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Icon from '@/components/icons/Icon.vue'
 import { userAPI } from '@/api'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
@@ -101,6 +112,7 @@ const appStore = useAppStore()
 const targetAvatarUploadBytes = 20 * 1024
 const avatarScaleSteps = [1, 0.92, 0.84, 0.76, 0.68, 0.6, 0.52, 0.44, 0.36]
 const avatarQualitySteps = [0.92, 0.84, 0.76, 0.68, 0.6, 0.52, 0.44, 0.36]
+const avatarFileInput = ref<HTMLInputElement | null>(null)
 const avatarDraft = ref('')
 const avatarSaving = ref(false)
 
@@ -127,6 +139,10 @@ function normalizeUploadedAvatar(value: string): string | null {
   }
 
   return normalized
+}
+
+function openAvatarFilePicker() {
+  avatarFileInput.value?.click()
 }
 
 function readFileAsDataURL(file: File): Promise<string> {

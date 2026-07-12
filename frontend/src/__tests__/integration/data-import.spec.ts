@@ -69,6 +69,20 @@ describe('ImportDataModal', () => {
     expect(showError).toHaveBeenCalledWith('admin.accounts.dataImportSelectFile')
   })
 
+  it('文件控件具有关联标签并在窄屏纵向排列', () => {
+    const wrapper = mountModal()
+    const input = wrapper.get('#account-import-data-file')
+    const label = wrapper.get('label[for="account-import-data-file"]')
+    const picker = wrapper.findAll('button.btn-secondary')[0]!
+    const dropArea = picker.element.parentElement
+
+    expect(input.attributes('multiple')).toBeDefined()
+    expect(label.text()).toBe('admin.accounts.dataImportFile')
+    expect(picker.classes()).toContain('w-full')
+    expect(dropArea?.classList.contains('flex-col')).toBe(true)
+    expect(dropArea?.classList.contains('sm:flex-row')).toBe(true)
+  })
+
   it('无效 JSON 时按文件名提示解析失败', async () => {
     const { adminAPI } = await import('@/api/admin')
     const wrapper = mountModal()

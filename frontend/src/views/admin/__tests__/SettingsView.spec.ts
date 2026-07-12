@@ -51,6 +51,15 @@ const {
 }));
 
 const localeRef = vi.hoisted(() => ({ value: "zh-CN" }));
+const replaceRoute = vi.hoisted(() => vi.fn());
+const requestEmailTemplateDiscard = vi.hoisted(() => vi.fn());
+
+vi.mock("vue-router", () => ({
+  useRoute: () => ({ query: {} }),
+  useRouter: () => ({ replace: replaceRoute }),
+  onBeforeRouteLeave: vi.fn(),
+  onBeforeRouteUpdate: vi.fn(),
+}));
 
 vi.mock("@/api", () => ({
   adminAPI: {
@@ -306,6 +315,14 @@ const ImageUploadStub = defineComponent({
   },
 });
 
+const EmailTemplateEditorStub = defineComponent({
+  name: "EmailTemplateEditor",
+  setup(_, { expose }) {
+    expose({ requestDiscardChanges: requestEmailTemplateDiscard });
+    return () => h("div", { "data-testid": "email-template-editor-stub" });
+  },
+});
+
 const baseSettingsResponse = {
   registration_enabled: true,
   email_verify_enabled: false,
@@ -482,6 +499,7 @@ function mountView() {
         ProxySelector: true,
         ImageUpload: ImageUploadStub,
         BackupSettings: true,
+        EmailTemplateEditor: EmailTemplateEditorStub,
       },
     },
   });
@@ -517,6 +535,11 @@ async function openUsersTab(wrapper: ReturnType<typeof mountView>) {
   await flushPromises();
 }
 
+async function openEmailTab(wrapper: ReturnType<typeof mountView>) {
+  await wrapper.get("#settings-tab-email").trigger("click");
+  await flushPromises();
+}
+
 describe("admin SettingsView payment visible method controls", () => {
   beforeEach(() => {
     getSettings.mockReset();
@@ -540,6 +563,9 @@ describe("admin SettingsView payment visible method controls", () => {
     adminSettingsFetch.mockReset();
     showError.mockReset();
     showSuccess.mockReset();
+    requestEmailTemplateDiscard.mockReset();
+    requestEmailTemplateDiscard.mockResolvedValue(true);
+    replaceRoute.mockReset();
     localeRef.value = "zh-CN";
 
     getSettings.mockResolvedValue({ ...baseSettingsResponse });
@@ -594,6 +620,47 @@ describe("admin SettingsView payment visible method controls", () => {
     });
     fetchPublicSettings.mockResolvedValue(undefined);
     adminSettingsFetch.mockResolvedValue(undefined);
+  });
+
+  it("shows a persistent load error and retries before rendering the form", async () => {
+    getSettings
+      .mockRejectedValueOnce(new Error("settings unavailable"))
+      .mockResolvedValueOnce({ ...baseSettingsResponse });
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    const errorState = wrapper.get('[data-testid="settings-load-error"]');
+    expect(errorState.text()).toContain("admin.settings.failedToLoad");
+    expect(wrapper.find("form").exists()).toBe(false);
+
+    await errorState.get("button").trigger("click");
+    await flushPromises();
+
+    expect(getSettings).toHaveBeenCalledTimes(2);
+    expect(wrapper.find('[data-testid="settings-load-error"]').exists()).toBe(false);
+    expect(wrapper.find("form").exists()).toBe(true);
+  });
+
+  it("keeps the email tab active when the template editor rejects discarding changes", async () => {
+    const wrapper = mountView();
+    await flushPromises();
+    await openEmailTab(wrapper);
+
+    requestEmailTemplateDiscard.mockReset();
+    requestEmailTemplateDiscard.mockResolvedValueOnce(false);
+    await wrapper.get("#settings-tab-general").trigger("click");
+    await flushPromises();
+
+    expect(requestEmailTemplateDiscard).toHaveBeenCalledOnce();
+    expect(wrapper.get("#settings-tab-email").attributes("aria-selected")).toBe("true");
+    expect(wrapper.get("#settings-tab-general").attributes("aria-selected")).toBe("false");
+
+    requestEmailTemplateDiscard.mockResolvedValueOnce(true);
+    await wrapper.get("#settings-tab-general").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.get("#settings-tab-general").attributes("aria-selected")).toBe("true");
   });
 
   it("does not render legacy visible payment method controls", async () => {

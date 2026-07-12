@@ -323,13 +323,19 @@
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
           <div class="mb-3 flex items-center justify-between">
             <div>
-              <label class="input-label mb-0">{{ t('admin.accounts.customErrorCodes') }}</label>
+              <label id="edit-custom-error-codes-label" class="input-label mb-0">
+                {{ t('admin.accounts.customErrorCodes') }}
+              </label>
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {{ t('admin.accounts.customErrorCodesHint') }}
               </p>
             </div>
             <button
               type="button"
+              role="switch"
+              :aria-checked="customErrorCodesEnabled"
+              aria-labelledby="edit-custom-error-codes-label"
+              aria-controls="edit-custom-error-codes-body"
               @click="customErrorCodesEnabled = !customErrorCodesEnabled"
               :class="[
                 'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
@@ -345,7 +351,7 @@
             </button>
           </div>
 
-          <div v-if="customErrorCodesEnabled" class="space-y-3">
+          <div v-if="customErrorCodesEnabled" id="edit-custom-error-codes-body" class="space-y-3">
             <div class="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
               <p class="text-xs text-amber-700 dark:text-amber-400">
                 <Icon name="exclamationTriangle" size="sm" class="mr-1 inline" :stroke-width="2" />
@@ -359,6 +365,7 @@
                 v-for="code in commonErrorCodes"
                 :key="code.value"
                 type="button"
+                :aria-pressed="selectedErrorCodes.includes(code.value)"
                 @click="toggleErrorCode(code.value)"
                 :class="[
                   'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
@@ -375,22 +382,22 @@
             <div class="flex items-center gap-2">
               <input
                 v-model.number="customErrorCodeInput"
+                id="edit-custom-error-code-input"
                 type="number"
                 min="100"
                 max="599"
                 class="input flex-1"
                 :placeholder="t('admin.accounts.enterErrorCode')"
-                @keyup.enter="addCustomErrorCode"
+                aria-labelledby="edit-custom-error-codes-label"
+                @keyup.enter.prevent="addCustomErrorCode"
               />
-              <button type="button" @click="addCustomErrorCode" class="btn btn-secondary px-3">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+              <button
+                type="button"
+                class="btn btn-secondary px-3"
+                :aria-label="t('common.add')"
+                @click="addCustomErrorCode"
+              >
+                <Icon name="plus" size="sm" />
               </button>
             </div>
 
@@ -404,6 +411,7 @@
                 {{ code }}
                 <button
                   type="button"
+                  :aria-label="`${t('common.delete')} ${code}`"
                   @click="removeErrorCode(code)"
                   class="hover:text-red-900 dark:hover:text-red-300"
                 >
@@ -1280,6 +1288,7 @@
                   <button
                     type="button"
                     :disabled="index === 0"
+                    :aria-label="`${t('common.moveUp')}: ${t('admin.accounts.tempUnschedulable.ruleIndex', { index: index + 1 })}`"
                     @click="moveTempUnschedRule(index, -1)"
                     class="rounded p-1 text-gray-400 transition-colors hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:text-gray-200"
                   >
@@ -1288,19 +1297,19 @@
                   <button
                     type="button"
                     :disabled="index === tempUnschedRules.length - 1"
+                    :aria-label="`${t('common.moveDown')}: ${t('admin.accounts.tempUnschedulable.ruleIndex', { index: index + 1 })}`"
                     @click="moveTempUnschedRule(index, 1)"
                     class="rounded p-1 text-gray-400 transition-colors hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:text-gray-200"
                   >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <Icon name="chevronDown" size="sm" :stroke-width="2" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
+                    :aria-label="`${t('common.delete')}: ${t('admin.accounts.tempUnschedulable.ruleIndex', { index: index + 1 })}`"
                     @click="removeTempUnschedRule(index)"
                     class="rounded p-1 text-red-500 transition-colors hover:text-red-600"
                   >
-                    <Icon name="x" size="sm" :stroke-width="2" />
+                    <Icon name="x" size="sm" :stroke-width="2" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -1408,7 +1417,7 @@
         <ProxySelector v-model="form.proxy_id" :proxies="proxies" />
       </div>
 
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label class="input-label">{{ t('admin.accounts.concurrency') }}</label>
           <input v-model.number="form.concurrency" type="number" min="1" class="input"
@@ -2040,7 +2049,7 @@
             </button>
           </div>
 
-          <div v-if="windowCostEnabled" class="grid grid-cols-2 gap-4">
+          <div v-if="windowCostEnabled" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label class="input-label">{{ t('admin.accounts.quotaControl.windowCost.limit') }}</label>
               <div class="relative">
@@ -2100,7 +2109,7 @@
             </button>
           </div>
 
-          <div v-if="sessionLimitEnabled" class="grid grid-cols-2 gap-4">
+          <div v-if="sessionLimitEnabled" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label class="input-label">{{ t('admin.accounts.quotaControl.sessionLimit.maxSessions') }}</label>
               <input
@@ -2497,6 +2506,17 @@
     </template>
   </BaseDialog>
 
+  <ConfirmDialog
+    :show="show && pendingErrorCode !== null"
+    :title="t('admin.accounts.customErrorCodes')"
+    :message="pendingErrorCodeWarning"
+    :confirm-text="t('common.confirm')"
+    :cancel-text="t('common.cancel')"
+    :danger="true"
+    @confirm="confirmErrorCode"
+    @cancel="pendingErrorCode = null"
+  />
+
   <!-- Mixed Channel Warning Dialog -->
   <ConfirmDialog
     :show="showMixedChannelWarning"
@@ -2676,6 +2696,11 @@ function formatPoolModeRetryStatusCodes(value: unknown): string {
 const customErrorCodesEnabled = ref(false)
 const selectedErrorCodes = ref<number[]>([])
 const customErrorCodeInput = ref<number | null>(null)
+const pendingErrorCode = ref<{ code: number; clearInput: boolean } | null>(null)
+const pendingErrorCodeWarning = computed(() => {
+  const pending = pendingErrorCode.value
+  return pending ? t(`admin.accounts.customErrorCodes${pending.code}Warning`) : ''
+})
 const headerOverrideEnabled = ref(false)
 const headerOverrideRows = ref<HeaderOverrideRow[]>([])
 
@@ -3135,6 +3160,7 @@ const applyOpenAIModelMappingCredentials = (credentials: Record<string, unknown>
 }
 
 const syncFormFromAccount = (newAccount: Account | null) => {
+  pendingErrorCode.value = null
   if (!newAccount) {
     return
   }
@@ -3536,20 +3562,27 @@ const syncAntigravityUpstreamModels = async () => {
 const toggleErrorCode = (code: number) => {
   const index = selectedErrorCodes.value.indexOf(code)
   if (index === -1) {
-    // Adding code - check for 429/529 warning
-    if (code === 429) {
-      if (!confirm(t('admin.accounts.customErrorCodes429Warning'))) {
-        return
-      }
-    } else if (code === 529) {
-      if (!confirm(t('admin.accounts.customErrorCodes529Warning'))) {
-        return
-      }
-    }
-    selectedErrorCodes.value.push(code)
+    requestAddErrorCode(code, false)
   } else {
     selectedErrorCodes.value.splice(index, 1)
   }
+}
+
+const requestAddErrorCode = (code: number, clearInput: boolean) => {
+  if (code === 429 || code === 529) {
+    pendingErrorCode.value = { code, clearInput }
+    return
+  }
+  selectedErrorCodes.value.push(code)
+  if (clearInput) customErrorCodeInput.value = null
+}
+
+const confirmErrorCode = () => {
+  const pending = pendingErrorCode.value
+  pendingErrorCode.value = null
+  if (!pending || selectedErrorCodes.value.includes(pending.code)) return
+  selectedErrorCodes.value.push(pending.code)
+  if (pending.clearInput) customErrorCodeInput.value = null
 }
 
 // Add custom error code from input
@@ -3563,18 +3596,7 @@ const addCustomErrorCode = () => {
     appStore.showInfo(t('admin.accounts.errorCodeExists'))
     return
   }
-  // Check for 429/529 warning
-  if (code === 429) {
-    if (!confirm(t('admin.accounts.customErrorCodes429Warning'))) {
-      return
-    }
-  } else if (code === 529) {
-    if (!confirm(t('admin.accounts.customErrorCodes529Warning'))) {
-      return
-    }
-  }
-  selectedErrorCodes.value.push(code)
-  customErrorCodeInput.value = null
+  requestAddErrorCode(code, true)
 }
 
 // Remove error code
@@ -3874,6 +3896,7 @@ const parseDateTimeLocal = parseDateTimeLocalInput
 // Methods
 const handleClose = () => {
   antigravityMixedChannelConfirmed.value = false
+  pendingErrorCode.value = null
   clearMixedChannelDialog()
   emit('close')
 }

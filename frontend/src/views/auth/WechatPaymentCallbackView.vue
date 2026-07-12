@@ -1,47 +1,36 @@
 <template>
-  <div class="min-h-screen bg-gray-50 px-4 py-10 dark:bg-dark-900">
-    <div class="mx-auto max-w-2xl">
-      <div class="card p-6">
-        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
+  <AuthLayout :busy="!errorMessage" :busy-label="callbackProcessingText">
+    <div class="space-y-6">
+      <div class="auth-form-heading">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ callbackTitleText }}
-        </h1>
-        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {{ errorMessage || callbackProcessingText }}
+        </h2>
+        <p v-if="!errorMessage" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          {{ callbackProcessingText }}
         </p>
-
-        <div
-          v-if="!errorMessage"
-          class="mt-6 flex items-center justify-center py-10"
-        >
-          <div
-            class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"
-          ></div>
-        </div>
-
-        <div
-          v-else
-          class="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800/80"
-        >
-          <p class="text-sm text-gray-700 dark:text-gray-300">
-            {{ errorMessage }}
-          </p>
-          <button
-            class="btn btn-primary mt-4"
-            type="button"
-            @click="goBackToPayment"
-          >
-            {{ backToPaymentText }}
-          </button>
-        </div>
       </div>
+
+      <div v-if="errorMessage" class="auth-flow-alert" role="alert" aria-live="assertive">
+        {{ errorMessage }}
+      </div>
+
+      <button
+        v-if="errorMessage"
+        class="btn btn-primary w-full"
+        type="button"
+        @click="goBackToPayment"
+      >
+        {{ backToPaymentText }}
+      </button>
     </div>
-  </div>
+  </AuthLayout>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import AuthLayout from '@/components/auth/AuthFlowLayout.vue'
 import { useAppStore } from '@/stores'
 
 const { t } = useI18n()

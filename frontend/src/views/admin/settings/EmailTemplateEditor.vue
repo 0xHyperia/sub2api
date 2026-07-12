@@ -1,37 +1,48 @@
 <template>
-  <div class="card">
+  <div class="card" :aria-busy="loadingList || editorBusy">
     <div
-      class="flex flex-col gap-3 border-b border-gray-100 px-6 py-4 dark:border-dark-700 lg:flex-row lg:items-start lg:justify-between"
+      class="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 dark:border-dark-700 sm:px-6 lg:flex-row lg:items-start lg:justify-between"
     >
-      <div>
+      <div class="min-w-0">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
           {{ t("admin.settings.emailTemplates.title") }}
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {{ t("admin.settings.emailTemplates.description") }}
         </p>
+        <p
+          v-if="isDirty"
+          id="email-template-unsaved-status"
+          class="mt-2 text-sm font-medium text-amber-700 dark:text-amber-300"
+          role="status"
+        >
+          {{ t("admin.settings.emailTemplates.unsavedChanges") }}
+        </p>
       </div>
-      <div class="flex flex-wrap gap-2">
+      <div class="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
         <button
           type="button"
+          data-testid="email-template-preview"
           class="btn btn-secondary btn-sm"
-          :disabled="loadingTemplate || previewing || !canPreview"
+          :disabled="editorBusy || previewing || !canPreview"
           @click="refreshPreview"
         >
           {{ previewing ? t("admin.settings.emailTemplates.previewing") : t("admin.settings.emailTemplates.preview") }}
         </button>
         <button
           type="button"
+          data-testid="email-template-restore"
           class="btn btn-secondary btn-sm"
-          :disabled="loadingTemplate || restoring || !selectedEvent || !selectedLocale"
-          @click="restoreOfficial"
+          :disabled="editorBusy || !selectedEvent || !selectedLocale"
+          @click="requestRestoreOfficial"
         >
           {{ restoring ? t("admin.settings.emailTemplates.restoring") : t("admin.settings.emailTemplates.restoreOfficial") }}
         </button>
         <button
           type="button"
+          data-testid="email-template-save"
           class="btn btn-primary btn-sm"
-          :disabled="loadingTemplate || saving || !canSave"
+          :disabled="editorBusy || !canSave"
           @click="saveTemplate"
         >
           {{ saving ? t("admin.settings.emailTemplates.saving") : t("admin.settings.emailTemplates.save") }}
@@ -39,13 +50,16 @@
       </div>
     </div>
 
-    <div class="space-y-6 p-6">
+    <div class="space-y-6 p-4 sm:p-6">
       <div
         v-if="loadingList"
         class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+        role="status"
+        aria-live="polite"
       >
         <span
           class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"
+          aria-hidden="true"
         ></span>
         {{ t("common.loading") }}
       </div>
@@ -58,9 +72,11 @@
             </label>
             <select
               id="email-template-event"
-              v-model="selectedEvent"
+              :value="selectedEvent"
               class="input"
-              :disabled="loadingTemplate || eventOptions.length === 0"
+              :disabled="editorBusy || confirmDialog.show || eventOptions.length === 0"
+              :aria-describedby="isDirty ? 'email-template-unsaved-status' : undefined"
+              @change="handleEventChange"
             >
               <option
                 v-for="option in eventOptions"
@@ -77,9 +93,11 @@
             </label>
             <select
               id="email-template-locale"
-              v-model="selectedLocale"
+              :value="selectedLocale"
               class="input"
-              :disabled="loadingTemplate || localeOptions.length === 0"
+              :disabled="editorBusy || confirmDialog.show || localeOptions.length === 0"
+              :aria-describedby="isDirty ? 'email-template-unsaved-status' : undefined"
+              @change="handleLocaleChange"
             >
               <option
                 v-for="localeOption in localeOptions"
@@ -94,19 +112,19 @@
 
         <div
           v-if="selectedEventMeta"
-          class="rounded-lg border border-primary-100 bg-primary-50/70 p-4 dark:border-primary-900/50 dark:bg-primary-950/20"
+          class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800/60"
         >
           <div class="flex flex-wrap items-center gap-2">
             <div class="text-sm font-semibold text-gray-900 dark:text-white">
               {{ selectedEventMeta.label }}
             </div>
             <span
-              class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-gray-200 dark:bg-dark-800 dark:text-gray-300 dark:ring-dark-600"
+              class="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200 dark:bg-dark-700 dark:text-gray-300 dark:ring-dark-600"
             >
               {{ selectedEventMeta.categoryLabel }}
             </span>
             <span
-              class="rounded-full px-2.5 py-1 text-xs font-medium"
+              class="rounded-md px-2.5 py-1 text-xs font-medium"
               :class="
                 selectedEventMeta.optional
                   ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
@@ -134,8 +152,24 @@
           {{ t("admin.settings.emailTemplates.empty") }}
         </div>
 
-        <div v-else class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div class="space-y-4">
+        <div
+          v-else-if="templateLoadFailed"
+          class="flex flex-col items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 sm:flex-row sm:items-center sm:justify-between"
+          role="alert"
+        >
+          <span>{{ t("admin.settings.emailTemplates.loadFailed") }}</span>
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm w-full sm:w-auto"
+            :disabled="editorBusy"
+            @click="loadTemplate"
+          >
+            {{ t("common.retry") }}
+          </button>
+        </div>
+
+        <div v-else class="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-2">
+          <div class="min-w-0 space-y-4">
             <div>
               <label class="input-label" for="email-template-subject">
                 {{ t("admin.settings.emailTemplates.subject") }}
@@ -145,7 +179,8 @@
                 v-model="subject"
                 type="text"
                 class="input"
-                :disabled="loadingTemplate"
+                :disabled="editorBusy"
+                :aria-describedby="isDirty ? 'email-template-unsaved-status' : undefined"
                 :placeholder="t('admin.settings.emailTemplates.subjectPlaceholder')"
               />
             </div>
@@ -158,8 +193,9 @@
                 id="email-template-html"
                 v-model="html"
                 rows="18"
-                class="input min-h-[28rem] resize-y font-mono text-sm leading-6"
-                :disabled="loadingTemplate"
+                class="input min-h-[24rem] w-full resize-y font-mono text-sm leading-6 sm:min-h-[28rem]"
+                :disabled="editorBusy"
+                :aria-describedby="isDirty ? 'email-template-unsaved-status' : undefined"
                 :placeholder="t('admin.settings.emailTemplates.htmlPlaceholder')"
               ></textarea>
             </div>
@@ -178,7 +214,7 @@
                   v-for="placeholder in placeholderList"
                   :key="placeholder"
                   type="button"
-                  class="rounded-full border border-gray-200 bg-white px-3 py-1 font-mono text-xs text-gray-700 transition-colors hover:border-primary-300 hover:text-primary-600 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
+                  class="max-w-full break-all rounded-md border border-gray-200 bg-white px-3 py-1 text-left font-mono text-xs text-gray-700 transition-colors hover:border-primary-300 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
                   @click="copyPlaceholder(placeholder)"
                 >
                   {{ placeholder }}
@@ -187,31 +223,31 @@
             </div>
           </div>
 
-          <div class="space-y-4">
+          <div class="min-w-0 space-y-4">
             <div
-              class="rounded-lg border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800"
+              class="min-w-0 rounded-lg border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800"
             >
               <div
-                class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-dark-700"
+                class="flex min-w-0 items-start justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-dark-700"
               >
-                <div>
+                <div class="min-w-0">
                   <div class="text-sm font-medium text-gray-900 dark:text-white">
                     {{ t("admin.settings.emailTemplates.livePreview") }}
                   </div>
-                  <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <div class="mt-0.5 break-words text-xs text-gray-500 dark:text-gray-400">
                     {{ previewSubject || t("admin.settings.emailTemplates.noPreview") }}
                   </div>
                 </div>
                 <span
                   v-if="isCustomTemplate"
-                  class="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                  class="flex-shrink-0 rounded-md bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
                 >
                   {{ t("admin.settings.emailTemplates.customized") }}
                 </span>
               </div>
-              <div class="bg-gray-100 p-3 dark:bg-dark-900">
+              <div class="min-w-0 bg-gray-100 p-3 dark:bg-dark-900">
                 <iframe
-                  class="h-[36rem] w-full rounded-md border border-gray-200 bg-white dark:border-dark-700"
+                  class="h-[36rem] w-full min-w-0 max-w-full rounded-md border border-gray-200 bg-white dark:border-dark-700"
                   sandbox=""
                   :srcdoc="previewHtml"
                   :title="t('admin.settings.emailTemplates.livePreview')"
@@ -226,17 +262,29 @@
         </div>
       </template>
     </div>
+
+    <ConfirmDialog
+      :show="confirmDialog.show"
+      :title="confirmDialog.title"
+      :message="confirmDialog.message"
+      :confirm-text="confirmDialog.confirmText"
+      :danger="confirmDialog.danger"
+      @confirm="handleConfirm"
+      @cancel="handleConfirmCancel"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 import { adminAPI } from "@/api";
 import type {
   EmailTemplateEventOption,
   EmailTemplateOption,
 } from "@/api/admin/settings";
+import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import { useAppStore } from "@/stores";
 import { extractApiErrorMessage } from "@/utils/apiError";
 
@@ -305,6 +353,32 @@ const placeholders = ref<string[]>([]);
 const previewSubject = ref("");
 const previewHtml = ref("");
 const initializingSelection = ref(false);
+const templateLoadFailed = ref(false);
+
+interface PersistedTemplate {
+  subject: string;
+  html: string;
+}
+
+type PendingConfirmation =
+  | { kind: "discard"; resolve: (confirmed: boolean) => void }
+  | { kind: "restore" };
+
+const persistedTemplate = ref<PersistedTemplate | null>(null);
+const confirmDialog = reactive({
+  show: false,
+  title: "",
+  message: "",
+  confirmText: "",
+  danger: true,
+});
+
+let pendingConfirmation: PendingConfirmation | null = null;
+let listRequestId = 0;
+let templateRequestId = 0;
+let previewRequestId = 0;
+let saveRequestId = 0;
+let restoreRequestId = 0;
 
 interface EventDisplayMeta {
   label: string;
@@ -525,13 +599,27 @@ function formatPlaceholder(placeholder: string): string {
 const canSave = computed(
   () =>
     Boolean(selectedEvent.value && selectedLocale.value) &&
+    !templateLoadFailed.value &&
     subject.value.trim().length > 0 &&
     html.value.trim().length > 0,
 );
 
 const canPreview = computed(
-  () => Boolean(selectedEvent.value && selectedLocale.value) && html.value.trim().length > 0,
+  () =>
+    Boolean(selectedEvent.value && selectedLocale.value) &&
+    !templateLoadFailed.value &&
+    html.value.trim().length > 0,
 );
+
+const editorBusy = computed(
+  () => loadingTemplate.value || saving.value || restoring.value,
+);
+
+const isDirty = computed(() => {
+  const persisted = persistedTemplate.value;
+  if (!persisted) return false;
+  return subject.value !== persisted.subject || html.value !== persisted.html;
+});
 
 function formatLocale(locale: string): string {
   const lower = locale.toLowerCase();
@@ -565,34 +653,85 @@ function applyTemplate(template: {
   html: string;
   is_custom?: boolean;
   placeholders?: string[];
-}) {
-  subject.value = template.subject;
-  html.value = template.html;
+}, replaceEditor = true) {
+  persistedTemplate.value = {
+    subject: template.subject,
+    html: template.html,
+  };
+  if (replaceEditor) {
+    subject.value = template.subject;
+    html.value = template.html;
+  }
   isCustomTemplate.value = template.is_custom === true;
   placeholders.value = template.placeholders || [];
+  templateLoadFailed.value = false;
+}
+
+function resetEditorForLoad() {
+  persistedTemplate.value = null;
+  subject.value = "";
+  html.value = "";
+  isCustomTemplate.value = false;
+  previewSubject.value = "";
+  previewHtml.value = "";
+  previewRequestId += 1;
+  previewing.value = false;
+}
+
+function discardLocalChanges() {
+  const persisted = persistedTemplate.value;
+  if (!persisted) return;
+  subject.value = persisted.subject;
+  html.value = persisted.html;
 }
 
 async function loadTemplate() {
   if (!selectedEvent.value || !selectedLocale.value) return;
+
+  const requestId = ++templateRequestId;
+  const eventValue = selectedEvent.value;
+  const localeValue = selectedLocale.value;
   loadingTemplate.value = true;
+  templateLoadFailed.value = false;
+  resetEditorForLoad();
+
   try {
     const template = await adminAPI.settings.getEmailTemplate(
-      selectedEvent.value,
-      selectedLocale.value,
+      eventValue,
+      localeValue,
     );
+    if (
+      requestId !== templateRequestId ||
+      selectedEvent.value !== eventValue ||
+      selectedLocale.value !== localeValue
+    ) {
+      return;
+    }
     applyTemplate(template);
     await refreshPreview();
   } catch (err: unknown) {
+    if (
+      requestId !== templateRequestId ||
+      selectedEvent.value !== eventValue ||
+      selectedLocale.value !== localeValue
+    ) {
+      return;
+    }
+    templateLoadFailed.value = true;
     appStore.showError(extractApiErrorMessage(err, t("common.error")));
   } finally {
-    loadingTemplate.value = false;
+    if (requestId === templateRequestId) {
+      loadingTemplate.value = false;
+    }
   }
 }
 
 async function loadTemplateList() {
+  const requestId = ++listRequestId;
   loadingList.value = true;
   try {
     const response = await adminAPI.settings.getEmailTemplates();
+    if (requestId !== listRequestId) return;
     eventOptions.value = response.events.map(normalizeEventOption);
     localeOptions.value = response.locales;
     placeholders.value = response.placeholders || [];
@@ -602,10 +741,13 @@ async function loadTemplateList() {
     await loadTemplate();
     initializingSelection.value = false;
   } catch (err: unknown) {
+    if (requestId !== listRequestId) return;
     initializingSelection.value = false;
     appStore.showError(extractApiErrorMessage(err, t("common.error")));
   } finally {
-    loadingList.value = false;
+    if (requestId === listRequestId) {
+      loadingList.value = false;
+    }
   }
 }
 
@@ -614,67 +756,204 @@ async function saveTemplate() {
     appStore.showError(t("admin.settings.emailTemplates.validationRequired"));
     return;
   }
+
+  const requestId = ++saveRequestId;
+  const eventValue = selectedEvent.value;
+  const localeValue = selectedLocale.value;
+  const submittedTemplate = {
+    subject: subject.value,
+    html: html.value,
+  };
   saving.value = true;
+
   try {
     const template = await adminAPI.settings.updateEmailTemplate(
-      selectedEvent.value,
-      selectedLocale.value,
-      {
-        subject: subject.value,
-        html: html.value,
-      },
+      eventValue,
+      localeValue,
+      submittedTemplate,
     );
-    applyTemplate(template);
+    if (
+      requestId !== saveRequestId ||
+      selectedEvent.value !== eventValue ||
+      selectedLocale.value !== localeValue
+    ) {
+      return;
+    }
+
+    const editorStillMatchesSubmission =
+      subject.value === submittedTemplate.subject &&
+      html.value === submittedTemplate.html;
+    applyTemplate(template, editorStillMatchesSubmission);
     await refreshPreview();
     appStore.showSuccess(t("admin.settings.emailTemplates.saveSuccess"));
   } catch (err: unknown) {
+    if (requestId !== saveRequestId) return;
     appStore.showError(extractApiErrorMessage(err, t("common.error")));
   } finally {
-    saving.value = false;
+    if (requestId === saveRequestId) {
+      saving.value = false;
+    }
   }
 }
 
 async function refreshPreview() {
+  const requestId = ++previewRequestId;
   if (!canPreview.value) {
     previewSubject.value = "";
     previewHtml.value = "";
+    previewing.value = false;
     return;
   }
+
+  const previewRequest = {
+    event: selectedEvent.value,
+    locale: selectedLocale.value,
+    subject: subject.value,
+    html: html.value,
+  };
   previewing.value = true;
+
   try {
-    const preview = await adminAPI.settings.previewEmailTemplate({
-      event: selectedEvent.value,
-      locale: selectedLocale.value,
-      subject: subject.value,
-      html: html.value,
-    });
+    const preview = await adminAPI.settings.previewEmailTemplate(previewRequest);
+    if (
+      requestId !== previewRequestId ||
+      selectedEvent.value !== previewRequest.event ||
+      selectedLocale.value !== previewRequest.locale ||
+      subject.value !== previewRequest.subject ||
+      html.value !== previewRequest.html
+    ) {
+      return;
+    }
     previewSubject.value = preview.subject;
     previewHtml.value = preview.html;
   } catch (err: unknown) {
+    if (
+      requestId !== previewRequestId ||
+      selectedEvent.value !== previewRequest.event ||
+      selectedLocale.value !== previewRequest.locale ||
+      subject.value !== previewRequest.subject ||
+      html.value !== previewRequest.html
+    ) {
+      return;
+    }
     appStore.showError(extractApiErrorMessage(err, t("common.error")));
   } finally {
-    previewing.value = false;
+    if (requestId === previewRequestId) {
+      previewing.value = false;
+    }
   }
 }
 
-async function restoreOfficial() {
+function requestRestoreOfficial() {
   if (!selectedEvent.value || !selectedLocale.value) return;
-  if (!window.confirm(t("admin.settings.emailTemplates.restoreConfirm"))) return;
+  if (confirmDialog.show) return;
+
+  pendingConfirmation = { kind: "restore" };
+  confirmDialog.title = t("admin.settings.emailTemplates.restoreOfficial");
+  confirmDialog.message = t("admin.settings.emailTemplates.restoreConfirm");
+  confirmDialog.confirmText = t("admin.settings.emailTemplates.restoreOfficial");
+  confirmDialog.danger = true;
+  confirmDialog.show = true;
+}
+
+async function restoreOfficial() {
+  const requestId = ++restoreRequestId;
+  const eventValue = selectedEvent.value;
+  const localeValue = selectedLocale.value;
 
   restoring.value = true;
   try {
     const template = await adminAPI.settings.restoreOfficialEmailTemplate(
-      selectedEvent.value,
-      selectedLocale.value,
+      eventValue,
+      localeValue,
     );
+    if (
+      requestId !== restoreRequestId ||
+      selectedEvent.value !== eventValue ||
+      selectedLocale.value !== localeValue
+    ) {
+      return;
+    }
     applyTemplate(template);
     await refreshPreview();
     appStore.showSuccess(t("admin.settings.emailTemplates.restoreSuccess"));
   } catch (err: unknown) {
+    if (requestId !== restoreRequestId) return;
     appStore.showError(extractApiErrorMessage(err, t("common.error")));
   } finally {
-    restoring.value = false;
+    if (requestId === restoreRequestId) {
+      restoring.value = false;
+    }
   }
+}
+
+function requestDiscardChanges(): Promise<boolean> {
+  if (!isDirty.value) return Promise.resolve(true);
+  if (confirmDialog.show || pendingConfirmation) return Promise.resolve(false);
+
+  return new Promise((resolve) => {
+    pendingConfirmation = { kind: "discard", resolve };
+    confirmDialog.title = t("admin.settings.emailTemplates.discardTitle");
+    confirmDialog.message = t("admin.settings.emailTemplates.discardConfirm");
+    confirmDialog.confirmText = t("admin.settings.emailTemplates.discardChanges");
+    confirmDialog.danger = true;
+    confirmDialog.show = true;
+  });
+}
+
+function handleConfirm() {
+  const confirmation = pendingConfirmation;
+  pendingConfirmation = null;
+  confirmDialog.show = false;
+
+  if (confirmation?.kind === "discard") {
+    discardLocalChanges();
+    confirmation.resolve(true);
+    return;
+  }
+
+  if (confirmation?.kind === "restore") {
+    void restoreOfficial();
+  }
+}
+
+function handleConfirmCancel() {
+  const confirmation = pendingConfirmation;
+  pendingConfirmation = null;
+  confirmDialog.show = false;
+  if (confirmation?.kind === "discard") {
+    confirmation.resolve(false);
+  }
+}
+
+function changeSelection(kind: "event" | "locale", nextValue: string) {
+  const currentValue = kind === "event" ? selectedEvent.value : selectedLocale.value;
+  if (!nextValue || nextValue === currentValue) return;
+
+  const applySelection = () => {
+    if (kind === "event") {
+      selectedEvent.value = nextValue;
+    } else {
+      selectedLocale.value = nextValue;
+    }
+  };
+
+  if (!isDirty.value) {
+    applySelection();
+    return;
+  }
+
+  void requestDiscardChanges().then((confirmed) => {
+    if (confirmed) applySelection();
+  });
+}
+
+function handleEventChange(event: Event) {
+  changeSelection("event", (event.target as HTMLSelectElement).value);
+}
+
+function handleLocaleChange(event: Event) {
+  changeSelection("locale", (event.target as HTMLSelectElement).value);
 }
 
 async function copyPlaceholder(placeholder: string) {
@@ -686,14 +965,37 @@ async function copyPlaceholder(placeholder: string) {
   }
 }
 
-watch([selectedEvent, selectedLocale], ([eventValue, localeValue], [oldEvent, oldLocale]) => {
-  if (initializingSelection.value) return;
-  if (!eventValue || !localeValue) return;
-  if (eventValue === oldEvent && localeValue === oldLocale) return;
-  void loadTemplate();
-});
+watch(
+  [selectedEvent, selectedLocale],
+  ([eventValue, localeValue], [oldEvent, oldLocale]) => {
+    if (initializingSelection.value) return;
+    if (!eventValue || !localeValue) return;
+    if (eventValue === oldEvent && localeValue === oldLocale) return;
+    void loadTemplate();
+  },
+);
+
+onBeforeRouteLeave(() => requestDiscardChanges());
+onBeforeRouteUpdate(() => requestDiscardChanges());
 
 onMounted(() => {
   void loadTemplateList();
+});
+
+onUnmounted(() => {
+  listRequestId += 1;
+  templateRequestId += 1;
+  previewRequestId += 1;
+  saveRequestId += 1;
+  restoreRequestId += 1;
+  if (pendingConfirmation?.kind === "discard") {
+    pendingConfirmation.resolve(false);
+  }
+  pendingConfirmation = null;
+});
+
+defineExpose({
+  isDirty,
+  requestDiscardChanges,
 });
 </script>

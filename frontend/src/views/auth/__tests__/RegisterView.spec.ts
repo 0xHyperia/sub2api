@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import RegisterView from '@/views/auth/RegisterView.vue'
 
 const {
@@ -8,14 +8,18 @@ const {
   replaceMock,
   showErrorMock,
   showSuccessMock,
-  registerMock
+  registerMock,
+  validatePromoCodeMock,
+  validateInvitationCodeMock
 } = vi.hoisted(() => ({
   getPublicSettingsMock: vi.fn(),
   pushMock: vi.fn(),
   replaceMock: vi.fn(),
   showErrorMock: vi.fn(),
   showSuccessMock: vi.fn(),
-  registerMock: vi.fn()
+  registerMock: vi.fn(),
+  validatePromoCodeMock: vi.fn(),
+  validateInvitationCodeMock: vi.fn()
 }))
 
 vi.mock('vue-router', () => ({
@@ -49,9 +53,42 @@ vi.mock('@/api/auth', async () => {
   return {
     ...actual,
     getPublicSettings: (...args: unknown[]) => getPublicSettingsMock(...args),
+    validatePromoCode: (...args: unknown[]) => validatePromoCodeMock(...args),
+    validateInvitationCode: (...args: unknown[]) => validateInvitationCodeMock(...args),
     isWeChatWebOAuthEnabled: () => false
   }
 })
+
+const enabledSettings = {
+  registration_enabled: true,
+  email_verify_enabled: false,
+  promo_code_enabled: false,
+  invitation_code_enabled: false,
+  turnstile_enabled: false,
+  site_name: 'USA-零',
+  linuxdo_oauth_enabled: false,
+  oidc_oauth_enabled: false,
+  github_oauth_enabled: false,
+  google_oauth_enabled: false,
+  registration_email_suffix_whitelist: []
+}
+
+function mountRegisterView() {
+  return mount(RegisterView, {
+    global: {
+      stubs: {
+        GatewayAuthLayout: {
+          template: '<main><slot name="heading" /><slot /></main>'
+        },
+        EmailOAuthButtons: true,
+        Icon: true,
+        LoginAgreementPrompt: true,
+        TurnstileWidget: true,
+        transition: false
+      }
+    }
+  })
+}
 
 describe('RegisterView', () => {
   beforeEach(() => {
@@ -61,7 +98,13 @@ describe('RegisterView', () => {
     showErrorMock.mockReset()
     showSuccessMock.mockReset()
     registerMock.mockReset()
+    validatePromoCodeMock.mockReset()
+    validateInvitationCodeMock.mockReset()
     localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('does not override the cached backend site name while settings are loading', () => {
@@ -164,6 +207,89 @@ describe('RegisterView', () => {
 
     expect(wrapper.find('form').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('auth.registrationDisabled')
+  })
+
+  it('shows a retryable settings error instead of reporting registration as disabled', async () => {
+    getPublicSettingsMock
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValueOnce(enabledSettings)
+
+    const wrapper = mountRegisterView()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('auth.settingsLoadFailed')
+    expect(wrapper.text()).not.toContain('auth.registrationDisabled')
+    expect(wrapper.find('form').exists()).toBe(false)
+
+    const retryButton = wrapper.findAll('button').find((button) => button.text().includes('common.retry'))
+    expect(retryButton).toBeDefined()
+    await retryButton!.trigger('click')
+    await flushPromises()
+
+    expect(getPublicSettingsMock).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('form').exists()).toBe(true)
+  })
+
+  it('keeps only the latest invitation-code validation result', async () => {
+    vi.useFakeTimers()
+    getPublicSettingsMock.mockResolvedValue({
+      ...enabledSettings,
+      invitation_code_enabled: true
+    })
+
+    let resolveOld!: (value: { valid: boolean; error_code?: string }) => void
+    let resolveNew!: (value: { valid: boolean; error_code?: string }) => void
+    validateInvitationCodeMock
+      .mockReturnValueOnce(new Promise((resolve) => { resolveOld = resolve }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveNew = resolve }))
+
+    const wrapper = mountRegisterView()
+    await flushPromises()
+    const input = wrapper.get('#invitation_code')
+
+    await input.setValue('OLD-CODE')
+    await vi.advanceTimersByTimeAsync(500)
+    await input.setValue('NEW-CODE')
+    await vi.advanceTimersByTimeAsync(500)
+
+    resolveNew({ valid: true })
+    await flushPromises()
+    resolveOld({ valid: false, error_code: 'INVITATION_CODE_INVALID' })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('auth.invitationCodeValid')
+    expect(input.attributes('aria-invalid')).toBe('false')
+  })
+
+  it('keeps only the latest promo-code validation result', async () => {
+    vi.useFakeTimers()
+    getPublicSettingsMock.mockResolvedValue({
+      ...enabledSettings,
+      promo_code_enabled: true
+    })
+
+    let resolveOld!: (value: { valid: boolean; error_code?: string }) => void
+    let resolveNew!: (value: { valid: boolean; bonus_amount?: number }) => void
+    validatePromoCodeMock
+      .mockReturnValueOnce(new Promise((resolve) => { resolveOld = resolve }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveNew = resolve }))
+
+    const wrapper = mountRegisterView()
+    await flushPromises()
+    const input = wrapper.get('#promo_code')
+
+    await input.setValue('OLD-PROMO')
+    await vi.advanceTimersByTimeAsync(500)
+    await input.setValue('NEW-PROMO')
+    await vi.advanceTimersByTimeAsync(500)
+
+    resolveNew({ valid: true, bonus_amount: 12 })
+    await flushPromises()
+    resolveOld({ valid: false, error_code: 'PROMO_CODE_NOT_FOUND' })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('auth.promoCodeValid')
+    expect(input.attributes('aria-invalid')).toBe('false')
   })
 
   it('switches to inline email verification without leaving the registration page', async () => {

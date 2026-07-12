@@ -2,36 +2,40 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <div class="flex flex-wrap items-center gap-3">
-          <!-- Left: Search + Filters -->
-          <div class="flex-1 sm:max-w-64">
+        <div class="commerce-toolbar flex flex-wrap items-center gap-3">
+          <div class="relative w-full md:w-72">
+            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               v-model="searchQuery"
-              type="text"
+              type="search"
               :placeholder="t('admin.promo.searchCodes')"
-              class="input"
+              :aria-label="t('admin.promo.searchCodes')"
+              autocomplete="off"
+              class="input pl-10"
               @input="handleSearch"
             />
           </div>
-          <Select
-            v-model="filters.status"
-            :options="filterStatusOptions"
-            class="w-36"
-            @change="loadCodes"
-          />
+          <div class="w-full sm:w-40">
+            <Select
+              v-model="filters.status"
+              :options="filterStatusOptions"
+              @change="loadCodes"
+            />
+          </div>
 
-          <!-- Right: Action buttons -->
-          <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
+          <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
             <button
+              type="button"
               @click="loadCodes"
               :disabled="loading"
-              class="btn btn-secondary"
+              class="btn btn-secondary px-2.5"
               :title="t('common.refresh')"
+              :aria-label="t('common.refresh')"
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
             </button>
-            <button @click="showCreateDialog = true" class="btn btn-primary">
-              <Icon name="plus" size="md" class="mr-1" />
+            <button type="button" @click="showCreateDialog = true" class="btn btn-primary">
+              <Icon name="plus" size="sm" />
               {{ t('admin.promo.createCode') }}
             </button>
           </div>
@@ -52,24 +56,19 @@
             <div class="flex items-center space-x-2">
               <code class="font-mono text-sm text-gray-900 dark:text-gray-100">{{ value }}</code>
               <button
+                type="button"
                 @click="copyToClipboard(value)"
                 :class="[
-                  'flex items-center transition-colors',
+                  'promo-copy',
                   copiedCode === value
-                    ? 'text-green-500'
-                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-400'
                 ]"
                 :title="copiedCode === value ? t('admin.promo.copied') : t('keys.copyToClipboard')"
+                :aria-label="copiedCode === value ? t('admin.promo.copied') : t('keys.copyToClipboard')"
               >
                 <Icon v-if="copiedCode !== value" name="copy" size="sm" :stroke-width="2" />
-                <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <Icon v-else name="check" size="sm" :stroke-width="2" />
               </button>
             </div>
           </template>
@@ -110,32 +109,40 @@
           </template>
 
           <template #cell-actions="{ row }">
-            <div class="flex items-center space-x-1">
+            <div class="flex items-center gap-1">
               <button
+                type="button"
                 @click="copyRegisterLink(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                class="promo-action"
                 :title="t('admin.promo.copyRegisterLink')"
+                :aria-label="`${t('admin.promo.copyRegisterLink')}: ${row.code}`"
               >
                 <Icon name="link" size="sm" />
               </button>
               <button
+                type="button"
                 @click="handleViewUsages(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                class="promo-action"
                 :title="t('admin.promo.viewUsages')"
+                :aria-label="`${t('admin.promo.viewUsages')}: ${row.code}`"
               >
                 <Icon name="eye" size="sm" />
               </button>
               <button
+                type="button"
                 @click="handleEdit(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-dark-600 dark:hover:text-gray-300"
+                class="promo-action"
                 :title="t('common.edit')"
+                :aria-label="`${t('common.edit')}: ${row.code}`"
               >
                 <Icon name="edit" size="sm" />
               </button>
               <button
+                type="button"
                 @click="handleDelete(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                class="promo-action promo-action-danger"
                 :title="t('common.delete')"
+                :aria-label="`${t('common.delete')}: ${row.code}`"
               >
                 <Icon name="trash" size="sm" />
               </button>
@@ -165,11 +172,12 @@
     >
       <form id="create-promo-form" @submit.prevent="handleCreate" class="space-y-4">
         <div>
-          <label class="input-label">
+          <label for="create-promo-code" class="input-label">
             {{ t('admin.promo.code') }}
             <span class="ml-1 text-xs font-normal text-gray-400">({{ t('admin.promo.autoGenerate') }})</span>
           </label>
           <input
+            id="create-promo-code"
             v-model="createForm.code"
             type="text"
             class="input font-mono uppercase"
@@ -177,8 +185,9 @@
           />
         </div>
         <div>
-          <label class="input-label">{{ t('admin.promo.bonusAmount') }}</label>
+          <label for="create-promo-bonus" class="input-label">{{ t('admin.promo.bonusAmount') }}</label>
           <input
+            id="create-promo-bonus"
             v-model.number="createForm.bonus_amount"
             type="number"
             step="0.01"
@@ -188,11 +197,12 @@
           />
         </div>
         <div>
-          <label class="input-label">
+          <label for="create-promo-max-uses" class="input-label">
             {{ t('admin.promo.maxUses') }}
             <span class="ml-1 text-xs font-normal text-gray-400">({{ t('admin.promo.zeroUnlimited') }})</span>
           </label>
           <input
+            id="create-promo-max-uses"
             v-model.number="createForm.max_uses"
             type="number"
             min="0"
@@ -200,22 +210,24 @@
           />
         </div>
         <div>
-          <label class="input-label">
+          <label for="create-promo-expires" class="input-label">
             {{ t('admin.promo.expiresAt') }}
             <span class="ml-1 text-xs font-normal text-gray-400">({{ t('common.optional') }})</span>
           </label>
           <input
+            id="create-promo-expires"
             v-model="createForm.expires_at_str"
             type="datetime-local"
             class="input"
           />
         </div>
         <div>
-          <label class="input-label">
+          <label for="create-promo-notes" class="input-label">
             {{ t('admin.promo.notes') }}
             <span class="ml-1 text-xs font-normal text-gray-400">({{ t('common.optional') }})</span>
           </label>
           <textarea
+            id="create-promo-notes"
             v-model="createForm.notes"
             rows="2"
             class="input"
@@ -244,16 +256,18 @@
     >
       <form id="edit-promo-form" @submit.prevent="handleUpdate" class="space-y-4">
         <div>
-          <label class="input-label">{{ t('admin.promo.code') }}</label>
+          <label for="edit-promo-code" class="input-label">{{ t('admin.promo.code') }}</label>
           <input
+            id="edit-promo-code"
             v-model="editForm.code"
             type="text"
             class="input font-mono uppercase"
           />
         </div>
         <div>
-          <label class="input-label">{{ t('admin.promo.bonusAmount') }}</label>
+          <label for="edit-promo-bonus" class="input-label">{{ t('admin.promo.bonusAmount') }}</label>
           <input
+            id="edit-promo-bonus"
             v-model.number="editForm.bonus_amount"
             type="number"
             step="0.01"
@@ -263,11 +277,12 @@
           />
         </div>
         <div>
-          <label class="input-label">
+          <label for="edit-promo-max-uses" class="input-label">
             {{ t('admin.promo.maxUses') }}
             <span class="ml-1 text-xs font-normal text-gray-400">({{ t('admin.promo.zeroUnlimited') }})</span>
           </label>
           <input
+            id="edit-promo-max-uses"
             v-model.number="editForm.max_uses"
             type="number"
             min="0"
@@ -279,22 +294,24 @@
           <Select v-model="editForm.status" :options="statusOptions" />
         </div>
         <div>
-          <label class="input-label">
+          <label for="edit-promo-expires" class="input-label">
             {{ t('admin.promo.expiresAt') }}
             <span class="ml-1 text-xs font-normal text-gray-400">({{ t('common.optional') }})</span>
           </label>
           <input
+            id="edit-promo-expires"
             v-model="editForm.expires_at_str"
             type="datetime-local"
             class="input"
           />
         </div>
         <div>
-          <label class="input-label">
+          <label for="edit-promo-notes" class="input-label">
             {{ t('admin.promo.notes') }}
             <span class="ml-1 text-xs font-normal text-gray-400">({{ t('common.optional') }})</span>
           </label>
           <textarea
+            id="edit-promo-notes"
             v-model="editForm.notes"
             rows="2"
             class="input"
@@ -326,18 +343,18 @@
       <div v-else-if="usages.length === 0" class="py-8 text-center text-gray-500 dark:text-gray-400">
         {{ t('admin.promo.noUsages') }}
       </div>
-      <div v-else class="space-y-3">
+      <div v-else class="promo-usage-list">
         <div
           v-for="usage in usages"
           :key="usage.id"
-          class="flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+          class="flex items-center justify-between gap-4 px-3 py-3"
         >
-          <div class="flex items-center gap-3">
-            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <Icon name="user" size="sm" class="text-green-600 dark:text-green-400" />
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="promo-avatar">
+              <Icon name="user" size="sm" />
             </div>
-            <div>
-              <p class="text-sm font-medium text-gray-900 dark:text-white">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
                 {{ usage.user?.email || t('admin.promo.userPrefix', { id: usage.user_id }) }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -345,8 +362,8 @@
               </p>
             </div>
           </div>
-          <div class="text-right">
-            <span class="text-sm font-medium text-green-600 dark:text-green-400">
+          <div class="shrink-0 text-right tabular-nums">
+            <span class="text-sm font-semibold text-gray-900 dark:text-white">
               +${{ usage.bonus_amount.toFixed(2) }}
             </span>
           </div>
@@ -743,3 +760,78 @@ onUnmounted(() => {
   abortController?.abort()
 })
 </script>
+
+<style scoped>
+.commerce-toolbar {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.promo-copy,
+.promo-action {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.promo-copy {
+  width: 32px;
+  height: 32px;
+}
+
+.promo-copy:hover,
+.promo-action:hover {
+  color: var(--ui-text, #0f172a);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.promo-action-danger:hover {
+  color: rgb(var(--color-danger-foreground, 185 28 28));
+  background: rgb(var(--color-danger-subtle, 254 242 242));
+}
+
+.promo-copy:focus-visible,
+.promo-action:focus-visible {
+  outline: 2px solid var(--ui-focus, #475569);
+  outline-offset: 1px;
+}
+
+.promo-usage-list {
+  overflow: hidden;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+}
+
+.promo-usage-list > div + div {
+  border-top: 1px solid var(--ui-border, #dbe3ee);
+}
+
+.promo-avatar {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 6px;
+  color: var(--ui-text-muted, #667085);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+@media (max-width: 639px) {
+  .commerce-toolbar {
+    padding: 10px;
+  }
+}
+</style>

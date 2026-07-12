@@ -1,99 +1,123 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-dark-900">
-    <div class="w-full max-w-md space-y-6">
-      <!-- Loading -->
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
+  <main class="flex min-h-screen items-center bg-canvas px-4 py-8 text-foreground sm:px-6">
+    <section class="mx-auto w-full max-w-lg" aria-live="polite">
+      <div v-if="loading" class="flex min-h-64 items-center justify-center" role="status" :aria-label="t('common.loading')">
+        <Icon name="refresh" size="lg" class="animate-spin text-foreground-subtle" />
       </div>
+
       <template v-else>
-        <!-- Status Icon -->
-        <div class="text-center">
-          <div v-if="isSuccess"
-            class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <svg class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <div v-else-if="isPending"
-            class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
-            <div class="h-10 w-10 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
-          </div>
-          <div v-else
-            class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-            <svg class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-          <h2 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
-            {{ statusTitle }}
-          </h2>
-          <p v-if="isPending" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <header class="text-center">
+          <span
+            v-if="isSuccess"
+            class="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-panel bg-success-subtle text-success-foreground"
+          >
+            <Icon name="check" size="xl" />
+          </span>
+          <span
+            v-else-if="isPending"
+            class="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-panel bg-warning-subtle text-warning-foreground"
+          >
+            <Icon name="refresh" size="xl" class="animate-spin" />
+          </span>
+          <span
+            v-else
+            class="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-panel bg-danger-subtle text-danger-foreground"
+          >
+            <Icon name="x" size="xl" />
+          </span>
+          <h1 class="mt-4 text-2xl font-semibold text-foreground">{{ statusTitle }}</h1>
+          <p v-if="isPending" class="mx-auto mt-2 max-w-md text-sm text-foreground-muted">
             {{ t('payment.result.processingHint') }}
           </p>
+        </header>
+
+        <div
+          v-if="isPending && statusRefreshExhausted"
+          class="mt-5 rounded-panel border border-warning/30 bg-warning-subtle p-4 text-warning-foreground"
+          role="status"
+        >
+          <p class="text-sm font-medium">{{ t('payment.result.confirmationDelayed') }}</p>
+          <p v-if="lastCheckedLabel" class="mt-1 text-xs opacity-80">
+            {{ t('payment.result.lastChecked', { time: lastCheckedLabel }) }}
+          </p>
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm mt-3"
+            :disabled="retrying"
+            @click="retryStatus"
+          >
+            <Icon name="refresh" size="sm" :class="{ 'animate-spin': retrying }" />
+            {{ t('common.retry') }}
+          </button>
         </div>
-        <!-- Order Info -->
-        <div v-if="order" class="rounded-xl bg-white p-5 shadow-sm dark:bg-dark-800">
-          <div class="space-y-3 text-sm">
-            <div v-if="hasOrderId(order)" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">#{{ order.id }}</span>
-            </div>
-            <div v-if="order.out_trade_no" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderNo') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ order.out_trade_no }}</span>
-            </div>
-            <div v-if="hasAmountFields(order)" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.baseAmount') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(baseAmount) }}</span>
-            </div>
-            <div v-if="hasAmountFields(order) && order.fee_rate > 0" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.fee') }} ({{ order.fee_rate }}%)</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(feeAmount) }}</span>
-            </div>
-            <div v-if="hasAmountFields(order)" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
-              <span class="font-bold text-primary-600 dark:text-primary-400">{{ formatGatewayAmount(order.pay_amount) }}</span>
-            </div>
-            <div v-if="hasAmountFields(order) && order.amount !== order.pay_amount" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.creditedAmount') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ order.order_type === 'balance' ? '$' + order.amount.toFixed(2) : formatGatewayAmount(order.amount) }}</span>
-            </div>
-            <div v-if="hasPaymentType(order)" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.paymentMethod') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ t(paymentMethodI18nKey(order.payment_type), normalizedOrderPaymentType(order.payment_type)) }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.status') }}</span>
-              <OrderStatusBadge :status="displayOrderStatus(order.status)" />
-            </div>
+
+        <dl
+          v-if="order"
+          class="mt-6 divide-y divide-outline overflow-hidden rounded-panel border border-outline bg-surface px-4 shadow-card"
+        >
+          <div v-if="hasOrderId(order)" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.orderId') }}</dt>
+            <dd class="font-medium text-foreground">#{{ order.id }}</dd>
           </div>
-        </div>
-        <!-- EasyPay return info (when no order loaded) -->
-        <div v-else-if="returnInfo" class="rounded-xl bg-white p-5 shadow-sm dark:bg-dark-800">
-          <div class="space-y-3 text-sm">
-            <div v-if="returnInfo.outTradeNo" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ returnInfo.outTradeNo }}</span>
-            </div>
-            <div v-if="returnInfo.money" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(Number(returnInfo.money) || 0) }}</span>
-            </div>
-            <div v-if="returnInfo.type" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.paymentMethod') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ t(paymentMethodI18nKey(returnInfo.type), normalizedOrderPaymentType(returnInfo.type)) }}</span>
-            </div>
+          <div v-if="order.out_trade_no" class="flex min-w-0 items-start justify-between gap-4 py-3 text-sm">
+            <dt class="flex-shrink-0 text-foreground-muted">{{ t('payment.orders.orderNo') }}</dt>
+            <dd class="min-w-0 break-all text-right font-medium text-foreground">{{ order.out_trade_no }}</dd>
           </div>
-        </div>
-        <!-- Actions -->
-        <div class="flex gap-3">
-          <button class="btn btn-secondary flex-1" @click="router.push('/purchase')">{{ t('payment.result.backToRecharge') }}</button>
-          <button class="btn btn-primary flex-1" @click="router.push('/orders')">{{ t('payment.result.viewOrders') }}</button>
+          <div v-if="hasAmountFields(order)" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.baseAmount') }}</dt>
+            <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(baseAmount) }}</dd>
+          </div>
+          <div v-if="hasAmountFields(order) && order.fee_rate > 0" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.fee') }} ({{ order.fee_rate }}%)</dt>
+            <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(feeAmount) }}</dd>
+          </div>
+          <div v-if="hasAmountFields(order)" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.payAmount') }}</dt>
+            <dd class="font-semibold tabular-nums text-foreground">{{ formatGatewayAmount(order.pay_amount) }}</dd>
+          </div>
+          <div v-if="hasAmountFields(order) && order.amount !== order.pay_amount" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.creditedAmount') }}</dt>
+            <dd class="font-medium tabular-nums text-foreground">{{ order.order_type === 'balance' ? '$' + order.amount.toFixed(2) : formatGatewayAmount(order.amount) }}</dd>
+          </div>
+          <div v-if="hasPaymentType(order)" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.paymentMethod') }}</dt>
+            <dd class="text-right font-medium text-foreground">{{ t(paymentMethodI18nKey(order.payment_type), normalizedOrderPaymentType(order.payment_type)) }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.status') }}</dt>
+            <dd><OrderStatusBadge :status="displayOrderStatus(order.status)" /></dd>
+          </div>
+        </dl>
+
+        <dl
+          v-else-if="returnInfo"
+          class="mt-6 divide-y divide-outline overflow-hidden rounded-panel border border-outline bg-surface px-4 shadow-card"
+        >
+          <div v-if="returnInfo.outTradeNo" class="flex min-w-0 items-start justify-between gap-4 py-3 text-sm">
+            <dt class="flex-shrink-0 text-foreground-muted">{{ t('payment.orders.orderId') }}</dt>
+            <dd class="min-w-0 break-all text-right font-medium text-foreground">{{ returnInfo.outTradeNo }}</dd>
+          </div>
+          <div v-if="returnInfo.money" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.payAmount') }}</dt>
+            <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(Number(returnInfo.money) || 0) }}</dd>
+          </div>
+          <div v-if="returnInfo.type" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.paymentMethod') }}</dt>
+            <dd class="text-right font-medium text-foreground">{{ t(paymentMethodI18nKey(returnInfo.type), normalizedOrderPaymentType(returnInfo.type)) }}</dd>
+          </div>
+        </dl>
+
+        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+          <button type="button" class="btn btn-secondary flex-1" @click="router.push('/purchase')">
+            {{ t('payment.result.backToRecharge') }}
+          </button>
+          <button type="button" class="btn btn-primary flex-1" @click="router.push('/orders')">
+            {{ t('payment.result.viewOrders') }}
+          </button>
         </div>
       </template>
-    </div>
-  </div>
+    </section>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -112,6 +136,7 @@ import type { PublicOrderVerifyResult } from '@/api/payment'
 import type { OrderStatus, PaymentOrder } from '@/types/payment'
 import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import { normalizePaymentMethodForDisplay, paymentMethodI18nKey } from './paymentUx'
+import Icon from '@/components/icons/Icon.vue'
 
 const i18n = useI18n()
 const { t } = i18n
@@ -124,6 +149,9 @@ type ResolvedOrder = PaymentOrder | PublicOrderVerifyResult
 const order = ref<ResolvedOrder | null>(null)
 const loading = ref(true)
 const currency = ref('CNY')
+const retrying = ref(false)
+const statusRefreshExhausted = ref(false)
+const lastCheckedAt = ref<Date | null>(null)
 
 interface ReturnInfo {
   outTradeNo: string
@@ -139,6 +167,7 @@ const STATUS_REFRESH_INTERVAL_MS = 2000
 const STATUS_REFRESH_MAX_ATTEMPTS = 15
 
 let statusRefreshTimer: ReturnType<typeof setTimeout> | null = null
+let refreshOrderAction: (() => Promise<ResolvedOrder | null>) | null = null
 const refreshAttempts = ref(0)
 
 /** 充值金额 = pay_amount / (1 + fee_rate/100)，fee_rate=0 时等于 pay_amount */
@@ -184,6 +213,15 @@ const statusTitle = computed(() => {
   return t('payment.result.failed')
 })
 
+const lastCheckedLabel = computed(() => {
+  if (!lastCheckedAt.value) return ''
+  return new Intl.DateTimeFormat(localeCode.value || undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(lastCheckedAt.value)
+})
+
 function normalizedOrderPaymentType(paymentType: string): string {
   return normalizePaymentMethodForDisplay(paymentType || '') || paymentType || ''
 }
@@ -194,6 +232,7 @@ function formatGatewayAmount(value: number): string {
 
 function setResolvedOrder(nextOrder: ResolvedOrder | null): void {
   order.value = nextOrder
+  lastCheckedAt.value = new Date()
   if (nextOrder && 'currency' in nextOrder && nextOrder.currency) {
     currency.value = normalizePaymentCurrency(nextOrder.currency)
   }
@@ -319,7 +358,11 @@ function clearRecoverySnapshotForTerminalStatus(status: string | null | undefine
 
 function scheduleStatusRefresh(refreshOrder: (() => Promise<ResolvedOrder | null>) | null): void {
   clearStatusRefreshTimer()
-  if (!refreshOrder || !isPending.value || refreshAttempts.value >= STATUS_REFRESH_MAX_ATTEMPTS) {
+  if (!refreshOrder || !isPending.value) {
+    return
+  }
+  if (refreshAttempts.value >= STATUS_REFRESH_MAX_ATTEMPTS) {
+    statusRefreshExhausted.value = true
     return
   }
 
@@ -333,8 +376,31 @@ function scheduleStatusRefresh(refreshOrder: (() => Promise<ResolvedOrder | null
 
     if (isPendingStatus(order.value?.status)) {
       scheduleStatusRefresh(refreshOrder)
+    } else {
+      statusRefreshExhausted.value = false
     }
   }, STATUS_REFRESH_INTERVAL_MS)
+}
+
+async function retryStatus(): Promise<void> {
+  if (!refreshOrderAction || retrying.value) return
+  retrying.value = true
+  statusRefreshExhausted.value = false
+  refreshAttempts.value = 0
+  try {
+    const refreshedOrder = await refreshOrderAction()
+    if (refreshedOrder) {
+      setResolvedOrder(refreshedOrder)
+      clearRecoverySnapshotForTerminalStatus(refreshedOrder.status)
+    } else {
+      lastCheckedAt.value = new Date()
+    }
+    if (isPendingStatus(order.value?.status)) {
+      scheduleStatusRefresh(refreshOrderAction)
+    }
+  } finally {
+    retrying.value = false
+  }
 }
 
 onMounted(async () => {
@@ -428,6 +494,7 @@ onMounted(async () => {
 
     return null
   }
+  refreshOrderAction = refreshOrder
 
   if (isPendingStatus(order.value?.status)) {
     scheduleStatusRefresh(refreshOrder)
