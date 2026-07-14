@@ -17,6 +17,9 @@ const messages: Record<string, string> = {
   'keyUsage.placeholder': 'sk-test',
   'keyUsage.query': 'Query',
   'keyUsage.querying': 'Querying...',
+  'keyUsage.queryPanel': 'API Key query',
+  'keyUsage.showKey': 'Show API Key',
+  'keyUsage.hideKey': 'Hide API Key',
   'keyUsage.privacyNote': 'Privacy note',
   'keyUsage.dateRange': 'Date Range:',
   'keyUsage.dateRangeToday': 'Today',
@@ -164,6 +167,26 @@ describe('KeyUsageView daily detail', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
+  })
+
+  it('uses the current surface and control tokens', () => {
+    const wrapper = mount(KeyUsageView, {
+      global: {
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: true,
+          Icon: true,
+        },
+      },
+    })
+
+    expect(wrapper.get('.key-usage-page').classes()).toContain('bg-canvas')
+    expect(wrapper.get('section[aria-label="API Key query"]').classes()).toContain('rounded-panel')
+    expect(wrapper.get('input').classes()).toContain('border-outline')
+    expect(wrapper.get('button.btn-primary').classes()).toContain('h-11')
+    expect(wrapper.get('button[aria-label="Show API Key"]').exists()).toBe(true)
+
+    wrapper.unmount()
   })
 
   it('renders daily usage detail rows after a successful query', async () => {

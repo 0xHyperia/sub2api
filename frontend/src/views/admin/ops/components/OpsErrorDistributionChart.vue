@@ -22,13 +22,16 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 
-const { isDarkMode } = useOpsChartTheme()
+const { chartTheme } = useOpsChartTheme()
 const colors = computed(() => ({
-  blue: '#3b82f6',
-  red: '#ef4444',
-  orange: '#f59e0b',
-  gray: '#9ca3af',
-  text: isDarkMode.value ? '#9ca3af' : '#6b7280'
+  blue: chartTheme.value.info,
+  red: chartTheme.value.danger,
+  orange: chartTheme.value.warning,
+  gray: chartTheme.value.foregroundSubtle,
+  text: chartTheme.value.foregroundSubtle,
+  tooltip: chartTheme.value.surfaceRaised,
+  tooltipTitle: chartTheme.value.foreground,
+  tooltipBody: chartTheme.value.foregroundMuted,
 }))
 
 const totalSlaErrors = computed(() =>
@@ -95,18 +98,21 @@ const chartData = computed(() => {
   }
 })
 
-const options = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: isDarkMode.value ? '#1f2937' : '#ffffff',
-      titleColor: isDarkMode.value ? '#f3f4f6' : '#111827',
-      bodyColor: isDarkMode.value ? '#d1d5db' : '#4b5563'
+const options = computed(() => {
+  const c = colors.value
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: c.tooltip,
+        titleColor: c.tooltipTitle,
+        bodyColor: c.tooltipBody,
+      },
     }
   }
-}))
+})
 </script>
 
 <template>
@@ -141,20 +147,20 @@ const options = computed(() => ({
           <Doughnut :data="chartData" :options="{ ...options, cutout: '65%' }" />
         </div>
         <div class="mt-4 flex flex-col items-center gap-2">
-          <div v-if="topReason" class="text-xs font-bold text-gray-900 dark:text-white">
+          <div v-if="topReason" class="text-xs font-bold text-foreground">
             {{ t('admin.ops.top') }}: <span :style="{ color: topReason.color }">{{ topReason.label }}</span>
           </div>
           <div class="flex flex-wrap justify-center gap-3">
             <div v-for="item in categories" :key="item.label" class="flex items-center gap-1.5 text-xs">
               <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: item.color }"></span>
-              <span class="text-gray-500 dark:text-gray-400">{{ item.count }}</span>
+              <span class="text-foreground-subtle">{{ item.count }}</span>
             </div>
           </div>
         </div>
       </div>
 
       <div v-else class="flex h-full items-center justify-center">
-        <div v-if="state === 'loading'" class="animate-pulse text-sm text-gray-400">{{ t('common.loading') }}</div>
+        <div v-if="state === 'loading'" class="animate-pulse text-sm text-foreground-subtle">{{ t('common.loading') }}</div>
         <EmptyState v-else :title="t('common.noData')" :description="t('admin.ops.charts.emptyError')" />
       </div>
     </div>

@@ -6,7 +6,7 @@
     @close="$emit('close')"
   >
     <!-- provider tabs -->
-    <div class="mb-4 border-b border-gray-200 dark:border-dark-700">
+    <div class="mb-4 border-b border-outline">
       <div
         role="tablist"
         :aria-label="t('admin.channelMonitor.template.managerTitle')"
@@ -25,7 +25,7 @@
           {{ tab.label }}
           <span
             v-if="countByProvider[tab.value] > 0"
-            class="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-dark-700"
+            class="ml-1.5 rounded-full bg-surface-subtle px-2 py-0.5 text-xs"
           >
             {{ countByProvider[tab.value] }}
           </span>
@@ -42,13 +42,13 @@
         </button>
       </div>
 
-      <div v-if="loading" class="py-8 text-center text-sm text-gray-400">
+      <div v-if="loading" class="py-8 text-center text-sm text-foreground-subtle">
         {{ t('common.loading') }}
       </div>
 
       <div
         v-else-if="templatesForActiveProvider.length === 0"
-        class="py-8 text-center text-sm text-gray-400"
+        class="py-8 text-center text-sm text-foreground-subtle"
       >
         {{ t('admin.channelMonitor.template.emptyState') }}
       </div>
@@ -57,36 +57,36 @@
         v-for="tpl in templatesForActiveProvider"
         v-else
         :key="tpl.id"
-        class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800"
+        class="rounded-panel border border-outline p-4 bg-surface"
       >
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="break-words font-medium text-gray-900 dark:text-white">{{ tpl.name }}</span>
+              <span class="break-words font-medium text-foreground">{{ tpl.name }}</span>
               <span
-                class="inline-flex items-center rounded-md px-1.5 py-0.5 text-xs"
+                class="inline-flex items-center rounded-control px-1.5 py-0.5 text-xs"
                 :class="modeBadgeClass(tpl.body_override_mode)"
               >
                 {{ modeLabel(tpl.body_override_mode) }}
               </span>
               <span
                 v-if="tpl.provider === PROVIDER_OPENAI"
-                class="inline-flex items-center rounded-md px-1.5 py-0.5 text-xs"
+                class="inline-flex items-center rounded-control px-1.5 py-0.5 text-xs"
                 :class="apiModeBadgeClass(tpl.api_mode)"
               >
                 {{ apiModeLabel(tpl.api_mode) }}
               </span>
               <span
                 v-if="tpl.associated_monitors > 0"
-                class="text-xs text-gray-500 dark:text-gray-400"
+                class="text-xs text-foreground-subtle"
               >
                 {{ t('admin.channelMonitor.template.associatedCount', { n: tpl.associated_monitors }) }}
               </span>
             </div>
-            <p v-if="tpl.description" class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            <p v-if="tpl.description" class="mt-0.5 text-xs text-foreground-subtle">
               {{ tpl.description }}
             </p>
-            <p class="mt-1 text-xs text-gray-400">
+            <p class="mt-1 text-xs text-foreground-subtle">
               {{ t('admin.channelMonitor.template.headersSummary', {
                 n: Object.keys(tpl.extra_headers || {}).length,
               }) }}
@@ -106,7 +106,7 @@
             <button type="button" class="btn btn-secondary btn-sm w-full sm:w-auto" @click="openEditForm(tpl)">
               {{ t('common.edit') }}
             </button>
-            <button type="button" class="btn btn-secondary btn-sm w-full text-red-600 sm:w-auto" @click="handleDelete(tpl)">
+            <button type="button" class="btn btn-secondary btn-sm w-full text-danger-foreground sm:w-auto" @click="handleDelete(tpl)">
               {{ t('common.delete') }}
             </button>
           </div>
@@ -119,7 +119,7 @@
       <div>
         <label for="monitor-template-name" class="input-label">
           {{ t('admin.channelMonitor.template.form.name') }}
-          <span class="text-red-500">*</span>
+          <span class="text-danger-foreground">*</span>
         </label>
         <input
           v-model="form.name"
@@ -134,7 +134,7 @@
       <div v-if="editing === 'new'">
         <p id="monitor-template-provider-label" class="input-label">
           {{ t('admin.channelMonitor.form.provider') }}
-          <span class="text-red-500">*</span>
+          <span class="text-danger-foreground">*</span>
         </p>
         <div
           role="group"
@@ -146,7 +146,7 @@
             :key="opt.value"
             type="button"
             :aria-pressed="form.provider === opt.value"
-            class="rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors"
+            class="rounded-panel border-2 px-3 py-2 text-sm font-medium transition-colors"
             :class="providerPickerClass(opt.value, form.provider === opt.value)"
             @click="form.provider = opt.value"
           >
@@ -155,7 +155,7 @@
         </div>
       </div>
 
-      <div v-if="form.provider === PROVIDER_OPENAI" class="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-dark-600 dark:bg-dark-700/50">
+      <div v-if="form.provider === PROVIDER_OPENAI" class="rounded-panel border p-3 border-outline-strong bg-surface-subtle/50">
         <p id="monitor-template-api-mode-label" class="input-label">
           {{ t('admin.channelMonitor.form.apiMode') }}
         </p>
@@ -165,7 +165,7 @@
             :key="opt.value"
             type="button"
             :aria-pressed="form.api_mode === opt.value"
-            class="rounded-lg border-2 px-3 py-2 text-left transition-colors"
+            class="rounded-panel border-2 px-3 py-2 text-left transition-colors"
             :class="apiModeButtonClass(opt.value)"
             @click="form.api_mode = opt.value"
           >
@@ -478,18 +478,18 @@ async function doDelete() {
 // --- misc ---
 function tabClass(value: Provider): string {
   return activeProvider.value === value
-    ? 'border-b-2 border-primary-500 text-primary-600 dark:text-primary-400'
-    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+    ? 'border-b-2 border-brand text-brand'
+    : 'border-b-2 border-transparent text-foreground-subtle hover:text-foreground'
 }
 
 function modeBadgeClass(mode: BodyOverrideMode): string {
   switch (mode) {
     case 'merge':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+      return 'bg-warning-subtle text-warning-foreground'
     case 'replace':
-      return 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300'
+      return 'bg-brand-subtle text-brand'
     default:
-      return 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-gray-300'
+      return 'bg-surface-subtle text-foreground-muted'
   }
 }
 
@@ -523,9 +523,9 @@ function normalizeAPIMode(mode: APIMode | undefined | null): APIMode {
 function apiModeButtonClass(mode: APIMode): string {
   const active = form.api_mode === mode
   if (active) {
-    return 'border-primary-500 bg-white text-primary-700 shadow-sm dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-300'
+    return 'shadow-sm border-brand bg-brand-subtle text-brand'
   }
-  return 'border-blue-100 bg-white/70 text-gray-600 hover:border-primary-300 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-400'
+  return 'hover:border-brand border-outline bg-surface text-foreground-subtle'
 }
 
 function apiModeLabel(mode: APIMode): string {
@@ -536,8 +536,8 @@ function apiModeLabel(mode: APIMode): string {
 
 function apiModeBadgeClass(mode: APIMode): string {
   if (normalizeAPIMode(mode) === API_MODE_RESPONSES) {
-    return 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300'
+    return 'bg-info/15 text-info-foreground'
   }
-  return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+  return 'bg-success-subtle text-success-foreground'
 }
 </script>

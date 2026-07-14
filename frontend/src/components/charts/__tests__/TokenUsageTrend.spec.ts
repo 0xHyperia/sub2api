@@ -11,13 +11,27 @@ const messages: Record<string, string> = {
 
 const themeState = vi.hoisted(() => ({
   isDark: null as unknown as { value: boolean },
+  chartTheme: null as unknown as { value: Record<string, string> },
 }))
 
-vi.mock('@/composables/useTheme', async () => {
-  const { ref } = await import('vue')
+vi.mock('@/composables/useChartTheme', async () => {
+  const { computed, ref } = await import('vue')
   themeState.isDark = ref(false)
+  themeState.chartTheme = computed(() => ({
+    foregroundMuted: themeState.isDark.value ? 'rgb(190, 202, 214)' : 'rgb(71, 85, 105)',
+    outline: themeState.isDark.value ? 'rgb(45, 57, 70)' : 'rgb(226, 232, 240)',
+    info: 'rgb(37, 99, 235)',
+    infoAlpha: 'rgba(37, 99, 235, 0.14)',
+    success: 'rgb(5, 150, 105)',
+    successAlpha: 'rgba(5, 150, 105, 0.14)',
+    warning: 'rgb(217, 119, 6)',
+    warningAlpha: 'rgba(217, 119, 6, 0.14)',
+    brand: 'rgb(15, 23, 42)',
+    brandAlpha: 'rgba(15, 23, 42, 0.14)',
+    danger: 'rgb(220, 38, 38)',
+  }))
   return {
-    useTheme: () => ({ isDark: themeState.isDark }),
+    useChartTheme: () => ({ chartTheme: themeState.chartTheme }),
   }
 })
 
@@ -159,12 +173,12 @@ describe('TokenUsageTrend', () => {
     })
 
     const lightOptions = JSON.parse(wrapper.get('.chart-options').text())
-    expect(lightOptions.scales.x.ticks.color).toBe('#374151')
+    expect(lightOptions.scales.x.ticks.color).toBe('rgb(71, 85, 105)')
 
     themeState.isDark.value = true
     await nextTick()
 
     const darkOptions = JSON.parse(wrapper.get('.chart-options').text())
-    expect(darkOptions.scales.x.ticks.color).toBe('#e5e7eb')
+    expect(darkOptions.scales.x.ticks.color).toBe('rgb(190, 202, 214)')
   })
 })

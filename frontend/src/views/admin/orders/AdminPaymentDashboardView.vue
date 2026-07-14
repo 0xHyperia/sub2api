@@ -117,11 +117,11 @@ let loadSequence = 0
 
 function methodColor(type: string): string {
   const c: Record<string, string> = {
-    alipay: 'bg-blue-500', wxpay: 'bg-green-500',
-    alipay_direct: 'bg-blue-400', wxpay_direct: 'bg-green-400',
-    stripe: 'bg-purple-500',
+    alipay: 'bg-info', wxpay: 'bg-success',
+    alipay_direct: 'bg-info', wxpay_direct: 'bg-success',
+    stripe: 'bg-brand',
   }
-  return c[type] || 'bg-gray-400'
+  return c[type] || 'bg-outline-strong'
 }
 
 async function loadDashboard() {

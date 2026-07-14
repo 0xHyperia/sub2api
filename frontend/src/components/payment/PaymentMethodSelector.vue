@@ -139,6 +139,6 @@ function methodSelectedClass(type: string): string {
   if (isBuiltInWxpayMethod(type)) return 'border-[#09BB07] bg-success-subtle text-foreground'
   if (type === 'stripe') return 'border-[#676BE5] bg-surface-subtle text-foreground'
   if (type === 'airwallex') return 'border-[#FF6B3D] bg-warning-subtle text-foreground'
-  return 'border-primary-500 bg-info-subtle text-foreground'
+  return 'border-brand bg-info-subtle text-foreground'
 }
 </script>

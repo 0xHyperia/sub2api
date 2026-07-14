@@ -351,4 +351,13 @@ describe("EmailTemplateEditor", () => {
 
     expect(wrapper.get("iframe").attributes("srcdoc")).toBe(initialPreview);
   });
+
+  it("uses semantic surfaces throughout the editor", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    expect(wrapper.classes()).toContain("rounded-panel");
+    expect(wrapper.classes()).toContain("border-outline");
+    expect(wrapper.html()).not.toMatch(/(?:bg|text|border)-gray-|dark:/);
+  });
 });

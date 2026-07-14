@@ -4,7 +4,7 @@
       <template #filters>
         <div class="commerce-toolbar flex flex-wrap items-center gap-3">
           <div class="relative w-full md:w-72">
-            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
             <input
               v-model="searchQuery"
               type="search"
@@ -77,7 +77,7 @@
             <input
               data-test="select-all-codes"
               type="checkbox"
-              class="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="h-4 w-4 cursor-pointer rounded border-outline-strong text-brand focus:ring-focus"
               :checked="allVisibleSelected"
               :aria-label="t('common.selectAll')"
               @click.stop
@@ -89,7 +89,7 @@
             <input
               data-test="select-code"
               type="checkbox"
-              class="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="h-4 w-4 cursor-pointer rounded border-outline-strong text-brand focus:ring-focus"
               :checked="selectedCodeIds.has(row.id)"
               :aria-label="row.code"
               @click.stop
@@ -99,15 +99,15 @@
 
           <template #cell-code="{ value }">
             <div class="flex items-center space-x-2">
-              <code class="font-mono text-sm text-gray-900 dark:text-gray-100">{{ value }}</code>
+              <code class="font-mono text-sm text-foreground">{{ value }}</code>
               <button
                 type="button"
                 @click="copyToClipboard(value)"
                 :class="[
                   'redeem-copy',
                   copiedCode === value
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-gray-400'
+                    ? 'text-success-foreground'
+                    : 'text-foreground-subtle'
                 ]"
                 :title="copiedCode === value ? t('admin.redeem.copied') : t('keys.copyToClipboard')"
                 :aria-label="copiedCode === value ? t('admin.redeem.copied') : t('keys.copyToClipboard')"
@@ -134,11 +134,11 @@
           </template>
 
           <template #cell-value="{ value, row }">
-            <span class="text-sm font-medium text-gray-900 dark:text-white">
+            <span class="text-sm font-medium text-foreground">
               <template v-if="row.type === 'balance'">${{ value.toFixed(2) }}</template>
               <template v-else-if="row.type === 'subscription'">
                 {{ row.validity_days || 30 }} {{ t('admin.redeem.days') }}
-                <span v-if="row.group" class="ml-1 text-xs text-gray-500 dark:text-gray-400"
+                <span v-if="row.group" class="ml-1 text-xs text-foreground-subtle"
                   >({{ row.group.name }})</span
                 >
               </template>
@@ -162,13 +162,13 @@
           </template>
 
           <template #cell-used_by="{ value, row }">
-            <span class="text-sm text-gray-500 dark:text-dark-400">
+            <span class="text-sm text-foreground-muted">
               {{ row.user?.email || (value ? t('admin.redeem.userPrefix', { id: value }) : '-') }}
             </span>
           </template>
 
           <template #cell-used_at="{ value }">
-            <span class="text-sm text-gray-500 dark:text-dark-400">{{
+            <span class="text-sm text-foreground-muted">{{
               value ? formatDateTime(value) : '-'
             }}</span>
           </template>
@@ -178,8 +178,8 @@
               :class="[
                 'text-sm',
                 row.status === 'expired'
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-500 dark:text-dark-400'
+                  ? 'text-danger-foreground'
+                  : 'text-foreground-muted'
               ]"
             >
               {{ value ? formatDateTime(value) : t('admin.redeem.neverExpires') }}
@@ -198,7 +198,7 @@
               >
                 <Icon name="trash" size="sm" />
               </button>
-              <span v-else class="text-gray-400 dark:text-dark-500">-</span>
+              <span v-else class="text-foreground-subtle">-</span>
             </div>
           </template>
         </DataTable>
@@ -209,13 +209,13 @@
           v-if="selectedCount > 0"
           class="selection-bar mb-4 flex flex-wrap items-center justify-between gap-3"
         >
-          <span class="text-sm font-medium text-gray-900 dark:text-white">
+          <span class="text-sm font-medium text-foreground">
             {{ t('admin.redeem.selectedCount', { count: selectedCount }) }}
           </span>
           <div class="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              class="text-xs font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              class="text-xs font-medium text-foreground-muted hover:text-foreground"
               @click="clearSelectedCodes"
             >
               {{ t('admin.redeem.clearSelection') }}
@@ -304,7 +304,7 @@
             </div>
             <!-- 邀请码类型：显示提示信息 -->
             <div v-if="generateForm.type === 'invitation'" class="form-note">
-              <p class="text-sm text-gray-600 dark:text-gray-300">
+              <p class="text-sm text-foreground-muted">
                 {{ t('admin.redeem.invitationHint') }}
               </p>
             </div>
@@ -325,7 +325,7 @@
                       :subscription-type="(option as unknown as GroupOption).subscriptionType"
                       :rate-multiplier="(option as unknown as GroupOption).rate"
                     />
-                    <span v-else class="text-gray-400">{{
+                    <span v-else class="text-foreground-subtle">{{
                       t('admin.redeem.selectGroupPlaceholder')
                     }}</span>
                   </template>
@@ -411,18 +411,18 @@
       width="normal"
       @close="closeBatchUpdateDialog"
     >
-          <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mb-4 text-sm text-foreground-subtle">
             {{ t('admin.redeem.selectedCount', { count: selectedCount }) }}
           </p>
 
           <form id="batch-update-form" data-test="batch-update-form" class="space-y-4" @submit.prevent="handleBatchUpdate">
             <div class="space-y-2">
-              <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label class="flex items-center gap-2 text-sm font-medium text-foreground-muted">
                 <input
                   data-test="batch-field-status"
                   v-model="batchUpdateForm.update_status"
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus"
                 />
                 {{ t('admin.redeem.batchFields.status') }}
               </label>
@@ -435,11 +435,11 @@
             </div>
 
             <div class="space-y-2">
-              <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label class="flex items-center gap-2 text-sm font-medium text-foreground-muted">
                 <input
                   v-model="batchUpdateForm.update_expires_at"
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus"
                 />
                 {{ t('admin.redeem.batchFields.expiresAt') }}
               </label>
@@ -456,12 +456,12 @@
             </div>
 
             <div class="space-y-2">
-              <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label class="flex items-center gap-2 text-sm font-medium text-foreground-muted">
                 <input
                   data-test="batch-field-notes"
                   v-model="batchUpdateForm.update_notes"
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus"
                 />
                 {{ t('admin.redeem.batchFields.notes') }}
               </label>
@@ -477,11 +477,11 @@
             </div>
 
             <div class="space-y-2">
-              <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label class="flex items-center gap-2 text-sm font-medium text-foreground-muted">
                 <input
                   v-model="batchUpdateForm.update_group_id"
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus"
                 />
                 {{ t('admin.redeem.batchFields.group') }}
               </label>
@@ -518,7 +518,7 @@
       width="normal"
       @close="closeResultDialog"
     >
-          <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mb-3 text-sm text-foreground-subtle">
             {{ t('admin.redeem.codesCreated', { count: generatedCodes.length }) }}
           </p>
             <div class="relative">

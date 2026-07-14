@@ -1,29 +1,29 @@
 <template>
   <div v-if="!isDesktopViewport" class="min-w-0 max-w-full space-y-2">
     <template v-if="loading">
-      <div v-for="i in 5" :key="i" class="rounded-lg border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-900">
+      <div v-for="i in 5" :key="i" class="rounded-panel border border-outline p-3 bg-canvas">
         <div class="space-y-2">
           <div v-for="column in dataColumns" :key="column.key" class="flex justify-between">
-            <div class="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
-            <div class="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+            <div class="h-4 w-20 animate-pulse rounded bg-outline bg-surface-subtle"></div>
+            <div class="h-4 w-32 animate-pulse rounded bg-outline bg-surface-subtle"></div>
           </div>
-          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-2 dark:border-dark-700">
-            <div class="h-8 w-full animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+          <div v-if="hasActionsColumn" class="border-t border-outline pt-2">
+            <div class="h-8 w-full animate-pulse rounded bg-outline bg-surface-subtle"></div>
           </div>
         </div>
       </div>
     </template>
 
     <template v-else-if="!data || data.length === 0">
-      <div class="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-dark-700 dark:bg-dark-900">
+      <div class="rounded-panel border border-outline p-8 text-center bg-canvas">
         <slot name="empty">
           <div class="flex flex-col items-center">
             <Icon
               name="inbox"
               size="xl"
-              class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500"
+              class="mb-4 h-12 w-12 text-foreground-subtle"
             />
-            <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-lg font-medium text-foreground">
               {{ t('empty.noData') }}
             </p>
           </div>
@@ -35,7 +35,7 @@
       <div
         v-for="(row, index) in sortedData"
         :key="resolveRowKey(row, index)"
-        class="mobile-row-card relative min-w-0 rounded-lg border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-900"
+        class="mobile-row-card relative min-w-0 rounded-panel border border-outline p-3 bg-canvas"
         :class="{
           'cursor-pointer': clickableRows
         }"
@@ -44,7 +44,7 @@
         <button
           v-if="clickableRows"
           type="button"
-          class="mobile-row-trigger pointer-events-none absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          class="mobile-row-trigger pointer-events-none absolute inset-0 rounded-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           :aria-label="getRowAccessibleLabel(row, index)"
           @click.stop="handleRowActivation(row)"
         ></button>
@@ -54,16 +54,16 @@
             :key="column.key"
             class="flex min-w-0 items-start justify-between gap-3"
           >
-            <span class="max-w-[42%] flex-shrink-0 text-xs font-medium text-gray-500 dark:text-dark-400">
+            <span class="max-w-[42%] flex-shrink-0 text-xs font-medium text-foreground-muted">
               {{ column.label }}
             </span>
-            <div class="min-w-0 max-w-[58%] break-words text-right text-sm text-gray-900 dark:text-gray-100">
+            <div class="min-w-0 max-w-[58%] break-words text-right text-sm text-foreground">
               <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :expanded="actionsExpanded">
                 {{ column.formatter ? column.formatter(row[column.key], row) : row[column.key] }}
               </slot>
             </div>
           </div>
-          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-2 dark:border-dark-700">
+          <div v-if="hasActionsColumn" class="border-t border-outline pt-2">
             <slot name="cell-actions" :row="row" :value="row['actions']" :expanded="actionsExpanded"></slot>
           </div>
         </div>
@@ -80,8 +80,8 @@
       'is-scrollable': isScrollable
     }"
   >
-    <table class="w-full min-w-max divide-y divide-gray-200 dark:divide-dark-700">
-      <thead class="table-header bg-gray-50 dark:bg-dark-800">
+    <table class="w-full min-w-max divide-y divide-outline">
+      <thead class="table-header bg-surface">
         <tr>
           <th
             v-for="(column, index) in columns"
@@ -140,12 +140,12 @@
           </th>
         </tr>
       </thead>
-      <tbody class="table-body divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
+      <tbody class="table-body divide-y divide-outline bg-canvas">
         <!-- Loading skeleton -->
         <tr v-if="loading" v-for="i in 5" :key="i">
           <td v-for="column in columns" :key="column.key" :class="['whitespace-nowrap py-4', getAdaptivePaddingClass()]">
             <div class="animate-pulse">
-              <div class="h-4 w-3/4 rounded bg-gray-200 dark:bg-dark-700"></div>
+              <div class="h-4 w-3/4 rounded bg-outline bg-surface-subtle"></div>
             </div>
           </td>
         </tr>
@@ -154,16 +154,16 @@
         <tr v-else-if="!data || data.length === 0">
           <td
             :colspan="columns.length"
-            :class="['py-12 text-center text-gray-500 dark:text-dark-400', getAdaptivePaddingClass()]"
+            :class="['py-12 text-center text-foreground-muted', getAdaptivePaddingClass()]"
           >
             <slot name="empty">
               <div class="flex flex-col items-center">
                 <Icon
                   name="inbox"
                   size="xl"
-                  class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500"
+                  class="mb-4 h-12 w-12 text-foreground-subtle"
                 />
-                <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                <p class="text-lg font-medium text-foreground">
                   {{ t('empty.noData') }}
                 </p>
               </div>
@@ -184,7 +184,7 @@
             :data-row-id="resolveRowKey(item.row, item.index)"
             :data-index="item.index"
             :ref="item.measure ? measureElement : undefined"
-            class="hover:bg-gray-50 dark:hover:bg-dark-800"
+            class="hover:bg-surface-subtle"
             :class="{
               'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus': clickableRows
             }"
@@ -197,7 +197,7 @@
               v-for="(column, colIndex) in columns"
               :key="column.key"
               :class="[
-                'whitespace-nowrap py-4 text-sm text-gray-900 dark:text-gray-100',
+                'whitespace-nowrap py-4 text-sm text-foreground',
                 getAdaptivePaddingClass(),
                 getStickyColumnClass(column, colIndex),
                 column.class

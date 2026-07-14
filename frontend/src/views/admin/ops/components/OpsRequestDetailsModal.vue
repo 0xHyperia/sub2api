@@ -143,8 +143,8 @@ function openErrorDetail(errorId: number | null | undefined) {
 }
 
 const kindBadgeClass = (kind: string) => {
-  if (kind === 'error') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-  return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+  if (kind === 'error') return 'bg-danger-subtle text-danger-foreground'
+  return 'bg-success-subtle text-success-foreground'
 }
 </script>
 
@@ -153,7 +153,7 @@ const kindBadgeClass = (kind: string) => {
     <template #default>
       <div class="flex h-full min-h-0 flex-col">
         <div class="mb-4 flex flex-shrink-0 items-center justify-between">
-          <div class="text-xs text-gray-500 dark:text-gray-400">
+          <div class="text-xs text-foreground-subtle">
             {{ t('admin.ops.requestDetails.rangeLabel', { range: rangeLabel }) }}
           </div>
           <button
@@ -168,7 +168,7 @@ const kindBadgeClass = (kind: string) => {
         <!-- Loading -->
         <div v-if="loading" class="flex flex-1 items-center justify-center py-16">
           <div class="flex flex-col items-center gap-3">
-            <svg class="h-8 w-8 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+            <svg class="h-8 w-8 animate-spin text-info-foreground" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path
                 class="opacity-75"
@@ -176,51 +176,51 @@ const kindBadgeClass = (kind: string) => {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</span>
+            <span class="text-sm font-medium text-foreground-subtle">{{ t('common.loading') }}</span>
           </div>
         </div>
 
         <!-- Table -->
         <div v-else class="flex min-h-0 flex-1 flex-col">
           <div v-if="items.length === 0" class="rounded-panel border border-dashed border-outline p-8 text-center">
-            <div class="text-sm font-medium text-gray-600 dark:text-gray-300">{{ t('admin.ops.requestDetails.empty') }}</div>
-            <div class="mt-1 text-xs text-gray-400">{{ t('admin.ops.requestDetails.emptyHint') }}</div>
+            <div class="text-sm font-medium text-foreground-muted">{{ t('admin.ops.requestDetails.empty') }}</div>
+            <div class="mt-1 text-xs text-foreground-subtle">{{ t('admin.ops.requestDetails.emptyHint') }}</div>
           </div>
 
           <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-panel border border-outline">
             <div class="min-h-0 flex-1 overflow-auto">
               <table class="min-w-[960px] divide-y divide-outline">
-                <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-dark-900">
+                <thead class="sticky top-0 z-10 bg-canvas">
                 <tr>
-                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                     {{ t('admin.ops.requestDetails.table.time') }}
                   </th>
-                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                     {{ t('admin.ops.requestDetails.table.kind') }}
                   </th>
-                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                     {{ t('admin.ops.requestDetails.table.platform') }}
                   </th>
-                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                     {{ t('admin.ops.requestDetails.table.model') }}
                   </th>
-                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                     {{ t('admin.ops.requestDetails.table.duration') }}
                   </th>
-                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                     {{ t('admin.ops.requestDetails.table.status') }}
                   </th>
-                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                     {{ t('admin.ops.requestDetails.table.requestId') }}
                   </th>
-                  <th class="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th class="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                     {{ t('admin.ops.requestDetails.table.actions') }}
                   </th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-800">
-                <tr v-for="(row, idx) in items" :key="idx" class="hover:bg-gray-50 dark:hover:bg-dark-700/50">
-                  <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+              <tbody class="divide-y divide-outline bg-surface">
+                <tr v-for="(row, idx) in items" :key="idx" class="hover:bg-surface-subtle/50">
+                  <td class="whitespace-nowrap px-4 py-3 text-xs text-foreground-muted">
                     {{ formatDateTime(row.created_at) }}
                   </td>
                   <td class="whitespace-nowrap px-4 py-3">
@@ -228,21 +228,21 @@ const kindBadgeClass = (kind: string) => {
                       {{ row.kind === 'error' ? t('admin.ops.requestDetails.kind.error') : t('admin.ops.requestDetails.kind.success') }}
                     </span>
                   </td>
-                  <td class="whitespace-nowrap px-4 py-3 text-xs font-medium text-gray-700 dark:text-gray-200">
+                  <td class="whitespace-nowrap px-4 py-3 text-xs font-medium text-foreground-muted">
                     {{ (row.platform || 'unknown').toUpperCase() }}
                   </td>
-                  <td class="max-w-[240px] truncate px-4 py-3 text-xs text-gray-600 dark:text-gray-300" :title="row.model || ''">
+                  <td class="max-w-[240px] truncate px-4 py-3 text-xs text-foreground-muted" :title="row.model || ''">
                     {{ row.model || '-' }}
                   </td>
-                  <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+                  <td class="whitespace-nowrap px-4 py-3 text-xs text-foreground-muted">
                     {{ typeof row.duration_ms === 'number' ? `${row.duration_ms} ms` : '-' }}
                   </td>
-                  <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+                  <td class="whitespace-nowrap px-4 py-3 text-xs text-foreground-muted">
                     {{ row.status_code ?? '-' }}
                   </td>
                   <td class="px-4 py-3">
                     <div v-if="row.request_id" class="flex items-center gap-2">
-                      <span class="max-w-[220px] truncate font-mono text-[11px] text-gray-700 dark:text-gray-200" :title="row.request_id">
+                      <span class="max-w-[220px] truncate font-mono text-[11px] text-foreground-muted" :title="row.request_id">
                         {{ row.request_id }}
                       </span>
                       <button
@@ -253,7 +253,7 @@ const kindBadgeClass = (kind: string) => {
                         {{ t('admin.ops.requestDetails.copy') }}
                       </button>
                     </div>
-                    <span v-else class="text-xs text-gray-400">-</span>
+                    <span v-else class="text-xs text-foreground-subtle">-</span>
                   </td>
                   <td class="whitespace-nowrap px-4 py-3 text-right">
                     <button
@@ -264,7 +264,7 @@ const kindBadgeClass = (kind: string) => {
                     >
                       {{ t('admin.ops.requestDetails.viewError') }}
                     </button>
-                    <span v-else class="text-xs text-gray-400">-</span>
+                    <span v-else class="text-xs text-foreground-subtle">-</span>
                   </td>
                 </tr>
               </tbody>

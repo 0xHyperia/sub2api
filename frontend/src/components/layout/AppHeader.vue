@@ -16,13 +16,13 @@
         <div class="min-w-0">
           <div class="flex min-w-0 items-center gap-2">
             <span v-if="authStore.isAdmin && isAdminContext" class="admin-mode-badge">Admin</span>
-            <h1 class="truncate text-base font-semibold text-gray-950 dark:text-white lg:text-lg">
+            <h1 class="truncate text-base font-semibold text-foreground lg:text-lg">
               {{ pageTitle }}
             </h1>
           </div>
           <p
             v-if="pageDescription"
-            class="hidden truncate text-xs text-gray-500 dark:text-dark-400 md:block"
+            class="hidden truncate text-xs text-foreground-muted md:block"
           >
             {{ pageDescription }}
           </p>
@@ -62,16 +62,16 @@
 
         <div
           v-if="user && !authStore.isAdmin"
-          class="hidden items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm dark:border-dark-700 dark:bg-dark-900 lg:flex"
+          class="hidden items-center gap-1.5 rounded-control border border-outline px-2.5 py-1.5 text-sm bg-canvas lg:flex"
           :title="`${balanceAvailableText}: ${formatHeaderMoney(availableBalance)}`"
         >
-          <Icon name="dollar" size="sm" class="text-gray-400" />
-          <span class="font-semibold tabular-nums text-gray-800 dark:text-gray-200">
+          <Icon name="dollar" size="sm" class="text-foreground-subtle" />
+          <span class="font-semibold tabular-nums text-foreground-muted">
             {{ formatHeaderMoney(availableBalance) }}
           </span>
           <span
             v-if="frozenBalance > 0"
-            class="rounded bg-amber-50 px-1 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+            class="rounded bg-warning-subtle px-1 py-0.5 text-[10px] font-semibold text-warning-foreground"
           >
             {{ balanceFrozenText }}
           </span>
@@ -100,14 +100,14 @@
               <span v-else>{{ userInitials }}</span>
             </div>
             <div class="hidden min-w-0 text-left xl:block">
-              <div class="max-w-28 truncate text-sm font-medium text-gray-900 dark:text-white">
+              <div class="max-w-28 truncate text-sm font-medium text-foreground">
                 {{ displayName }}
               </div>
-              <div class="text-[11px] capitalize text-gray-500 dark:text-dark-400">
+              <div class="text-[11px] capitalize text-foreground-muted">
                 {{ user.role }}
               </div>
             </div>
-            <Icon name="chevronDown" size="xs" class="hidden text-gray-400 xl:block" />
+            <Icon name="chevronDown" size="xs" class="hidden text-foreground-subtle xl:block" />
           </button>
 
           <Transition name="dropdown">
@@ -120,13 +120,13 @@
               class="user-dropdown"
               @keydown="handleMenuKeydown"
             >
-              <div role="presentation" class="border-b border-gray-100 px-3.5 py-3 dark:border-dark-700">
+              <div role="presentation" class="border-b border-outline px-3.5 py-3">
                 <div class="flex items-center gap-2">
                   <div class="min-w-0 flex-1">
-                    <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                    <div class="truncate text-sm font-semibold text-foreground">
                       {{ displayName }}
                     </div>
-                    <div class="truncate text-xs text-gray-500 dark:text-dark-400">{{ user.email }}</div>
+                    <div class="truncate text-xs text-foreground-muted">{{ user.email }}</div>
                   </div>
                   <span v-if="authStore.isAdmin" class="admin-role-badge">Admin</span>
                 </div>
@@ -135,10 +135,10 @@
               <div
                 v-if="!authStore.isAdmin"
                 role="presentation"
-                class="border-b border-gray-100 px-3.5 py-2 dark:border-dark-700 lg:hidden"
+                class="border-b border-outline px-3.5 py-2 lg:hidden"
               >
-                <div class="text-[11px] text-gray-500 dark:text-dark-400">{{ balanceAvailableText }}</div>
-                <div class="text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                <div class="text-[11px] text-foreground-muted">{{ balanceAvailableText }}</div>
+                <div class="text-sm font-semibold tabular-nums text-foreground">
                   {{ formatHeaderMoney(availableBalance) }}
                 </div>
               </div>
@@ -196,13 +196,13 @@
               <div
                 v-if="contactInfo"
                 role="presentation"
-                class="border-t border-gray-100 px-3.5 py-2.5 text-xs text-gray-500 dark:border-dark-700 dark:text-dark-400"
+                class="border-t border-outline px-3.5 py-2.5 text-xs text-foreground-muted"
               >
                 <span>{{ t('common.contactSupport') }}:</span>
-                <span class="ml-1 break-all font-medium text-gray-700 dark:text-gray-300">{{ contactInfo }}</span>
+                <span class="ml-1 break-all font-medium text-foreground-muted">{{ contactInfo }}</span>
               </div>
 
-              <div v-if="showOnboardingButton" role="group" class="border-t border-gray-100 py-1 dark:border-dark-700">
+              <div v-if="showOnboardingButton" role="group" class="border-t border-outline py-1">
                 <button
                   type="button"
                   role="menuitem"
@@ -215,12 +215,12 @@
                 </button>
               </div>
 
-              <div role="group" class="border-t border-gray-100 py-1 dark:border-dark-700">
+              <div role="group" class="border-t border-outline py-1">
                 <button
                   type="button"
                   role="menuitem"
                   tabindex="-1"
-                  class="user-dropdown-item w-full text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                  class="user-dropdown-item w-full text-danger-foreground hover:bg-danger-subtle"
                   @click="handleLogout"
                 >
                   <Icon name="login" size="sm" class="rotate-180" />
@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
 }
 
 .header-action {
-  @apply h-10 w-10 flex-shrink-0 items-center justify-center rounded-md text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply h-10 w-10 flex-shrink-0 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .admin-mode-badge,
@@ -410,11 +410,11 @@ onBeforeUnmount(() => {
 }
 
 .user-menu-trigger {
-  @apply flex min-h-10 items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply flex min-h-10 items-center gap-2 rounded-control px-1.5 py-1 transition-colors hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .user-avatar {
-  @apply flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-foreground text-xs font-semibold text-surface;
+  @apply flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-control bg-foreground text-xs font-semibold text-surface;
 }
 
 .user-dropdown {

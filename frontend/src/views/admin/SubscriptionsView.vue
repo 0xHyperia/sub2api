@@ -11,7 +11,7 @@
               <Icon
                 name="search"
                 size="md"
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
               />
               <input
                 v-model="filterUserKeyword"
@@ -33,7 +33,7 @@
                 v-if="selectedFilterUser"
                 @click="clearFilterUser"
                 type="button"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-foreground-subtle hover:text-foreground-muted"
                 :title="t('common.clear')"
                 :aria-label="t('common.clear')"
               >
@@ -49,13 +49,13 @@
               >
                 <div
                   v-if="filterUserLoading"
-                  class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
+                  class="px-4 py-3 text-sm text-foreground-subtle"
                 >
                   {{ t('common.loading') }}
                 </div>
                 <div
                   v-else-if="filterUserResults.length === 0 && filterUserKeyword"
-                  class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
+                  class="px-4 py-3 text-sm text-foreground-subtle"
                 >
                   {{ t('common.noOptionsFound') }}
                 </div>
@@ -71,8 +71,8 @@
                   role="option"
                   :aria-selected="filterUserResults[filterUserActiveIndex]?.id === user.id"
                 >
-                  <span class="font-medium text-gray-900 dark:text-white">{{ user.email }}</span>
-                  <span class="ml-2 text-gray-500 dark:text-gray-400">#{{ user.id }}</span>
+                  <span class="font-medium text-foreground">{{ user.email }}</span>
+                  <span class="ml-2 text-foreground-subtle">#{{ user.id }}</span>
                 </button>
               </div>
             </div>
@@ -147,29 +147,29 @@
               >
                 <div class="p-2">
                   <!-- User column mode selection -->
-                  <div class="mb-2 border-b border-gray-200 pb-2 dark:border-gray-700">
-                    <div class="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <div class="mb-2 border-b border-outline pb-2">
+                    <div class="px-3 py-1 text-xs font-medium text-foreground-subtle">
                       {{ t('admin.subscriptions.columns.user') }}
                     </div>
                     <button
                       type="button"
                       @click="setUserColumnMode('email')"
-                      class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                      class="flex w-full items-center justify-between px-3 py-2 text-sm text-foreground-muted"
                       role="menuitemradio"
                       :aria-checked="userColumnMode === 'email'"
                     >
                       <span>{{ t('admin.users.columns.email') }}</span>
-                      <Icon v-if="userColumnMode === 'email'" name="check" size="sm" class="text-primary-500" />
+                      <Icon v-if="userColumnMode === 'email'" name="check" size="sm" class="text-brand" />
                     </button>
                     <button
                       type="button"
                       @click="setUserColumnMode('username')"
-                      class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                      class="flex w-full items-center justify-between px-3 py-2 text-sm text-foreground-muted"
                       role="menuitemradio"
                       :aria-checked="userColumnMode === 'username'"
                     >
                       <span>{{ t('admin.users.columns.username') }}</span>
-                      <Icon v-if="userColumnMode === 'username'" name="check" size="sm" class="text-primary-500" />
+                      <Icon v-if="userColumnMode === 'username'" name="check" size="sm" class="text-brand" />
                     </button>
                   </div>
                   <!-- Other columns toggle -->
@@ -178,12 +178,12 @@
                     :key="col.key"
                     type="button"
                     @click="toggleColumn(col.key)"
-                    class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                    class="flex w-full items-center justify-between px-3 py-2 text-sm text-foreground-muted"
                     role="menuitemcheckbox"
                     :aria-checked="isColumnVisible(col.key)"
                   >
                     <span>{{ col.label }}</span>
-                    <Icon v-if="isColumnVisible(col.key)" name="check" size="sm" class="text-primary-500" />
+                    <Icon v-if="isColumnVisible(col.key)" name="check" size="sm" class="text-brand" />
                   </button>
                 </div>
               </div>
@@ -226,7 +226,7 @@
                   }}
                 </span>
               </div>
-              <span class="font-medium text-gray-900 dark:text-white">
+              <span class="font-medium text-foreground">
                 {{ userColumnMode === 'email'
                   ? (row.user?.email || t('admin.redeem.userPrefix', { id: row.user_id }))
                   : (row.user?.username || '-')
@@ -244,7 +244,7 @@
               :rate-multiplier="row.group.rate_multiplier"
               :show-rate="false"
             />
-            <span v-else class="text-sm text-gray-400 dark:text-dark-500">-</span>
+            <span v-else class="text-sm text-foreground-subtle">-</span>
           </template>
 
           <template #cell-usage="{ row }">
@@ -253,7 +253,7 @@
               <div v-if="row.group?.daily_limit_usd" class="usage-row">
                 <div class="flex items-center gap-2">
                   <span class="usage-label">{{ t('admin.subscriptions.daily') }}</span>
-                  <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
+                  <div class="h-1.5 flex-1 rounded-full bg-outline">
                     <div
                       class="h-1.5 rounded-full transition-all"
                       :class="getProgressClass(row.daily_usage_usd, row.group?.daily_limit_usd)"
@@ -264,7 +264,7 @@
                   </div>
                   <span class="usage-amount">
                     ${{ row.daily_usage_usd?.toFixed(2) || '0.00' }}
-                    <span class="text-gray-400">/</span>
+                    <span class="text-foreground-subtle">/</span>
                     ${{ row.group?.daily_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
@@ -290,7 +290,7 @@
               <div v-if="row.group?.weekly_limit_usd" class="usage-row">
                 <div class="flex items-center gap-2">
                   <span class="usage-label">{{ t('admin.subscriptions.weekly') }}</span>
-                  <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
+                  <div class="h-1.5 flex-1 rounded-full bg-outline">
                     <div
                       class="h-1.5 rounded-full transition-all"
                       :class="getProgressClass(row.weekly_usage_usd, row.group?.weekly_limit_usd)"
@@ -301,7 +301,7 @@
                   </div>
                   <span class="usage-amount">
                     ${{ row.weekly_usage_usd?.toFixed(2) || '0.00' }}
-                    <span class="text-gray-400">/</span>
+                    <span class="text-foreground-subtle">/</span>
                     ${{ row.group?.weekly_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
@@ -327,7 +327,7 @@
               <div v-if="row.group?.monthly_limit_usd" class="usage-row">
                 <div class="flex items-center gap-2">
                   <span class="usage-label">{{ t('admin.subscriptions.monthly') }}</span>
-                  <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
+                  <div class="h-1.5 flex-1 rounded-full bg-outline">
                     <div
                       class="h-1.5 rounded-full transition-all"
                       :class="getProgressClass(row.monthly_usage_usd, row.group?.monthly_limit_usd)"
@@ -338,7 +338,7 @@
                   </div>
                   <span class="usage-amount">
                     ${{ row.monthly_usage_usd?.toFixed(2) || '0.00' }}
-                    <span class="text-gray-400">/</span>
+                    <span class="text-foreground-subtle">/</span>
                     ${{ row.group?.monthly_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
@@ -369,8 +369,8 @@
                 "
                 class="unlimited-state"
               >
-                <span class="text-lg text-gray-500 dark:text-gray-400">∞</span>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
+                <span class="text-lg text-foreground-subtle">∞</span>
+                <span class="text-xs font-medium text-foreground-muted">
                   {{ t('admin.subscriptions.unlimited') }}
                 </span>
               </div>
@@ -383,17 +383,17 @@
                 class="text-sm"
                 :class="
                   isExpiringSoon(value)
-                    ? 'text-orange-600 dark:text-orange-400'
-                    : 'text-gray-700 dark:text-gray-300'
+                    ? 'text-warning-foreground'
+                    : 'text-foreground-muted'
                 "
               >
                 {{ formatDateOnly(value) }}
               </span>
-              <div v-if="getDaysRemaining(value) !== null" class="text-xs text-gray-500">
+              <div v-if="getDaysRemaining(value) !== null" class="text-xs text-foreground-subtle">
                 {{ getDaysRemaining(value) }} {{ t('admin.subscriptions.daysRemaining') }}
               </div>
             </div>
-            <span v-else class="text-sm text-gray-500">{{
+            <span v-else class="text-sm text-foreground-subtle">{{
               t('admin.subscriptions.noExpiration')
             }}</span>
           </template>
@@ -518,7 +518,7 @@
               v-if="selectedUser"
               @click="clearUserSelection"
               type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-foreground-subtle hover:text-foreground-muted"
               :aria-label="t('common.clear')"
             >
               <Icon name="x" size="sm" :stroke-width="2" />
@@ -532,13 +532,13 @@
             >
               <div
                 v-if="userSearchLoading"
-                class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
+                class="px-4 py-3 text-sm text-foreground-subtle"
               >
                 {{ t('common.loading') }}
               </div>
               <div
                 v-else-if="userSearchResults.length === 0 && userSearchKeyword"
-                class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
+                class="px-4 py-3 text-sm text-foreground-subtle"
               >
                 {{ t('common.noOptionsFound') }}
               </div>
@@ -554,8 +554,8 @@
                 role="option"
                 :aria-selected="userSearchResults[userSearchActiveIndex]?.id === user.id"
               >
-                <span class="font-medium text-gray-900 dark:text-white">{{ user.email }}</span>
-                <span class="ml-2 text-gray-500 dark:text-gray-400">#{{ user.id }}</span>
+                <span class="font-medium text-foreground">{{ user.email }}</span>
+                <span class="ml-2 text-foreground-subtle">#{{ user.id }}</span>
               </button>
             </div>
           </div>
@@ -575,7 +575,7 @@
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
                 :rate-multiplier="(option as unknown as GroupOption).rate"
               />
-              <span v-else class="text-gray-400">{{ t('admin.subscriptions.selectGroup') }}</span>
+              <span v-else class="text-foreground-subtle">{{ t('admin.subscriptions.selectGroup') }}</span>
             </template>
             <template #option="{ option, selected }">
               <GroupOptionItem
@@ -647,15 +647,15 @@
         class="space-y-5"
       >
         <div class="subscription-context">
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-sm text-foreground-subtle">
             {{ t('admin.subscriptions.adjustingFor') }}
-            <span class="font-medium text-gray-900 dark:text-white">{{
+            <span class="font-medium text-foreground">{{
               extendingSubscription.user?.email
             }}</span>
           </p>
-          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          <p class="mt-1 text-sm text-foreground-subtle">
             {{ t('admin.subscriptions.currentExpiration') }}:
-            <span class="font-medium text-gray-900 dark:text-white">
+            <span class="font-medium text-foreground">
               {{
                 extendingSubscription.expires_at
                   ? formatDateOnly(extendingSubscription.expires_at)
@@ -663,9 +663,9 @@
               }}
             </span>
           </p>
-          <p v-if="extendingSubscription.expires_at" class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          <p v-if="extendingSubscription.expires_at" class="mt-1 text-sm text-foreground-subtle">
             {{ t('admin.subscriptions.remainingDays') }}:
-            <span class="font-medium text-gray-900 dark:text-white">
+            <span class="font-medium text-foreground">
               {{ getDaysRemaining(extendingSubscription.expires_at) ?? 0 }}
             </span>
           </p>
@@ -741,15 +741,15 @@
       width="wide"
       @close="showGuideModal = false"
     >
-            <p class="mb-5 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.subscriptions.guide.subtitle') }}</p>
+            <p class="mb-5 text-sm text-foreground-subtle">{{ t('admin.subscriptions.guide.subtitle') }}</p>
 
             <!-- Step 1 -->
             <div class="mb-5">
-              <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+              <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <span class="guide-step-number">1</span>
                 {{ t('admin.subscriptions.guide.step1.title') }}
               </h3>
-              <ol class="ml-5 list-decimal space-y-1 text-sm text-gray-600 dark:text-gray-300 sm:ml-8">
+              <ol class="ml-5 list-decimal space-y-1 text-sm text-foreground-muted sm:ml-8">
                 <li>{{ t('admin.subscriptions.guide.step1.line1') }}</li>
                 <li>{{ t('admin.subscriptions.guide.step1.line2') }}</li>
                 <li>{{ t('admin.subscriptions.guide.step1.line3') }}</li>
@@ -768,11 +768,11 @@
 
             <!-- Step 2 -->
             <div class="mb-5">
-              <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+              <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <span class="guide-step-number">2</span>
                 {{ t('admin.subscriptions.guide.step2.title') }}
               </h3>
-              <ol class="ml-5 list-decimal space-y-1 text-sm text-gray-600 dark:text-gray-300 sm:ml-8">
+              <ol class="ml-5 list-decimal space-y-1 text-sm text-foreground-muted sm:ml-8">
                 <li>{{ t('admin.subscriptions.guide.step2.line1') }}</li>
                 <li>{{ t('admin.subscriptions.guide.step2.line2') }}</li>
                 <li>{{ t('admin.subscriptions.guide.step2.line3') }}</li>
@@ -781,16 +781,16 @@
 
             <!-- Step 3 -->
             <div class="mb-5">
-              <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+              <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <span class="guide-step-number">3</span>
                 {{ t('admin.subscriptions.guide.step3.title') }}
               </h3>
-              <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-dark-600 sm:ml-8">
+              <div class="overflow-x-auto rounded-panel border border-outline sm:ml-8">
                 <table class="w-full text-sm">
                   <tbody>
-                    <tr v-for="(row, i) in guideActionRows" :key="i" class="border-b border-gray-100 dark:border-dark-700 last:border-0">
-                      <td class="whitespace-nowrap bg-gray-50 px-3 py-2 font-medium text-gray-700 dark:bg-dark-700 dark:text-gray-300">{{ row.action }}</td>
-                      <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ row.desc }}</td>
+                    <tr v-for="(row, i) in guideActionRows" :key="i" class="border-b border-outline last:border-0">
+                      <td class="whitespace-nowrap bg-surface-subtle px-3 py-2 font-medium text-foreground-muted">{{ row.action }}</td>
+                      <td class="px-3 py-2 text-foreground-subtle">{{ row.desc }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1484,12 +1484,12 @@ const getProgressWidth = (used: number | null | undefined, limit: number | null)
 }
 
 const getProgressClass = (used: number | null | undefined, limit: number | null): string => {
-  if (!limit || limit === 0) return 'bg-gray-400'
+  if (!limit || limit === 0) return 'bg-outline-strong'
   const usedValue = used ?? 0
   const percentage = (usedValue / limit) * 100
-  if (percentage >= 90) return 'bg-red-500'
-  if (percentage >= 70) return 'bg-orange-500'
-  return 'bg-green-500'
+  if (percentage >= 90) return 'bg-danger'
+  if (percentage >= 70) return 'bg-warning'
+  return 'bg-success'
 }
 
 const formatResetDuration = (parts: RemainingDurationParts): string => {
@@ -1586,15 +1586,15 @@ onUnmounted(() => {
 }
 
 .usage-label {
-  @apply w-10 flex-shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400;
+  @apply w-10 flex-shrink-0 text-xs font-medium text-foreground-subtle;
 }
 
 .usage-amount {
-  @apply whitespace-nowrap text-xs tabular-nums text-gray-600 dark:text-gray-300;
+  @apply whitespace-nowrap text-xs tabular-nums text-foreground-muted;
 }
 
 .reset-info {
-  @apply flex items-center gap-1 pl-12 text-[10px] text-gray-500 dark:text-gray-400;
+  @apply flex items-center gap-1 pl-12 text-[10px] text-foreground-subtle;
 }
 
 .subscription-toolbar {
@@ -1613,7 +1613,7 @@ onUnmounted(() => {
   border: 1px solid var(--ui-border, #dbe3ee);
   border-radius: 8px;
   background: var(--ui-surface-raised, #fff);
-  box-shadow: var(--ui-shadow-lg, 0 14px 34px rgba(15, 23, 42, 0.14));
+  box-shadow: var(--ui-shadow-floating, 0 14px 34px rgba(15, 23, 42, 0.14));
 }
 
 .subscription-menu button {

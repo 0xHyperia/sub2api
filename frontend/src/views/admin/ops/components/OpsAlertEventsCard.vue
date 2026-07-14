@@ -359,19 +359,19 @@ watch(historyRange, () => {
 
 function severityBadgeClass(severity: string | undefined): string {
   const s = String(severity || '').trim().toLowerCase()
-  if (s === 'p0' || s === 'critical') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-  if (s === 'p1' || s === 'warning') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-  if (s === 'p2' || s === 'info') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-  if (s === 'p3') return 'bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-gray-300'
-  return 'bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-gray-300'
+  if (s === 'p0' || s === 'critical') return 'bg-danger-subtle text-danger-foreground'
+  if (s === 'p1' || s === 'warning') return 'bg-warning-subtle text-warning-foreground'
+  if (s === 'p2' || s === 'info') return 'bg-info-subtle text-info-foreground'
+  if (s === 'p3') return 'bg-surface-subtle text-foreground-muted'
+  return 'bg-surface-subtle text-foreground-muted'
 }
 
 function statusBadgeClass(status: string | undefined): string {
   const s = String(status || '').trim().toLowerCase()
-  if (s === 'firing') return 'bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-900/30 dark:text-red-300 dark:ring-red-500/30'
-  if (s === 'resolved') return 'bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/30 dark:text-green-300 dark:ring-green-500/30'
-  if (s === 'manual_resolved') return 'bg-slate-50 text-slate-700 ring-slate-600/20 dark:bg-slate-900/30 dark:text-slate-300 dark:ring-slate-500/30'
-  return 'bg-gray-50 text-gray-700 ring-gray-600/20 dark:bg-gray-900/30 dark:text-gray-300 dark:ring-gray-500/30'
+  if (s === 'firing') return 'bg-danger-subtle text-danger-foreground ring-danger/20'
+  if (s === 'resolved') return 'ring-success/20 bg-success-subtle text-success-foreground'
+  if (s === 'manual_resolved') return 'bg-surface-subtle text-foreground-subtle ring-outline'
+  return 'bg-surface-subtle text-foreground-muted ring-outline'
 }
 
 function formatStatusLabel(status: string | undefined): string {
@@ -391,7 +391,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
     <div class="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
       <div>
         <h3 id="ops-alert-events-title" class="text-sm font-semibold text-foreground">{{ t('admin.ops.alertEvents.title') }}</h3>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.alertEvents.description') }}</p>
+        <p class="mt-1 text-xs text-foreground-subtle">{{ t('admin.ops.alertEvents.description') }}</p>
       </div>
 
       <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -450,35 +450,35 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
     <div v-else class="overflow-x-auto rounded-panel border border-outline">
       <div class="max-h-[600px] min-w-[900px] overflow-y-auto" @scroll="onScroll">
         <table class="min-w-full divide-y divide-outline">
-          <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-dark-900">
+          <thead class="sticky top-0 z-10 bg-canvas">
             <tr>
-              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                 {{ t('admin.ops.alertEvents.table.time') }}
               </th>
-              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                 {{ t('admin.ops.alertEvents.table.severity') }}
               </th>
-              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                 {{ t('admin.ops.alertEvents.table.platform') }}
               </th>
-              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                 {{ t('admin.ops.alertEvents.table.ruleId') }}
               </th>
-              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                 {{ t('admin.ops.alertEvents.table.title') }}
               </th>
-              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                 {{ t('admin.ops.alertEvents.table.duration') }}
               </th>
-              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                 {{ t('admin.ops.alertEvents.table.dimensions') }}
               </th>
-              <th class="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th class="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">
                 {{ t('admin.ops.alertEvents.table.email') }}
               </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-800">
+          <tbody class="divide-y divide-outline bg-surface">
             <tr
               v-for="row in events"
               :key="row.id"
@@ -491,7 +491,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
               :title="row.title || ''"
               :aria-label="row.title || t('admin.ops.alertEvents.detail.title')"
             >
-              <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+              <td class="whitespace-nowrap px-4 py-3 text-xs text-foreground-muted">
                 {{ formatDateTime(row.fired_at || row.created_at) }}
               </td>
               <td class="whitespace-nowrap px-4 py-3">
@@ -504,22 +504,22 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
                   </span>
                 </div>
               </td>
-              <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+              <td class="whitespace-nowrap px-4 py-3 text-xs text-foreground-muted">
                 {{ getDimensionString(row, 'platform') || '-' }}
               </td>
-              <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+              <td class="whitespace-nowrap px-4 py-3 text-xs text-foreground-muted">
                 <span class="font-mono">#{{ row.rule_id }}</span>
               </td>
-              <td class="min-w-[260px] px-4 py-3 text-xs text-gray-700 dark:text-gray-200">
+              <td class="min-w-[260px] px-4 py-3 text-xs text-foreground-muted">
                 <div class="font-semibold truncate max-w-[360px]">{{ row.title || '-' }}</div>
-                <div v-if="row.description" class="mt-0.5 line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
+                <div v-if="row.description" class="mt-0.5 line-clamp-2 text-[11px] text-foreground-subtle">
                   {{ row.description }}
                 </div>
               </td>
-              <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+              <td class="whitespace-nowrap px-4 py-3 text-xs text-foreground-muted">
                 {{ formatDurationLabel(row) }}
               </td>
-              <td class="whitespace-nowrap px-4 py-3 text-[11px] text-gray-500 dark:text-gray-400">
+              <td class="whitespace-nowrap px-4 py-3 text-[11px] text-foreground-subtle">
                 {{ formatDimensionsSummary(row) }}
               </td>
               <td class="whitespace-nowrap px-4 py-3 text-right text-xs">
@@ -531,15 +531,15 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
                     v-if="row.email_sent"
                     name="checkCircle"
                     size="sm"
-                    class="text-green-600 dark:text-green-400"
+                    class="text-success-foreground"
                   />
                   <Icon
                     v-else
                     name="ban"
                     size="sm"
-                    class="text-gray-400 dark:text-gray-500"
+                    class="text-foreground-subtle"
                   />
-                  <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300">
+                  <span class="text-[11px] font-bold text-foreground-muted">
                     {{ row.email_sent ? t('admin.ops.alertEvents.table.emailSent') : t('admin.ops.alertEvents.table.emailIgnored') }}
                   </span>
                 </span>
@@ -547,7 +547,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
             </tr>
           </tbody>
         </table>
-        <div v-if="loadingMore" class="flex items-center justify-center gap-2 py-3 text-xs text-gray-500 dark:text-gray-400">
+        <div v-if="loadingMore" class="flex items-center justify-center gap-2 py-3 text-xs text-foreground-subtle">
           <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -565,7 +565,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
             {{ t('common.retry') }}
           </button>
         </div>
-        <div v-else-if="!hasMore && events.length > 0" class="py-3 text-center text-xs text-gray-400">
+        <div v-else-if="!hasMore && events.length > 0" class="py-3 text-center text-xs text-foreground-subtle">
           -
         </div>
       </div>
@@ -578,11 +578,11 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
       :close-on-click-outside="true"
       @close="closeDetail"
     >
-      <div v-if="detailLoading" class="flex items-center justify-center py-10 text-sm text-gray-500 dark:text-gray-400">
+      <div v-if="detailLoading" class="flex items-center justify-center py-10 text-sm text-foreground-subtle">
         {{ t('admin.ops.alertEvents.detail.loading') }}
       </div>
 
-      <div v-else-if="!selected" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+      <div v-else-if="!selected" class="py-10 text-center text-sm text-foreground-subtle">
         {{ t('admin.ops.alertEvents.detail.empty') }}
       </div>
 
@@ -598,17 +598,17 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
                   {{ formatStatusLabel(selected.status) }}
                 </span>
               </div>
-              <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+              <div class="mt-2 text-sm font-semibold text-foreground">
                 {{ selected.title || '-' }}
               </div>
-              <div v-if="selected.description" class="mt-1 whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-300">
+              <div v-if="selected.description" class="mt-1 whitespace-pre-wrap text-xs text-foreground-muted">
                 {{ selected.description }}
               </div>
             </div>
 
             <div class="flex flex-wrap gap-2">
-              <div class="flex items-center gap-2 rounded-lg bg-white px-2 py-1 ring-1 ring-gray-200 dark:bg-dark-800 dark:ring-dark-700">
-                <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300">{{ t('admin.ops.alertEvents.detail.silence') }}</span>
+              <div class="flex items-center gap-2 rounded-panel px-2 py-1 ring-1 ring-outline bg-surface">
+                <span class="text-[11px] font-bold text-foreground-muted">{{ t('admin.ops.alertEvents.detail.silence') }}</span>
                 <Select
                   :model-value="silenceDuration"
                   :options="silenceDurationOptions"
@@ -631,26 +631,26 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
 
           <div class="alert-detail-grid grid grid-cols-1 overflow-hidden rounded-panel border border-outline bg-surface-subtle sm:grid-cols-2">
             <div class="alert-detail-field p-4">
-              <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.alertEvents.detail.firedAt') }}</div>
-              <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ formatDateTime(selected.fired_at || selected.created_at) }}</div>
+              <div class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.alertEvents.detail.firedAt') }}</div>
+              <div class="mt-1 text-sm font-medium text-foreground">{{ formatDateTime(selected.fired_at || selected.created_at) }}</div>
             </div>
             <div class="alert-detail-field p-4">
-              <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.alertEvents.detail.resolvedAt') }}</div>
-              <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ selected.resolved_at ? formatDateTime(selected.resolved_at) : '-' }}</div>
+              <div class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.alertEvents.detail.resolvedAt') }}</div>
+              <div class="mt-1 text-sm font-medium text-foreground">{{ selected.resolved_at ? formatDateTime(selected.resolved_at) : '-' }}</div>
             </div>
             <div class="alert-detail-field p-4">
-              <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.alertEvents.detail.ruleId') }}</div>
+              <div class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.alertEvents.detail.ruleId') }}</div>
               <div class="mt-1 flex flex-wrap items-center gap-2">
-                <div class="font-mono text-sm font-bold text-gray-900 dark:text-white">#{{ selected.rule_id }}</div>
+                <div class="font-mono text-sm font-bold text-foreground">#{{ selected.rule_id }}</div>
                 <a
-                  class="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-[11px] font-bold text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50 dark:bg-dark-800 dark:text-gray-200 dark:ring-dark-700 dark:hover:bg-dark-700"
+                  class="inline-flex items-center gap-1 rounded-control px-2 py-1 text-[11px] font-bold text-foreground-muted ring-1 ring-outline hover:bg-surface"
                   :href="`/admin/ops?open_alert_rules=1&alert_rule_id=${selected.rule_id}`"
                 >
                   <Icon name="externalLink" size="xs" />
                   {{ t('admin.ops.alertEvents.detail.viewRule') }}
                 </a>
                 <a
-                  class="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-[11px] font-bold text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50 dark:bg-dark-800 dark:text-gray-200 dark:ring-dark-700 dark:hover:bg-dark-700"
+                  class="inline-flex items-center gap-1 rounded-control px-2 py-1 text-[11px] font-bold text-foreground-muted ring-1 ring-outline hover:bg-surface"
                   :href="`/admin/ops?platform=${encodeURIComponent(getDimensionString(selected,'platform')||'')}&group_id=${selected.dimensions?.group_id || ''}&error_type=request&open_error_details=1`"
                 >
                   <Icon name="externalLink" size="xs" />
@@ -659,8 +659,8 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
               </div>
             </div>
             <div class="alert-detail-field p-4">
-              <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.alertEvents.detail.dimensions') }}</div>
-              <div class="mt-1 text-sm text-gray-900 dark:text-white">
+              <div class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.alertEvents.detail.dimensions') }}</div>
+              <div class="mt-1 text-sm text-foreground">
                 <div v-if="getDimensionString(selected, 'platform')">platform={{ getDimensionString(selected, 'platform') }}</div>
                 <div v-if="selected.dimensions?.group_id">group_id={{ selected.dimensions.group_id }}</div>
                 <div v-if="getDimensionString(selected, 'region')">region={{ getDimensionString(selected, 'region') }}</div>
@@ -672,36 +672,36 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
         <section class="border-t border-outline pt-4">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="text-sm font-bold text-gray-900 dark:text-white">{{ t('admin.ops.alertEvents.detail.historyTitle') }}</div>
-              <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.alertEvents.detail.historyHint') }}</div>
+              <div class="text-sm font-bold text-foreground">{{ t('admin.ops.alertEvents.detail.historyTitle') }}</div>
+              <div class="mt-0.5 text-xs text-foreground-subtle">{{ t('admin.ops.alertEvents.detail.historyHint') }}</div>
             </div>
             <Select :model-value="historyRange" :options="historyRangeOptions" class="w-[140px]" @change="historyRange = String($event || '7d')" />
           </div>
 
-          <div v-if="historyLoading" class="py-6 text-center text-xs text-gray-500 dark:text-gray-400">
+          <div v-if="historyLoading" class="py-6 text-center text-xs text-foreground-subtle">
             {{ t('admin.ops.alertEvents.detail.historyLoading') }}
           </div>
-          <div v-else-if="history.length === 0" class="py-6 text-center text-xs text-gray-500 dark:text-gray-400">
+          <div v-else-if="history.length === 0" class="py-6 text-center text-xs text-foreground-subtle">
             {{ t('admin.ops.alertEvents.detail.historyEmpty') }}
           </div>
-          <div v-else class="overflow-hidden rounded-lg border border-gray-100 dark:border-dark-700">
-            <table class="min-w-full divide-y divide-gray-100 dark:divide-dark-700">
-              <thead class="bg-gray-50 dark:bg-dark-900">
+          <div v-else class="overflow-hidden rounded-panel border border-outline">
+            <table class="min-w-full divide-y divide-outline">
+              <thead class="bg-canvas">
                 <tr>
-                  <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.ops.alertEvents.table.time') }}</th>
-                  <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.ops.alertEvents.table.status') }}</th>
-                  <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.ops.alertEvents.table.metric') }}</th>
+                  <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.alertEvents.table.time') }}</th>
+                  <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.alertEvents.table.status') }}</th>
+                  <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.alertEvents.table.metric') }}</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
-                <tr v-for="it in history" :key="it.id" class="hover:bg-gray-50 dark:hover:bg-dark-700/50">
-                  <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{{ formatDateTime(it.fired_at || it.created_at) }}</td>
+              <tbody class="divide-y divide-outline">
+                <tr v-for="it in history" :key="it.id" class="hover:bg-surface-subtle/50">
+                  <td class="px-3 py-2 text-xs text-foreground-muted">{{ formatDateTime(it.fired_at || it.created_at) }}</td>
                   <td class="px-3 py-2 text-xs">
                     <span class="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-bold ring-1 ring-inset" :class="statusBadgeClass(it.status)">
                       {{ formatStatusLabel(it.status) }}
                     </span>
                   </td>
-                  <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
+                  <td class="px-3 py-2 text-xs text-foreground-muted">
                     <span v-if="typeof it.metric_value === 'number' && typeof it.threshold_value === 'number'">
                       {{ it.metric_value.toFixed(2) }} / {{ it.threshold_value.toFixed(2) }}
                     </span>

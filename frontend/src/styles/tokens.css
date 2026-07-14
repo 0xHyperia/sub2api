@@ -12,6 +12,7 @@
   --color-border: 226 232 240;
   --color-border-strong: 203 213 225;
   --color-brand: 15 23 42;
+  --color-brand-subtle: 241 245 249;
   --color-brand-hover: 30 41 59;
   --color-brand-foreground: 255 255 255;
   --color-focus: 37 99 235;
@@ -80,6 +81,7 @@
   --color-border: 45 57 70;
   --color-border-strong: 64 80 98;
   --color-brand: 241 245 249;
+  --color-brand-subtle: 51 65 85;
   --color-brand-hover: 255 255 255;
   --color-brand-foreground: 15 23 42;
   --color-focus: 96 165 250;

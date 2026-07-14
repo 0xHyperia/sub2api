@@ -9,7 +9,7 @@
 
     <div
       v-if="maintenance"
-      class="flex h-5 w-full items-center justify-center rounded border border-dashed border-gray-300 dark:border-dark-600 text-[10px] uppercase tracking-widest text-gray-400"
+      class="flex h-5 w-full items-center justify-center rounded border border-dashed border-outline-strong text-[10px] uppercase tracking-widest text-foreground-subtle"
     >
       {{ t('monitorCommon.maintenancePaused') }}
     </div>
@@ -70,11 +70,11 @@ const STATUS_HEIGHT: Record<string, number> = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  operational: 'bg-emerald-500',
-  degraded: 'bg-amber-500',
-  failed: 'bg-red-500',
-  error: 'bg-red-500',
-  empty: 'bg-gray-300 dark:bg-dark-600',
+  operational: 'bg-success',
+  degraded: 'bg-warning',
+  failed: 'bg-danger',
+  error: 'bg-danger',
+  empty: 'bg-outline',
 }
 
 const displayBars = computed<Bar[]>(() => {

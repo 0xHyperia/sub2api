@@ -452,7 +452,7 @@ import EndpointDistributionChart from '@/components/charts/EndpointDistributionC
 import Icon from '@/components/icons/Icon.vue'
 import { adminAPI } from '@/api/admin'
 import type { Account, AccountUsageStatsResponse } from '@/types'
-import { useTheme } from '@/composables/useTheme'
+import { useChartTheme } from '@/composables/useChartTheme'
 
 ChartJS.register(
   CategoryScale,
@@ -466,7 +466,7 @@ ChartJS.register(
 )
 
 const { t } = useI18n()
-const { isDark } = useTheme()
+const { chartTheme } = useChartTheme()
 
 const props = defineProps<{
   show: boolean
@@ -484,8 +484,8 @@ let loadSequence = 0
 
 // Chart colors
 const chartColors = computed(() => ({
-  text: isDark.value ? '#e5e7eb' : '#374151',
-  grid: isDark.value ? '#374151' : '#e5e7eb'
+  text: chartTheme.value.foregroundMuted,
+  grid: chartTheme.value.outline,
 }))
 
 // Line chart data
@@ -498,8 +498,8 @@ const trendChartData = computed(() => {
       {
         label: t('usage.accountBilled') + ' (USD)',
         data: stats.value.history.map((h) => h.actual_cost),
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: chartTheme.value.info,
+        backgroundColor: chartTheme.value.infoAlpha,
         fill: true,
         tension: 0.3,
         yAxisID: 'y'
@@ -507,8 +507,8 @@ const trendChartData = computed(() => {
       {
         label: t('usage.userBilled') + ' (USD)',
         data: stats.value.history.map((h) => h.user_cost),
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+        borderColor: chartTheme.value.success,
+        backgroundColor: chartTheme.value.successAlpha,
         fill: false,
         tension: 0.3,
         borderDash: [5, 5],
@@ -517,8 +517,8 @@ const trendChartData = computed(() => {
       {
         label: t('admin.accounts.stats.requests'),
         data: stats.value.history.map((h) => h.requests),
-        borderColor: '#f97316',
-        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+        borderColor: chartTheme.value.warning,
+        backgroundColor: chartTheme.value.warningAlpha,
         fill: false,
         tension: 0.3,
         yAxisID: 'y1'

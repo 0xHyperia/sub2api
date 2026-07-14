@@ -234,7 +234,7 @@ onMounted(() => {
 }
 
 .legal-document-content :deep(pre) {
-  @apply my-5 overflow-x-auto rounded-panel bg-gray-950 p-4 text-gray-100;
+  @apply my-5 overflow-x-auto rounded-panel bg-foreground p-4 text-surface;
 }
 
 .legal-document-content :deep(pre code) {

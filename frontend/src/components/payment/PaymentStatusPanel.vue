@@ -71,7 +71,7 @@
     <template v-else-if="outcome === 'cancelled'">
       <div class="card p-4 sm:p-5" role="status" aria-live="polite">
         <div class="flex flex-col items-center space-y-4 py-4">
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-surface-subtle">
             <Icon name="x" size="lg" class="text-foreground-subtle" aria-hidden="true" />
           </div>
           <p class="text-lg font-semibold text-foreground">{{ t('payment.qr.cancelled') }}</p>
@@ -85,7 +85,7 @@
     <template v-else-if="outcome === 'expired'">
       <div class="card p-4 sm:p-5" role="status" aria-live="polite">
         <div class="flex flex-col items-center space-y-4 py-4">
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-warning-subtle">
             <Icon name="clock" size="lg" class="text-warning-foreground" aria-hidden="true" />
           </div>
           <p class="text-lg font-semibold text-foreground">{{ t('payment.qr.expired') }}</p>
@@ -217,15 +217,15 @@ const shouldVerifyPendingOrder = computed(() => {
 })
 
 const qrBorderClass = computed(() => {
-  if (isAlipay.value) return 'border-[#00AEEF] bg-blue-50 dark:border-[#00AEEF]/70 dark:bg-blue-950/20'
-  if (isWxpay.value) return 'border-[#2BB741] bg-green-50 dark:border-[#2BB741]/70 dark:bg-green-950/20'
-  return 'border-gray-200 bg-white dark:border-dark-600 dark:bg-dark-800'
+  if (isAlipay.value) return 'border-[#00AEEF] border-[#00AEEF]/70 bg-info-subtle'
+  if (isWxpay.value) return 'border-[#2BB741] border-[#2BB741]/70 bg-success-subtle'
+  return 'border-outline-strong bg-surface'
 })
 
 const qrLogoBgClass = computed(() => {
   if (isAlipay.value) return 'bg-[#00AEEF]'
   if (isWxpay.value) return 'bg-[#2BB741]'
-  return 'bg-gray-400'
+  return 'bg-outline-strong'
 })
 
 const qrLogoIcon = computed(() => {

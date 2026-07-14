@@ -10,6 +10,7 @@ import { opsAPI, type OpsDashboardOverview, type OpsMetricThresholds, type OpsRe
 import type { OpsRequestDetailsPreset } from './OpsRequestDetailsModal.vue'
 import { useAdminSettingsStore } from '@/stores'
 import { formatNumber } from '@/utils/format'
+import { useChartTheme } from '@/composables/useChartTheme'
 
 type RealtimeWindow = '1min' | '5min' | '30min' | '1h'
 
@@ -49,6 +50,7 @@ const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const adminSettingsStore = useAdminSettingsStore()
+const { chartTheme } = useChartTheme()
 
 const realtimeWindow = ref<RealtimeWindow>('1min')
 
@@ -265,11 +267,11 @@ function getUpstreamErrorRateThresholdLevel(upstreamErrorRatePercent: number | n
 function getThresholdColorClass(level: ThresholdLevel): string {
   switch (level) {
     case 'critical':
-      return 'text-red-600 dark:text-red-400'
+      return 'text-danger-foreground'
     case 'warning':
-      return 'text-yellow-600 dark:text-yellow-400'
+      return 'text-warning-foreground'
     default:
-      return 'text-green-600 dark:text-green-400'
+      return 'text-success-foreground'
   }
 }
 
@@ -438,21 +440,21 @@ const healthScoreValue = computed<number | null>(() => {
 })
 
 const healthScoreColor = computed(() => {
-  if (isSystemIdle.value) return '#9ca3af' // gray-400
+  if (isSystemIdle.value) return chartTheme.value.foregroundSubtle
   const score = healthScoreValue.value
-  if (score == null) return '#9ca3af'
-  if (score >= 90) return '#10b981' // green
-  if (score >= 60) return '#f59e0b' // yellow
-  return '#ef4444' // red
+  if (score == null) return chartTheme.value.foregroundSubtle
+  if (score >= 90) return chartTheme.value.success
+  if (score >= 60) return chartTheme.value.warning
+  return chartTheme.value.danger
 })
 
 const healthScoreClass = computed(() => {
-  if (isSystemIdle.value) return 'text-gray-400'
+  if (isSystemIdle.value) return 'text-foreground-subtle'
   const score = healthScoreValue.value
-  if (score == null) return 'text-gray-400'
-  if (score >= 90) return 'text-green-500'
-  if (score >= 60) return 'text-yellow-500'
-  return 'text-red-500'
+  if (score == null) return 'text-foreground-subtle'
+  if (score >= 90) return 'text-success-foreground'
+  if (score >= 60) return 'text-warning-foreground'
+  return 'text-danger-foreground'
 })
 
 const circleSize = computed(() => props.fullscreen ? 140 : 100)
@@ -652,10 +654,10 @@ const cpuPercentValue = computed<number | null>(() => {
 
 const cpuPercentClass = computed(() => {
   const v = cpuPercentValue.value
-  if (v == null) return 'text-gray-900 dark:text-white'
-  if (v >= 95) return 'text-rose-600 dark:text-rose-400'
-  if (v >= 80) return 'text-yellow-600 dark:text-yellow-400'
-  return 'text-emerald-600 dark:text-emerald-400'
+  if (v == null) return 'text-foreground'
+  if (v >= 95) return 'text-danger-foreground'
+  if (v >= 80) return 'text-warning-foreground'
+  return 'text-success-foreground'
 })
 
 const memPercentValue = computed<number | null>(() => {
@@ -665,10 +667,10 @@ const memPercentValue = computed<number | null>(() => {
 
 const memPercentClass = computed(() => {
   const v = memPercentValue.value
-  if (v == null) return 'text-gray-900 dark:text-white'
-  if (v >= 95) return 'text-rose-600 dark:text-rose-400'
-  if (v >= 85) return 'text-yellow-600 dark:text-yellow-400'
-  return 'text-emerald-600 dark:text-emerald-400'
+  if (v == null) return 'text-foreground'
+  if (v >= 95) return 'text-danger-foreground'
+  if (v >= 85) return 'text-warning-foreground'
+  return 'text-success-foreground'
 })
 
 const dbConnActiveValue = computed<number | null>(() => {
@@ -709,14 +711,14 @@ const dbMiddleLabel = computed(() => {
 })
 
 const dbMiddleClass = computed(() => {
-  if (systemMetrics.value?.db_ok === false) return 'text-rose-600 dark:text-rose-400'
+  if (systemMetrics.value?.db_ok === false) return 'text-danger-foreground'
   if (dbUsagePercent.value != null) {
-    if (dbUsagePercent.value >= 90) return 'text-rose-600 dark:text-rose-400'
-    if (dbUsagePercent.value >= 70) return 'text-yellow-600 dark:text-yellow-400'
-    return 'text-emerald-600 dark:text-emerald-400'
+    if (dbUsagePercent.value >= 90) return 'text-danger-foreground'
+    if (dbUsagePercent.value >= 70) return 'text-warning-foreground'
+    return 'text-success-foreground'
   }
-  if (systemMetrics.value?.db_ok === true) return 'text-emerald-600 dark:text-emerald-400'
-  return 'text-gray-900 dark:text-white'
+  if (systemMetrics.value?.db_ok === true) return 'text-success-foreground'
+  return 'text-foreground'
 })
 
 const redisConnTotalValue = computed<number | null>(() => {
@@ -752,14 +754,14 @@ const redisMiddleLabel = computed(() => {
 })
 
 const redisMiddleClass = computed(() => {
-  if (systemMetrics.value?.redis_ok === false) return 'text-rose-600 dark:text-rose-400'
+  if (systemMetrics.value?.redis_ok === false) return 'text-danger-foreground'
   if (redisUsagePercent.value != null) {
-    if (redisUsagePercent.value >= 90) return 'text-rose-600 dark:text-rose-400'
-    if (redisUsagePercent.value >= 70) return 'text-yellow-600 dark:text-yellow-400'
-    return 'text-emerald-600 dark:text-emerald-400'
+    if (redisUsagePercent.value >= 90) return 'text-danger-foreground'
+    if (redisUsagePercent.value >= 70) return 'text-warning-foreground'
+    return 'text-success-foreground'
   }
-  if (systemMetrics.value?.redis_ok === true) return 'text-emerald-600 dark:text-emerald-400'
-  return 'text-gray-900 dark:text-white'
+  if (systemMetrics.value?.redis_ok === true) return 'text-success-foreground'
+  return 'text-foreground'
 })
 
 const goroutineCountValue = computed<number | null>(() => {
@@ -794,13 +796,13 @@ const goroutineStatusLabel = computed(() => {
 const goroutineStatusClass = computed(() => {
   switch (goroutineStatus.value) {
     case 'ok':
-      return 'text-emerald-600 dark:text-emerald-400'
+      return 'text-success-foreground'
     case 'warning':
-      return 'text-yellow-600 dark:text-yellow-400'
+      return 'text-warning-foreground'
     case 'critical':
-      return 'text-rose-600 dark:text-rose-400'
+      return 'text-danger-foreground'
     default:
-      return 'text-gray-900 dark:text-white'
+      return 'text-foreground'
   }
 })
 
@@ -839,11 +841,11 @@ const jobsStatusLabel = computed(() => {
 const jobsStatusClass = computed(() => {
   switch (jobsStatus.value) {
     case 'ok':
-      return 'text-emerald-600 dark:text-emerald-400'
+      return 'text-success-foreground'
     case 'warn':
-      return 'text-yellow-600 dark:text-yellow-400'
+      return 'text-warning-foreground'
     default:
-      return 'text-gray-900 dark:text-white'
+      return 'text-foreground'
   }
 })
 
@@ -872,7 +874,7 @@ function handleToolbarRefresh() {
         <div v-if="!props.fullscreen" class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground-muted">
           <span class="flex items-center gap-1.5" :title="props.loading ? t('admin.ops.loadingText') : t('admin.ops.ready')">
             <span class="relative flex h-2 w-2">
-              <span class="relative inline-flex h-2 w-2 rounded-full" :class="props.loading ? 'bg-gray-400' : 'bg-green-500'"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full" :class="props.loading ? 'bg-outline-strong' : 'bg-success'"></span>
             </span>
             {{ props.loading ? t('admin.ops.loadingText') : t('admin.ops.ready') }}
           </span>
@@ -988,29 +990,29 @@ function handleToolbarRefresh() {
               class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 opacity-0 transition-opacity duration-200 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 md:left-full md:top-0 md:ml-2 md:mt-0 md:w-72 md:translate-x-0"
             >
               <div class="rounded-panel border border-outline bg-surface-raised p-4 shadow-floating">
-                <h4 class="mb-3 border-b border-gray-100 pb-2 text-sm font-bold text-gray-900 dark:border-gray-700 dark:text-white flex items-center gap-2">
-                  <Icon name="brain" size="sm" class="text-blue-500" />
+                <h4 class="mb-3 border-b pb-2 text-sm font-bold text-foreground border-outline flex items-center gap-2">
+                  <Icon name="brain" size="sm" class="text-info-foreground" />
                   {{ t('admin.ops.diagnosis.title') }}
                 </h4>
 
                 <div class="space-y-3">
                   <div v-for="(item, idx) in diagnosisReport" :key="idx" class="flex gap-3">
                     <div class="mt-0.5 shrink-0">
-                      <svg v-if="item.type === 'critical'" class="h-4 w-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                      <svg v-if="item.type === 'critical'" class="h-4 w-4 text-danger-foreground" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fill-rule="evenodd"
                           d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
                           clip-rule="evenodd"
                         />
                       </svg>
-                      <svg v-else-if="item.type === 'warning'" class="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                      <svg v-else-if="item.type === 'warning'" class="h-4 w-4 text-warning-foreground" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fill-rule="evenodd"
                           d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                           clip-rule="evenodd"
                         />
                       </svg>
-                      <svg v-else class="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <svg v-else class="h-4 w-4 text-info-foreground" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fill-rule="evenodd"
                           d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 100 2 1 1 0 000-2zm-1 3a1 1 0 012 0v4a1 1 0 11-2 0v-4z"
@@ -1019,9 +1021,9 @@ function handleToolbarRefresh() {
                       </svg>
                     </div>
                     <div class="flex-1">
-                      <div class="text-xs font-semibold text-gray-900 dark:text-white">{{ item.message }}</div>
-                      <div class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">{{ item.impact }}</div>
-                      <div v-if="item.action" class="mt-1 text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                      <div class="text-xs font-semibold text-foreground">{{ item.message }}</div>
+                      <div class="mt-0.5 text-[11px] text-foreground-subtle">{{ item.impact }}</div>
+                      <div v-if="item.action" class="mt-1 text-[11px] text-info-foreground flex items-center gap-1">
                         <Icon name="lightbulb" size="xs" />
                         {{ item.action }}
                       </div>
@@ -1029,7 +1031,7 @@ function handleToolbarRefresh() {
                   </div>
                 </div>
 
-                <div class="mt-3 border-t border-gray-100 pt-2 text-[10px] text-gray-400 dark:border-gray-700">
+                <div class="mt-3 border-t pt-2 text-[10px] text-foreground-subtle border-outline">
                   {{ t('admin.ops.diagnosis.footer') }}
                 </div>
               </div>
@@ -1043,7 +1045,7 @@ function handleToolbarRefresh() {
                   :r="radius"
                   :stroke-width="strokeWidth"
                   fill="transparent"
-                  class="text-gray-200 dark:text-dark-700"
+                  class="text-foreground-subtle"
                   stroke="currentColor"
                 />
                 <circle
@@ -1064,12 +1066,12 @@ function handleToolbarRefresh() {
                 <span :class="[props.fullscreen ? 'text-4xl' : 'text-3xl', 'font-semibold tabular-nums', healthScoreClass]">
                   {{ isSystemIdle ? t('admin.ops.idleStatus') : (overview.health_score ?? '--') }}
                 </span>
-                <span :class="[props.fullscreen ? 'text-xs' : 'text-[10px]', 'font-bold uppercase tracking-wider text-gray-400']">{{ t('admin.ops.health') }}</span>
+                <span :class="[props.fullscreen ? 'text-xs' : 'text-[10px]', 'font-bold uppercase tracking-wider text-foreground-subtle']">{{ t('admin.ops.health') }}</span>
               </div>
             </div>
 
             <div class="mt-4 text-center" v-if="!props.fullscreen">
-              <div class="flex items-center justify-center gap-1 text-xs font-medium text-gray-500">
+              <div class="flex items-center justify-center gap-1 text-xs font-medium text-foreground-subtle">
                 {{ t('admin.ops.healthCondition') }}
                 <HelpTooltip :content="t('admin.ops.healthHelp')" />
               </div>
@@ -1090,10 +1092,10 @@ function handleToolbarRefresh() {
             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2">
                 <div class="relative flex h-3 w-3 shrink-0">
-                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                  <span class="relative inline-flex h-3 w-3 rounded-full bg-blue-500"></span>
+                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-info opacity-75"></span>
+                  <span class="relative inline-flex h-3 w-3 rounded-full bg-info"></span>
                 </div>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.realtime.title') }}</h3>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.realtime.title') }}</h3>
                 <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.qps')" />
               </div>
 
@@ -1105,8 +1107,8 @@ function handleToolbarRefresh() {
                   type="button"
                   class="rounded px-1.5 py-0.5 text-[9px] font-bold transition-colors sm:px-2 sm:text-[10px]"
                   :class="realtimeWindow === window
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-dark-700 dark:text-gray-400 dark:hover:bg-dark-600'"
+                    ? 'bg-info text-white'
+                    : 'hover:bg-outline-strong bg-surface-subtle text-foreground-subtle hover:bg-surface-subtle'"
                   @click="realtimeWindow = window"
                 >
                   {{ window }}
@@ -1117,15 +1119,15 @@ function handleToolbarRefresh() {
             <div :class="props.fullscreen ? 'space-y-4' : 'space-y-3'">
               <!-- Row 1: Current -->
               <div>
-                <div :class="[props.fullscreen ? 'text-xs' : 'text-[10px]', 'font-bold uppercase text-gray-400']">{{ t('admin.ops.current') }}</div>
+                <div :class="[props.fullscreen ? 'text-xs' : 'text-[10px]', 'font-bold uppercase text-foreground-subtle']">{{ t('admin.ops.current') }}</div>
                 <div class="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-2">
                   <div class="flex items-baseline gap-1.5">
                     <span :class="[props.fullscreen ? 'text-3xl' : 'text-xl sm:text-2xl', 'font-semibold tabular-nums text-foreground']">{{ displayRealTimeQps.toFixed(1) }}</span>
-                    <span :class="[props.fullscreen ? 'text-sm' : 'text-xs', 'font-bold text-gray-500']">QPS</span>
+                    <span :class="[props.fullscreen ? 'text-sm' : 'text-xs', 'font-bold text-foreground-subtle']">QPS</span>
                   </div>
                   <div class="flex items-baseline gap-1.5">
                     <span :class="[props.fullscreen ? 'text-3xl' : 'text-xl sm:text-2xl', 'font-semibold tabular-nums text-foreground']">{{ displayRealTimeTps.toFixed(1) }}</span>
-                    <span :class="[props.fullscreen ? 'text-sm' : 'text-xs', 'font-bold text-gray-500']">{{ t('admin.ops.tps') }}</span>
+                    <span :class="[props.fullscreen ? 'text-sm' : 'text-xs', 'font-bold text-foreground-subtle']">{{ t('admin.ops.tps') }}</span>
                   </div>
                 </div>
               </div>
@@ -1134,8 +1136,8 @@ function handleToolbarRefresh() {
               <div class="grid grid-cols-2 gap-3">
                 <!-- Peak -->
                 <div>
-                  <div :class="[props.fullscreen ? 'text-xs' : 'text-[10px]', 'font-bold uppercase text-gray-400']">{{ t('admin.ops.peak') }}</div>
-                  <div :class="[props.fullscreen ? 'text-base' : 'text-sm', 'mt-1 space-y-0.5 font-medium text-gray-600 dark:text-gray-400']">
+                  <div :class="[props.fullscreen ? 'text-xs' : 'text-[10px]', 'font-bold uppercase text-foreground-subtle']">{{ t('admin.ops.peak') }}</div>
+                  <div :class="[props.fullscreen ? 'text-base' : 'text-sm', 'mt-1 space-y-0.5 font-medium text-foreground-subtle']">
                     <div class="flex items-baseline gap-1.5">
                       <span class="font-semibold tabular-nums text-foreground">{{ realtimeQpsPeakLabel }}</span>
                       <span class="text-xs">QPS</span>
@@ -1149,8 +1151,8 @@ function handleToolbarRefresh() {
 
                 <!-- Average -->
                 <div>
-                  <div :class="[props.fullscreen ? 'text-xs' : 'text-[10px]', 'font-bold uppercase text-gray-400']">{{ t('admin.ops.average') }}</div>
-                  <div :class="[props.fullscreen ? 'text-base' : 'text-sm', 'mt-1 space-y-0.5 font-medium text-gray-600 dark:text-gray-400']">
+                  <div :class="[props.fullscreen ? 'text-xs' : 'text-[10px]', 'font-bold uppercase text-foreground-subtle']">{{ t('admin.ops.average') }}</div>
+                  <div :class="[props.fullscreen ? 'text-base' : 'text-sm', 'mt-1 space-y-0.5 font-medium text-foreground-subtle']">
                     <div class="flex items-baseline gap-1.5">
                       <span class="font-semibold tabular-nums text-foreground">{{ realtimeQpsAvgLabel }}</span>
                       <span class="text-xs">QPS</span>
@@ -1169,7 +1171,7 @@ function handleToolbarRefresh() {
                   <path
                     d="M0 16 Q 20 16, 40 16 T 80 16 T 120 10 T 160 22 T 200 16 T 240 16 T 280 16"
                     fill="none"
-                    stroke="#3b82f6"
+                    :stroke="chartTheme.info"
                     stroke-width="2"
                     vector-effect="non-scaling-stroke"
                   >
@@ -1196,7 +1198,7 @@ function handleToolbarRefresh() {
         <div class="rounded-panel border border-outline bg-surface p-4 shadow-card" style="order: 1;">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1">
-              <span class="text-[10px] font-bold uppercase text-gray-400">{{ t('admin.ops.requestsTitle') }}</span>
+              <span class="text-[10px] font-bold uppercase text-foreground-subtle">{{ t('admin.ops.requestsTitle') }}</span>
               <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.totalRequests')" />
             </div>
             <button
@@ -1210,20 +1212,20 @@ function handleToolbarRefresh() {
           </div>
           <div class="mt-2 space-y-2 text-xs">
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.requests') }}:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ totalRequestsLabel }}</span>
+              <span class="text-foreground-subtle">{{ t('admin.ops.requests') }}:</span>
+              <span class="font-bold text-foreground">{{ totalRequestsLabel }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.tokens') }}:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ totalTokensLabel }}</span>
+              <span class="text-foreground-subtle">{{ t('admin.ops.tokens') }}:</span>
+              <span class="font-bold text-foreground">{{ totalTokensLabel }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.avgQps') }}:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ qpsAvgLabel }}</span>
+              <span class="text-foreground-subtle">{{ t('admin.ops.avgQps') }}:</span>
+              <span class="font-bold text-foreground">{{ qpsAvgLabel }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.avgTps') }}:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ tpsAvgLabel }}</span>
+              <span class="text-foreground-subtle">{{ t('admin.ops.avgTps') }}:</span>
+              <span class="font-bold text-foreground">{{ tpsAvgLabel }}</span>
             </div>
           </div>
         </div>
@@ -1232,9 +1234,9 @@ function handleToolbarRefresh() {
         <div class="rounded-panel border border-outline bg-surface p-4 shadow-card" style="order: 2;">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="text-[10px] font-bold uppercase text-gray-400">{{ t('admin.ops.sla') }}</span>
+              <span class="text-[10px] font-bold uppercase text-foreground-subtle">{{ t('admin.ops.sla') }}</span>
               <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.sla')" />
-              <span class="h-1.5 w-1.5 rounded-full" :class="getSLAThresholdLevel(slaPercent) === 'critical' ? 'bg-red-500' : getSLAThresholdLevel(slaPercent) === 'warning' ? 'bg-yellow-500' : 'bg-green-500'"></span>
+              <span class="h-1.5 w-1.5 rounded-full" :class="getSLAThresholdLevel(slaPercent) === 'critical' ? 'bg-danger' : getSLAThresholdLevel(slaPercent) === 'warning' ? 'bg-warning' : 'bg-success'"></span>
             </div>
             <button
               v-if="!props.fullscreen"
@@ -1248,13 +1250,13 @@ function handleToolbarRefresh() {
           <div class="mt-2 text-2xl font-semibold tabular-nums" :class="getThresholdColorClass(getSLAThresholdLevel(slaPercent))">
             {{ slaPercent == null ? '-' : `${slaPercent.toFixed(3)}%` }}
           </div>
-          <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-700">
-            <div class="h-full transition-all" :class="getSLAThresholdLevel(slaPercent) === 'critical' ? 'bg-red-500' : getSLAThresholdLevel(slaPercent) === 'warning' ? 'bg-yellow-500' : 'bg-green-500'" :style="{ width: `${Math.max((slaPercent ?? 0) - 90, 0) * 10}%` }"></div>
+          <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-outline bg-surface-subtle">
+            <div class="h-full transition-all" :class="getSLAThresholdLevel(slaPercent) === 'critical' ? 'bg-danger' : getSLAThresholdLevel(slaPercent) === 'warning' ? 'bg-warning' : 'bg-success'" :style="{ width: `${Math.max((slaPercent ?? 0) - 90, 0) * 10}%` }"></div>
           </div>
           <div class="mt-3 text-xs">
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.exceptions') }}:</span>
-              <span class="font-bold text-red-600 dark:text-red-400">{{ formatNumber((overview.request_count_sla ?? 0) - (overview.success_count ?? 0)) }}</span>
+              <span class="text-foreground-subtle">{{ t('admin.ops.exceptions') }}:</span>
+              <span class="font-bold text-danger-foreground">{{ formatNumber((overview.request_count_sla ?? 0) - (overview.success_count ?? 0)) }}</span>
             </div>
           </div>
         </div>
@@ -1263,7 +1265,7 @@ function handleToolbarRefresh() {
         <div class="rounded-panel border border-outline bg-surface p-4 shadow-card" style="order: 4;">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1">
-              <span class="text-[10px] font-bold uppercase text-gray-400">{{ t('admin.ops.latencyDuration') }}</span>
+              <span class="text-[10px] font-bold uppercase text-foreground-subtle">{{ t('admin.ops.latencyDuration') }}</span>
               <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.latency')" />
             </div>
             <button
@@ -1279,33 +1281,33 @@ function handleToolbarRefresh() {
             <div class="text-2xl font-semibold tabular-nums text-foreground">
               {{ durationP99Ms ?? '-' }}
             </div>
-            <span class="text-xs font-bold text-gray-400">ms (P99)</span>
+            <span class="text-xs font-bold text-foreground-subtle">ms (P99)</span>
           </div>
           <div class="mt-3 grid grid-cols-1 gap-x-3 gap-y-1 text-xs 2xl:grid-cols-2">
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">P95:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ durationP95Ms ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">P95:</span>
+              <span class="font-bold text-foreground">{{ durationP95Ms ?? '-' }}</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">P90:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ durationP90Ms ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">P90:</span>
+              <span class="font-bold text-foreground">{{ durationP90Ms ?? '-' }}</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">P50:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ durationP50Ms ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">P50:</span>
+              <span class="font-bold text-foreground">{{ durationP50Ms ?? '-' }}</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">Avg:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ durationAvgMs ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">Avg:</span>
+              <span class="font-bold text-foreground">{{ durationAvgMs ?? '-' }}</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">Max:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ durationMaxMs ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">Max:</span>
+              <span class="font-bold text-foreground">{{ durationMaxMs ?? '-' }}</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
           </div>
         </div>
@@ -1314,7 +1316,7 @@ function handleToolbarRefresh() {
         <div class="rounded-panel border border-outline bg-surface p-4 shadow-card" style="order: 5;">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1">
-              <span class="text-[10px] font-bold uppercase text-gray-400">TTFT</span>
+              <span class="text-[10px] font-bold uppercase text-foreground-subtle">TTFT</span>
               <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.ttft')" />
             </div>
             <button
@@ -1330,33 +1332,33 @@ function handleToolbarRefresh() {
             <div class="text-2xl font-semibold tabular-nums" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftP99Ms))">
               {{ ttftP99Ms ?? '-' }}
             </div>
-            <span class="text-xs font-bold text-gray-400">ms (P99)</span>
+            <span class="text-xs font-bold text-foreground-subtle">ms (P99)</span>
           </div>
           <div class="mt-3 grid grid-cols-1 gap-x-3 gap-y-1 text-xs 2xl:grid-cols-2">
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">P95:</span>
+              <span class="text-foreground-subtle">P95:</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftP95Ms))">{{ ttftP95Ms ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">P90:</span>
+              <span class="text-foreground-subtle">P90:</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftP90Ms))">{{ ttftP90Ms ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">P50:</span>
+              <span class="text-foreground-subtle">P50:</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftP50Ms))">{{ ttftP50Ms ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">Avg:</span>
+              <span class="text-foreground-subtle">Avg:</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftAvgMs))">{{ ttftAvgMs ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">Max:</span>
+              <span class="text-foreground-subtle">Max:</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftMaxMs))">{{ ttftMaxMs ?? '-' }}</span>
-              <span class="text-gray-400">ms</span>
+              <span class="text-foreground-subtle">ms</span>
             </div>
           </div>
         </div>
@@ -1365,7 +1367,7 @@ function handleToolbarRefresh() {
         <div class="rounded-panel border border-outline bg-surface p-4 shadow-card" style="order: 3;">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1">
-              <span class="text-[10px] font-bold uppercase text-gray-400">{{ t('admin.ops.requestErrors') }}</span>
+              <span class="text-[10px] font-bold uppercase text-foreground-subtle">{{ t('admin.ops.requestErrors') }}</span>
               <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.errors')" />
             </div>
             <button v-if="!props.fullscreen" class="text-xs font-medium text-foreground-muted hover:text-foreground hover:underline" type="button" @click="openErrorDetails('request')">
@@ -1377,12 +1379,12 @@ function handleToolbarRefresh() {
           </div>
           <div class="mt-3 space-y-1 text-xs">
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.errorCount') }}:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ formatNumber(overview.error_count_sla ?? 0) }}</span>
+              <span class="text-foreground-subtle">{{ t('admin.ops.errorCount') }}:</span>
+              <span class="font-bold text-foreground">{{ formatNumber(overview.error_count_sla ?? 0) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.businessLimited') }}:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ formatNumber(overview.business_limited_count ?? 0) }}</span>
+              <span class="text-foreground-subtle">{{ t('admin.ops.businessLimited') }}:</span>
+              <span class="font-bold text-foreground">{{ formatNumber(overview.business_limited_count ?? 0) }}</span>
             </div>
           </div>
         </div>
@@ -1391,7 +1393,7 @@ function handleToolbarRefresh() {
         <div class="rounded-panel border border-outline bg-surface p-4 shadow-card" style="order: 6;">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1">
-              <span class="text-[10px] font-bold uppercase text-gray-400">{{ t('admin.ops.upstreamErrors') }}</span>
+              <span class="text-[10px] font-bold uppercase text-foreground-subtle">{{ t('admin.ops.upstreamErrors') }}</span>
               <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.upstreamErrors')" />
             </div>
             <button v-if="!props.fullscreen" class="text-xs font-medium text-foreground-muted hover:text-foreground hover:underline" type="button" @click="openErrorDetails('upstream')">
@@ -1403,12 +1405,12 @@ function handleToolbarRefresh() {
           </div>
           <div class="mt-3 space-y-1 text-xs">
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.errorCountExcl429529') }}:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ formatNumber(overview.upstream_error_count_excl_429_529 ?? 0) }}</span>
+              <span class="text-foreground-subtle">{{ t('admin.ops.errorCountExcl429529') }}:</span>
+              <span class="font-bold text-foreground">{{ formatNumber(overview.upstream_error_count_excl_429_529 ?? 0) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">429/529:</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ formatNumber((overview.upstream_429_count ?? 0) + (overview.upstream_529_count ?? 0)) }}</span>
+              <span class="text-foreground-subtle">429/529:</span>
+              <span class="font-bold text-foreground">{{ formatNumber((overview.upstream_429_count ?? 0) + (overview.upstream_529_count ?? 0)) }}</span>
             </div>
           </div>
         </div>
@@ -1421,13 +1423,13 @@ function handleToolbarRefresh() {
         <!-- CPU -->
         <div class="min-w-0 border-b border-r border-outline p-3 lg:border-b-0">
           <div class="flex items-center gap-1">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">CPU</div>
+            <div class="text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">CPU</div>
             <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.cpu')" />
           </div>
           <div class="mt-1 text-lg font-semibold tabular-nums" :class="cpuPercentClass">
             {{ cpuPercentValue == null ? '-' : `${cpuPercentValue.toFixed(1)}%` }}
           </div>
-          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-foreground-subtle">
             {{ t('common.warning') }} 80% · {{ t('common.critical') }} 95%
           </div>
         </div>
@@ -1435,13 +1437,13 @@ function handleToolbarRefresh() {
         <!-- MEM -->
         <div class="min-w-0 border-b border-outline p-3 sm:border-r lg:border-b-0">
           <div class="flex items-center gap-1">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.memory') }}</div>
+            <div class="text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.memory') }}</div>
             <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.memory')" />
           </div>
           <div class="mt-1 text-lg font-semibold tabular-nums" :class="memPercentClass">
             {{ memPercentValue == null ? '-' : `${memPercentValue.toFixed(1)}%` }}
           </div>
-          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-foreground-subtle">
             {{
               systemMetrics?.memory_used_mb == null || systemMetrics?.memory_total_mb == null
                 ? '-'
@@ -1453,13 +1455,13 @@ function handleToolbarRefresh() {
         <!-- DB -->
         <div class="min-w-0 border-b border-r border-outline p-3 sm:border-r-0 lg:border-b-0 lg:border-r">
           <div class="flex items-center gap-1">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.db') }}</div>
+            <div class="text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.db') }}</div>
             <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.db')" />
           </div>
           <div class="mt-1 text-lg font-semibold" :class="dbMiddleClass">
             {{ dbMiddleLabel }}
           </div>
-          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-foreground-subtle">
             {{ t('admin.ops.conns') }} {{ dbConnOpenValue ?? '-' }} / {{ dbMaxOpenConnsValue ?? '-' }}
             · {{ t('admin.ops.active') }} {{ dbConnActiveValue ?? '-' }}
             · {{ t('admin.ops.idle') }} {{ dbConnIdleValue ?? '-' }}
@@ -1470,13 +1472,13 @@ function handleToolbarRefresh() {
         <!-- Redis -->
         <div class="min-w-0 border-b border-outline p-3 sm:border-r lg:border-b-0">
           <div class="flex items-center gap-1">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Redis</div>
+            <div class="text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">Redis</div>
             <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.redis')" />
           </div>
           <div class="mt-1 text-lg font-semibold" :class="redisMiddleClass">
             {{ redisMiddleLabel }}
           </div>
-          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-foreground-subtle">
             {{ t('admin.ops.conns') }} {{ redisConnTotalValue ?? '-' }} / {{ redisPoolSizeValue ?? '-' }}
             <span v-if="redisConnActiveValue != null"> · {{ t('admin.ops.active') }} {{ redisConnActiveValue }} </span>
             <span v-if="redisConnIdleValue != null"> · {{ t('admin.ops.idle') }} {{ redisConnIdleValue }} </span>
@@ -1486,13 +1488,13 @@ function handleToolbarRefresh() {
         <!-- Goroutines -->
         <div class="min-w-0 border-r border-outline p-3 sm:border-r-0 lg:border-r">
           <div class="flex items-center gap-1">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.goroutines') }}</div>
+            <div class="text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.goroutines') }}</div>
             <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.goroutines')" />
           </div>
           <div class="mt-1 text-lg font-semibold" :class="goroutineStatusClass">
             {{ goroutineStatusLabel }}
           </div>
-          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-foreground-subtle">
             {{ t('admin.ops.current') }} <span class="font-mono">{{ goroutineCountValue ?? '-' }}</span>
             · {{ t('common.warning') }} <span class="font-mono">{{ goroutinesWarnThreshold }}</span>
             · {{ t('common.critical') }} <span class="font-mono">{{ goroutinesCriticalThreshold }}</span>
@@ -1506,7 +1508,7 @@ function handleToolbarRefresh() {
         <div class="min-w-0 p-3">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-1">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.jobs') }}</div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.jobs') }}</div>
               <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.jobs')" />
             </div>
             <button v-if="!props.fullscreen" class="text-xs font-medium text-foreground-muted hover:text-foreground hover:underline" type="button" @click="openJobsDetails">
@@ -1518,7 +1520,7 @@ function handleToolbarRefresh() {
             {{ jobsStatusLabel }}
           </div>
 
-          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+          <div v-if="!props.fullscreen" class="mt-1 text-[10px] text-foreground-subtle">
             {{ t('common.total') }} <span class="font-mono">{{ jobHeartbeats.length }}</span>
             · {{ t('common.warning') }} <span class="font-mono">{{ jobsWarnCount }}</span>
           </div>
@@ -1527,7 +1529,7 @@ function handleToolbarRefresh() {
     </div>
 
     <BaseDialog :show="showJobsDetails" :title="t('admin.ops.jobs')" width="wide" @close="showJobsDetails = false">
-      <div v-if="!jobHeartbeats.length" class="text-sm text-gray-500 dark:text-gray-400">
+      <div v-if="!jobHeartbeats.length" class="text-sm text-foreground-subtle">
         {{ t('admin.ops.noData') }}
       </div>
       <div v-else class="space-y-3">
@@ -1537,14 +1539,14 @@ function handleToolbarRefresh() {
           class="rounded-panel border border-outline bg-surface-subtle p-4"
         >
           <div class="flex items-center justify-between gap-3">
-            <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ hb.job_name }}</div>
-            <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <div class="truncate text-sm font-semibold text-foreground">{{ hb.job_name }}</div>
+            <div class="flex items-center gap-3 text-xs text-foreground-subtle">
               <span v-if="hb.last_duration_ms != null" class="font-mono">{{ hb.last_duration_ms }}ms</span>
               <span>{{ formatTimeShort(hb.updated_at) }}</span>
             </div>
           </div>
 
-          <div class="mt-2 grid grid-cols-1 gap-2 text-xs text-gray-600 dark:text-gray-300 sm:grid-cols-2">
+          <div class="mt-2 grid grid-cols-1 gap-2 text-xs text-foreground-muted sm:grid-cols-2">
             <div>
               {{ t('admin.ops.lastSuccess') }} <span class="font-mono">{{ formatTimeShort(hb.last_success_at) }}</span>
             </div>
@@ -1558,7 +1560,7 @@ function handleToolbarRefresh() {
 
           <div
             v-if="hb.last_error"
-            class="mt-3 rounded-lg bg-rose-50 p-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-300"
+            class="mt-3 rounded-panel p-2 text-xs bg-danger-subtle text-danger-foreground"
           >
             {{ hb.last_error }}
           </div>
@@ -1570,7 +1572,7 @@ function handleToolbarRefresh() {
     <BaseDialog :show="showCustomTimeRangeDialog" :title="t('admin.ops.timeRange.custom')" width="narrow" @close="handleCustomTimeRangeCancel">
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label class="block text-sm font-medium text-foreground-muted mb-1">
             {{ t('admin.ops.customTimeRange.startTime') }}
           </label>
           <input
@@ -1580,7 +1582,7 @@ function handleToolbarRefresh() {
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label class="block text-sm font-medium text-foreground-muted mb-1">
             {{ t('admin.ops.customTimeRange.endTime') }}
           </label>
           <input

@@ -37,10 +37,10 @@
 
           <div
             v-if="selectedJobIds.size"
-            class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-dark-700 dark:bg-dark-800"
+            class="flex flex-wrap items-center justify-between gap-3 rounded-panel border border-outline bg-surface px-3 py-2 shadow-card"
           >
-            <span class="text-sm text-gray-600 dark:text-gray-300">
-              已选择 <span class="font-medium text-gray-900 dark:text-white">{{ selectedJobIds.size }}</span> 个任务
+            <span class="text-sm text-foreground-muted">
+              已选择 <span class="font-medium text-foreground">{{ selectedJobIds.size }}</span> 个任务
             </span>
             <div class="flex flex-wrap items-center gap-2">
               <button
@@ -54,7 +54,7 @@
               </button>
               <button
                 type="button"
-                class="btn btn-secondary btn-sm text-red-600 hover:text-red-700 dark:text-red-400"
+                class="btn btn-secondary btn-sm text-danger-foreground hover:bg-danger-subtle"
                 :disabled="bulkDeleting"
                 @click="deleteSelectedJobs"
               >
@@ -77,7 +77,7 @@
           <template #header-select>
             <input
               type="checkbox"
-              class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus"
               :aria-label="batchImageText('selectAllJobs')"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
@@ -88,7 +88,7 @@
           <template #cell-select="{ row }">
             <input
               type="checkbox"
-              class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus"
               :aria-label="batchJobSelectionLabel(row)"
               :checked="selectedJobIds.has(row.id)"
               @change="toggleJobSelection(row.id, ($event.target as HTMLInputElement).checked)"
@@ -101,27 +101,27 @@
 	              <button
 	                v-if="row.child_count > 0 && !row.is_child"
 	                type="button"
-	                class="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 dark:text-gray-400 dark:hover:bg-dark-700 dark:hover:text-white"
+	                class="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-control text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
 	                :title="expandedParentIds.has(row.id) ? '收起子任务' : `展开 ${row.child_count} 个子任务`"
 	                @click.stop="toggleChildRows(row.id)"
 	              >
 	                <Icon :name="expandedParentIds.has(row.id) ? 'chevronDown' : 'chevronRight'" size="xs" />
 	              </button>
 	              <span v-else class="w-6 flex-shrink-0" />
-	              <button type="button" class="min-w-0 flex-1 rounded-lg py-1 text-left transition-colors hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 dark:hover:bg-dark-700" @click="selectJob(row.id)">
+	              <button type="button" class="min-w-0 flex-1 rounded-control py-1 text-left transition-colors hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30" @click="selectJob(row.id)">
 	                <span
 	                  class="flex min-w-0 items-center gap-2 text-sm font-medium"
-	                  :class="row.task_name ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+	                  :class="row.task_name ? 'text-foreground' : 'text-foreground-muted'"
                 >
                   <span class="min-w-0 truncate">{{ row.task_name || defaultTaskName(row.created_at) }}</span>
-                  <span v-if="row.child_count > 0 && !row.is_child" class="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-600 dark:bg-dark-700 dark:text-gray-300">
+                  <span v-if="row.child_count > 0 && !row.is_child" class="badge badge-gray flex-shrink-0 font-normal">
                     {{ row.child_count }} 子任务
                   </span>
-                  <span v-if="row.is_child" class="flex-shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-normal text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                  <span v-if="row.is_child" class="badge badge-warning flex-shrink-0 font-normal">
                     子任务
                   </span>
 	                </span>
-	                <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+	                <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground-muted">
 	                  <span>{{ formatDate(row.created_at) }}</span>
 	                </span>
 	              </button>
@@ -130,12 +130,12 @@
 
           <template #cell-model="{ row }">
 	            <div class="mx-auto max-w-[180px] text-center">
-	              <p class="truncate text-sm text-gray-700 dark:text-gray-300" :title="row.model">{{ row.model }}</p>
+	              <p class="truncate text-sm text-foreground-muted" :title="row.model">{{ row.model }}</p>
 	            </div>
 	          </template>
 
           <template #cell-api_key_name="{ value }">
-            <span class="block truncate text-center text-sm text-gray-700 dark:text-gray-300">
+            <span class="block truncate text-center text-sm text-foreground-muted">
               {{ value || '未记录' }}
             </span>
           </template>
@@ -150,21 +150,21 @@
 
           <template #cell-counts="{ row }">
             <div class="flex items-center justify-center gap-2 text-sm tabular-nums">
-              <span class="text-emerald-600 dark:text-emerald-300">{{ displayJob(row).success_count }}</span>
-              <span class="text-gray-300 dark:text-dark-500">/</span>
-              <span :class="displayJob(row).fail_count > 0 ? 'text-red-600 dark:text-red-300' : 'text-gray-400 dark:text-gray-500'">{{ displayJob(row).fail_count }}</span>
-              <span class="text-xs text-gray-400 dark:text-gray-500">共 {{ displayJob(row).item_count }}</span>
+              <span class="text-success-foreground">{{ displayJob(row).success_count }}</span>
+              <span class="text-foreground-subtle">/</span>
+              <span :class="displayJob(row).fail_count > 0 ? 'text-danger-foreground' : 'text-foreground-subtle'">{{ displayJob(row).fail_count }}</span>
+              <span class="text-xs text-foreground-subtle">共 {{ displayJob(row).item_count }}</span>
             </div>
           </template>
 
           <template #cell-cost="{ row }">
-            <span class="block text-center text-sm text-gray-700 dark:text-gray-300">
+            <span class="block text-center text-sm text-foreground-muted">
               {{ costLabel(displayJob(row)) }}
             </span>
           </template>
 
           <template #cell-downloaded="{ row }">
-            <span class="block text-center text-sm" :class="row.downloaded_at ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400'">
+            <span class="block text-center text-sm" :class="row.downloaded_at ? 'text-success-foreground' : 'text-foreground-muted'">
               {{ row.downloaded_at ? formatDate(row.downloaded_at) : '未下载' }}
             </span>
           </template>
@@ -173,7 +173,7 @@
 	            <div class="flex items-center justify-center gap-1">
               <button
                 type="button"
-                class="batch-row-action flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+                class="batch-row-action flex flex-col items-center gap-0.5 rounded-control p-1.5 text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
                 title="查看详情"
                 @click="selectJob(row.id)"
               >
@@ -182,8 +182,8 @@
               </button>
               <button
                 type="button"
-                class="batch-row-action flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
-                :class="canDownload(row) ? 'text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400' : 'text-gray-300 dark:text-dark-500'"
+                class="batch-row-action flex flex-col items-center gap-0.5 rounded-control p-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+                :class="canDownload(row) ? 'text-foreground-subtle hover:bg-success-subtle hover:text-success-foreground' : 'text-foreground-subtle'"
                 :disabled="!canDownload(row) || downloading"
                 title="下载 ZIP"
                 @click="downloadJob(row)"
@@ -199,8 +199,8 @@
                 <button
                   type="button"
                   :id="moreMenuTriggerId(row.id)"
-                  class="batch-row-action flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 dark:hover:bg-dark-700 dark:hover:text-white"
-                  :class="{ 'bg-gray-100 text-gray-900 dark:bg-dark-700 dark:text-white': openMoreJobId === row.id }"
+                  class="batch-row-action flex flex-col items-center gap-0.5 rounded-control p-1.5 text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+                  :class="{ 'bg-surface-subtle text-foreground': openMoreJobId === row.id }"
                   title="更多操作"
                   aria-haspopup="menu"
                   :aria-controls="moreMenuId(row.id)"
@@ -216,9 +216,9 @@
 
           <template #empty>
             <div class="flex min-h-[260px] flex-col items-center justify-center py-6 md:min-h-[300px]">
-              <Icon name="sparkles" size="xl" class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500" />
-              <p class="text-lg font-medium text-gray-900 dark:text-gray-100">暂无批量任务</p>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <Icon name="sparkles" size="xl" class="mb-4 h-12 w-12 text-foreground-subtle" />
+              <p class="text-lg font-medium text-foreground">暂无批量任务</p>
+              <p class="mt-1 text-sm text-foreground-muted">
                 点击右上角创建批量任务。
               </p>
             </div>
@@ -229,9 +229,9 @@
       <template #pagination>
         <div
           v-if="visibleBatchJobs.length > 0 || pagination.page > 1"
-          class="flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-3 dark:border-dark-700 dark:bg-dark-800 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+          class="flex flex-col gap-3 border-t border-outline bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
         >
-          <div class="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+          <div class="flex flex-wrap items-center gap-3 text-sm text-foreground-muted">
             <span>
               第 <span class="font-medium">{{ pagination.page }}</span> 页
             </span>
@@ -279,7 +279,7 @@
         ref="moreMenuRef"
         role="menu"
         :aria-labelledby="moreMenuTriggerId(openMoreJobId)"
-        class="fixed z-[9999] w-44 overflow-hidden rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 dark:bg-dark-800 dark:ring-white/10"
+        class="fixed z-[9999] w-44 overflow-hidden rounded-panel border border-outline bg-surface py-1 text-sm shadow-floating"
         :style="moreMenuStyle"
         @click.stop
         @keydown="handleMoreMenuKeydown"
@@ -291,7 +291,7 @@
               type="button"
               role="menuitem"
               tabindex="-1"
-              class="flex w-full items-center gap-2 px-3 py-2 text-left text-gray-700 transition-colors hover:bg-amber-50 hover:text-amber-700 focus:outline-none focus-visible:bg-amber-50 focus-visible:text-amber-700 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 disabled:opacity-60 dark:text-gray-200 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 dark:focus-visible:bg-amber-900/20 dark:focus-visible:text-amber-300"
+              class="flex w-full items-center gap-2 px-3 py-2 text-left text-foreground-muted transition-colors hover:bg-warning-subtle hover:text-warning-foreground focus:outline-none focus-visible:bg-warning-subtle focus-visible:text-warning-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus/40 disabled:opacity-60"
               :disabled="retryingBatchId === job.id"
               @click="retryFailedJob(job)"
             >
@@ -303,7 +303,7 @@
               type="button"
               role="menuitem"
               tabindex="-1"
-              class="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus-visible:bg-red-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-900/20 dark:focus-visible:bg-red-900/20"
+              class="flex w-full items-center gap-2 px-3 py-2 text-left text-danger-foreground transition-colors hover:bg-danger-subtle focus:outline-none focus-visible:bg-danger-subtle focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus/40 disabled:opacity-60"
               :disabled="deletingBatchId === job.id"
               @click="deleteJob(job)"
             >
@@ -318,22 +318,22 @@
     <Teleport to="body">
       <div
         v-if="promptPopover.visible"
-        class="batch-prompt-popover fixed z-[9999] rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-800 shadow-xl ring-1 ring-black/5 dark:border-dark-700 dark:bg-dark-900 dark:text-gray-100 dark:ring-white/10"
+        class="batch-prompt-popover fixed z-[9999] rounded-panel border border-outline bg-surface-raised p-3 text-sm text-foreground shadow-floating"
         :style="promptPopover.style"
         @mouseenter="cancelPromptPopoverClose"
         @mouseleave="schedulePromptPopoverClose"
       >
         <div class="mb-2 flex items-center justify-between gap-3">
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">完整 Prompt</span>
+          <span class="text-xs font-medium text-foreground-muted">完整 Prompt</span>
           <button
             type="button"
-            class="rounded-md px-2 py-1 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 dark:text-primary-300 dark:hover:bg-primary-900/20"
+            class="rounded-control px-2 py-1 text-xs font-medium text-brand transition-colors hover:bg-brand-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
             @click="copyPromptPopover"
           >
             复制
           </button>
         </div>
-        <p class="max-h-48 overflow-y-auto whitespace-pre-wrap break-words leading-6 selection:bg-primary-100 selection:text-primary-900 dark:selection:bg-primary-900/60 dark:selection:text-primary-100">
+        <p class="max-h-48 overflow-y-auto whitespace-pre-wrap break-words leading-6 selection:bg-brand-subtle selection:text-foreground">
           {{ promptPopover.text }}
         </p>
       </div>
@@ -341,10 +341,10 @@
 
     <BaseDialog :show="!!currentJob" title="任务详情" width="extra-wide" @close="closeDetail">
       <div v-if="currentJob" class="space-y-4">
-        <div class="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 dark:border-dark-700 dark:bg-dark-900/40">
+        <div class="rounded-panel border border-outline bg-surface-subtle px-4 py-3">
           <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
             <div class="min-w-0 text-center">
-              <p class="text-xs text-gray-500 dark:text-gray-400">状态</p>
+              <p class="text-xs text-foreground-muted">状态</p>
               <div class="mt-1 flex justify-center">
                 <span :class="statusBadgeClass(currentDisplayJob || currentJob)" class="badge whitespace-nowrap">
                   {{ statusLabel(currentDisplayJob || currentJob) }}
@@ -352,20 +352,20 @@
               </div>
             </div>
             <div class="min-w-0 text-center">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ hasChildJobs(currentJob.id) ? '汇总结果' : '结果' }}</p>
+              <p class="text-xs text-foreground-muted">{{ hasChildJobs(currentJob.id) ? '汇总结果' : '结果' }}</p>
               <p class="mt-1 flex items-center justify-center gap-2 font-medium tabular-nums">
-              <span class="text-emerald-600 dark:text-emerald-300">{{ (currentDisplayJob || currentJob).success_count }}</span>
-              <span class="text-gray-300 dark:text-dark-500">/</span>
-              <span :class="(currentDisplayJob || currentJob).fail_count > 0 ? 'text-red-600 dark:text-red-300' : 'text-gray-400 dark:text-gray-500'">{{ (currentDisplayJob || currentJob).fail_count }}</span>
+              <span class="text-success-foreground">{{ (currentDisplayJob || currentJob).success_count }}</span>
+              <span class="text-foreground-subtle">/</span>
+              <span :class="(currentDisplayJob || currentJob).fail_count > 0 ? 'text-danger-foreground' : 'text-foreground-subtle'">{{ (currentDisplayJob || currentJob).fail_count }}</span>
             </p>
             </div>
             <div class="min-w-0 text-center">
-              <p class="text-xs text-gray-500 dark:text-gray-400">费用</p>
-              <p class="mt-1 truncate font-medium text-gray-900 dark:text-white">{{ costLabel(currentDisplayJob || currentJob) }}</p>
+              <p class="text-xs text-foreground-muted">费用</p>
+              <p class="mt-1 truncate font-medium text-foreground">{{ costLabel(currentDisplayJob || currentJob) }}</p>
             </div>
             <div class="min-w-0 text-center">
-              <p class="text-xs text-gray-500 dark:text-gray-400">下载状态</p>
-              <p class="mt-1 truncate font-medium text-gray-900 dark:text-white">
+              <p class="text-xs text-foreground-muted">下载状态</p>
+              <p class="mt-1 truncate font-medium text-foreground">
               {{ currentJob.downloaded_at ? formatDate(currentJob.downloaded_at) : '未下载' }}
             </p>
             </div>
@@ -373,15 +373,15 @@
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">明细</h3>
+          <h3 class="text-sm font-semibold text-foreground">明细</h3>
           <button type="button" class="btn btn-secondary btn-sm" :disabled="refreshing || loadingItems" @click="refreshDetail">
             <Icon name="refresh" size="sm" class="mr-1.5" :class="refreshing || loadingItems ? 'animate-spin' : ''" />
             刷新
           </button>
         </div>
 
-        <div v-if="items.length" class="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-900">
-          <table class="w-full min-w-[860px] table-fixed divide-y divide-gray-200 text-sm dark:divide-dark-700">
+        <div v-if="items.length" class="overflow-x-auto rounded-panel border border-outline bg-surface">
+          <table class="w-full min-w-[860px] table-fixed divide-y divide-outline text-sm">
             <colgroup>
               <col class="w-[18%]" />
               <col class="w-[34%]" />
@@ -389,16 +389,16 @@
               <col class="w-[10%]" />
               <col class="w-[26%]" />
             </colgroup>
-            <thead class="bg-gray-50 dark:bg-dark-800/80">
+            <thead class="bg-surface-subtle">
               <tr>
-                <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">Custom ID</th>
-                <th class="px-3 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Prompt</th>
-                <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">状态</th>
-                <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">预览</th>
-                <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">结果</th>
+                <th class="px-3 py-3 text-center text-sm font-medium text-foreground-muted">Custom ID</th>
+                <th class="px-3 py-3 text-left text-sm font-medium text-foreground-muted">Prompt</th>
+                <th class="px-3 py-3 text-center text-sm font-medium text-foreground-muted">状态</th>
+                <th class="px-3 py-3 text-center text-sm font-medium text-foreground-muted">预览</th>
+                <th class="px-3 py-3 text-center text-sm font-medium text-foreground-muted">结果</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
+            <tbody class="divide-y divide-outline">
               <tr
                 v-for="item in items"
                 :key="itemPreviewKey(item)"
@@ -408,15 +408,15 @@
                 <td class="px-3 py-2.5 text-center">
                   <span
                     class="block min-w-0 truncate font-mono text-sm"
-                    :class="isRecoveredOriginalFailure(item) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'"
+                    :class="isRecoveredOriginalFailure(item) ? 'text-foreground-subtle' : 'text-foreground'"
                     :title="item.custom_id"
                   >
                     {{ item.custom_id }}
                   </span>
                 </td>
-                <td class="px-3 py-2.5 text-left" :class="isRecoveredOriginalFailure(item) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
+                <td class="px-3 py-2.5 text-left" :class="isRecoveredOriginalFailure(item) ? 'text-foreground-subtle' : 'text-foreground-muted'">
                   <div
-                    class="batch-prompt-trigger cursor-default truncate rounded px-1 text-sm leading-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                    class="batch-prompt-trigger cursor-default truncate rounded px-1 text-sm leading-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
                     tabindex="0"
                     @pointerenter="schedulePromptPopoverOpen($event, item.prompt_preview || '-')"
                     @pointerleave="schedulePromptPopoverClose"
@@ -436,7 +436,7 @@
                   </span>
                 </td>
                 <td class="px-3 py-2.5 text-center">
-                  <div class="mx-auto h-12 w-12 overflow-hidden rounded-md border border-gray-200 bg-gray-50 dark:border-dark-700 dark:bg-dark-800">
+                  <div class="mx-auto h-12 w-12 overflow-hidden rounded-control border border-outline bg-surface-subtle">
                     <button
                       v-if="itemPreviewUrls[itemPreviewKey(item)] && !previewErrorIds.has(itemPreviewKey(item))"
                       type="button"
@@ -454,21 +454,21 @@
                     <button
                       v-else-if="canLoadItemPreview(item)"
                       type="button"
-                      class="flex h-full w-full items-center justify-center text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 disabled:cursor-wait disabled:opacity-70 dark:text-gray-400 dark:hover:bg-dark-700"
+                      class="flex h-full w-full items-center justify-center text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-brand disabled:cursor-wait disabled:opacity-70"
                       :disabled="previewLoadingIds.has(itemPreviewKey(item))"
                       :title="previewErrorIds.has(itemPreviewKey(item)) ? '重新加载压缩预览' : '加载压缩预览'"
                       @click="loadItemPreview(item)"
                     >
                       <Icon :name="previewLoadingIds.has(itemPreviewKey(item)) ? 'refresh' : 'eye'" size="sm" :class="previewLoadingIds.has(itemPreviewKey(item)) ? 'animate-spin' : ''" />
                     </button>
-                    <div v-else class="flex h-full w-full items-center justify-center text-gray-400" :title="item.image_count > 0 ? '不可预览' : '无图片'">
+                    <div v-else class="flex h-full w-full items-center justify-center text-foreground-subtle" :title="item.image_count > 0 ? '不可预览' : '无图片'">
                       <Icon name="document" size="sm" />
                     </div>
                   </div>
                 </td>
                 <td class="px-3 py-2.5 text-center">
                   <span
-                    class="inline-flex max-w-full items-center justify-center truncate rounded-md px-2.5 py-1 text-xs font-medium leading-5 ring-1 ring-inset"
+                    class="inline-flex max-w-full items-center justify-center truncate rounded-control px-2.5 py-1 text-xs font-medium leading-5 ring-1 ring-inset"
                     :class="itemResultClass(item)"
                     :title="itemResultLabel(item)"
                   >
@@ -479,12 +479,12 @@
             </tbody>
           </table>
         </div>
-        <div v-else class="rounded-lg border border-dashed border-gray-200 py-10 text-center dark:border-dark-700">
-          <Icon name="refresh" size="lg" class="mx-auto mb-3 text-gray-400" :class="loadingItems ? 'animate-spin' : ''" />
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+        <div v-else class="rounded-panel border border-dashed border-outline py-10 text-center">
+          <Icon name="refresh" size="lg" class="mx-auto mb-3 text-foreground-subtle" :class="loadingItems ? 'animate-spin' : ''" />
+          <p class="text-sm font-medium text-foreground-muted">
             {{ loadingItems ? '正在加载明细...' : '暂无明细' }}
           </p>
-          <p v-if="!loadingItems" class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p v-if="!loadingItems" class="mt-1 text-sm text-foreground-muted">
             排队或生成中的任务会先显示已提交的 prompt，结果整理完成后会更新图片状态。
           </p>
         </div>
@@ -526,14 +526,14 @@
 
     <BaseDialog :show="!!previewImageItem" :title="previewImageItem?.custom_id || '图片预览'" width="extra-wide" :z-index="60" @close="closeImagePreview">
       <div class="space-y-3">
-        <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+        <div class="rounded-panel border border-warning/30 bg-warning-subtle px-3 py-2 text-sm text-warning-foreground">
           当前显示的是浏览器本地缓存的压缩缩略图，清晰度会有影响；需要查看原图请下载 ZIP。
         </div>
-        <div class="flex min-h-[420px] items-center justify-center rounded-lg bg-gray-50 p-4 dark:bg-dark-900">
+        <div class="flex min-h-[420px] items-center justify-center rounded-panel bg-canvas p-4">
           <img
             v-if="previewImageUrl"
             :src="previewImageUrl"
-            class="max-h-[70vh] max-w-full rounded-md object-contain"
+            class="max-h-[70vh] max-w-full rounded-control object-contain"
             :alt="previewImageItem?.custom_id || ''"
           />
         </div>
@@ -562,7 +562,7 @@
                 {{ key.name }} · {{ key.group?.name || 'Gemini' }}
               </option>
             </select>
-            <p v-if="!loadingKeys && geminiApiKeys.length === 0" class="input-hint text-amber-600 dark:text-amber-400">
+            <p v-if="!loadingKeys && geminiApiKeys.length === 0" class="input-hint text-warning-foreground">
               当前没有可用于批量生图的 Gemini API Key。请先创建并绑定已开启批量生图的 Gemini 分组。
             </p>
           </div>
@@ -576,17 +576,17 @@
                 {{ model.label }}
               </option>
             </select>
-            <p v-if="modelLoadError" class="input-hint text-amber-600 dark:text-amber-400">
+            <p v-if="modelLoadError" class="input-hint text-warning-foreground">
               {{ modelLoadError }}
             </p>
-            <p v-else-if="selectedApiKey && !loadingModels && availableBatchImageModels.length === 0" class="input-hint text-amber-600 dark:text-amber-400">
+            <p v-else-if="selectedApiKey && !loadingModels && availableBatchImageModels.length === 0" class="input-hint text-warning-foreground">
               {{ batchImageText('noModelsHint') }}
             </p>
           </div>
 
           <div>
             <label class="input-label">图片尺寸</label>
-            <div class="input flex items-center bg-gray-50 text-gray-600 dark:bg-dark-900 dark:text-gray-300">
+            <div class="input flex items-center bg-surface-subtle text-foreground-muted">
               1K
             </div>
             <p class="input-hint">当前批量任务固定按 1K 图片提交。</p>
@@ -603,7 +603,7 @@
 
           <div>
             <label class="input-label">预计生成</label>
-            <div class="input flex items-center bg-gray-50 text-gray-600 dark:bg-dark-900 dark:text-gray-300">
+            <div class="input flex items-center bg-surface-subtle text-foreground-muted">
               {{ estimatedOutputCount }} 张 / {{ promptRows.length }} 条
             </div>
           </div>
@@ -612,13 +612,13 @@
         <div class="space-y-3">
           <div class="flex items-center justify-between gap-3">
             <label class="input-label mb-0">Prompt</label>
-            <span class="text-xs text-gray-500 dark:text-gray-400">已添加 {{ promptRows.length }} 条</span>
+            <span class="text-xs text-foreground-muted">已添加 {{ promptRows.length }} 条</span>
           </div>
-          <div class="rounded-lg border border-gray-200 p-3 dark:border-dark-700">
+          <div class="rounded-panel border border-outline bg-surface-subtle p-3">
             <textarea
               v-model="promptDraft"
               rows="3"
-              class="h-[76px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm leading-5 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 dark:border-dark-600 dark:bg-dark-900 dark:text-gray-100 dark:focus:border-primary-500 dark:focus:ring-primary-900/40"
+              class="h-[76px] w-full resize-y rounded-control border border-outline-strong bg-surface px-3 py-2 text-sm leading-5 text-foreground outline-none focus:border-focus focus:ring-2 focus:ring-focus/20"
               placeholder="粘贴 prompt，添加后进入下方列表"
             />
             <div class="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_112px_132px_112px] md:items-center">
@@ -663,46 +663,46 @@
               <span
                 v-for="(ref, refIndex) in referenceImageDrafts"
                 :key="`${ref.name}-${refIndex}`"
-                class="inline-flex max-w-full items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 dark:border-dark-700 dark:bg-dark-900 dark:text-gray-200"
+                class="inline-flex max-w-full items-center gap-1 rounded-control border border-outline bg-surface px-2 py-1 text-xs text-foreground-muted"
               >
                 <span class="max-w-[180px] truncate">{{ ref.name }}</span>
-                <button type="button" class="text-gray-400 hover:text-red-600" title="移除参考图" @click="removeReferenceImageDraft(refIndex)">
+                <button type="button" class="text-foreground-subtle hover:text-danger-foreground" title="移除参考图" @click="removeReferenceImageDraft(refIndex)">
                   <Icon name="x" size="xs" />
                 </button>
               </span>
             </div>
-            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <p class="mt-2 text-xs text-foreground-muted">
               每条最多 {{ BATCH_IMAGE_MAX_OUTPUTS_PER_ITEM }} 张，整组最多 {{ BATCH_IMAGE_MAX_OUTPUTS_PER_JOB }} 张；当前模型每条最多 {{ selectedModelReferenceLimit }} 张参考图，参考图按生成张数重复消耗输入 token。
             </p>
           </div>
-          <div v-if="promptRows.length" class="overflow-hidden rounded-lg border border-gray-200 dark:border-dark-700">
+          <div v-if="promptRows.length" class="overflow-hidden rounded-panel border border-outline bg-surface">
             <div
               v-for="(row, index) in promptRows"
               :key="row.localId"
-              class="flex items-center gap-3 border-b border-gray-100 px-3 py-2 last:border-b-0 dark:border-dark-700"
+              class="flex items-center gap-3 border-b border-outline px-3 py-2 last:border-b-0"
             >
-              <span class="w-20 flex-shrink-0 font-mono text-xs text-gray-500 dark:text-gray-400">{{ row.custom_id }}</span>
-              <p class="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-100">{{ row.prompt }}</p>
-              <span v-if="row.output_count > 1" class="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400">
+              <span class="w-20 flex-shrink-0 font-mono text-xs text-foreground-muted">{{ row.custom_id }}</span>
+              <p class="min-w-0 flex-1 truncate text-sm text-foreground">{{ row.prompt }}</p>
+              <span v-if="row.output_count > 1" class="flex-shrink-0 text-xs text-foreground-muted">
                 x{{ row.output_count }}
               </span>
-              <span v-if="row.reference_images.length" class="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400">
+              <span v-if="row.reference_images.length" class="flex-shrink-0 text-xs text-foreground-muted">
                 {{ row.reference_images.length }} 参考图
               </span>
-              <button type="button" class="btn-ghost btn-icon flex-shrink-0 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20" title="删除" @click="removePromptRow(index)">
+              <button type="button" class="btn-ghost btn-icon flex-shrink-0 text-danger-foreground hover:bg-danger-subtle" title="删除" @click="removePromptRow(index)">
                 <Icon name="trash" size="sm" />
               </button>
             </div>
           </div>
-          <div v-else class="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-sm text-gray-500 dark:border-dark-700 dark:text-gray-400">
+          <div v-else class="rounded-panel border border-dashed border-outline px-3 py-6 text-center text-sm text-foreground-subtle">
             还没有添加 prompt。
           </div>
         </div>
 
-	        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+	        <div class="rounded-panel border border-warning/30 bg-warning-subtle p-3 text-sm leading-6 text-warning-foreground">
 	          取消任务会请求上游取消；已被系统索引为成功的图片仍会按成功项结算扣费，其余冻结金额会释放。
 	        </div>
-	        <div v-if="submitting" class="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-800 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-100">
+	        <div v-if="submitting" class="rounded-panel border border-info/30 bg-info-subtle p-3 text-sm leading-6 text-info-foreground">
 	          正在创建上游批量任务，通常需要几秒，请不要重复提交。
 	        </div>
 	      </form>
@@ -721,8 +721,8 @@
     <BaseDialog :show="showGuideModal" title="批量生图使用说明" width="wide" @close="showGuideModal = false">
 	      <div class="space-y-5">
 	        <section class="space-y-3">
-	          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">当前界面如何使用</h3>
-	          <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm leading-6 text-gray-700 dark:border-dark-700 dark:bg-dark-900/50 dark:text-gray-200">
+	          <h3 class="text-sm font-semibold text-foreground">当前界面如何使用</h3>
+	          <div class="rounded-panel border border-outline bg-surface-subtle p-3 text-sm leading-6 text-foreground-muted">
 	            <p>1. 选择已开启批量生图的 Gemini API Key，模型列表会按该 Key 所属分组可用模型展示。</p>
 	            <p>2. 任务名称可以留空，提交时会自动使用当前时间；Prompt 需要一条条添加到列表里，每条 Prompt 可附参考图，也可以设置重复生成张数。</p>
 	            <p>3. 提交后任务会先排队，明细会展示已提交的 Prompt；图片预览默认不加载，点击明细里的预览按钮才会加载单张图。</p>
@@ -731,13 +731,13 @@
 	        </section>
 	        <section class="space-y-3">
 	          <div class="flex flex-wrap items-center justify-between gap-3">
-	            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">给 Codex 的 Skill 说明</h3>
-	            <p class="text-xs text-gray-500 dark:text-gray-400">用于告诉 Codex 如何代替用户整理 prompt、提交任务和下载结果。</p>
+	            <h3 class="text-sm font-semibold text-foreground">给 Codex 的 Skill 说明</h3>
+	            <p class="text-xs text-foreground-muted">用于告诉 Codex 如何代替用户整理 prompt、提交任务和下载结果。</p>
 	          </div>
 	        <textarea
 	          :value="agentInstruction"
 	          readonly
-	          class="min-h-[420px] w-full resize-y rounded-md border border-gray-200 bg-gray-50 p-4 font-mono text-sm leading-6 text-gray-800 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:border-dark-600 dark:bg-dark-900 dark:text-gray-100 dark:focus:border-primary-500 dark:focus:ring-primary-900/40"
+	          class="min-h-[420px] w-full resize-y rounded-control border border-outline-strong bg-canvas p-4 font-mono text-sm leading-6 text-foreground outline-none focus:border-focus focus:ring-2 focus:ring-focus/20"
 	        />
 	        </section>
 	      </div>
@@ -2134,9 +2134,9 @@ function isRecoveredOriginalFailure(item: BatchImageDetailItem) {
 
 function detailItemRowClass(item: BatchImageDetailItem) {
   if (isRecoveredOriginalFailure(item)) {
-    return 'bg-gray-50/80 text-gray-400 hover:bg-gray-100/80 dark:bg-dark-900/60 dark:text-gray-500 dark:hover:bg-dark-800/70'
+    return 'bg-surface-subtle text-foreground-subtle hover:bg-surface'
   }
-  return 'hover:bg-gray-50/70 dark:hover:bg-dark-800/60'
+  return 'hover:bg-surface-subtle'
 }
 
 function previewCacheSupported() {
@@ -2514,10 +2514,10 @@ function itemResultLabel(item: BatchImageDetailItem) {
 }
 
 function itemResultClass(item: BatchImageDetailItem) {
-  if (isRecoveredOriginalFailure(item)) return 'bg-gray-100 text-gray-500 ring-gray-200 dark:bg-dark-800 dark:text-gray-400 dark:ring-dark-700'
-  if (item.error || item.status === 'failed' || item.status === 'cancelled') return 'bg-red-50 text-red-700 ring-red-100 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-900/50'
-  if (item.status === 'succeeded' || item.status === 'success') return 'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/50'
-  return 'bg-gray-50 text-gray-500 ring-gray-200 dark:bg-dark-800 dark:text-gray-400 dark:ring-dark-700'
+  if (isRecoveredOriginalFailure(item)) return 'bg-surface-subtle text-foreground-subtle ring-outline'
+  if (item.error || item.status === 'failed' || item.status === 'cancelled') return 'bg-danger-subtle text-danger-foreground ring-danger/20'
+  if (item.status === 'succeeded' || item.status === 'success') return 'ring-success/20 bg-success-subtle text-success-foreground'
+  return 'bg-surface-subtle text-foreground-subtle ring-outline'
 }
 
 function friendlyItemError(error: BatchImageItem['error']) {

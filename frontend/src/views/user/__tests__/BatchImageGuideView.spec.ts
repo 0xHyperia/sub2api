@@ -334,4 +334,12 @@ describe('BatchImageGuideView interactions', () => {
     expect(style.width).toBe('304px')
     expect(style.maxWidth).toBe('calc(100vw - 16px)')
   })
+
+  it('renders the batch workspace with semantic UI tokens', async () => {
+    const wrapper = await mountView()
+
+    expect(wrapper.html()).toContain('text-foreground')
+    expect(wrapper.html()).toContain('rounded-control')
+    expect(wrapper.html()).not.toMatch(/(?:bg|text|border|divide)-gray-|dark:|primary-/)
+  })
 })

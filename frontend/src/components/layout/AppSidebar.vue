@@ -700,7 +700,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-logo {
-  @apply flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border border-outline bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
+  @apply flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-control border border-outline bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
 }
 
 .sidebar-brand {
@@ -728,7 +728,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-header-action {
-  @apply ml-auto flex h-10 w-10 items-center justify-center rounded-md text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply ml-auto flex h-10 w-10 items-center justify-center rounded-control text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .admin-sidebar-nav {
@@ -762,7 +762,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-link {
-  @apply relative mb-0.5 flex min-h-10 items-center gap-2.5 overflow-hidden rounded-md px-2.5 py-2 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply relative mb-0.5 flex min-h-10 items-center gap-2.5 overflow-hidden rounded-control px-2.5 py-2 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .sidebar-link-active {
@@ -803,7 +803,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-child-link {
-  @apply mb-0.5 flex min-h-9 items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply mb-0.5 flex min-h-9 items-center gap-2 rounded-control px-2 py-1.5 text-[13px] font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .sidebar-child-link-active {

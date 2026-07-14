@@ -4,7 +4,7 @@
       <template #filters>
         <div class="affiliate-toolbar flex flex-wrap items-center gap-3">
           <div class="relative w-full md:w-80">
-            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
             <input
               v-model="filters.search"
               type="search"
@@ -62,12 +62,12 @@
             />
           </template>
           <template #cell-aff_code="{ row }">
-            <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ row.aff_code || '-' }}</span>
+            <span class="font-mono text-sm text-foreground-muted">{{ row.aff_code || '-' }}</span>
           </template>
           <template #cell-order="{ row }">
             <div class="space-y-0.5">
-              <div class="font-mono text-sm text-gray-900 dark:text-white">#{{ row.order_id }}</div>
-              <div class="max-w-56 truncate text-sm text-gray-500 dark:text-dark-400">{{ row.out_trade_no }}</div>
+              <div class="font-mono text-sm text-foreground">#{{ row.order_id }}</div>
+              <div class="max-w-56 truncate text-sm text-foreground-muted">{{ row.out_trade_no }}</div>
             </div>
           </template>
           <template #cell-payment_type="{ row }">
@@ -83,7 +83,7 @@
             <AmountText :value="row.order_amount" />
           </template>
           <template #cell-pay_amount="{ row }">
-            <span class="text-sm text-gray-900 dark:text-white">¥{{ formatAmount(row.pay_amount) }}</span>
+            <span class="text-sm text-foreground">¥{{ formatAmount(row.pay_amount) }}</span>
           </template>
           <template #cell-rebate_amount="{ row }">
             <AmountText :value="row.rebate_amount" strong />
@@ -104,7 +104,7 @@
             <NullableAmountText :value="row.history_quota_after" />
           </template>
           <template #cell-created_at="{ row }">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ formatDateTime(row.created_at) }}</span>
+            <span class="text-sm text-foreground-muted">{{ formatDateTime(row.created_at) }}</span>
           </template>
         </DataTable>
       </template>
@@ -128,13 +128,13 @@
       @close="overviewDialog = false"
     >
       <div v-if="overviewLoading" class="flex justify-center py-8">
-        <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" role="status" :aria-label="t('common.loading')"></div>
+        <div class="h-6 w-6 animate-spin rounded-full border-2 border-outline-strong border-t-transparent" role="status" :aria-label="t('common.loading')"></div>
       </div>
       <div v-else-if="selectedOverview" class="space-y-4">
         <div class="affiliate-identity">
-          <div class="font-mono text-sm text-gray-900 dark:text-white">#{{ selectedOverview.user_id }}</div>
-          <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ selectedOverview.email || '-' }}</div>
-          <div class="mt-0.5 text-sm text-gray-500 dark:text-dark-400">{{ selectedOverview.username || '-' }}</div>
+          <div class="font-mono text-sm text-foreground">#{{ selectedOverview.user_id }}</div>
+          <div class="mt-1 text-sm font-medium text-foreground">{{ selectedOverview.email || '-' }}</div>
+          <div class="mt-0.5 text-sm text-foreground-muted">{{ selectedOverview.username || '-' }}</div>
         </div>
         <dl class="affiliate-overview-grid">
           <OverviewStat :label="t('admin.affiliates.overview.affCode')" :value="selectedOverview.aff_code || '-'" mono />
@@ -349,15 +349,15 @@ const UserCell = defineComponent({
   emits: ['open'],
   setup(cellProps, { emit }) {
     return () => h('div', { class: 'space-y-0.5' }, [
-      h('div', { class: 'font-mono text-sm text-gray-900 dark:text-white' }, `#${cellProps.id}`),
+      h('div', { class: 'font-mono text-sm text-foreground' }, `#${cellProps.id}`),
       h(cellProps.clickable ? 'button' : 'div', {
       class: cellProps.clickable
           ? 'affiliate-user-link max-w-56 truncate text-left text-sm font-medium'
-          : 'max-w-56 truncate text-sm text-gray-700 dark:text-gray-300',
+          : 'max-w-56 truncate text-sm text-foreground-muted',
         type: cellProps.clickable ? 'button' : undefined,
         onClick: cellProps.clickable ? () => emit('open', cellProps.id) : undefined,
       }, cellProps.email || '-'),
-      h('div', { class: 'max-w-56 truncate text-sm text-gray-500 dark:text-dark-400' }, cellProps.username || '-'),
+      h('div', { class: 'max-w-56 truncate text-sm text-foreground-muted' }, cellProps.username || '-'),
     ])
   },
 })
@@ -370,8 +370,8 @@ const AmountText = defineComponent({
   setup(amountProps) {
     return () => h('span', {
       class: amountProps.strong
-        ? 'text-sm font-semibold text-gray-900 dark:text-white'
-        : 'text-sm text-gray-900 dark:text-white',
+        ? 'text-sm font-semibold text-foreground'
+        : 'text-sm text-foreground',
     }, `$${formatAmount(amountProps.value)}`)
   },
 })
@@ -384,7 +384,7 @@ const NullableAmountText = defineComponent({
     return () => {
       const value = amountProps.value
       if (value === null || value === undefined) {
-        return h('span', { class: 'text-sm text-gray-400 dark:text-dark-500' }, '-')
+        return h('span', { class: 'text-sm text-foreground-subtle' }, '-')
       }
       return h(AmountText, { value })
     }
@@ -399,11 +399,11 @@ const OverviewStat = defineComponent({
   },
   setup(statProps) {
     return () => h('div', { class: 'affiliate-overview-stat' }, [
-      h('dt', { class: 'text-xs text-gray-500 dark:text-dark-400' }, statProps.label),
+      h('dt', { class: 'text-xs text-foreground-muted' }, statProps.label),
       h('dd', {
         class: statProps.mono
-          ? 'mt-1 font-mono text-sm font-semibold text-gray-900 dark:text-white'
-          : 'mt-1 text-sm font-semibold text-gray-900 dark:text-white',
+          ? 'mt-1 font-mono text-sm font-semibold text-foreground'
+          : 'mt-1 text-sm font-semibold text-foreground',
       }, statProps.value),
     ])
   },

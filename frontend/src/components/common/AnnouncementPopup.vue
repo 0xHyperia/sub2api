@@ -11,7 +11,7 @@
     <div v-if="announcementStore.currentPopup" class="min-w-0">
       <div class="mb-4 flex items-center gap-2 text-xs text-foreground-muted">
         <Icon name="bell" size="sm" aria-hidden="true" />
-        <span class="rounded-md bg-warning-subtle px-2 py-1 font-semibold text-warning-foreground">
+        <span class="rounded-control bg-warning-subtle px-2 py-1 font-semibold text-warning-foreground">
           {{ t('announcements.unread') }}
         </span>
         <time>{{ formatRelativeWithDateTime(announcementStore.currentPopup.created_at) }}</time>

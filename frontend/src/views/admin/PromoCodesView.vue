@@ -4,7 +4,7 @@
       <template #filters>
         <div class="commerce-toolbar flex flex-wrap items-center gap-3">
           <div class="relative w-full md:w-72">
-            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
             <input
               v-model="searchQuery"
               type="search"
@@ -54,15 +54,15 @@
         >
           <template #cell-code="{ value }">
             <div class="flex items-center space-x-2">
-              <code class="font-mono text-sm text-gray-900 dark:text-gray-100">{{ value }}</code>
+              <code class="font-mono text-sm text-foreground">{{ value }}</code>
               <button
                 type="button"
                 @click="copyToClipboard(value)"
                 :class="[
                   'promo-copy',
                   copiedCode === value
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-gray-400'
+                    ? 'text-success-foreground'
+                    : 'text-foreground-subtle'
                 ]"
                 :title="copiedCode === value ? t('admin.promo.copied') : t('keys.copyToClipboard')"
                 :aria-label="copiedCode === value ? t('admin.promo.copied') : t('keys.copyToClipboard')"
@@ -74,13 +74,13 @@
           </template>
 
           <template #cell-bonus_amount="{ value }">
-            <span class="text-sm font-medium text-gray-900 dark:text-white">
+            <span class="text-sm font-medium text-foreground">
               ${{ value.toFixed(2) }}
             </span>
           </template>
 
           <template #cell-usage="{ row }">
-            <span class="text-sm text-gray-600 dark:text-gray-300">
+            <span class="text-sm text-foreground-muted">
               {{ row.used_count }} / {{ row.max_uses === 0 ? '∞' : row.max_uses }}
             </span>
           </template>
@@ -97,13 +97,13 @@
           </template>
 
           <template #cell-expires_at="{ value }">
-            <span class="text-sm text-gray-500 dark:text-dark-400">
+            <span class="text-sm text-foreground-muted">
               {{ value ? formatDateTime(value) : t('admin.promo.neverExpires') }}
             </span>
           </template>
 
           <template #cell-created_at="{ value }">
-            <span class="text-sm text-gray-500 dark:text-dark-400">
+            <span class="text-sm text-foreground-muted">
               {{ formatDateTime(value) }}
             </span>
           </template>
@@ -174,7 +174,7 @@
         <div>
           <label for="create-promo-code" class="input-label">
             {{ t('admin.promo.code') }}
-            <span class="ml-1 text-xs font-normal text-gray-400">({{ t('admin.promo.autoGenerate') }})</span>
+            <span class="ml-1 text-xs font-normal text-foreground-subtle">({{ t('admin.promo.autoGenerate') }})</span>
           </label>
           <input
             id="create-promo-code"
@@ -199,7 +199,7 @@
         <div>
           <label for="create-promo-max-uses" class="input-label">
             {{ t('admin.promo.maxUses') }}
-            <span class="ml-1 text-xs font-normal text-gray-400">({{ t('admin.promo.zeroUnlimited') }})</span>
+            <span class="ml-1 text-xs font-normal text-foreground-subtle">({{ t('admin.promo.zeroUnlimited') }})</span>
           </label>
           <input
             id="create-promo-max-uses"
@@ -212,7 +212,7 @@
         <div>
           <label for="create-promo-expires" class="input-label">
             {{ t('admin.promo.expiresAt') }}
-            <span class="ml-1 text-xs font-normal text-gray-400">({{ t('common.optional') }})</span>
+            <span class="ml-1 text-xs font-normal text-foreground-subtle">({{ t('common.optional') }})</span>
           </label>
           <input
             id="create-promo-expires"
@@ -224,7 +224,7 @@
         <div>
           <label for="create-promo-notes" class="input-label">
             {{ t('admin.promo.notes') }}
-            <span class="ml-1 text-xs font-normal text-gray-400">({{ t('common.optional') }})</span>
+            <span class="ml-1 text-xs font-normal text-foreground-subtle">({{ t('common.optional') }})</span>
           </label>
           <textarea
             id="create-promo-notes"
@@ -279,7 +279,7 @@
         <div>
           <label for="edit-promo-max-uses" class="input-label">
             {{ t('admin.promo.maxUses') }}
-            <span class="ml-1 text-xs font-normal text-gray-400">({{ t('admin.promo.zeroUnlimited') }})</span>
+            <span class="ml-1 text-xs font-normal text-foreground-subtle">({{ t('admin.promo.zeroUnlimited') }})</span>
           </label>
           <input
             id="edit-promo-max-uses"
@@ -296,7 +296,7 @@
         <div>
           <label for="edit-promo-expires" class="input-label">
             {{ t('admin.promo.expiresAt') }}
-            <span class="ml-1 text-xs font-normal text-gray-400">({{ t('common.optional') }})</span>
+            <span class="ml-1 text-xs font-normal text-foreground-subtle">({{ t('common.optional') }})</span>
           </label>
           <input
             id="edit-promo-expires"
@@ -308,7 +308,7 @@
         <div>
           <label for="edit-promo-notes" class="input-label">
             {{ t('admin.promo.notes') }}
-            <span class="ml-1 text-xs font-normal text-gray-400">({{ t('common.optional') }})</span>
+            <span class="ml-1 text-xs font-normal text-foreground-subtle">({{ t('common.optional') }})</span>
           </label>
           <textarea
             id="edit-promo-notes"
@@ -338,9 +338,9 @@
       @close="showUsagesDialog = false"
     >
       <div v-if="usagesLoading" class="flex items-center justify-center py-8">
-        <Icon name="refresh" size="lg" class="animate-spin text-gray-400" />
+        <Icon name="refresh" size="lg" class="animate-spin text-foreground-subtle" />
       </div>
-      <div v-else-if="usages.length === 0" class="py-8 text-center text-gray-500 dark:text-gray-400">
+      <div v-else-if="usages.length === 0" class="py-8 text-center text-foreground-subtle">
         {{ t('admin.promo.noUsages') }}
       </div>
       <div v-else class="promo-usage-list">
@@ -354,16 +354,16 @@
               <Icon name="user" size="sm" />
             </div>
             <div class="min-w-0">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
+              <p class="truncate text-sm font-medium text-foreground">
                 {{ usage.user?.email || t('admin.promo.userPrefix', { id: usage.user_id }) }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p class="text-xs text-foreground-subtle">
                 {{ formatDateTime(usage.used_at) }}
               </p>
             </div>
           </div>
           <div class="shrink-0 text-right tabular-nums">
-            <span class="text-sm font-semibold text-gray-900 dark:text-white">
+            <span class="text-sm font-semibold text-foreground">
               +${{ usage.bonus_amount.toFixed(2) }}
             </span>
           </div>

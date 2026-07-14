@@ -1,8 +1,8 @@
 <template>
-  <section class="rounded-lg border border-outline bg-surface px-3 py-2 shadow-card">
+  <section class="rounded-panel border border-outline bg-surface px-3 py-2 shadow-card">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <span
-        class="inline-flex min-h-8 items-center rounded-md px-2.5 text-xs font-semibold"
+        class="inline-flex min-h-8 items-center rounded-control px-2.5 text-xs font-semibold"
         :class="overallChipClass"
       >
         <span class="mr-1.5 h-1.5 w-1.5 rounded-full" :class="overallDotClass"></span>
@@ -13,7 +13,7 @@
       <div
         role="tablist"
         :aria-label="t('channelStatus.detailColumns.availability7d')"
-        class="inline-flex max-w-full overflow-x-auto rounded-lg border border-outline bg-surface-subtle p-0.5 text-xs"
+        class="inline-flex max-w-full overflow-x-auto rounded-panel border border-outline bg-surface-subtle p-0.5 text-xs"
       >
         <button
           v-for="opt in windowOptions"
@@ -24,7 +24,7 @@
           :aria-selected="window === opt.value"
           :tabindex="window === opt.value ? 0 : -1"
           aria-controls="monitor-grid"
-          class="min-h-8 whitespace-nowrap rounded-md px-3 py-1 transition-colors"
+          class="min-h-8 whitespace-nowrap rounded-control px-3 py-1 transition-colors"
           :class="window === opt.value
             ? 'bg-surface text-foreground shadow-card font-semibold'
             : 'text-foreground-muted hover:text-foreground'"
@@ -37,7 +37,7 @@
 
       <button
         type="button"
-        class="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground disabled:opacity-50"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground disabled:opacity-50"
         :disabled="loading"
         :title="t('common.refresh')"
         :aria-label="t('common.refresh')"
@@ -101,20 +101,20 @@ const overallLabel = computed(() => t(`channelStatus.overall.${props.overallStat
 const overallChipClass = computed(() => {
   switch (props.overallStatus) {
     case 'operational':
-      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+      return 'bg-success-subtle text-success-foreground'
     case 'degraded':
     default:
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+      return 'bg-warning-subtle text-warning-foreground'
   }
 })
 
 const overallDotClass = computed(() => {
   switch (props.overallStatus) {
     case 'operational':
-      return 'bg-emerald-500'
+      return 'bg-success'
     case 'degraded':
     default:
-      return 'bg-amber-500'
+      return 'bg-warning'
   }
 })
 

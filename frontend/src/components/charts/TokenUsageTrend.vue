@@ -1,6 +1,6 @@
 <template>
   <div class="card p-4">
-    <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+    <h3 class="mb-4 text-sm font-semibold text-foreground">
       {{ t('admin.dashboard.tokenUsageTrend') }}
     </h3>
     <div v-if="loading" class="flex h-48 items-center justify-center">
@@ -11,7 +11,7 @@
     </div>
     <div
       v-else
-      class="flex h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+      class="flex h-48 items-center justify-center text-sm text-foreground-subtle"
     >
       {{ t('admin.dashboard.noDataAvailable') }}
     </div>
@@ -35,7 +35,7 @@ import {
 import { Line } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { TrendDataPoint } from '@/types'
-import { useTheme } from '@/composables/useTheme'
+import { useChartTheme } from '@/composables/useChartTheme'
 
 ChartJS.register(
   CategoryScale,
@@ -49,7 +49,7 @@ ChartJS.register(
 )
 
 const { t } = useI18n()
-const { isDark } = useTheme()
+const { chartTheme } = useChartTheme()
 
 const props = defineProps<{
   trendData: TrendDataPoint[]
@@ -57,13 +57,17 @@ const props = defineProps<{
 }>()
 
 const chartColors = computed(() => ({
-  text: isDark.value ? '#e5e7eb' : '#374151',
-  grid: isDark.value ? '#374151' : '#e5e7eb',
-  input: '#3b82f6',
-  output: '#10b981',
-  cacheCreation: '#f59e0b',
-  cacheRead: '#06b6d4',
-  cacheHitRate: '#8b5cf6'
+  text: chartTheme.value.foregroundMuted,
+  grid: chartTheme.value.outline,
+  input: chartTheme.value.info,
+  inputAlpha: chartTheme.value.infoAlpha,
+  output: chartTheme.value.success,
+  outputAlpha: chartTheme.value.successAlpha,
+  cacheCreation: chartTheme.value.warning,
+  cacheCreationAlpha: chartTheme.value.warningAlpha,
+  cacheRead: chartTheme.value.brand,
+  cacheReadAlpha: chartTheme.value.brandAlpha,
+  cacheHitRate: chartTheme.value.danger,
 }))
 
 const chartData = computed(() => {
@@ -76,7 +80,7 @@ const chartData = computed(() => {
         label: 'Input',
         data: props.trendData.map((d) => d.input_tokens),
         borderColor: chartColors.value.input,
-        backgroundColor: `${chartColors.value.input}20`,
+        backgroundColor: chartColors.value.inputAlpha,
         fill: true,
         tension: 0.3
       },
@@ -84,7 +88,7 @@ const chartData = computed(() => {
         label: 'Output',
         data: props.trendData.map((d) => d.output_tokens),
         borderColor: chartColors.value.output,
-        backgroundColor: `${chartColors.value.output}20`,
+        backgroundColor: chartColors.value.outputAlpha,
         fill: true,
         tension: 0.3
       },
@@ -92,7 +96,7 @@ const chartData = computed(() => {
         label: 'Cache Creation',
         data: props.trendData.map((d) => d.cache_creation_tokens),
         borderColor: chartColors.value.cacheCreation,
-        backgroundColor: `${chartColors.value.cacheCreation}20`,
+        backgroundColor: chartColors.value.cacheCreationAlpha,
         fill: true,
         tension: 0.3
       },
@@ -100,7 +104,7 @@ const chartData = computed(() => {
         label: 'Cache Read',
         data: props.trendData.map((d) => d.cache_read_tokens),
         borderColor: chartColors.value.cacheRead,
-        backgroundColor: `${chartColors.value.cacheRead}20`,
+        backgroundColor: chartColors.value.cacheReadAlpha,
         fill: true,
         tension: 0.3
       },
@@ -111,7 +115,7 @@ const chartData = computed(() => {
           return totalPromptTokens > 0 ? (d.cache_read_tokens / totalPromptTokens) * 100 : 0
         }),
         borderColor: chartColors.value.cacheHitRate,
-        backgroundColor: `${chartColors.value.cacheHitRate}20`,
+        backgroundColor: 'transparent',
         borderDash: [5, 5],
         fill: false,
         tension: 0.3,

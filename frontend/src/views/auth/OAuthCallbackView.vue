@@ -2,20 +2,20 @@
   <AuthLayout :busy="isProcessing" :busy-label="t('auth.oauth.callbackHint')">
     <div class="space-y-6">
       <div v-if="isProcessing" class="auth-form-heading">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 class="text-2xl font-bold text-foreground">
           {{ t('auth.oauth.callbackTitle') }}
         </h2>
-        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        <p class="mt-2 text-sm text-foreground-subtle">
           {{ t('auth.oauth.callbackHint') }}
         </p>
       </div>
 
       <div v-else-if="needsRegistrationCompletion" class="space-y-6">
         <div class="auth-form-heading">
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 class="text-2xl font-bold text-foreground">
             {{ t('auth.oidc.callbackTitle', { providerName }) }}
           </h2>
-          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p class="mt-2 text-sm text-foreground-subtle">
             {{ registrationHint }}
           </p>
         </div>
@@ -99,10 +99,10 @@
 
       <div v-else-if="invalidCallback" class="space-y-6 text-center">
         <div class="auth-form-heading">
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 class="text-2xl font-bold text-foreground">
             {{ t('auth.oauth.invalidCallbackTitle') }}
           </h2>
-          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p class="mt-2 text-sm text-foreground-subtle">
             {{ t('auth.oauth.invalidCallbackHint') }}
           </p>
         </div>
@@ -113,10 +113,10 @@
 
       <div v-else class="space-y-6">
         <div class="auth-form-heading">
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 class="text-2xl font-bold text-foreground">
             {{ t('auth.oauth.callbackTitle') }}
           </h2>
-          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p class="mt-2 text-sm text-foreground-subtle">
             {{ t('auth.oauth.callbackHint') }}
           </p>
         </div>

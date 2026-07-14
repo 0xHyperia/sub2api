@@ -417,4 +417,12 @@ describe('user KeysView column settings', () => {
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
   })
+
+  it('renders key management with semantic UI tokens', async () => {
+    const wrapper = await mountView()
+
+    expect(wrapper.html()).toContain('text-foreground')
+    expect(wrapper.html()).toContain('rounded-control')
+    expect(wrapper.html()).not.toMatch(/(?:bg|text|border|divide)-gray-|dark:|primary-/)
+  })
 })

@@ -1,7 +1,7 @@
 <template>
   <div :class="embedded ? 'space-y-6' : 'mx-auto max-w-[1500px] space-y-6 p-4 sm:p-6'">
     <div v-if="!embedded" class="flex items-center justify-between gap-3">
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('payment.card.title') }}</h1>
+      <h1 class="text-2xl font-semibold text-foreground">{{ t('payment.card.title') }}</h1>
       <button
         class="btn btn-secondary"
         :disabled="loading"
@@ -25,23 +25,23 @@
       @done="createdOrder = null"
     />
 
-    <div v-else-if="loading && shops.length === 0" class="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 dark:border-dark-700 dark:bg-dark-800">
+    <div v-else-if="loading && shops.length === 0" class="rounded-panel border border-outline bg-surface p-8 text-center text-sm text-foreground-subtle shadow-card">
       {{ t('common.loading') }}
     </div>
 
     <div
       v-else-if="checkoutError"
       data-testid="card-payment-load-error"
-      class="flex min-w-0 flex-col gap-4 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/50 dark:bg-red-950/30"
+      class="flex min-w-0 flex-col gap-4 rounded-panel border border-danger/30 bg-danger-subtle p-4 text-danger-foreground sm:flex-row sm:items-center sm:justify-between"
       role="alert"
     >
       <div class="flex min-w-0 items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-red-200 bg-white/60 text-red-600 dark:border-red-900/50 dark:bg-dark-800/60 dark:text-red-300" aria-hidden="true">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-danger/20 bg-surface/60" aria-hidden="true">
           <Icon name="exclamationTriangle" size="md" />
         </span>
         <div class="min-w-0">
-          <p class="break-words text-sm font-medium text-red-700 dark:text-red-300">{{ checkoutError }}</p>
-          <p class="mt-0.5 text-sm text-red-600/80 dark:text-red-300/80">{{ t('errors.tryAgain') }}</p>
+          <p class="break-words text-sm font-medium">{{ checkoutError }}</p>
+          <p class="mt-0.5 text-sm opacity-80">{{ t('errors.tryAgain') }}</p>
         </div>
       </div>
       <button type="button" class="btn btn-secondary shrink-0" @click="loadCheckoutInfo">
@@ -50,14 +50,14 @@
       </button>
     </div>
 
-    <div v-else-if="!selectedShop" class="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 dark:border-dark-700 dark:bg-dark-800">
+    <div v-else-if="!selectedShop" class="rounded-panel border border-outline bg-surface p-8 text-center text-sm text-foreground-subtle shadow-card">
       {{ t('payment.card.empty') }}
     </div>
 
     <div v-else class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
       <section class="space-y-4">
         <div v-if="embedded" class="flex items-center justify-between gap-3">
-          <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('payment.card.title') }}</h2>
+          <h2 class="text-base font-semibold text-foreground">{{ t('payment.card.title') }}</h2>
           <button
             class="btn btn-secondary"
             :disabled="loading"
@@ -69,11 +69,11 @@
           </button>
         </div>
 
-        <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
+        <div class="rounded-panel border border-outline bg-surface p-3 shadow-card">
           <div class="flex flex-wrap gap-2">
             <button
               type="button"
-              class="rounded-md px-3 py-1.5 text-sm transition"
+              class="rounded-control px-3 py-1.5 text-sm transition-colors"
               :class="selectedCategoryId === 0 ? activeChipClass : idleChipClass"
               @click="selectedCategoryId = 0"
             >
@@ -83,7 +83,7 @@
               v-for="category in selectedShop.categories || []"
               :key="category.id"
               type="button"
-              class="rounded-md px-3 py-1.5 text-sm transition"
+              class="rounded-control px-3 py-1.5 text-sm transition-colors"
               :class="selectedCategoryId === category.id ? activeChipClass : idleChipClass"
               @click="selectedCategoryId = category.id"
             >
@@ -92,7 +92,7 @@
           </div>
         </div>
 
-        <div class="rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-700 dark:border-primary-900/40 dark:bg-primary-900/20 dark:text-primary-300">
+        <div class="rounded-panel border border-info/20 bg-info-subtle px-4 py-3 text-sm text-info-foreground">
           {{ t('payment.card.largeRechargeTip') }}
         </div>
 
@@ -113,11 +113,11 @@
               :disabled="goods.stock_count <= 0"
               :tabindex="goodsTabIndex(goods, index)"
               :data-goods-key="goods.goods_key"
-              class="relative h-full w-full overflow-hidden rounded-[10px] border bg-white p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:bg-dark-800 dark:focus-visible:ring-offset-dark-900"
+              class="relative h-full w-full overflow-hidden rounded-panel border bg-surface p-4 text-left shadow-card transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               :class="[
                 selectedGoods?.goods_key === goods.goods_key
-                  ? 'border-primary-500 ring-2 ring-primary-100 dark:border-primary-400 dark:ring-primary-900/40'
-                  : 'border-gray-200 hover:border-gray-300 dark:border-dark-700',
+                  ? 'border-brand bg-brand-subtle ring-1 ring-brand/20'
+                  : 'border-outline hover:border-outline-strong hover:bg-surface-subtle',
                 goods.stock_count <= 0 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
               ]"
               @click="selectGoods(goods)"
@@ -125,29 +125,29 @@
             >
               <div class="grid h-full grid-rows-[20px_30px_18px_24px] gap-2">
                 <div class="flex items-start justify-between gap-4">
-                  <h3 class="line-clamp-1 min-w-0 pr-16 text-[15px] font-bold leading-5 text-gray-900 dark:text-white">
+                  <h3 class="line-clamp-1 min-w-0 pr-16 text-[15px] font-semibold leading-5 text-foreground">
                     {{ goodsTitle(goods) }}
                   </h3>
-                  <span v-if="goods.badge" class="absolute right-4 top-4 rounded bg-gray-900 px-2 py-0.5 text-[10px] font-bold leading-4 text-white dark:bg-white dark:text-gray-900">
+                  <span v-if="goods.badge" class="absolute right-4 top-4 rounded-control bg-foreground px-2 py-0.5 text-[10px] font-semibold leading-4 text-surface">
                     {{ goods.badge }}
                   </span>
                 </div>
                 <div class="flex min-w-0 items-baseline gap-2">
-                  <span class="text-xs font-extrabold uppercase text-gray-900 dark:text-white">CNY</span>
-                  <span class="font-mono text-2xl font-extrabold tracking-normal text-gray-900 dark:text-white">{{ goods.price.toFixed(2) }}</span>
-                  <span v-if="shouldShowReferencePrice(goods)" class="font-mono text-xl font-bold text-gray-900 line-through dark:text-white">{{ goods.reference_price!.toFixed(2) }}</span>
+                  <span class="text-xs font-semibold uppercase text-foreground-muted">CNY</span>
+                  <span class="font-mono text-2xl font-semibold tracking-normal text-foreground">{{ goods.price.toFixed(2) }}</span>
+                  <span v-if="shouldShowReferencePrice(goods)" class="font-mono text-xl font-medium text-foreground-subtle line-through">{{ goods.reference_price!.toFixed(2) }}</span>
                 </div>
-                <p v-if="goodsDescription(goods)" class="min-w-0 truncate text-xs leading-[18px] text-gray-500 dark:text-gray-400">
+                <p v-if="goodsDescription(goods)" class="min-w-0 truncate text-xs leading-[18px] text-foreground-subtle">
                   {{ goodsDescription(goods) }}
                 </p>
                 <div class="flex max-h-6 min-w-0 flex-wrap gap-1.5 overflow-hidden pr-8">
-                  <span class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-300">
+                  <span class="rounded-control border border-outline bg-surface-subtle px-2 py-0.5 text-[11px] text-foreground-subtle">
                     {{ stockStatusLabel(goods.stock_count) }}
                   </span>
                   <span
                     v-for="tag in goods.tags?.slice(0, 2)"
                     :key="tag"
-                    class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-300"
+                    class="rounded-control border border-outline bg-surface-subtle px-2 py-0.5 text-[11px] text-foreground-subtle"
                   >
                     {{ tag }}
                   </span>
@@ -158,7 +158,7 @@
             <div v-if="authStore.isAdmin" class="absolute bottom-3 right-3 z-10">
               <button
                 type="button"
-                class="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-dark-700 dark:hover:text-gray-200"
+                class="rounded-control p-1.5 text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground"
                 :title="t('payment.card.editGoods')"
                 @click.stop="openEditDialog(goods)"
               >
@@ -170,25 +170,25 @@
       </section>
 
       <aside class="space-y-4">
-        <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800">
+        <div class="rounded-panel border border-outline bg-surface p-4 shadow-card">
           <div class="mb-4">
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ t('payment.card.selectedGoods') }}</div>
+            <div class="text-xs font-medium uppercase text-foreground-subtle">{{ t('payment.card.selectedGoods') }}</div>
             <div v-if="selectedGoods" class="mt-2">
               <div class="flex items-start justify-between gap-3">
-                <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ goodsTitle(selectedGoods) }}</h2>
+                <h2 class="text-base font-semibold text-foreground">{{ goodsTitle(selectedGoods) }}</h2>
                 <div class="shrink-0 text-right">
-                  <div class="font-mono text-lg font-extrabold text-gray-900 dark:text-white">CNY {{ selectedGoods.price.toFixed(2) }}</div>
-                  <div v-if="shouldShowReferencePrice(selectedGoods)" class="font-mono text-xs text-gray-400 line-through">CNY {{ selectedGoods.reference_price!.toFixed(2) }}</div>
+                  <div class="font-mono text-lg font-semibold text-foreground">CNY {{ selectedGoods.price.toFixed(2) }}</div>
+                  <div v-if="shouldShowReferencePrice(selectedGoods)" class="font-mono text-xs text-foreground-subtle line-through">CNY {{ selectedGoods.reference_price!.toFixed(2) }}</div>
                 </div>
               </div>
-              <p v-if="goodsDescription(selectedGoods)" class="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
+              <p v-if="goodsDescription(selectedGoods)" class="mt-2 text-sm leading-6 text-foreground-muted">
                 {{ goodsDescription(selectedGoods) }}
               </p>
               <div v-if="selectedGoods.tags?.length" class="mt-3 flex flex-wrap gap-1.5">
                 <span
                   v-for="tag in selectedGoods.tags"
                   :key="tag"
-                  class="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
+                  class="rounded-control border border-brand/20 bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand"
                 >
                   {{ tag }}
                 </span>
@@ -200,7 +200,7 @@
             <label class="block">
               <span class="input-label">{{ t('payment.card.quantity') }}</span>
               <input v-model.number="quantity" class="input" type="number" min="1" :max="quantityMax || undefined" />
-              <span v-if="quantityError" class="mt-1 block text-xs text-amber-600 dark:text-amber-300">{{ quantityError }}</span>
+              <span v-if="quantityError" class="mt-1 block text-xs text-warning-foreground">{{ quantityError }}</span>
             </label>
             <label class="block">
               <span class="input-label">{{ t('payment.card.coupon') }}</span>
@@ -209,10 +209,10 @@
                 v-if="couponMessage"
                 class="mt-1 block text-xs"
                 :class="couponStatus === 'valid'
-                  ? 'text-emerald-600 dark:text-emerald-300'
+                  ? 'text-success-foreground'
                   : couponStatus === 'invalid'
-                    ? 'text-red-600 dark:text-red-300'
-                    : 'text-gray-500 dark:text-gray-400'"
+                    ? 'text-danger-foreground'
+                    : 'text-foreground-subtle'"
               >
                 {{ couponMessage }}
               </span>
@@ -225,38 +225,38 @@
                   v-for="channel in enabledChannels"
                   :key="channel.id"
                   type="button"
-                  class="flex min-h-[52px] items-center gap-3 rounded-lg border px-3 py-2 text-left transition"
+                  class="flex min-h-[52px] items-center gap-3 rounded-control border px-3 py-2 text-left transition-colors"
                   :class="channelId === channel.id
-                    ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-100 dark:border-primary-400 dark:bg-primary-900/20 dark:ring-primary-900/40'
-                    : 'border-gray-200 hover:border-gray-300 dark:border-dark-700'"
+                    ? 'border-brand bg-brand-subtle ring-1 ring-brand/20'
+                    : 'border-outline bg-surface hover:border-outline-strong hover:bg-surface-subtle'"
                   @click="channelId = channel.id"
                 >
-                  <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-100 dark:bg-dark-700">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-control bg-surface-subtle">
                     <img v-if="channelIconUrl(channel.icon)" :src="channelIconUrl(channel.icon)" alt="" class="h-5 w-5 object-contain" />
-                    <span v-else class="text-xs font-semibold text-gray-500">{{ channelInitial(channel) }}</span>
+                    <span v-else class="text-xs font-semibold text-foreground-muted">{{ channelInitial(channel) }}</span>
                   </span>
                   <span class="min-w-0">
-                    <span class="block truncate text-sm font-medium text-gray-900 dark:text-white">{{ channel.show_name || channel.name }}</span>
-                    <span v-if="channel.code" class="block truncate text-xs text-gray-500 dark:text-gray-400">{{ channel.code }}</span>
+                    <span class="block truncate text-sm font-medium text-foreground">{{ channel.show_name || channel.name }}</span>
+                    <span v-if="channel.code" class="block truncate text-xs text-foreground-subtle">{{ channel.code }}</span>
                   </span>
                 </button>
               </div>
             </div>
 
-            <div class="flex items-center justify-between gap-4 rounded-lg border border-gray-100 p-3 dark:border-dark-700">
+            <div class="flex items-center justify-between gap-4 rounded-panel border border-outline bg-surface-subtle p-3">
               <span>
-                <span class="block text-sm font-medium text-gray-900 dark:text-white">{{ t('payment.card.autoRedeem') }}</span>
-                <span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">{{ t('payment.card.autoRedeemHint') }}</span>
+                <span class="block text-sm font-medium text-foreground">{{ t('payment.card.autoRedeem') }}</span>
+                <span class="mt-0.5 block text-xs text-foreground-subtle">{{ t('payment.card.autoRedeemHint') }}</span>
               </span>
               <button
                 type="button"
                 role="switch"
                 :aria-checked="autoRedeem"
                 class="relative h-7 w-12 shrink-0 rounded-full transition"
-                :class="autoRedeem ? 'bg-primary-600' : 'bg-gray-300 dark:bg-dark-600'"
+                :class="autoRedeem ? 'bg-brand' : 'bg-outline-strong'"
                 @click="autoRedeem = !autoRedeem"
               >
-                <span class="absolute top-1 h-5 w-5 rounded-full bg-white shadow transition" :class="autoRedeem ? 'left-6' : 'left-1'" />
+                <span class="absolute top-1 h-5 w-5 rounded-full bg-surface shadow transition" :class="autoRedeem ? 'left-6' : 'left-1'" />
               </button>
             </div>
           </div>
@@ -264,21 +264,21 @@
           <p
             v-if="orderError"
             data-testid="card-payment-order-error"
-            class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"
+            class="mt-4 rounded-panel border border-danger/30 bg-danger-subtle px-3 py-2 text-sm text-danger-foreground"
             role="alert"
           >
             {{ orderError }}
           </p>
 
-          <div class="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4 dark:border-dark-700">
-            <div class="min-w-0 text-sm text-gray-600 dark:text-gray-300">
+          <div class="mt-4 flex flex-col gap-3 border-t border-outline pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0 text-sm text-foreground-muted">
               <span>{{ t('payment.card.payAmount') }}</span>
-              <span class="ml-2 text-xl font-semibold text-gray-900 dark:text-white">¥{{ totalAmount.toFixed(2) }}</span>
-              <span class="ml-2 whitespace-nowrap text-xs text-gray-400 dark:text-gray-500">
+              <span class="ml-2 text-xl font-semibold text-foreground">¥{{ totalAmount.toFixed(2) }}</span>
+              <span class="ml-2 whitespace-nowrap text-xs text-foreground-subtle">
                 ({{ t('payment.card.feeIncluded', { fee: feeAmount.toFixed(2) }) }})
               </span>
             </div>
-            <button data-testid="card-payment-submit" type="button" class="btn btn-primary" :disabled="submitting || !canSubmit" @click="createOrder">
+            <button data-testid="card-payment-submit" type="button" class="btn btn-primary w-full sm:w-auto" :disabled="submitting || !canSubmit" @click="createOrder">
               {{ submitting ? t('common.processing') : t('payment.card.buy') }}
             </button>
           </div>
@@ -286,11 +286,11 @@
       </aside>
     </div>
 
-    <div v-if="editingGoods" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl dark:bg-dark-800">
+    <div v-if="editingGoods" class="modal-overlay">
+      <div class="modal-content max-w-lg p-5">
         <div class="mb-4 flex items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('payment.card.editGoods') }}</h2>
-          <button class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-dark-700 dark:hover:text-gray-200" @click="editingGoods = null">
+          <h2 class="text-lg font-semibold text-foreground">{{ t('payment.card.editGoods') }}</h2>
+          <button class="rounded-control p-1.5 text-foreground-subtle hover:bg-surface-subtle hover:text-foreground" @click="editingGoods = null">
             <Icon name="x" size="sm" />
           </button>
         </div>
@@ -366,8 +366,8 @@ const editForm = reactive({
   tagsText: '',
 })
 
-const activeChipClass = 'bg-primary-600 text-white'
-const idleChipClass = 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-dark-700 dark:text-gray-300'
+const activeChipClass = 'bg-brand text-white shadow-sm'
+const idleChipClass = 'bg-surface-subtle text-foreground-muted hover:bg-surface hover:text-foreground'
 
 const selectedShop = computed(() => shops.value.find(shop => shop.provider_instance_id === selectedProviderId.value) || shops.value[0] || null)
 const filteredGoods = computed(() => {

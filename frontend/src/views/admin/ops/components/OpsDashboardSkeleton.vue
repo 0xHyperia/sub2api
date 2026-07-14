@@ -12,30 +12,30 @@ const props = withDefaults(defineProps<Props>(), {
   <div class="space-y-4" aria-hidden="true">
     <!-- Header (matches OpsDashboardHeader + overview blocks) -->
     <div :class="['rounded-panel border border-outline bg-surface shadow-card', props.fullscreen ? 'p-6' : 'p-4 sm:p-5']">
-      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-4 dark:border-dark-700">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-outline pb-4">
         <div class="space-y-2">
-          <div class="h-6 w-44 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-3 w-80 animate-pulse rounded bg-gray-100 dark:bg-dark-700/70"></div>
+          <div class="h-6 w-44 animate-pulse rounded bg-outline bg-surface-subtle"></div>
+          <div class="h-3 w-80 animate-pulse rounded bg-surface-subtle/70"></div>
         </div>
         <div v-if="!props.fullscreen" class="flex flex-wrap items-center gap-3">
-          <div class="h-9 w-[140px] animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-9 w-[160px] animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-9 w-[150px] animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-9 w-9 animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-9 w-28 animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-9 w-28 animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-9 w-9 animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
+          <div class="h-9 w-[140px] animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
+          <div class="h-9 w-[160px] animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
+          <div class="h-9 w-[150px] animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
+          <div class="h-9 w-9 animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
+          <div class="h-9 w-28 animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
+          <div class="h-9 w-28 animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
+          <div class="h-9 w-9 animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
         </div>
       </div>
 
       <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div class="rounded-panel border border-outline bg-surface-subtle p-4 lg:col-span-5">
           <div class="grid h-full grid-cols-1 gap-4 md:grid-cols-[200px_1fr] md:items-center">
-            <div class="h-28 animate-pulse rounded-panel bg-gray-100 dark:bg-dark-700/70"></div>
+            <div class="h-28 animate-pulse rounded-panel bg-surface-subtle/70"></div>
             <div class="space-y-4">
-              <div class="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+              <div class="h-4 w-32 animate-pulse rounded bg-outline bg-surface-subtle"></div>
               <div class="grid grid-cols-2 gap-3">
-                <div v-for="i in 4" :key="i" class="h-14 animate-pulse rounded-panel bg-gray-100 dark:bg-dark-700/70"></div>
+                <div v-for="i in 4" :key="i" class="h-14 animate-pulse rounded-panel bg-surface-subtle/70"></div>
               </div>
             </div>
           </div>
@@ -52,15 +52,15 @@ const props = withDefaults(defineProps<Props>(), {
     <!-- Row: Concurrency + Throughput (matches OpsDashboard.vue) -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
       <div :class="['min-h-[320px] rounded-panel border border-outline bg-surface shadow-card sm:min-h-[360px] lg:col-span-1', props.fullscreen ? 'p-6' : 'p-4 sm:p-5']">
-        <div class="h-4 w-44 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+        <div class="h-4 w-44 animate-pulse rounded bg-outline bg-surface-subtle"></div>
         <div class="mt-4 h-72 animate-pulse rounded-panel bg-surface-subtle"></div>
       </div>
       <div :class="['min-h-[320px] rounded-panel border border-outline bg-surface shadow-card sm:min-h-[360px] lg:col-span-1', props.fullscreen ? 'p-6' : 'p-4 sm:p-5']">
-        <div class="h-4 w-44 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+        <div class="h-4 w-44 animate-pulse rounded bg-outline bg-surface-subtle"></div>
         <div class="mt-4 h-72 animate-pulse rounded-panel bg-surface-subtle"></div>
       </div>
       <div :class="['min-h-[320px] rounded-panel border border-outline bg-surface shadow-card sm:min-h-[360px] lg:col-span-2', props.fullscreen ? 'p-6' : 'p-4 sm:p-5']">
-        <div class="h-4 w-56 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+        <div class="h-4 w-56 animate-pulse rounded bg-outline bg-surface-subtle"></div>
         <div class="mt-4 h-72 animate-pulse rounded-panel bg-surface-subtle"></div>
       </div>
     </div>
@@ -72,7 +72,7 @@ const props = withDefaults(defineProps<Props>(), {
         :key="i"
         :class="['rounded-panel border border-outline bg-surface shadow-card', props.fullscreen ? 'p-6' : 'p-4 sm:p-5']"
       >
-        <div class="h-4 w-44 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+        <div class="h-4 w-44 animate-pulse rounded bg-outline bg-surface-subtle"></div>
         <div class="mt-4 h-56 animate-pulse rounded-panel bg-surface-subtle"></div>
       </div>
     </div>
@@ -80,21 +80,21 @@ const props = withDefaults(defineProps<Props>(), {
     <!-- Alert Events -->
     <div :class="['rounded-panel border border-outline bg-surface shadow-card', props.fullscreen ? 'p-6' : 'p-4 sm:p-5']">
       <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="h-4 w-48 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+        <div class="h-4 w-48 animate-pulse rounded bg-outline bg-surface-subtle"></div>
         <div v-if="!props.fullscreen" class="flex flex-wrap items-center gap-2">
-          <div class="h-9 w-[140px] animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-9 w-[120px] animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
-          <div class="h-9 w-[120px] animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
+          <div class="h-9 w-[140px] animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
+          <div class="h-9 w-[120px] animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
+          <div class="h-9 w-[120px] animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
         </div>
       </div>
 
       <div class="mt-4 divide-y divide-outline">
         <div v-for="i in 6" :key="i" class="flex items-center justify-between gap-4 py-4">
           <div class="flex-1 space-y-2">
-            <div class="h-3 w-56 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
-            <div class="h-3 w-80 animate-pulse rounded bg-gray-100 dark:bg-dark-700/70"></div>
+            <div class="h-3 w-56 animate-pulse rounded bg-outline bg-surface-subtle"></div>
+            <div class="h-3 w-80 animate-pulse rounded bg-surface-subtle/70"></div>
           </div>
-          <div class="h-7 w-20 animate-pulse rounded-control bg-gray-200 dark:bg-dark-700"></div>
+          <div class="h-7 w-20 animate-pulse rounded-control bg-outline bg-surface-subtle"></div>
         </div>
       </div>
     </div>
