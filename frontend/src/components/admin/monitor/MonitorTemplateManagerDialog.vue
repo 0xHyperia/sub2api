@@ -10,7 +10,7 @@
       <div
         role="tablist"
         :aria-label="t('admin.channelMonitor.template.managerTitle')"
-        class="grid grid-cols-1 gap-1 sm:grid-cols-3"
+        class="grid grid-cols-1 gap-1 min-[360px]:grid-cols-2 sm:grid-cols-4"
       >
         <button
           v-for="tab in providerTabs"
@@ -139,7 +139,7 @@
         <div
           role="group"
           aria-labelledby="monitor-template-provider-label"
-          class="grid grid-cols-1 gap-3 sm:grid-cols-3"
+          class="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-4"
         >
           <button
             v-for="opt in providerTabs"
@@ -263,6 +263,7 @@ import {
   PROVIDER_ANTHROPIC,
   PROVIDER_OPENAI,
   PROVIDER_GEMINI,
+  PROVIDER_GROK,
   API_MODE_CHAT_COMPLETIONS,
   API_MODE_RESPONSES,
 } from '@/constants/channelMonitor'
@@ -282,6 +283,7 @@ const providerTabs = computed<{ value: Provider; label: string }[]>(() => [
   { value: PROVIDER_ANTHROPIC, label: t('monitorCommon.providers.anthropic') },
   { value: PROVIDER_OPENAI, label: t('monitorCommon.providers.openai') },
   { value: PROVIDER_GEMINI, label: t('monitorCommon.providers.gemini') },
+  { value: PROVIDER_GROK, label: t('monitorCommon.providers.grok') },
 ])
 
 const activeProvider = ref<Provider>(PROVIDER_ANTHROPIC)
@@ -297,6 +299,7 @@ const countByProvider = computed<Record<Provider, number>>(() => {
     anthropic: 0,
     openai: 0,
     gemini: 0,
+    grok: 0,
   }
   for (const t of templates.value) out[t.provider]++
   return out

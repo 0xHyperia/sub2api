@@ -206,7 +206,6 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let verifyAttempts = 0
 let lastVerifyAt = 0
-let pollingStatus = false
 
 const VERIFY_RETRY_INTERVAL_MS = 15000
 const VERIFY_RETRY_MAX_ATTEMPTS = 6
@@ -336,15 +335,19 @@ async function tryVerifyPendingOrder(order: PaymentOrder): Promise<PaymentOrder>
   }
 }
 
+let pollInFlight = false
 async function pollStatus() {
-  if (!props.orderId || outcome.value || pollingStatus) return
-  pollingStatus = true
+  if (!props.orderId || outcome.value) return
+  if (pollInFlight) return
+  pollInFlight = true
   try {
     let order = await paymentStore.pollOrderStatus(props.orderId)
     pollFailureCount.value = 0
     pollUnavailable.value = false
     if (!order) return
+    if (outcome.value) return
     order = await tryVerifyPendingOrder(order)
+    if (outcome.value) return
     if (isSuccessStatus(order.status)) {
       cleanup()
       paidOrder.value = order
@@ -361,7 +364,7 @@ async function pollStatus() {
     pollFailureCount.value += 1
     if (pollFailureCount.value >= 3) pollUnavailable.value = true
   } finally {
-    pollingStatus = false
+    pollInFlight = false
   }
 }
 

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
@@ -468,24 +467,27 @@ func (s *PaymentService) ExecuteCardFulfillment(ctx context.Context, oid int64) 
 	if o.Status == OrderStatusCompleted {
 		return nil
 	}
-	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed {
+	if psIsRefundStatus(o.Status) {
+		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot fulfill")
+	}
+	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed && o.Status != OrderStatusRecharging {
 		return infraerrors.BadRequest("INVALID_STATUS", "order cannot fulfill in status "+o.Status)
 	}
-	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).SetStatus(OrderStatusRecharging).Save(ctx)
+	lease, err := s.acquirePaymentFulfillmentLease(ctx, o)
 	if err != nil {
-		return fmt.Errorf("lock: %w", err)
+		return err
 	}
-	if c == 0 {
+	if lease == nil {
 		return nil
 	}
-	if err := s.doCardFulfillment(ctx, o); err != nil {
-		s.markFailed(ctx, oid, err)
+	if err := s.doCardFulfillment(ctx, o, lease); err != nil {
+		s.markFailed(ctx, oid, lease, err)
 		return err
 	}
 	return nil
 }
 
-func (s *PaymentService) doCardFulfillment(ctx context.Context, o *dbent.PaymentOrder) error {
+func (s *PaymentService) doCardFulfillment(ctx context.Context, o *dbent.PaymentOrder, lease *paymentFulfillmentLease) error {
 	inst, err := s.getOrderProviderInstance(ctx, o)
 	if err != nil {
 		return err
@@ -526,9 +528,9 @@ func (s *PaymentService) doCardFulfillment(ctx context.Context, o *dbent.Payment
 		if err := s.updateCardOrderRedeemedCardsSnapshot(ctx, o.ID, redeemedCards); err != nil {
 			return err
 		}
-		return s.markCompleted(ctx, o, "CARD_REDEEM_SUCCESS")
+		return s.markCompleted(ctx, o, lease, "CARD_REDEEM_SUCCESS")
 	}
-	return s.markCompleted(ctx, o, "CARD_DELIVERED")
+	return s.markCompleted(ctx, o, lease, "CARD_DELIVERED")
 }
 
 func normalizeCardCodes(cards []string) []string {

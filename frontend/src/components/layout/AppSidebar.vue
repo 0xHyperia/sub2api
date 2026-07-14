@@ -60,7 +60,11 @@
       </button>
     </div>
 
-    <nav class="admin-sidebar-nav" :aria-label="localText('后台导航', 'Admin navigation')">
+    <nav
+      ref="sidebarNavRef"
+      class="admin-sidebar-nav"
+      :aria-label="localText('后台导航', 'Admin navigation')"
+    >
       <template v-if="showAdminNavigation">
         <section
           v-for="section in adminNavSections"
@@ -236,6 +240,7 @@ import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } 
 import VersionBadge from '@/components/common/VersionBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
+import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 import {
@@ -265,8 +270,9 @@ let previousBodyOverflow = ''
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
 const isAdmin = computed(() => authStore.isAdmin)
+const sidebarNavRef = ref<HTMLElement | null>(null)
 const siteName = computed(() => appStore.siteName)
-const siteLogo = computed(() => appStore.siteLogo)
+const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
 const siteVersion = computed(() => appStore.siteVersion)
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
 
@@ -666,9 +672,15 @@ onMounted(() => {
   desktopMediaQuery.addEventListener('change', handleDesktopMediaChange)
   document.addEventListener('keydown', handleGlobalKeydown)
   void refreshBatchImageAccess()
+  if (appStore.sidebarScrollTop > 0 && sidebarNavRef.value) {
+    void nextTick(() => {
+      if (sidebarNavRef.value) sidebarNavRef.value.scrollTop = appStore.sidebarScrollTop
+    })
+  }
 })
 
 onBeforeUnmount(() => {
+  if (sidebarNavRef.value) appStore.sidebarScrollTop = sidebarNavRef.value.scrollTop
   desktopMediaQuery?.removeEventListener('change', handleDesktopMediaChange)
   document.removeEventListener('keydown', handleGlobalKeydown)
   unlockBodyScroll()
