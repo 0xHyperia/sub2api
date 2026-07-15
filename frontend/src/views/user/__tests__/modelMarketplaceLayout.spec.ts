@@ -39,6 +39,8 @@ describe('model marketplace toolbar layout', () => {
     expect(source).toContain('sm:min-h-[230px]')
     expect(source).toContain('<ModelMarketplaceDetailDrawer')
     expect(source).toContain("cardBillingCategory(entry) === 'usage'")
+    expect(source).toContain("t('modelMarketplace.realtimeRate')")
+    expect(source).toContain('cardRealtimeRate(entry)')
     expect(source).not.toContain('<GroupBadge')
   })
 })

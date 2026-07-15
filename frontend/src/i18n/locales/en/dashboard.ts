@@ -814,6 +814,8 @@ export default {
   },
 
   modelMarketplace: {
+    realtimeRate: 'Real-time multiplier',
+    realtimeRateHint: 'Relative to the official USD price: 1 USD = {cny} CNY, 1 CNY = {usd} platform USD, group multiplier {group}×, final multiplier {rate}×. Lower is better.',
     loadMore: 'Load more models',
     monitor: {
       timeline: 'Recent model checks',

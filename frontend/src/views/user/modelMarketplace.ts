@@ -22,6 +22,8 @@ export interface MarketplaceGroupOption extends UserAvailableGroup {
 
 export type MarketplaceBillingCategory = 'usage' | 'request' | 'unpriced'
 
+export const DEFAULT_USD_TO_CNY_RATE = 7.2
+
 export function billingCategory(pricing: UserSupportedModelPricing | null): MarketplaceBillingCategory {
   if (!pricing) return 'unpriced'
   return pricing.billing_mode === 'token' ? 'usage' : 'request'
@@ -83,6 +85,20 @@ export function effectiveRateForEntry(
     : entry.groups.filter((group) => group.id === selectedGroupId)
   if (groups.length === 0) return 1
   return Math.min(...groups.map((group) => userGroupRates[group.id] ?? group.rate_multiplier))
+}
+
+export function realtimeRate(
+  groupRate: number,
+  balanceRechargeMultiplier: number,
+  usdToCnyRate: number,
+): number {
+  const rechargeMultiplier = Number.isFinite(balanceRechargeMultiplier) && balanceRechargeMultiplier > 0
+    ? balanceRechargeMultiplier
+    : 1
+  const exchangeRate = Number.isFinite(usdToCnyRate) && usdToCnyRate > 0
+    ? usdToCnyRate
+    : DEFAULT_USD_TO_CNY_RATE
+  return groupRate / rechargeMultiplier / exchangeRate
 }
 
 export function primaryPrice(pricing: UserSupportedModelPricing | null): number | null {

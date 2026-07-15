@@ -6,6 +6,7 @@ import {
   billingCategory,
   compareMarketplaceDisplayOrder,
   effectiveRateForEntry,
+  realtimeRate,
   scaledPrice,
   sortedEntryGroups,
 } from '../modelMarketplace'
@@ -96,6 +97,12 @@ describe('model marketplace data', () => {
   it('formats prices after applying the selected group rate', () => {
     expect(scaledPrice(0.000002, 1_000_000, 1.1)).toBe('$2.2')
     expect(scaledPrice(null, 1_000_000, 1)).toBe('-')
+  })
+
+  it('converts the effective group rate using the current balance recharge rate', () => {
+    expect(realtimeRate(0.1, 1, 7.2)).toBeCloseTo(0.0138889)
+    expect(realtimeRate(0.15, 1.5, 7.2)).toBeCloseTo(0.0138889)
+    expect(realtimeRate(0.1, 0, 0)).toBeCloseTo(0.0138889)
   })
 
   it('maps technical billing modes to the two marketplace categories', () => {

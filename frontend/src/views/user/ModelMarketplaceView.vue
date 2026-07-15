@@ -329,6 +329,13 @@
               </div>
 
               <div class="mt-auto border-t border-outline pt-2.5">
+                <div
+                  class="mb-2 flex items-center justify-between gap-3 text-xs"
+                  :title="t('modelMarketplace.realtimeRateHint', { cny: formatRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
+                >
+                  <span class="font-medium text-foreground-muted">{{ t('modelMarketplace.realtimeRate') }}</span>
+                  <span class="font-mono font-semibold tabular-nums text-brand">{{ formatRate(cardRealtimeRate(entry)) }}&times;</span>
+                </div>
                 <div class="flex min-w-0 items-center gap-1.5">
                   <button
                     v-for="group in cardGroups(entry)"
@@ -406,6 +413,7 @@ import userChannelsAPI from '@/api/channels'
 import userGroupsAPI from '@/api/groups'
 import type { GroupPlatform } from '@/types'
 import { useAppStore } from '@/stores/app'
+import { usePaymentStore } from '@/stores/payment'
 import { useClipboard } from '@/composables/useClipboard'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { platformBadgeClass } from '@/utils/platformColors'
@@ -414,8 +422,10 @@ import {
   buildMarketplaceEntries,
   buildMarketplaceGroups,
   compareMarketplaceDisplayOrder,
+  DEFAULT_USD_TO_CNY_RATE,
   effectiveRateForEntry,
   primaryPrice,
+  realtimeRate,
   scaledPrice,
   sortedEntryGroups,
   type MarketplaceModelEntry,
@@ -425,6 +435,7 @@ const BATCH_SIZE = 18
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const paymentStore = usePaymentStore()
 const { copyToClipboard } = useClipboard()
 
 const catalog = ref<Awaited<ReturnType<typeof userChannelsAPI.getMarketplace>>>([])
@@ -536,6 +547,14 @@ watch(
 watch(loadMoreSentinel, (node, previous) => { if (previous) loadMoreObserver?.unobserve(previous); if (node) loadMoreObserver?.observe(node) }, { flush: 'post' })
 
 const modelMonitorEnabled = computed(() => appStore.cachedPublicSettings?.model_monitor_enabled === true)
+const balanceRechargeMultiplier = computed(() => {
+  const multiplier = paymentStore.config?.balance_recharge_multiplier
+  return Number.isFinite(multiplier) && Number(multiplier) > 0 ? Number(multiplier) : 1
+})
+const officialUsdToCnyRate = computed(() => {
+  const rate = paymentStore.config?.subscription_usd_to_cny_rate
+  return Number.isFinite(rate) && Number(rate) > 0 ? Number(rate) : DEFAULT_USD_TO_CNY_RATE
+})
 
 function providerLabel(platform: string): string {
   const known = t(`modelMarketplace.providers.${platform}`)
@@ -550,6 +569,10 @@ function billingModeLabel(mode?: string): string {
 
 function effectiveRate(entry: MarketplaceModelEntry): number {
   return activeEntryGroup(entry)?.effectiveRate ?? effectiveRateForEntry(entry, selectedGroupId.value, userGroupRates.value)
+}
+
+function cardRealtimeRate(entry: MarketplaceModelEntry): number {
+  return realtimeRate(effectiveRate(entry), balanceRechargeMultiplier.value, officialUsdToCnyRate.value)
 }
 
 function formatRate(rate: number): string {
@@ -671,6 +694,7 @@ async function loadMarketplace() {
     const [catalogResponse, rates] = await Promise.all([
       userChannelsAPI.getMarketplace(),
       userGroupsAPI.getUserGroupRates().catch(() => ({} as Record<number, number>)),
+      paymentStore.fetchConfig(true),
     ])
     catalog.value = catalogResponse
     userGroupRates.value = rates
