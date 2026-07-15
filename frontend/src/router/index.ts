@@ -281,6 +281,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/models',
+    name: 'ModelMarketplace',
+    component: () => import('@/views/user/ModelMarketplaceView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      requiresModelMarketplace: true,
+      title: 'Model Marketplace',
+      titleKey: 'modelMarketplace.title',
+      descriptionKey: 'modelMarketplace.description'
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/ProfileView.vue'),
@@ -856,7 +869,8 @@ router.beforeEach(async (to, _from, next) => {
   // 误判为“未启用”而错误拦截，故这里先确保设置加载完成。
   const requiresFeatureSettings = to.meta.requiresPayment ||
     to.meta.requiresPaymentOrders ||
-    to.meta.requiresRiskControl
+    to.meta.requiresRiskControl ||
+    to.meta.requiresModelMarketplace
   if (requiresFeatureSettings && !appStore.publicSettingsLoaded) {
     try {
       await appStore.fetchPublicSettings()
@@ -892,6 +906,15 @@ router.beforeEach(async (to, _from, next) => {
     appStore.cachedPublicSettings?.risk_control_enabled === false
   ) {
     next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
+    return
+  }
+
+  if (
+    to.meta.requiresModelMarketplace &&
+    appStore.publicSettingsLoaded &&
+    appStore.cachedPublicSettings?.model_marketplace_enabled === false
+  ) {
+    next('/dashboard')
     return
   }
 

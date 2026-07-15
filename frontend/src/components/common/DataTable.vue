@@ -1,7 +1,7 @@
 <template>
   <div v-if="!isDesktopViewport" class="min-w-0 max-w-full space-y-2">
     <template v-if="loading">
-      <div v-for="i in 5" :key="i" class="rounded-panel border border-outline p-3 bg-canvas">
+      <div v-for="i in 5" :key="i" class="rounded-panel border border-outline bg-surface p-3">
         <div class="space-y-2">
           <div v-for="column in dataColumns" :key="column.key" class="flex justify-between">
             <div class="h-4 w-20 animate-pulse rounded bg-outline bg-surface-subtle"></div>
@@ -15,7 +15,7 @@
     </template>
 
     <template v-else-if="!data || data.length === 0">
-      <div class="rounded-panel border border-outline p-8 text-center bg-canvas">
+      <div class="rounded-panel border border-outline bg-surface p-8 text-center">
         <slot name="empty">
           <div class="flex flex-col items-center">
             <Icon
@@ -35,7 +35,7 @@
       <div
         v-for="(row, index) in sortedData"
         :key="resolveRowKey(row, index)"
-        class="mobile-row-card relative min-w-0 rounded-panel border border-outline p-3 bg-canvas"
+        class="mobile-row-card relative min-w-0 rounded-panel border border-outline bg-surface p-3"
         :class="{
           'cursor-pointer': clickableRows
         }"
@@ -81,7 +81,7 @@
     }"
   >
     <table class="w-full min-w-max divide-y divide-outline">
-      <thead class="table-header bg-surface">
+      <thead class="table-header bg-surface-subtle">
         <tr>
           <th
             v-for="(column, index) in columns"
@@ -140,7 +140,7 @@
           </th>
         </tr>
       </thead>
-      <tbody class="table-body divide-y divide-outline bg-canvas">
+      <tbody class="table-body divide-y divide-outline bg-surface">
         <!-- Loading skeleton -->
         <tr v-if="loading" v-for="i in 5" :key="i">
           <td v-for="column in columns" :key="column.key" :class="['whitespace-nowrap py-4', getAdaptivePaddingClass()]">
@@ -184,7 +184,7 @@
             :data-row-id="resolveRowKey(item.row, item.index)"
             :data-index="item.index"
             :ref="item.measure ? measureElement : undefined"
-            class="hover:bg-surface-subtle"
+            class="table-row"
             :class="{
               'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus': clickableRows
             }"
@@ -897,6 +897,9 @@ defineExpose({
 /* 表格横向滚动 */
 .table-wrapper {
   --select-col-width: 52px; /* 勾选列宽度：px-6 (24px*2) + checkbox (16px) */
+  --table-header-bg: var(--ui-surface-subtle);
+  --table-row-bg: var(--ui-surface);
+  --table-row-hover-bg: var(--ui-surface-subtle);
   position: relative;
   width: 100%;
   max-width: 100%;
@@ -905,6 +908,7 @@ defineExpose({
   flex: 1;
   min-height: 0;
   isolation: isolate;
+  background-color: var(--table-row-bg);
 }
 
 /* 表头容器，确保在滚动时覆盖表体内容 */
@@ -912,11 +916,7 @@ defineExpose({
   position: sticky;
   top: 0;
   z-index: 200;
-  background-color: rgb(249 250 251);
-}
-
-.dark .table-wrapper .table-header {
-  background-color: rgb(31 41 55);
+  background-color: var(--table-header-bg);
 }
 
 /* 表体保持在表头下方 */
@@ -930,11 +930,7 @@ defineExpose({
   position: sticky;
   top: 0;
   z-index: 210; /* 必须高于所有表体内容 */
-  background-color: rgb(249 250 251);
-}
-
-.dark .sticky-header-cell {
-  background-color: rgb(31 41 55);
+  background-color: var(--table-header-bg);
 }
 
 /* Sticky 列基础样式 */
@@ -970,70 +966,38 @@ defineExpose({
 
 /* 表体 sticky 列背景 */
 tbody .sticky-col {
-  background-color: white;
+  background-color: var(--table-row-bg);
 }
 
-.dark tbody .sticky-col {
-  background-color: rgb(17 24 39);
+/* Keep scrolling and frozen cells on one continuous row surface. */
+.table-row > td {
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
-/* hover 状态保持 */
-tbody tr:hover .sticky-col {
-  background-color: rgb(249 250 251);
+.table-row:hover > td {
+  background-color: var(--table-row-hover-bg);
 }
 
-.dark tbody tr:hover .sticky-col {
-  background-color: rgb(31 41 55);
-}
-
-/* 阴影只在可滚动时显示 */
-/* 单列固定右侧阴影 */
-.is-scrollable .sticky-col-left::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 10px;
-  transform: translateX(100%);
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.08), transparent);
-  pointer-events: none;
-}
-
-/* 双列固定：只在第二列显示阴影 */
-.is-scrollable .sticky-col-left-second::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 10px;
-  transform: translateX(100%);
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.08), transparent);
-  pointer-events: none;
-}
-
-/* 操作列左侧阴影 */
+/* A narrow separator keeps frozen columns legible without splitting the table into panels. */
+.is-scrollable .sticky-col-left::after,
+.is-scrollable .sticky-col-left-second::after,
 .is-scrollable .sticky-col-right::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
   bottom: 0;
-  width: 10px;
-  transform: translateX(-100%);
-  background: linear-gradient(to left, rgba(0, 0, 0, 0.08), transparent);
+  width: 1px;
+  background-color: var(--ui-border);
   pointer-events: none;
 }
 
-/* 暗色模式阴影 */
-.dark .is-scrollable .sticky-col-left::after,
-.dark .is-scrollable .sticky-col-left-second::after {
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.2), transparent);
+.is-scrollable .sticky-col-left::after,
+.is-scrollable .sticky-col-left-second::after {
+  right: 0;
 }
 
-.dark .is-scrollable .sticky-col-right::before {
-  background: linear-gradient(to left, rgba(0, 0, 0, 0.2), transparent);
+.is-scrollable .sticky-col-right::before {
+  left: 0;
 }
 </style>
 
@@ -1050,38 +1014,27 @@ tbody tr:hover .sticky-col {
 
 /* 2. 重写 Webkit 滚动层，全部加上 !important 强制覆盖透明悬停陷阱 */
 .table-wrapper::-webkit-scrollbar {
-  height: 12px !important;
-  width: 12px !important;
+  height: 10px !important;
+  width: 10px !important;
   display: block !important;
   background-color: transparent !important;
 }
 
 .table-wrapper::-webkit-scrollbar-track {
-  background-color: rgba(0, 0, 0, 0.03) !important;
+  background-color: rgb(var(--color-surface-subtle)) !important;
   border-radius: 6px !important;
   margin: 0 4px !important;
 }
-.dark .table-wrapper::-webkit-scrollbar-track {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
 /* 常驻、不透明的滑块，无视鼠标是否 hover 都在那！ */
 .table-wrapper::-webkit-scrollbar-thumb {
-  background-color: rgba(107, 114, 128, 0.75) !important; 
+  background-color: rgb(var(--color-foreground-subtle) / 0.42) !important;
   border-radius: 6px !important;
   border: 2px solid transparent !important;
   background-clip: padding-box !important;
   -webkit-appearance: none !important;
 }
 .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(75, 85, 99, 0.9) !important;
-}
-
-.dark .table-wrapper::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.75) !important;
-}
-.dark .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(209, 213, 219, 0.9) !important;
+  background-color: rgb(var(--color-foreground-subtle) / 0.62) !important;
 }
 
 /* 3. 仅给真正的 Firefox 留的后路 */

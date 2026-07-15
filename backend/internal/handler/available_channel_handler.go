@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"sort"
+	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -24,6 +26,8 @@ type AvailableChannelHandler struct {
 	channelService *service.ChannelService
 	apiKeyService  *service.APIKeyService
 	settingService *service.SettingService
+	accountRepo    service.AccountRepository
+	pricingService *service.PricingService
 }
 
 // NewAvailableChannelHandler 创建用户侧可用渠道 handler。
@@ -31,11 +35,15 @@ func NewAvailableChannelHandler(
 	channelService *service.ChannelService,
 	apiKeyService *service.APIKeyService,
 	settingService *service.SettingService,
+	accountRepo service.AccountRepository,
+	pricingService *service.PricingService,
 ) *AvailableChannelHandler {
 	return &AvailableChannelHandler{
 		channelService: channelService,
 		apiKeyService:  apiKeyService,
 		settingService: settingService,
+		accountRepo:    accountRepo,
+		pricingService: pricingService,
 	}
 }
 
@@ -45,6 +53,15 @@ func (h *AvailableChannelHandler) featureEnabled(c *gin.Context) bool {
 		return false
 	}
 	return h.settingService.GetAvailableChannelsRuntime(c.Request.Context()).Enabled
+}
+
+// marketplaceEnabled returns whether the independently gated model marketplace
+// is enabled. It fails closed when settings are unavailable.
+func (h *AvailableChannelHandler) marketplaceEnabled(c *gin.Context) bool {
+	if h.settingService == nil {
+		return false
+	}
+	return h.settingService.GetModelMarketplaceRuntime(c.Request.Context()).Enabled
 }
 
 // userAvailableGroup 用户可见的分组概要（白名单字段）。
@@ -96,6 +113,13 @@ type userSupportedModel struct {
 	Pricing  *userSupportedModelPricing `json:"pricing"`
 }
 
+type userMarketplaceModel struct {
+	Name     string                     `json:"name"`
+	Platform string                     `json:"platform"`
+	Pricing  *userSupportedModelPricing `json:"pricing"`
+	Groups   []userAvailableGroup       `json:"groups"`
+}
+
 // userChannelPlatformSection 单渠道内某个平台的子视图：用户可见的分组 + 该平台
 // 支持的模型。按 platform 聚合后让前端可以把渠道名作为 row-group 一次渲染，
 // 后面的平台行按 sections 顺序铺开。
@@ -115,6 +139,14 @@ type userAvailableChannel struct {
 	Platforms   []userChannelPlatformSection `json:"platforms"`
 }
 
+// userMarketplacePlatform is the channel-independent marketplace view. Models
+// are aggregated from accessible groups and their schedulable accounts.
+type userMarketplacePlatform struct {
+	Platform        string                 `json:"platform"`
+	Groups          []userAvailableGroup   `json:"groups"`
+	SupportedModels []userMarketplaceModel `json:"supported_models"`
+}
+
 // List 列出当前用户可见的「可用渠道」。
 // GET /api/v1/channels/available
 func (h *AvailableChannelHandler) List(c *gin.Context) {
@@ -131,20 +163,183 @@ func (h *AvailableChannelHandler) List(c *gin.Context) {
 		return
 	}
 
-	userGroups, err := h.apiKeyService.GetAvailableGroups(c.Request.Context(), subject.UserID)
+	h.listForUser(c, subject.UserID)
+}
+
+func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID int64) ([]userMarketplacePlatform, error) {
+	groups, err := h.apiKeyService.GetAvailableGroups(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	type modelAggregate struct {
+		groups map[int64]userAvailableGroup
+	}
+	byPlatform := make(map[string]map[string]*modelAggregate)
+
+	for i := range groups {
+		group := groups[i]
+		platform := strings.TrimSpace(group.Platform)
+		if platform == "" {
+			continue
+		}
+		accounts, listErr := h.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, group.ID, platform)
+		if listErr != nil {
+			return nil, listErr
+		}
+		if len(accounts) == 0 {
+			continue
+		}
+
+		models := marketplaceModelIDs(group, accounts)
+		if len(models) == 0 {
+			continue
+		}
+		if byPlatform[platform] == nil {
+			byPlatform[platform] = make(map[string]*modelAggregate)
+		}
+		groupView := toUserAvailableGroup(group)
+		for _, model := range models {
+			aggregate := byPlatform[platform][model]
+			if aggregate == nil {
+				aggregate = &modelAggregate{groups: make(map[int64]userAvailableGroup)}
+				byPlatform[platform][model] = aggregate
+			}
+			aggregate.groups[group.ID] = groupView
+		}
+	}
+
+	platforms := make([]string, 0, len(byPlatform))
+	for platform := range byPlatform {
+		platforms = append(platforms, platform)
+	}
+	sort.Strings(platforms)
+
+	out := make([]userMarketplacePlatform, 0, len(platforms))
+	for _, platform := range platforms {
+		modelNames := make([]string, 0, len(byPlatform[platform]))
+		allGroups := make(map[int64]userAvailableGroup)
+		for name, aggregate := range byPlatform[platform] {
+			modelNames = append(modelNames, name)
+			for id, group := range aggregate.groups {
+				allGroups[id] = group
+			}
+		}
+		sort.Strings(modelNames)
+		models := make([]userMarketplaceModel, 0, len(modelNames))
+		for _, name := range modelNames {
+			aggregate := byPlatform[platform][name]
+			modelGroups := sortedMarketplaceGroups(aggregate.groups)
+			models = append(models, userMarketplaceModel{
+				Name:     name,
+				Platform: platform,
+				Pricing:  toUserPricing(h.pricingService.GetDisplayModelPricing(name)),
+				Groups:   modelGroups,
+			})
+		}
+		out = append(out, userMarketplacePlatform{
+			Platform:        platform,
+			Groups:          sortedMarketplaceGroups(allGroups),
+			SupportedModels: models,
+		})
+	}
+	return out, nil
+}
+
+func marketplaceModelIDs(group service.Group, accounts []service.Account) []string {
+	models := group.ModelsListConfig.Models
+	if !group.ModelsListConfig.Enabled || len(models) == 0 {
+		models = service.DefaultModelsListCandidateIDs(group.Platform)
+		for i := range accounts {
+			for model := range accounts[i].GetModelMapping() {
+				models = append(models, model)
+			}
+		}
+	}
+	seen := make(map[string]struct{}, len(models))
+	out := make([]string, 0, len(models))
+	for _, model := range models {
+		model = strings.TrimSpace(model)
+		if model == "" || strings.Contains(model, "*") {
+			continue
+		}
+		if _, ok := seen[model]; ok {
+			continue
+		}
+		seen[model] = struct{}{}
+		out = append(out, model)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func toUserAvailableGroup(group service.Group) userAvailableGroup {
+	return userAvailableGroup{
+		ID:                 group.ID,
+		Name:               group.Name,
+		Platform:           group.Platform,
+		SubscriptionType:   group.SubscriptionType,
+		RateMultiplier:     group.RateMultiplier,
+		PeakRateEnabled:    group.PeakRateEnabled,
+		PeakStart:          group.PeakStart,
+		PeakEnd:            group.PeakEnd,
+		PeakRateMultiplier: group.PeakRateMultiplier,
+		IsExclusive:        group.IsExclusive,
+	}
+}
+
+func sortedMarketplaceGroups(groups map[int64]userAvailableGroup) []userAvailableGroup {
+	out := make([]userAvailableGroup, 0, len(groups))
+	for _, group := range groups {
+		out = append(out, group)
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
+}
+
+// ListMarketplace returns a channel-independent, group-derived model catalog.
+// GET /api/v1/models/marketplace
+func (h *AvailableChannelHandler) ListMarketplace(c *gin.Context) {
+	subject, ok := middleware.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	if !h.marketplaceEnabled(c) {
+		response.Success(c, []userMarketplacePlatform{})
+		return
+	}
+
+	out, err := h.marketplaceForUser(c.Request.Context(), subject.UserID)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
+	}
+	response.Success(c, out)
+}
+
+func (h *AvailableChannelHandler) listForUser(c *gin.Context, userID int64) {
+	out, err := h.availableForUser(c.Request.Context(), userID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, out)
+}
+
+func (h *AvailableChannelHandler) availableForUser(ctx context.Context, userID int64) ([]userAvailableChannel, error) {
+	userGroups, err := h.apiKeyService.GetAvailableGroups(ctx, userID)
+	if err != nil {
+		return nil, err
 	}
 	allowedGroupIDs := make(map[int64]struct{}, len(userGroups))
 	for i := range userGroups {
 		allowedGroupIDs[userGroups[i].ID] = struct{}{}
 	}
 
-	channels, err := h.channelService.ListAvailable(c.Request.Context())
+	channels, err := h.channelService.ListAvailable(ctx)
 	if err != nil {
-		response.ErrorFrom(c, err)
-		return
+		return nil, err
 	}
 
 	out := make([]userAvailableChannel, 0, len(channels))
@@ -167,7 +362,7 @@ func (h *AvailableChannelHandler) List(c *gin.Context) {
 		})
 	}
 
-	response.Success(c, out)
+	return out, nil
 }
 
 // buildPlatformSections 把一个渠道按 visibleGroups 的平台集合拆成有序的 section 列表：

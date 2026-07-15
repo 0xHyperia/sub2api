@@ -485,8 +485,8 @@
   }
 
   .sidebar-link-active {
-    @apply bg-surface-subtle text-foreground hover:bg-surface-subtle;
-    box-shadow: inset 3px 0 0 rgb(var(--color-brand));
+    @apply bg-info-subtle font-semibold text-foreground hover:bg-info-subtle;
+    box-shadow: inset 0 0 0 1px rgb(var(--color-info) / 0.16);
   }
 
   .sidebar-section {

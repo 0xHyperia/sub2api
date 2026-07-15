@@ -6016,6 +6016,42 @@
         <div class="card">
           <div class="border-b border-outline px-6 py-4">
             <h2 class="text-lg font-semibold text-foreground">
+              {{ t('admin.settings.features.modelMarketplace.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-foreground-subtle">
+              {{ t('admin.settings.features.modelMarketplace.description') }}
+            </p>
+            <p class="mt-1.5 text-xs">
+              <router-link
+                to="/admin/groups"
+                class="inline-flex items-center gap-1 text-brand hover:underline"
+              >
+                {{ t('admin.settings.features.modelMarketplace.configureLink') }}
+                <span aria-hidden="true">→</span>
+              </router-link>
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-foreground-muted">
+                  {{ t('admin.settings.features.modelMarketplace.enabled') }}
+                </label>
+                <p class="mt-0.5 text-xs text-foreground-subtle">
+                  {{ t('admin.settings.features.modelMarketplace.enabledHint') }}
+                </p>
+              </div>
+              <Toggle
+                v-model="form.model_marketplace_enabled"
+                :aria-label="t('admin.settings.features.modelMarketplace.enabled')"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">
               {{ t('admin.settings.features.riskControl.title') }}
             </h2>
             <p class="mt-1 text-sm text-foreground-subtle">
@@ -8649,6 +8685,8 @@ const form = reactive<SettingsForm>({
   channel_monitor_default_interval_seconds: 60,
   // Available Channels feature switch
   available_channels_enabled: false,
+  // Model Marketplace feature switch
+  model_marketplace_enabled: false,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
   // Allow user view error requests
@@ -10077,6 +10115,8 @@ async function saveSettings() {
         Number(form.channel_monitor_default_interval_seconds) || 60,
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
+      // Model Marketplace feature switch
+      model_marketplace_enabled: form.model_marketplace_enabled,
       // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,

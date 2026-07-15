@@ -146,4 +146,28 @@ describe('UsageProgressBar', () => {
     expect(wrapper.get('.h-1\\.5 > div').attributes('style')).toContain('width: 100%')
     expect(wrapper.get('.h-1\\.5 > div').classes()).toContain('bg-danger')
   })
+
+  it('用量统计使用浅色表面而不是深色胶囊', () => {
+    const wrapper = mount(UsageProgressBar, {
+      props: {
+        label: '5h',
+        utilization: 35,
+        color: 'indigo',
+        windowStats: {
+          requests: 12,
+          tokens: 3456,
+          cost: 0.42,
+          user_cost: 0.84
+        }
+      }
+    })
+
+    const stats = wrapper.findAll('.mb-0\\.5 span')
+    expect(stats).toHaveLength(4)
+    for (const stat of stats) {
+      expect(stat.classes()).toContain('bg-surface-subtle')
+      expect(stat.classes()).toContain('border-outline')
+      expect(stat.classes()).not.toContain('bg-foreground')
+    }
+  })
 })

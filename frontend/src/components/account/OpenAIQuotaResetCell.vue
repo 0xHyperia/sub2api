@@ -66,7 +66,7 @@
     <div v-if="primaryResetCreditExpiry" class="space-y-1">
       <div class="flex flex-wrap items-center gap-1">
         <span
-          class="inline-flex max-w-full items-center rounded px-1.5 py-0.5 text-[10px] leading-4 text-foreground-muted tabular-nums bg-foreground"
+          class="inline-flex max-w-full items-center rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-[10px] leading-4 text-foreground-muted tabular-nums"
           :title="t('admin.accounts.openaiQuotaReset.expiresAtFull', { time: formatResetCreditExpiry(primaryResetCreditExpiry, 'full') })"
         >
           {{ t('admin.accounts.openaiQuotaReset.expiresAt', { time: formatResetCreditExpiry(primaryResetCreditExpiry, 'short') }) }}
@@ -75,7 +75,7 @@
           v-if="hiddenResetCreditCount > 0"
           type="button"
           data-testid="reset-credit-expiry-toggle"
-          class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-4 text-foreground-muted transition-colors bg-foreground hover:bg-surface/20"
+          class="inline-flex items-center rounded-full border border-outline bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium leading-4 text-foreground-muted transition-colors hover:bg-outline/60"
           :aria-expanded="showResetCreditDetails"
           :aria-label="resetCreditDetailsToggleLabel"
           :title="resetCreditDetailsTitle"
@@ -88,7 +88,7 @@
       <div
         v-if="showResetCreditDetails && resetCreditExpirations.length > 1"
         data-testid="reset-credit-expiry-details"
-        class="inline-grid max-w-full gap-0.5 rounded border px-1.5 py-1 text-[10px] leading-4 text-foreground-muted shadow-sm border-outline bg-foreground"
+        class="inline-grid max-w-full gap-0.5 rounded border border-outline bg-surface-subtle px-1.5 py-1 text-[10px] leading-4 text-foreground-muted shadow-sm"
       >
         <span class="sr-only">{{ t('admin.accounts.openaiQuotaReset.expirationDetails') }}</span>
         <span

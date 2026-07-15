@@ -610,7 +610,7 @@ watch(
               </span>
               <span
                 v-else
-                class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-foreground text-foreground-subtle"
+                class="inline-flex items-center gap-1 rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium text-foreground-muted"
               >
                 {{ t('admin.ops.accountAvailability.unavailable') }}
               </span>

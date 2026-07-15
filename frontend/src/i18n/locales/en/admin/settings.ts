@@ -30,6 +30,13 @@ export default {
           enabled: 'Enable Available Channels',
           enabledHint: 'When off, the sidebar entry is hidden and the endpoint returns an empty list.',
         },
+        modelMarketplace: {
+          title: 'Model Marketplace',
+          description: 'Show signed-in users models derived from accessible group platforms and model lists, with reference pricing and effective multipliers. Disabled by default.',
+          configureLink: 'Configure platforms, model lists, and multipliers in Group Management',
+          enabled: 'Enable Model Marketplace',
+          enabledHint: 'When off, the user entry is hidden, direct navigation returns to the dashboard, and the endpoint returns an empty list.',
+        },
         riskControl: {
           title: 'Risk Control',
           description: 'Enable the content moderation menu and gateway audit entry point. Disabled by default.',

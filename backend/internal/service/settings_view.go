@@ -179,6 +179,9 @@ type SystemSettings struct {
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
+	// Model Marketplace feature (user-facing card catalog)
+	ModelMarketplaceEnabled bool `json:"model_marketplace_enabled"`
+
 	// Claude Code version check
 	MinClaudeCodeVersion string
 	MaxClaudeCodeVersion string
@@ -325,6 +328,9 @@ type PublicSettings struct {
 
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+
+	// Model Marketplace feature (user-facing card catalog)
+	ModelMarketplaceEnabled bool `json:"model_marketplace_enabled"`
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`

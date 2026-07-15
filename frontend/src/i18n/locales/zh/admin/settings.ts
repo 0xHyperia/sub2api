@@ -30,6 +30,13 @@ export default {
           enabled: '启用可用渠道',
           enabledHint: '关闭后用户端侧边栏入口隐藏，接口返回空数组。',
         },
+        modelMarketplace: {
+          title: '模型广场',
+          description: '按可访问分组的平台和模型列表，向已登录用户展示模型、参考价格和实际倍率。默认关闭。',
+          configureLink: '前往 分组管理 配置平台、模型列表和倍率',
+          enabled: '启用模型广场',
+          enabledHint: '关闭后用户端入口隐藏，直接访问页面会返回仪表盘，接口返回空数组。',
+        },
         riskControl: {
           title: '风控中心',
           description: '启用内容审计菜单和全端点请求审核入口。默认关闭。',

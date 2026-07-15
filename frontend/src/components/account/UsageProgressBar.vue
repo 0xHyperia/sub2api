@@ -6,18 +6,18 @@
       class="mb-0.5 flex items-center"
     >
       <div class="flex items-center gap-1.5 text-[9px] text-foreground-subtle">
-        <span class="rounded px-1.5 py-0.5 bg-foreground">
+        <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted">
           {{ formatRequests }} req
         </span>
-        <span class="rounded px-1.5 py-0.5 bg-foreground">
+        <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted">
           {{ formatTokens }}
         </span>
-        <span class="rounded px-1.5 py-0.5 bg-foreground" :title="t('usage.accountBilled')">
+        <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted" :title="t('usage.accountBilled')">
           A ${{ formatAccountCost }}
         </span>
         <span
           v-if="windowStats?.user_cost != null"
-          class="rounded px-1.5 py-0.5 bg-foreground"
+          class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted"
           :title="t('usage.userBilled')"
         >
           U ${{ formatUserCost }}
@@ -100,9 +100,9 @@ watch(
 // Label background colors
 const labelClass = computed(() => {
   const colors = {
-    indigo: 'bg-info/40 text-info-foreground',
+    indigo: 'bg-info-subtle text-info-foreground',
     emerald: 'bg-success-subtle text-success-foreground',
-    purple: 'bg-brand/40 text-brand',
+    purple: 'bg-brand-subtle text-brand',
     amber: 'bg-warning-subtle text-warning-foreground'
   }
   return colors[props.color]

@@ -27,6 +27,46 @@ func TestUserAvailableChannel_Unauthenticated401(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestModelMarketplace_Unauthenticated401(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := &AvailableChannelHandler{}
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/models/marketplace", nil)
+
+	h.ListMarketplace(c)
+
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestMarketplaceModelIDs_CustomGroupListTakesPriority(t *testing.T) {
+	group := service.Group{
+		Platform: service.PlatformOpenAI,
+		ModelsListConfig: service.GroupModelsListConfig{
+			Enabled: true,
+			Models:  []string{"gpt-custom", " gpt-custom ", "gpt-other", "gpt-*"},
+		},
+	}
+	accounts := []service.Account{{
+		Platform:    service.PlatformOpenAI,
+		Credentials: map[string]any{"model_mapping": map[string]any{"gpt-mapped": "gpt-upstream"}},
+	}}
+
+	require.Equal(t, []string{"gpt-custom", "gpt-other"}, marketplaceModelIDs(group, accounts))
+}
+
+func TestMarketplaceModelIDs_DefaultCatalogIncludesAccountMappings(t *testing.T) {
+	group := service.Group{Platform: service.PlatformOpenAI}
+	accounts := []service.Account{{
+		Platform:    service.PlatformOpenAI,
+		Credentials: map[string]any{"model_mapping": map[string]any{"gpt-marketplace-only": "gpt-upstream"}},
+	}}
+
+	models := marketplaceModelIDs(group, accounts)
+	require.Contains(t, models, "gpt-marketplace-only")
+	require.Greater(t, len(models), 1, "the built-in platform catalog should also be present")
+}
+
 func TestFilterUserVisibleGroups_IntersectionOnly(t *testing.T) {
 	// 渠道挂在 {g1, g2, g3}，用户只允许 {g1, g3} —— 响应必须仅含 g1/g3。
 	groups := []service.AvailableGroupRef{

@@ -4,7 +4,7 @@
     <div class="flex items-center gap-1">
       <span
         :class="[
-          'inline-flex items-center gap-1 rounded-control px-1.5 py-0.5 text-[10px] font-medium',
+          'inline-flex items-center gap-1 rounded-control border border-outline px-1.5 py-0.5 text-[10px] font-medium',
           capacityClass(concurrencyUsed, concurrencyMax)
         ]"
       >
@@ -21,7 +21,7 @@
     <div v-if="sessionsMax > 0" class="flex items-center gap-1">
       <span
         :class="[
-          'inline-flex items-center gap-1 rounded-control px-1.5 py-0.5 text-[10px] font-medium',
+          'inline-flex items-center gap-1 rounded-control border border-outline px-1.5 py-0.5 text-[10px] font-medium',
           capacityClass(sessionsUsed, sessionsMax)
         ]"
       >
@@ -38,7 +38,7 @@
     <div v-if="rpmMax > 0" class="flex items-center gap-1">
       <span
         :class="[
-          'inline-flex items-center gap-1 rounded-control px-1.5 py-0.5 text-[10px] font-medium',
+          'inline-flex items-center gap-1 rounded-control border border-outline px-1.5 py-0.5 text-[10px] font-medium',
           capacityClass(rpmUsed, rpmMax)
         ]"
       >
@@ -79,6 +79,6 @@ function capacityClass(used: number, max: number): string {
   if (used > 0) {
     return 'bg-warning-subtle text-warning-foreground'
   }
-  return 'bg-foreground text-foreground-subtle'
+  return 'bg-surface-subtle text-foreground-muted'
 }
 </script>

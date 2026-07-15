@@ -813,6 +813,71 @@ export default {
     }
   },
 
+  modelMarketplace: {
+    eyebrow: '模型目录',
+    title: '模型广场',
+    description: '按平台浏览当前账号可调用的模型、分组倍率与参考价格。模型来自可用分组，价格按最低有效倍率估算。',
+    results: '模型列表',
+    searchPlaceholder: '搜索模型或分组',
+    effectivePrice: '显示倍率后价格',
+    effectivePriceShort: '倍率后价格',
+    basePriceShort: '基础价格',
+    copyModel: '复制模型名称',
+    copySuccess: '已复制模型名称 {name}',
+    availableInGroups: '可用于 {count} 个分组',
+    noPricing: '暂未配置公开价格',
+    loadError: '模型目录加载失败，请稍后重试。',
+    pagination: '第 {page} / {total} 页',
+    stats: {
+      models: '个模型',
+      providers: '个平台',
+    },
+    filters: {
+      title: '筛选',
+      reset: '重置',
+      provider: '平台',
+      allProviders: '全部平台',
+      group: '可用分组',
+      allGroups: '全部分组',
+      billing: '计费方式',
+      allBilling: '全部方式',
+    },
+    sort: {
+      label: '排序方式',
+      name: '按模型名称',
+      price: '按最低价格',
+    },
+    billing: {
+      token: '按 Token',
+      per_request: '按次',
+      image: '按图像',
+      unpriced: '未定价',
+    },
+    price: {
+      input: '输入',
+      output: '输出',
+      cacheRead: '缓存读取',
+      cacheWrite: '缓存写入',
+      image: '图像',
+      request: '请求',
+      perMillion: '/ 1M Tokens',
+      perRequest: '/ 次',
+    },
+    empty: {
+      title: '没有匹配的模型',
+      description: '调整搜索条件或重置筛选后再试。',
+    },
+    providers: {
+      anthropic: 'Anthropic',
+      openai: 'OpenAI',
+      antigravity: 'Antigravity',
+      gemini: 'Gemini',
+      vertex: 'Vertex AI',
+      bedrock: 'Amazon Bedrock',
+      azure: 'Azure OpenAI',
+    },
+  },
+
   // Empty States
   empty: {
     noData: '暂无数据'

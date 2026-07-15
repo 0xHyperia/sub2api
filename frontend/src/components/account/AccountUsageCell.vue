@@ -259,7 +259,7 @@
 
       <!-- Needs reauth (401) -->
       <div v-else-if="needsReauth" class="space-y-1">
-        <span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-warning/40 text-warning-foreground">
+        <span class="inline-block rounded bg-warning-subtle px-1.5 py-0.5 text-[10px] font-medium text-warning-foreground">
           {{ t('admin.accounts.needsReauth') }}
         </span>
       </div>
@@ -346,7 +346,7 @@
         {{ error }}
       </div>
       <div v-else-if="needsReauth" class="space-y-1">
-        <span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-warning/40 text-warning-foreground">
+        <span class="inline-block rounded bg-warning-subtle px-1.5 py-0.5 text-[10px] font-medium text-warning-foreground">
           {{ t('admin.accounts.needsReauth') }}
         </span>
       </div>
@@ -357,24 +357,24 @@
       </div>
       <div v-else-if="usageInfo" class="space-y-1">
         <div v-if="grokEntitlementLabel" class="mb-0.5">
-          <span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-foreground text-foreground-subtle">
+          <span class="inline-block rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium text-foreground-muted">
             {{ grokEntitlementLabel }}
           </span>
         </div>
         <div v-if="grokLocalUsage" class="mb-0.5 flex items-center">
           <div class="flex items-center gap-1.5 text-[9px] text-foreground-subtle">
-            <span class="rounded px-1.5 py-0.5 bg-foreground">
+            <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted">
               {{ formatWindowRequests(grokLocalUsage) }} req
             </span>
-            <span class="rounded px-1.5 py-0.5 bg-foreground">
+            <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted">
               {{ formatWindowTokens(grokLocalUsage) }}
             </span>
-            <span class="rounded px-1.5 py-0.5 bg-foreground" :title="t('usage.accountBilled')">
+            <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted" :title="t('usage.accountBilled')">
               A ${{ formatWindowCost(grokLocalUsage) }}
             </span>
             <span
               v-if="grokLocalUsage.user_cost != null"
-              class="rounded px-1.5 py-0.5 bg-foreground"
+              class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted"
               :title="t('usage.userBilled')"
             >
               U ${{ formatWindowUserCost(grokLocalUsage) }}
@@ -482,18 +482,18 @@
           class="mb-0.5 flex items-center"
         >
           <div class="flex items-center gap-1.5 text-[9px] text-foreground-subtle">
-            <span class="rounded px-1.5 py-0.5 bg-foreground">
+            <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted">
               {{ formatKeyRequests }} req
             </span>
-            <span class="rounded px-1.5 py-0.5 bg-foreground">
+            <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted">
               {{ formatKeyTokens }}
             </span>
-            <span class="rounded px-1.5 py-0.5 bg-foreground" :title="t('usage.accountBilled')">
+            <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted" :title="t('usage.accountBilled')">
               A ${{ formatKeyCost }}
             </span>
             <span
               v-if="todayStats.user_cost != null"
-              class="rounded px-1.5 py-0.5 bg-foreground"
+              class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted"
               :title="t('usage.userBilled')"
             >
               U ${{ formatKeyUserCost }}
@@ -558,18 +558,18 @@
         class="mb-0.5 flex items-center"
       >
         <div class="flex items-center gap-1.5 text-[9px] text-foreground-subtle">
-          <span class="rounded px-1.5 py-0.5 bg-foreground">
+          <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted">
             {{ formatKeyRequests }} req
           </span>
-          <span class="rounded px-1.5 py-0.5 bg-foreground">
+          <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted">
             {{ formatKeyTokens }}
           </span>
-          <span class="rounded px-1.5 py-0.5 bg-foreground" :title="t('usage.accountBilled')">
+          <span class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted" :title="t('usage.accountBilled')">
             A ${{ formatKeyCost }}
           </span>
           <span
             v-if="todayStats.user_cost != null"
-            class="rounded px-1.5 py-0.5 bg-foreground"
+            class="rounded border border-outline bg-surface-subtle px-1.5 py-0.5 text-foreground-muted"
             :title="t('usage.userBilled')"
           >
             U ${{ formatKeyUserCost }}
@@ -922,18 +922,18 @@ const geminiTierClass = computed(() => {
   const level = geminiUserLevel.value
 
   if (channel === 'client' || channel === 'ai studio') {
-    return 'bg-info/40 text-info-foreground'
+    return 'bg-info-subtle text-info-foreground'
   }
 
   if (channel === 'google one') {
-    if (level === 'ultra') return 'bg-brand/40 text-brand'
-    if (level === 'pro') return 'bg-info/40 text-info-foreground'
+    if (level === 'ultra') return 'bg-brand-subtle text-brand'
+    if (level === 'pro') return 'bg-info-subtle text-info-foreground'
     return 'bg-surface-subtle text-foreground-muted'
   }
 
   if (channel === 'gcp') {
-    if (level === 'enterprise') return 'bg-brand/40 text-brand'
-    return 'bg-info/40 text-info-foreground'
+    if (level === 'enterprise') return 'bg-brand-subtle text-brand'
+    return 'bg-info-subtle text-info-foreground'
   }
 
   return ''
@@ -1185,9 +1185,9 @@ const antigravityTierClass = computed(() => {
     case 'free-tier':
       return 'bg-surface-subtle text-foreground-muted'
     case 'g1-pro-tier':
-      return 'bg-info/40 text-info-foreground'
+      return 'bg-info-subtle text-info-foreground'
     case 'g1-ultra-tier':
-      return 'bg-brand/40 text-brand'
+      return 'bg-brand-subtle text-brand'
     default:
       return ''
   }
@@ -1233,7 +1233,7 @@ const forbiddenLabel = computed(() => {
 
 const forbiddenBadgeClass = computed(() => {
   if (forbiddenType.value === 'validation') {
-    return 'bg-warning/40 text-warning-foreground'
+    return 'bg-warning-subtle text-warning-foreground'
   }
   return 'bg-danger-subtle text-danger-foreground'
 })

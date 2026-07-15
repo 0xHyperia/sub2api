@@ -453,6 +453,11 @@ describe('admin UsageView ranking tab', () => {
 
     const tabs = wrapper.findAll('[data-testid="usage-detail-tab"]')
     expect(tabs).toHaveLength(3)
+    for (const tab of tabs) {
+      expect(tab.classes()).toContain('inline-flex')
+      expect(tab.classes()).toContain('items-center')
+      expect(tab.classes()).toContain('gap-1.5')
+    }
     await tabs[2].trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-test="ranking"]').exists()).toBe(true)

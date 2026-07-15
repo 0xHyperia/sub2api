@@ -684,6 +684,15 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 	return nil
 }
 
+// GetDisplayModelPricing resolves global pricing into the common display shape.
+// It is informational only and does not participate in gateway billing.
+func (s *PricingService) GetDisplayModelPricing(modelName string) *ChannelModelPricing {
+	if s == nil {
+		return nil
+	}
+	return synthesizePricingFromLiteLLM(s.GetModelPricing(modelName), nil)
+}
+
 func (s *PricingService) buildModelLookupCandidates(modelLower string) []string {
 	// Prefer canonical model name first (this also improves billing compatibility with "models/xxx").
 	candidates := []string{

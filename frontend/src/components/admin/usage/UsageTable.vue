@@ -92,20 +92,20 @@
         </template>
 
         <template #cell-group="{ row }">
-          <span v-if="row.group" class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-info text-info-foreground">
+          <span v-if="row.group" class="inline-flex items-center rounded border border-info/20 bg-info-subtle px-2 py-0.5 text-xs font-medium text-info-foreground">
             {{ row.group.name }}
           </span>
           <span v-else class="text-sm text-foreground-subtle">-</span>
         </template>
 
         <template #cell-stream="{ row }">
-          <span class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium" :class="getRequestTypeBadgeClass(row)">
+          <span class="inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium" :class="getRequestTypeBadgeClass(row)">
             {{ getRequestTypeLabel(row) }}
           </span>
         </template>
 
         <template #cell-billing_mode="{ row }">
-          <span class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium" :class="getBillingModeBadgeClass(getDisplayBillingMode(row))">
+          <span class="inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium" :class="getBillingModeBadgeClass(getDisplayBillingMode(row))">
             {{ getBillingModeLabel(getDisplayBillingMode(row), t) }}
           </span>
         </template>
@@ -566,11 +566,11 @@ const getRequestTypeLabel = (row: AdminUsageLog): string => {
 
 const getRequestTypeBadgeClass = (row: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(row)
-  if (requestType === 'cyber') return 'bg-danger-subtle text-danger-foreground'
-  if (requestType === 'ws_v2') return 'bg-brand text-brand'
-  if (requestType === 'stream') return 'bg-info text-info-foreground'
-  if (requestType === 'sync') return 'bg-surface-subtle text-foreground-muted'
-  return 'bg-warning-subtle text-warning-foreground'
+  if (requestType === 'cyber') return 'border-danger/20 bg-danger-subtle text-danger-foreground'
+  if (requestType === 'ws_v2') return 'border-outline bg-brand-subtle text-brand'
+  if (requestType === 'stream') return 'border-info/20 bg-info-subtle text-info-foreground'
+  if (requestType === 'sync') return 'border-outline bg-surface-subtle text-foreground-muted'
+  return 'border-warning/20 bg-warning-subtle text-warning-foreground'
 }
 
 

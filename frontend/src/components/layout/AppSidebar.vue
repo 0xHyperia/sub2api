@@ -87,7 +87,8 @@
                 type="button"
                 class="sidebar-link w-full"
                 :class="{
-                  'sidebar-link-active': isGroupActive(item),
+                  'sidebar-group-active': isGroupActive(item) && !sidebarCollapsed,
+                  'sidebar-link-active': isGroupActive(item) && sidebarCollapsed,
                   'sidebar-link-collapsed': sidebarCollapsed
                 }"
                 :title="sidebarCollapsed ? item.label : undefined"
@@ -282,6 +283,7 @@ function localText(zh: string, en: string): string {
 
 const flagChannelMonitor = makeSidebarFlag(FeatureFlags.channelMonitor)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
+const flagModelMarketplace = makeSidebarFlag(FeatureFlags.modelMarketplace)
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
@@ -332,6 +334,13 @@ function buildSelfNavItems(): ShellNavItem[] {
       featureFlag: flagBatchImageAccess
     },
     { path: '/usage', label: t('nav.usage'), icon: 'chart', hideInSimpleMode: true },
+    {
+      path: '/models',
+      label: t('nav.modelMarketplace'),
+      icon: 'grid',
+      hideInSimpleMode: true,
+      featureFlag: flagModelMarketplace
+    },
     {
       path: '/available-channels',
       label: t('nav.availableChannels'),
@@ -766,8 +775,20 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-link-active {
+  @apply bg-info-subtle font-semibold text-foreground hover:bg-info-subtle;
+  box-shadow: inset 0 0 0 1px rgb(var(--color-info) / 0.16);
+}
+
+.sidebar-link-active .sidebar-link-icon {
+  @apply text-info-foreground;
+}
+
+.sidebar-group-active {
   @apply bg-surface-subtle text-foreground;
-  box-shadow: inset 2px 0 0 rgb(var(--color-brand));
+}
+
+.sidebar-group-active .sidebar-link-icon {
+  @apply text-info-foreground;
 }
 
 .sidebar-link-collapsed {
@@ -807,7 +828,12 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-child-link-active {
-  @apply bg-surface-subtle text-foreground;
+  @apply bg-info-subtle font-semibold text-foreground hover:bg-info-subtle;
+  box-shadow: inset 0 0 0 1px rgb(var(--color-info) / 0.16);
+}
+
+.sidebar-child-link-active .sidebar-link-icon {
+  @apply text-info-foreground;
 }
 
 .sidebar-svg-icon {

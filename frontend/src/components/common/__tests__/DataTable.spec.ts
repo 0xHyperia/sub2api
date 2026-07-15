@@ -67,6 +67,29 @@ describe('DataTable', () => {
     expect(nameHeader.findAll('svg')[1].classes()).toContain('text-foreground')
   })
 
+  it('uses one surface across scrolling and frozen columns', async () => {
+    const wrapper = mount(DataTable, {
+      props: {
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'status', label: 'Status' },
+          { key: 'actions', label: 'Actions' }
+        ],
+        data: [{ id: 1, name: 'Alpha', status: 'Ready' }],
+        stickyFirstColumn: true,
+        stickyActionsColumn: true
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('thead').classes()).toContain('bg-surface-subtle')
+    expect(wrapper.get('tbody').classes()).toContain('bg-surface')
+    expect(wrapper.get('tbody tr[data-row-id="1"]').classes()).toContain('table-row')
+    expect(wrapper.findAll('tbody td')[0].classes()).toContain('sticky-col-left')
+    expect(wrapper.findAll('tbody td')[2].classes()).toContain('sticky-col-right')
+  })
+
   it('uses a separate native trigger for clickable mobile cards with interactive content', async () => {
     stubMatchMedia(false)
     const row = { id: 1, name: 'Alpha', status: 'Ready' }

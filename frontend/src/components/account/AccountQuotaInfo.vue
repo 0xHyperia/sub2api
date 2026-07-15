@@ -101,31 +101,31 @@ const tierBadgeClass = computed(() => {
 
   if (isCodeAssist.value) {
     const tier = (creds?.tier_id || '').toString().trim().toLowerCase()
-    if (tier === 'gcp_enterprise') return 'bg-brand/40 text-brand'
-    if (tier === 'gcp_standard') return 'bg-info/40 text-info-foreground'
+    if (tier === 'gcp_enterprise') return 'bg-brand-subtle text-brand'
+    if (tier === 'gcp_standard') return 'bg-info-subtle text-info-foreground'
     // Backward compatibility
     const upper = (creds?.tier_id || '').toString().trim().toUpperCase()
-    if (upper.includes('ULTRA') || upper.includes('ENTERPRISE')) return 'bg-brand/40 text-brand'
-    return 'bg-info/40 text-info-foreground'
+    if (upper.includes('ULTRA') || upper.includes('ENTERPRISE')) return 'bg-brand-subtle text-brand'
+    return 'bg-info-subtle text-info-foreground'
   }
 
   if (isGoogleOne.value) {
     const tier = (creds?.tier_id || '').toString().trim().toLowerCase()
-    if (tier === 'google_ai_ultra') return 'bg-brand/40 text-brand'
-    if (tier === 'google_ai_pro') return 'bg-info/40 text-info-foreground'
+    if (tier === 'google_ai_ultra') return 'bg-brand-subtle text-brand'
+    if (tier === 'google_ai_pro') return 'bg-info-subtle text-info-foreground'
     if (tier === 'google_one_free') return 'bg-surface-subtle text-foreground-muted'
     // Backward compatibility
     const upper = (creds?.tier_id || '').toString().trim().toUpperCase()
-    if (upper === 'GOOGLE_ONE_UNLIMITED') return 'bg-brand/40 text-brand'
-    if (upper === 'AI_PREMIUM') return 'bg-info/40 text-info-foreground'
+    if (upper === 'GOOGLE_ONE_UNLIMITED') return 'bg-brand-subtle text-brand'
+    if (upper === 'AI_PREMIUM') return 'bg-info-subtle text-info-foreground'
     return 'bg-surface-subtle text-foreground-muted'
   }
 
   // AI Studio 默认样式：蓝色
   const tier = (creds?.tier_id || '').toString().trim().toLowerCase()
-  if (tier === 'aistudio_paid') return 'bg-info/40 text-info-foreground'
+  if (tier === 'aistudio_paid') return 'bg-info-subtle text-info-foreground'
   if (tier === 'aistudio_free') return 'bg-surface-subtle text-foreground-muted'
-  return 'bg-info/40 text-info-foreground'
+  return 'bg-info-subtle text-info-foreground'
 })
 
 // 是否限流

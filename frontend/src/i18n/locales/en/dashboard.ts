@@ -808,6 +808,71 @@ export default {
     }
   },
 
+  modelMarketplace: {
+    eyebrow: 'Model catalog',
+    title: 'Model Marketplace',
+    description: 'Browse callable models by platform with accessible groups, multipliers, and reference pricing. Effective prices use the lowest group rate.',
+    results: 'Model results',
+    searchPlaceholder: 'Search models or groups',
+    effectivePrice: 'Show effective prices',
+    effectivePriceShort: 'Effective price',
+    basePriceShort: 'Base price',
+    copyModel: 'Copy model name',
+    copySuccess: 'Copied model name {name}',
+    availableInGroups: 'Available in {count} groups',
+    noPricing: 'No public pricing configured',
+    loadError: 'The model catalog could not be loaded. Please try again.',
+    pagination: 'Page {page} of {total}',
+    stats: {
+      models: 'models',
+      providers: 'providers',
+    },
+    filters: {
+      title: 'Filters',
+      reset: 'Reset',
+      provider: 'Provider',
+      allProviders: 'All providers',
+      group: 'Accessible group',
+      allGroups: 'All groups',
+      billing: 'Billing',
+      allBilling: 'All billing types',
+    },
+    sort: {
+      label: 'Sort models',
+      name: 'Model name',
+      price: 'Lowest price',
+    },
+    billing: {
+      token: 'Per token',
+      per_request: 'Per request',
+      image: 'Per image',
+      unpriced: 'Unpriced',
+    },
+    price: {
+      input: 'Input',
+      output: 'Output',
+      cacheRead: 'Cache read',
+      cacheWrite: 'Cache write',
+      image: 'Image',
+      request: 'Request',
+      perMillion: '/ 1M Tokens',
+      perRequest: '/ request',
+    },
+    empty: {
+      title: 'No matching models',
+      description: 'Adjust the search criteria or reset the filters.',
+    },
+    providers: {
+      anthropic: 'Anthropic',
+      openai: 'OpenAI',
+      antigravity: 'Antigravity',
+      gemini: 'Gemini',
+      vertex: 'Vertex AI',
+      bedrock: 'Amazon Bedrock',
+      azure: 'Azure OpenAI',
+    },
+  },
+
   // Empty States
   empty: {
     noData: 'No data found'

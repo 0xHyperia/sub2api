@@ -62,7 +62,7 @@ func (s *adminServiceImpl) GetGroupModelsListCandidates(ctx context.Context, id 
 		platform = PlatformAnthropic
 	}
 
-	candidates := defaultModelsListCandidateIDs(platform)
+	candidates := DefaultModelsListCandidateIDs(platform)
 	if id <= 0 || s.accountRepo == nil {
 		return candidates, nil
 	}
@@ -95,7 +95,8 @@ func (s *adminServiceImpl) GetGroupModelsListCandidates(ctx context.Context, id 
 	return candidates, nil
 }
 
-func defaultModelsListCandidateIDs(platform string) []string {
+// DefaultModelsListCandidateIDs returns the built-in public model catalog for a platform.
+func DefaultModelsListCandidateIDs(platform string) []string {
 	switch platform {
 	case PlatformOpenAI:
 		return openai.DefaultModelIDs()

@@ -55,6 +55,14 @@ describe('AppSidebar header styles', () => {
 })
 
 describe('AppSidebar admin shell behavior', () => {
+  it('uses a quiet full-surface selection and avoids double-highlighting expanded groups', () => {
+    expect(componentSource).toContain("'sidebar-group-active': isGroupActive(item) && !sidebarCollapsed")
+    expect(componentSource).toContain("'sidebar-link-active': isGroupActive(item) && sidebarCollapsed")
+    expect(componentSource).toContain('@apply bg-info-subtle font-semibold text-foreground hover:bg-info-subtle;')
+    expect(componentSource).toContain('inset 0 0 0 1px rgb(var(--color-info) / 0.16)')
+    expect(componentSource).not.toContain('inset 2px 0 0')
+  })
+
   it('keeps collapsed navigation groups reachable by expanding the sidebar', () => {
     expect(componentSource).toContain("resolveGroupClickAction(sidebarCollapsed.value, item.expandOnly)")
     expect(componentSource).toContain("if (action === 'expand-sidebar')")

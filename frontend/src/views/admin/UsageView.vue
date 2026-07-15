@@ -91,7 +91,7 @@
               type="button"
               role="tab"
               data-testid="usage-detail-tab"
-              class="usage-tab"
+              class="usage-tab inline-flex items-center gap-1.5 whitespace-nowrap"
               :class="{ 'usage-tab-active': activeTab === tab.key }"
               :aria-selected="activeTab === tab.key"
               :aria-controls="`${tab.key}-panel`"
