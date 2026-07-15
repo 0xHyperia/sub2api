@@ -19,6 +19,7 @@
           <a href="#routes">接入端点</a>
           <a href="#pricing">价格估算</a>
           <RouterLink to="/key-usage">Key 用量</RouterLink>
+          <RouterLink to="/download">客户端下载</RouterLink>
         </nav>
         <div class="nav-actions">
           <button
