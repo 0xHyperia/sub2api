@@ -19,11 +19,11 @@ interface Props {
 const props = defineProps<Props>()
 const { t } = useI18n()
 
-const { isDarkMode } = useOpsChartTheme()
+const { chartTheme } = useOpsChartTheme()
 const colors = computed(() => ({
-  blue: '#3b82f6',
-  grid: isDarkMode.value ? '#374151' : '#f3f4f6',
-  text: isDarkMode.value ? '#9ca3af' : '#6b7280'
+  blue: chartTheme.value.info,
+  grid: chartTheme.value.outline,
+  text: chartTheme.value.foregroundSubtle,
 }))
 
 const hasData = computed(() => (props.latencyData?.total_requests ?? 0) > 0)
@@ -94,7 +94,7 @@ const options = computed(() => {
     <div class="min-h-0 flex-1">
       <Bar v-if="state === 'ready' && chartData" :data="chartData" :options="options" />
       <div v-else class="flex h-full items-center justify-center">
-        <div v-if="state === 'loading'" class="animate-pulse text-sm text-gray-400">{{ t('common.loading') }}</div>
+        <div v-if="state === 'loading'" class="animate-pulse text-sm text-foreground-subtle">{{ t('common.loading') }}</div>
         <EmptyState v-else :title="t('common.noData')" :description="t('admin.ops.charts.emptyRequest')" />
       </div>
     </div>

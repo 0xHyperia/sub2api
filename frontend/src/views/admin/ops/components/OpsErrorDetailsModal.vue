@@ -202,7 +202,7 @@ watch(
   <BaseDialog :show="show" :title="modalTitle" width="full" @close="close">
     <div class="flex h-full min-h-0 flex-col">
       <!-- Filters -->
-      <div class="mb-4 flex-shrink-0 border-b border-gray-200 pb-4 dark:border-dark-700">
+      <div class="mb-4 flex-shrink-0 border-b border-outline pb-4">
         <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-8">
           <div class="compact-select sm:col-span-2 lg:col-span-2">
             <div class="relative group">
@@ -254,7 +254,7 @@ watch(
 
       <!-- Body -->
       <div class="flex min-h-0 flex-1 flex-col">
-        <div class="mb-2 flex-shrink-0 text-xs text-gray-500 dark:text-gray-400">
+        <div class="mb-2 flex-shrink-0 text-xs text-foreground-subtle">
           {{ t('admin.ops.errorDetails.total') }} {{ total }}
         </div>
 

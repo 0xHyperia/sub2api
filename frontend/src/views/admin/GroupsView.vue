@@ -11,7 +11,7 @@
               <Icon
                 name="search"
                 size="md"
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
               />
               <input
                 v-model="searchQuery"
@@ -99,14 +99,14 @@
                   role="menuitemcheckbox"
                   :aria-checked="isColumnVisible(col.key)"
                   @click="toggleColumn(col.key)"
-                  class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+                  class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle"
                 >
                   <span>{{ col.label }}</span>
                   <Icon
                     v-if="isColumnVisible(col.key)"
                     name="check"
                     size="sm"
-                    class="text-primary-500"
+                    class="text-brand"
                     :stroke-width="2"
                   />
                 </button>
@@ -146,7 +146,7 @@
           @sort="handleSort"
         >
           <template #cell-name="{ value }">
-            <span class="font-medium text-gray-900 dark:text-white">{{
+            <span class="font-medium text-foreground">{{
               value
             }}</span>
           </template>
@@ -180,53 +180,83 @@
               <!-- Subscription Limits - compact single line -->
               <div
                 v-if="row.subscription_type === 'subscription'"
-                class="text-xs text-gray-500 dark:text-gray-400"
+                class="space-y-0.5 text-xs text-foreground-subtle"
               >
-                <template
+                <div
                   v-if="
                     row.daily_limit_usd ||
                     row.weekly_limit_usd ||
                     row.monthly_limit_usd
                   "
+                  class="flex flex-wrap items-center gap-x-1 gap-y-0.5"
                 >
-                  <span v-if="row.daily_limit_usd"
-                    >${{ row.daily_limit_usd }}/{{
-                      t("admin.groups.limitDay")
-                    }}</span
-                  >
+                  <span v-if="row.daily_limit_usd" class="whitespace-nowrap">
+                    <span
+                      v-if="usageLoading"
+                      class="font-medium text-foreground-subtle"
+                      >—</span
+                    >
+                    <span
+                      v-else
+                      :class="
+                        getQuotaUsageClass(
+                          usageMap.get(row.id)?.today_cost ?? 0,
+                          row.daily_limit_usd
+                        )
+                      "
+                      >{{
+                        formatUsd(usageMap.get(row.id)?.today_cost ?? 0)
+                      }}</span
+                    >
+                    <span class="text-foreground-subtle">
+                      / {{ formatUsd(row.daily_limit_usd) }}/{{
+                        t("admin.groups.limitDay")
+                      }}</span
+                    >
+                  </span>
                   <span
                     v-if="
                       row.daily_limit_usd &&
                       (row.weekly_limit_usd || row.monthly_limit_usd)
                     "
-                    class="mx-1 text-gray-300 dark:text-gray-600"
+                    class="mx-1 text-foreground-muted"
                     >·</span
                   >
-                  <span v-if="row.weekly_limit_usd"
-                    >${{ row.weekly_limit_usd }}/{{
+                  <span v-if="row.weekly_limit_usd" class="whitespace-nowrap"
+                    >{{ formatUsd(row.weekly_limit_usd) }}/{{
                       t("admin.groups.limitWeek")
                     }}</span
                   >
                   <span
                     v-if="row.weekly_limit_usd && row.monthly_limit_usd"
-                    class="mx-1 text-gray-300 dark:text-gray-600"
+                    class="mx-1 text-foreground-muted"
                     >·</span
                   >
-                  <span v-if="row.monthly_limit_usd"
-                    >${{ row.monthly_limit_usd }}/{{
+                  <span v-if="row.monthly_limit_usd" class="whitespace-nowrap"
+                    >{{ formatUsd(row.monthly_limit_usd) }}/{{
                       t("admin.groups.limitMonth")
                     }}</span
                   >
-                </template>
-                <span v-else class="text-gray-400 dark:text-gray-500">{{
+                </div>
+                <span v-else class="text-foreground-subtle">{{
                   t("admin.groups.subscription.noLimit")
                 }}</span>
+                <div class="text-foreground-subtle">
+                  {{ t("admin.groups.usageTotal") }}
+                  <span class="ml-1 font-medium text-foreground-muted"
+                    >{{
+                      usageLoading
+                        ? "—"
+                        : formatUsd(usageMap.get(row.id)?.total_cost ?? 0)
+                    }}</span
+                  >
+                </div>
               </div>
             </div>
           </template>
 
           <template #cell-rate_multiplier="{ value }">
-            <span class="text-sm text-gray-700 dark:text-gray-300"
+            <span class="text-sm text-foreground-muted"
               >{{ value }}x</span
             >
           </template>
@@ -242,34 +272,34 @@
           <template #cell-account_count="{ row }">
             <div class="space-y-1 text-xs tabular-nums">
               <div class="flex items-center gap-1.5">
-                <span class="text-gray-500 dark:text-gray-400">{{
+                <span class="text-foreground-subtle">{{
                   t("admin.groups.accountsAvailable")
                 }}</span>
                 <span
-                  class="font-semibold text-emerald-600 dark:text-emerald-400"
+                  class="font-semibold text-success-foreground"
                   >{{ row.active_account_count || 0 }}</span
                 >
-                <span class="text-gray-400 dark:text-gray-500">{{ t("admin.groups.accountsUnit") }}</span>
+                <span class="text-foreground-subtle">{{ t("admin.groups.accountsUnit") }}</span>
               </div>
               <div v-if="row.rate_limited_account_count" class="flex items-center gap-1.5">
-                <span class="text-gray-500 dark:text-gray-400">{{
+                <span class="text-foreground-subtle">{{
                   t("admin.groups.accountsRateLimited")
                 }}</span>
                 <span
-                  class="font-semibold text-amber-600 dark:text-amber-400"
+                  class="font-semibold text-warning-foreground"
                   >{{ row.rate_limited_account_count }}</span
                 >
-                <span class="text-gray-400 dark:text-gray-500">{{ t("admin.groups.accountsUnit") }}</span>
+                <span class="text-foreground-subtle">{{ t("admin.groups.accountsUnit") }}</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="text-gray-500 dark:text-gray-400">{{
+                <span class="text-foreground-subtle">{{
                   t("admin.groups.accountsTotal")
                 }}</span>
                 <span
-                  class="font-semibold text-gray-700 dark:text-gray-300"
+                  class="font-semibold text-foreground-muted"
                   >{{ row.account_count || 0 }}</span
                 >
-                <span class="text-gray-400 dark:text-gray-500">{{ t("admin.groups.accountsUnit") }}</span>
+                <span class="text-foreground-subtle">{{ t("admin.groups.accountsUnit") }}</span>
               </div>
             </div>
           </template>
@@ -284,27 +314,27 @@
               :rpm-used="capacityMap.get(row.id)!.rpmUsed"
               :rpm-max="capacityMap.get(row.id)!.rpmMax"
             />
-            <span v-else class="text-xs text-gray-400">—</span>
+            <span v-else class="text-xs text-foreground-subtle">—</span>
           </template>
 
           <template #cell-usage="{ row }">
-            <div v-if="usageLoading" class="text-xs text-gray-400">—</div>
+            <div v-if="usageLoading" class="text-xs text-foreground-subtle">—</div>
             <div v-else class="space-y-0.5 text-xs">
-              <div class="text-gray-500 dark:text-gray-400">
-                <span class="text-gray-400 dark:text-gray-500">{{
+              <div class="text-foreground-subtle">
+                <span class="text-foreground-subtle">{{
                   t("admin.groups.usageToday")
                 }}</span>
-                <span class="ml-1 font-medium text-gray-700 dark:text-gray-300"
+                <span class="ml-1 font-medium text-foreground-muted"
                   >${{
                     formatCost(usageMap.get(row.id)?.today_cost ?? 0)
                   }}</span
                 >
               </div>
-              <div class="text-gray-500 dark:text-gray-400">
-                <span class="text-gray-400 dark:text-gray-500">{{
+              <div class="text-foreground-subtle">
+                <span class="text-foreground-subtle">{{
                   t("admin.groups.usageTotal")
                 }}</span>
-                <span class="ml-1 font-medium text-gray-700 dark:text-gray-300"
+                <span class="ml-1 font-medium text-foreground-muted"
                   >${{
                     formatCost(usageMap.get(row.id)?.total_cost ?? 0)
                   }}</span
@@ -437,7 +467,7 @@
         <!-- 从分组复制账号 -->
         <div v-if="copyAccountsGroupOptions.length > 0">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.copyAccounts.title") }}
             </label>
             <HelpTooltip
@@ -454,7 +484,7 @@
             <span
               v-for="groupId in createForm.copy_accounts_from_group_ids"
               :key="groupId"
-              class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+              class="inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2.5 py-1 text-xs font-medium text-brand"
             >
               {{
                 copyAccountsGroupOptions.find((o) => o.value === groupId)
@@ -468,7 +498,7 @@
                       (id) => id !== groupId,
                     )
                 "
-                class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"
+                class="ml-0.5 text-brand hover:text-brand"
               >
                 <Icon name="x" size="xs" />
               </button>
@@ -538,7 +568,7 @@
           data-tour="group-form-exclusive"
         >
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.form.exclusive") }}
             </label>
             <HelpTooltip
@@ -551,13 +581,13 @@
                 <p class="font-medium">
                   {{ t("admin.groups.exclusiveTooltip.title") }}
                 </p>
-                <p class="leading-relaxed text-gray-300">
+                <p class="leading-relaxed text-foreground-subtle">
                   {{ t("admin.groups.exclusiveTooltip.description") }}
                 </p>
-                <div class="rounded bg-gray-800 p-2 dark:bg-gray-700">
-                  <p class="leading-relaxed text-gray-300">
+                <div class="rounded p-2 bg-foreground">
+                  <p class="leading-relaxed text-foreground-subtle">
                     <span
-                      class="inline-flex items-center gap-1 text-primary-400"
+                      class="inline-flex items-center gap-1 text-brand"
                       ><Icon name="lightbulb" size="xs" />
                       {{ t("admin.groups.exclusiveTooltip.example") }}</span
                     >
@@ -574,18 +604,18 @@
               :class="[
                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                 createForm.is_exclusive
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   createForm.is_exclusive ? 'translate-x-6' : 'translate-x-1',
                 ]"
               />
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-foreground-subtle">
               {{
                 createForm.is_exclusive
                   ? t("admin.groups.exclusive")
@@ -613,7 +643,7 @@
           <!-- Subscription limits (only show when subscription type is selected) -->
           <div
             v-if="createForm.subscription_type === 'subscription'"
-            class="space-y-4 border-l-2 border-primary-200 pl-4 dark:border-primary-800"
+            class="space-y-4 border-l-2 pl-4 border-brand/30"
           >
             <div>
               <label class="input-label">{{
@@ -660,10 +690,10 @@
         <div class="border-t pt-4">
           <div class="mb-3 flex items-center justify-between gap-3">
             <div>
-              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label class="text-sm font-medium text-foreground-muted">
                 {{ t("admin.groups.modelsList.title") }}
               </label>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-xs text-foreground-subtle">
                 {{ t("admin.groups.modelsList.hint") }}
               </p>
             </div>
@@ -673,13 +703,13 @@
               :class="[
                 'relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors',
                 createModelsListState.enabled
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   createModelsListState.enabled ? 'translate-x-6' : 'translate-x-1',
                 ]"
               />
@@ -687,13 +717,13 @@
           </div>
           <div
             v-if="createModelsListState.enabled"
-            class="overflow-hidden rounded-lg border border-gray-200 bg-gray-50/50 dark:border-dark-600 dark:bg-dark-800/40"
+            class="overflow-hidden rounded-panel border border-outline bg-surface-subtle"
           >
             <div
               v-if="!createModelsListLoading && createModelsListState.items.length > 0"
-              class="flex items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2 text-xs dark:border-dark-600 dark:bg-dark-800"
+              class="flex items-center justify-between gap-2 border-b border-outline bg-surface-subtle px-3 py-2 text-xs"
             >
-              <span class="text-gray-500 dark:text-gray-400">
+              <span class="text-foreground-subtle">
                 {{
                   t("admin.groups.modelsList.selectedSummary", {
                     selected: createModelsListSelectedCount,
@@ -704,14 +734,14 @@
               <div class="flex items-center gap-1.5">
                 <button
                   type="button"
-                  class="rounded px-2 py-1 font-medium text-primary-600 transition-colors hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
+                  class="rounded px-2 py-1 font-medium text-brand transition-colors hover:bg-brand-subtle"
                   @click="selectAllModelsListItems(createModelsListState)"
                 >
                   {{ t("admin.groups.modelsList.selectAll") }}
                 </button>
                 <button
                   type="button"
-                  class="rounded px-2 py-1 font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+                  class="rounded px-2 py-1 font-medium text-foreground-muted transition-colors hover:bg-surface-subtle"
                   @click="invertModelsListSelection(createModelsListState)"
                 >
                   {{ t("admin.groups.modelsList.invertSelection") }}
@@ -721,32 +751,32 @@
             <div
               class="max-h-64 space-y-2 overflow-y-auto p-2"
             >
-              <p v-if="createModelsListLoading" class="text-xs text-gray-500 dark:text-gray-400">
+              <p v-if="createModelsListLoading" class="text-xs text-foreground-subtle">
                 {{ t("admin.groups.modelsList.loading") }}
               </p>
               <p
                 v-else-if="createModelsListState.items.length === 0"
-                class="text-xs text-gray-500 dark:text-gray-400"
+                class="text-xs text-foreground-subtle"
               >
                 {{ t("admin.groups.modelsList.empty") }}
               </p>
               <div
                 v-for="(item, index) in createModelsListState.items"
                 :key="item.id"
-                class="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2 dark:border-dark-600 dark:bg-dark-800"
+                class="flex items-center gap-2 rounded border border-outline bg-surface px-3 py-2"
               >
                 <input
                   v-model="item.selected"
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus"
                 />
-                <span class="min-w-0 flex-1 break-all text-sm text-gray-700 dark:text-gray-300">
+                <span class="min-w-0 flex-1 break-all text-sm text-foreground-muted">
                   {{ item.id }}
                 </span>
                 <button
                   type="button"
                   :disabled="index === 0"
-                  class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 dark:hover:bg-dark-600 dark:hover:text-gray-200"
+                  class="rounded p-1 text-foreground-subtle hover:bg-surface-subtle hover:text-foreground disabled:opacity-40"
                   @click="moveCreateModelsListItem(index, index - 1)"
                 >
                   <Icon name="arrowUp" size="sm" />
@@ -754,7 +784,7 @@
                 <button
                   type="button"
                   :disabled="index === createModelsListState.items.length - 1"
-                  class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 dark:hover:bg-dark-600 dark:hover:text-gray-200"
+                  class="rounded p-1 text-foreground-subtle hover:bg-surface-subtle hover:text-foreground disabled:opacity-40"
                   @click="moveCreateModelsListItem(index, index + 1)"
                 >
                   <Icon name="arrowDown" size="sm" />
@@ -770,29 +800,29 @@
           class="border-t pt-4"
         >
           <label
-            class="block mb-2 font-medium text-gray-700 dark:text-gray-300"
+            class="block mb-2 font-medium text-foreground-muted"
           >
-            {{ t("admin.groups.imagePricing.title") }}
+            {{ t(imagePricingI18nKey(createForm.platform, "title")) }}
           </label>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-            {{ t("admin.groups.imagePricing.description") }}
+          <p class="text-xs text-foreground-subtle mb-3">
+            {{ t(imagePricingI18nKey(createForm.platform, "description")) }}
           </p>
           <div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
               <input
                 v-model="createForm.allow_image_generation"
                 type="checkbox"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="rounded border-outline-strong text-brand focus:ring-focus"
               />
-              {{ t("admin.groups.imagePricing.allowImageGeneration") }}
+              {{ t(imagePricingI18nKey(createForm.platform, "allowImageGeneration")) }}
             </label>
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
               <input
                 v-model="createForm.image_rate_independent"
                 type="checkbox"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="rounded border-outline-strong text-brand focus:ring-focus"
               />
-              {{ t("admin.groups.imagePricing.independentMultiplier") }}
+              {{ t(imagePricingI18nKey(createForm.platform, "independentMultiplier")) }}
             </label>
           </div>
           <div
@@ -800,7 +830,7 @@
             class="mb-4"
           >
             <label class="input-label">{{
-              t("admin.groups.imagePricing.imageMultiplier")
+              t(imagePricingI18nKey(createForm.platform, "imageMultiplier"))
             }}</label>
             <input
               v-model.number="createForm.image_rate_multiplier"
@@ -820,7 +850,7 @@
                 step="0.001"
                 min="0"
                 class="input"
-                placeholder="0.134"
+                :placeholder="getImagePricePlaceholder(createForm.platform, 'image_price_1k')"
               />
             </div>
             <div>
@@ -831,7 +861,7 @@
                 step="0.001"
                 min="0"
                 class="input"
-                placeholder="0.201"
+                :placeholder="getImagePricePlaceholder(createForm.platform, 'image_price_2k')"
               />
             </div>
             <div>
@@ -842,16 +872,16 @@
                 step="0.001"
                 min="0"
                 class="input"
-                placeholder="0.268"
+                :placeholder="getImagePricePlaceholder(createForm.platform, 'image_price_4k')"
               />
             </div>
           </div>
-          <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-            {{ t("admin.groups.imagePricing.modeHint") }}
+          <p class="mt-3 text-xs text-foreground-subtle">
+            {{ t(imagePricingI18nKey(createForm.platform, "modeHint")) }}
           </p>
-          <div class="mt-2 rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          <div class="mt-2 rounded-panel bg-surface-subtle p-3 text-xs text-foreground-muted">
             <div class="mb-1 font-medium">
-              {{ t("admin.groups.imagePricing.finalPricePreview") }}
+              {{ t(imagePricingI18nKey(createForm.platform, "finalPricePreview")) }}
             </div>
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div
@@ -862,18 +892,18 @@
               </div>
             </div>
           </div>
-          <div v-if="createForm.platform === 'gemini' && createForm.allow_image_generation" class="mt-4 border-t border-dashed border-gray-200 pt-4 dark:border-dark-700">
+          <div v-if="createForm.platform === 'gemini' && createForm.allow_image_generation" class="mt-4 border-t border-dashed border-outline pt-4">
             <label
-              class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="flex items-center gap-2 text-sm font-medium text-foreground-muted"
             >
               <input
                 v-model="createForm.allow_batch_image_generation"
                 type="checkbox"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="rounded border-outline-strong text-brand focus:ring-focus"
               />
               {{ t("admin.groups.imagePricing.allowBatchImageGeneration") }}
             </label>
-            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <p class="mt-2 text-xs text-foreground-subtle">
               {{ t("admin.groups.imagePricing.batchSectionHint") }}
             </p>
             <div
@@ -910,20 +940,112 @@
           </div>
           <p
             v-else-if="createForm.platform !== 'gemini'"
-            class="mt-4 border-t border-dashed border-gray-200 pt-4 text-xs text-gray-500 dark:border-dark-700 dark:text-gray-400"
+            class="mt-4 border-t border-dashed border-outline pt-4 text-xs text-foreground-subtle"
           >
             {{ t("admin.groups.imagePricing.batchGeminiOnlyHint") }}
           </p>
         </div>
 
+        <!-- 视频生成计费配置（仅 Grok 平台） -->
+        <div
+          v-if="supportsVideoPricingPlatform(createForm.platform)"
+          class="border-t pt-4"
+        >
+          <label
+            class="block mb-2 font-medium text-foreground-muted"
+          >
+            {{ t(videoPricingI18nKey("title")) }}
+          </label>
+          <p class="text-xs text-foreground-subtle mb-3">
+            {{ t(videoPricingI18nKey("description")) }}
+          </p>
+          <div class="mb-4">
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
+              <input
+                v-model="createForm.video_rate_independent"
+                type="checkbox"
+                class="rounded border-outline-strong text-brand focus:ring-info/20"
+              />
+              {{ t(videoPricingI18nKey("independentMultiplier")) }}
+            </label>
+          </div>
+          <div
+            v-if="createForm.video_rate_independent"
+            class="mb-4"
+          >
+            <label class="input-label">{{
+              t(videoPricingI18nKey("videoMultiplier"))
+            }}</label>
+            <input
+              v-model.number="createForm.video_rate_multiplier"
+              type="number"
+              step="0.0001"
+              min="0"
+              class="input"
+              placeholder="1"
+            />
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="input-label">480p ($/s)</label>
+              <input
+                v-model.number="createForm.video_price_480p"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+                :placeholder="getVideoPricePlaceholder(createForm.platform, 'video_price_480p')"
+              />
+            </div>
+            <div>
+              <label class="input-label">720p ($/s)</label>
+              <input
+                v-model.number="createForm.video_price_720p"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+                :placeholder="getVideoPricePlaceholder(createForm.platform, 'video_price_720p')"
+              />
+            </div>
+            <div>
+              <label class="input-label">1080p ($/s)</label>
+              <input
+                v-model.number="createForm.video_price_1080p"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+                :placeholder="getVideoPricePlaceholder(createForm.platform, 'video_price_1080p')"
+              />
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-foreground-subtle">
+            {{ t(videoPricingI18nKey("modeHint")) }}
+          </p>
+          <div class="mt-2 rounded-panel bg-surface-subtle p-3 text-xs text-foreground-muted">
+            <div class="mb-1 font-medium">
+              {{ t(videoPricingI18nKey("finalPricePreview")) }}
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div
+                v-for="item in createVideoFinalPricePreview"
+                :key="item.label"
+              >
+                {{ item.label }}: {{ item.value }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 高峰时段倍率配置（仅订阅类型分组） -->
         <div v-if="createForm.subscription_type === 'subscription'" class="border-t pt-4">
           <div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
               <input
                 v-model="createForm.peak_rate_enabled"
                 type="checkbox"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="rounded border-outline-strong text-brand focus:ring-focus"
               />
               <span>{{ t("admin.groups.peakRate.enable") }}</span>
             </label>
@@ -966,7 +1088,7 @@
         <!-- 支持的模型系列（仅 antigravity 平台） -->
         <div v-if="createForm.platform === 'antigravity'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.supportedScopes.title") }}
             </label>
             <HelpTooltip
@@ -981,9 +1103,9 @@
                 type="checkbox"
                 :checked="createForm.supported_model_scopes.includes('claude')"
                 @change="toggleCreateScope('claude')"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-700"
+                class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus bg-surface-subtle"
               />
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{
+              <span class="text-sm text-foreground-muted">{{
                 t("admin.groups.supportedScopes.claude")
               }}</span>
             </label>
@@ -994,9 +1116,9 @@
                   createForm.supported_model_scopes.includes('gemini_text')
                 "
                 @change="toggleCreateScope('gemini_text')"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-700"
+                class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus bg-surface-subtle"
               />
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{
+              <span class="text-sm text-foreground-muted">{{
                 t("admin.groups.supportedScopes.geminiText")
               }}</span>
             </label>
@@ -1007,14 +1129,14 @@
                   createForm.supported_model_scopes.includes('gemini_image')
                 "
                 @change="toggleCreateScope('gemini_image')"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-700"
+                class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus bg-surface-subtle"
               />
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{
+              <span class="text-sm text-foreground-muted">{{
                 t("admin.groups.supportedScopes.geminiImage")
               }}</span>
             </label>
           </div>
-          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <p class="mt-2 text-xs text-foreground-subtle">
             {{ t("admin.groups.supportedScopes.hint") }}
           </p>
         </div>
@@ -1022,7 +1144,7 @@
         <!-- MCP XML 协议注入（仅 antigravity 平台） -->
         <div v-if="createForm.platform === 'antigravity'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.mcpXml.title") }}
             </label>
             <HelpTooltip
@@ -1038,18 +1160,18 @@
               :class="[
                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                 createForm.mcp_xml_inject
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   createForm.mcp_xml_inject ? 'translate-x-6' : 'translate-x-1',
                 ]"
               />
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-foreground-subtle">
               {{
                 createForm.mcp_xml_inject
                   ? t("admin.groups.mcpXml.enabled")
@@ -1062,7 +1184,7 @@
         <!-- Claude Code 客户端限制（仅 anthropic 平台） -->
         <div v-if="createForm.platform === 'anthropic'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.claudeCode.title") }}
             </label>
             <HelpTooltip
@@ -1080,20 +1202,20 @@
               :class="[
                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                 createForm.claude_code_only
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   createForm.claude_code_only
                     ? 'translate-x-6'
                     : 'translate-x-1',
                 ]"
               />
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-foreground-subtle">
               {{
                 createForm.claude_code_only
                   ? t("admin.groups.claudeCode.enabled")
@@ -1117,18 +1239,53 @@
           </div>
         </div>
 
+        <!-- Codex 网页搜索按次计费（仅 openai 平台） -->
+        <div
+          v-if="createForm.platform === 'openai'"
+          class="border-t border-outline pt-4 mt-4"
+        >
+          <h4 class="text-sm font-medium text-foreground-muted mb-3">
+            {{ t("admin.groups.webSearchPricing.title") }}
+          </h4>
+          <div>
+            <label class="input-label">{{
+              t("admin.groups.webSearchPricing.pricePerCall")
+            }}</label>
+            <input
+              v-model.number="createForm.web_search_price_per_call"
+              type="number"
+              step="0.001"
+              min="0"
+              placeholder="0.01"
+              class="input"
+            />
+            <p class="input-hint">
+              {{ t("admin.groups.webSearchPricing.pricePerCallHint") }}
+            </p>
+            <div
+              class="mt-2 rounded-panel bg-surface-subtle p-3 text-xs text-foreground-muted"
+            >
+              {{
+                t("admin.groups.webSearchPricing.finalPricePreview", {
+                  price: createWebSearchFinalPricePreview,
+                })
+              }}
+            </div>
+          </div>
+        </div>
+
         <!-- OpenAI Messages 调度配置（仅 openai 平台） -->
         <div
           v-if="createForm.platform === 'openai'"
-          class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4"
+          class="border-t border-outline pt-4 mt-4"
         >
-          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          <h4 class="text-sm font-medium text-foreground-muted mb-3">
             {{ t("admin.groups.openaiMessages.title") }}
           </h4>
 
           <!-- 允许 Messages 调度开关 -->
           <div class="flex items-center justify-between">
-            <label class="text-sm text-gray-600 dark:text-gray-400">{{
+            <label class="text-sm text-foreground-subtle">{{
               t("admin.groups.openaiMessages.allowDispatch")
             }}</label>
             <button
@@ -1140,12 +1297,12 @@
               class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
               :class="
                 createForm.allow_messages_dispatch
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600'
+                  ? 'bg-brand'
+                  : 'bg-outline'
               "
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out"
                 :class="
                   createForm.allow_messages_dispatch
                     ? 'translate-x-6'
@@ -1154,27 +1311,27 @@
               />
             </button>
           </div>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p class="text-xs text-foreground-subtle mt-1">
             {{ t("admin.groups.openaiMessages.allowDispatchHint") }}
           </p>
 
           <div v-if="createForm.allow_messages_dispatch" class="mt-3">
             <div
-              class="overflow-hidden rounded-lg border border-gray-200 bg-gray-50/40 dark:border-dark-600 dark:bg-dark-800/60"
+              class="overflow-hidden rounded-panel border border-outline bg-surface-subtle"
             >
               <div
-                class="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/40"
+                class="border-b border-outline bg-surface-subtle px-4 py-3"
               >
                 <div class="flex items-center gap-2">
-                  <div class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+                  <div class="h-2 w-2 rounded-full bg-outline-strong"></div>
                   <label
-                    class="text-sm font-medium text-gray-900 dark:text-white"
+                    class="text-sm font-medium text-foreground"
                     >{{
                       t("admin.groups.openaiMessages.familyMappingTitle")
                     }}</label
                   >
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t("admin.groups.openaiMessages.familyMappingHint") }}
                 </p>
               </div>
@@ -1224,24 +1381,24 @@
             </div>
 
             <div
-              class="relative mt-4 overflow-hidden rounded-lg border border-gray-200 bg-gray-50/40 dark:border-dark-600 dark:bg-dark-800/60"
+              class="relative mt-4 overflow-hidden rounded-panel border border-outline bg-surface-subtle"
             >
               <div
-                class="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/40"
+                class="border-b border-outline bg-surface-subtle px-4 py-3"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <div class="flex items-center gap-2">
-                      <div class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+                      <div class="h-2 w-2 rounded-full bg-outline-strong"></div>
                       <label
-                        class="text-sm font-medium text-gray-900 dark:text-white"
+                        class="text-sm font-medium text-foreground"
                         >{{
                           t("admin.groups.openaiMessages.exactMappingTitle")
                         }}</label
                       >
                     </div>
                     <p
-                      class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                      class="mt-1 text-xs text-foreground-subtle"
                     >
                       {{ t("admin.groups.openaiMessages.exactMappingHint") }}
                     </p>
@@ -1252,7 +1409,7 @@
               <div class="p-4">
                 <div
                   v-if="createForm.exact_model_mappings.length === 0"
-                  class="flex flex-col items-start justify-between gap-3 rounded-md border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600 sm:flex-row sm:items-center dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300"
+                  class="flex flex-col items-start justify-between gap-3 rounded-control border border-dashed border-outline-strong bg-surface px-4 py-3 text-sm text-foreground-muted sm:flex-row sm:items-center"
                 >
                   <span>{{
                     t("admin.groups.openaiMessages.noExactMappings")
@@ -1260,7 +1417,7 @@
                   <button
                     type="button"
                     @click="addCreateMessagesDispatchMapping"
-                    class="flex items-center gap-1.5 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                    class="flex items-center gap-1.5 text-sm font-medium text-brand transition-colors hover:text-brand"
                   >
                     <Icon name="plus" size="sm" />
                     {{ t("admin.groups.openaiMessages.addExactMapping") }}
@@ -1271,7 +1428,7 @@
                   <div
                     v-for="row in createForm.exact_model_mappings"
                     :key="getCreateMessagesDispatchRowKey(row)"
-                    class="group relative rounded-md border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 dark:border-dark-600 dark:bg-dark-700 dark:hover:border-dark-500"
+                    class="group relative rounded-control border border-outline bg-surface-subtle p-3 transition-colors hover:border-outline-strong"
                   >
                     <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                       <div
@@ -1289,11 +1446,11 @@
                                 'admin.groups.openaiMessages.claudeModelPlaceholder',
                               )
                             "
-                            class="input bg-gray-50 focus:bg-white dark:bg-dark-800 dark:focus:bg-dark-900"
+                            class="input bg-surface-subtle focus:bg-surface"
                           />
                         </div>
                         <div
-                          class="hidden md:flex md:justify-center md:pt-7 text-primary-300 dark:text-primary-700"
+                          class="hidden md:flex md:justify-center md:pt-7 text-brand"
                         >
                           <Icon
                             name="arrowRight"
@@ -1313,14 +1470,14 @@
                                 'admin.groups.openaiMessages.targetModelPlaceholder',
                               )
                             "
-                            class="input bg-gray-50 focus:bg-white dark:bg-dark-800 dark:focus:bg-dark-900"
+                            class="input bg-surface-subtle focus:bg-surface"
                           />
                         </div>
                       </div>
                       <button
                         type="button"
                         @click="removeCreateMessagesDispatchMapping(row)"
-                        class="flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-md text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 sm:mt-6 sm:self-auto dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                        class="flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-control text-foreground-subtle transition-colors hover:bg-danger-subtle sm:mt-6 sm:self-auto hover:text-danger-foreground"
                         :title="
                           t('admin.groups.openaiMessages.removeExactMapping')
                         "
@@ -1333,7 +1490,7 @@
                   <button
                     type="button"
                     @click="addCreateMessagesDispatchMapping"
-                    class="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:border-dark-600 dark:text-gray-400 dark:hover:border-dark-500 dark:hover:bg-dark-700 dark:hover:text-gray-200"
+                    class="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-outline-strong py-2.5 text-sm font-medium text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground hover:border-outline-strong"
                   >
                     <Icon name="plus" size="sm" />
                     {{ t("admin.groups.openaiMessages.addExactMapping") }}
@@ -1351,19 +1508,19 @@
               createForm.platform,
             )
           "
-          class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4 space-y-4"
+          class="border-t border-outline pt-4 mt-4 space-y-4"
         >
-          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          <h4 class="text-sm font-medium text-foreground-muted mb-3">
             {{ t("admin.groups.accountFilters.title") }}
           </h4>
 
           <!-- require_oauth_only toggle -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm text-gray-600 dark:text-gray-400"
+              <label class="text-sm text-foreground-subtle"
                 >{{ t("admin.groups.accountFilters.oauthOnly") }}</label
               >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p class="text-xs text-foreground-subtle mt-0.5">
                 {{
                   createForm.require_oauth_only
                     ? t("admin.groups.accountFilters.oauthOnlyEnabled")
@@ -1379,12 +1536,12 @@
               class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
               :class="
                 createForm.require_oauth_only
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600'
+                  ? 'bg-brand'
+                  : 'bg-outline'
               "
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out"
                 :class="
                   createForm.require_oauth_only
                     ? 'translate-x-6'
@@ -1397,10 +1554,10 @@
           <!-- require_privacy_set toggle -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm text-gray-600 dark:text-gray-400"
+              <label class="text-sm text-foreground-subtle"
                 >{{ t("admin.groups.accountFilters.privacySetOnly") }}</label
               >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p class="text-xs text-foreground-subtle mt-0.5">
                 {{
                   createForm.require_privacy_set
                     ? t("admin.groups.accountFilters.privacySetOnlyEnabled")
@@ -1416,12 +1573,12 @@
               class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
               :class="
                 createForm.require_privacy_set
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600'
+                  ? 'bg-brand'
+                  : 'bg-outline'
               "
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out"
                 :class="
                   createForm.require_privacy_set
                     ? 'translate-x-6'
@@ -1456,7 +1613,7 @@
         <!-- 模型路由配置（仅 anthropic 平台） -->
         <div v-if="createForm.platform === 'anthropic'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.modelRouting.title") }}
             </label>
             <HelpTooltip
@@ -1476,20 +1633,20 @@
               :class="[
                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                 createForm.model_routing_enabled
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   createForm.model_routing_enabled
                     ? 'translate-x-6'
                     : 'translate-x-1',
                 ]"
               />
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-foreground-subtle">
               {{
                 createForm.model_routing_enabled
                   ? t("admin.groups.modelRouting.enabled")
@@ -1499,11 +1656,11 @@
           </div>
           <p
             v-if="!createForm.model_routing_enabled"
-            class="text-xs text-gray-500 dark:text-gray-400 mb-3"
+            class="text-xs text-foreground-subtle mb-3"
           >
             {{ t("admin.groups.modelRouting.disabledHint") }}
           </p>
-          <p v-else class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          <p v-else class="text-xs text-foreground-subtle mb-3">
             {{ t("admin.groups.modelRouting.noRulesHint") }}
           </p>
           <!-- 路由规则列表（仅在启用时显示） -->
@@ -1511,7 +1668,7 @@
             <div
               v-for="rule in createModelRoutingRules"
               :key="getCreateRuleRenderKey(rule)"
-              class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+              class="rounded-panel border border-outline bg-surface-subtle p-3"
             >
               <div class="flex items-start gap-3">
                 <div class="flex-1 space-y-2">
@@ -1540,13 +1697,13 @@
                       <span
                         v-for="account in rule.accounts"
                         :key="account.id"
-                        class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                        class="inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2.5 py-1 text-xs font-medium text-brand"
                       >
                         {{ account.name }}
                         <button
                           type="button"
                           @click="removeSelectedAccount(rule, account.id)"
-                          class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"
+                          class="ml-0.5 text-brand hover:text-brand"
                         >
                           <Icon name="x" size="xs" />
                         </button>
@@ -1575,7 +1732,7 @@
                           accountSearchResults[getCreateRuleSearchKey(rule)]
                             ?.length > 0
                         "
-                        class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800"
+                        class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-panel border bg-surface shadow-floating border-outline-strong"
                       >
                         <button
                           v-for="account in accountSearchResults[
@@ -1584,7 +1741,7 @@
                           :key="account.id"
                           type="button"
                           @click="selectAccount(rule, account)"
-                          class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700"
+                          class="w-full px-3 py-2 text-left text-sm hover:bg-surface-subtle"
                           :class="{
                             'opacity-50': rule.accounts.some(
                               (a) => a.id === account.id,
@@ -1595,13 +1752,13 @@
                           "
                         >
                           <span>{{ account.name }}</span>
-                          <span class="ml-2 text-xs text-gray-400"
+                          <span class="ml-2 text-xs text-foreground-subtle"
                             >#{{ account.id }}</span
                           >
                         </button>
                       </div>
                     </div>
-                    <p class="text-xs text-gray-400 mt-1">
+                    <p class="text-xs text-foreground-subtle mt-1">
                       {{ t("admin.groups.modelRouting.accountsHint") }}
                     </p>
                   </div>
@@ -1609,7 +1766,7 @@
                 <button
                   type="button"
                   @click="removeCreateRoutingRule(rule)"
-                  class="mt-5 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                  class="mt-5 p-1.5 text-foreground-subtle hover:text-danger-foreground transition-colors"
                   :title="t('admin.groups.modelRouting.removeRule')"
                 >
                   <Icon name="trash" size="sm" />
@@ -1622,7 +1779,7 @@
             v-if="createForm.model_routing_enabled"
             type="button"
             @click="addCreateRoutingRule"
-            class="mt-3 flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            class="mt-3 flex items-center gap-1.5 text-sm text-brand hover:text-brand"
           >
             <Icon name="plus" size="sm" />
             {{ t("admin.groups.modelRouting.addRule") }}
@@ -1720,7 +1877,7 @@
         <!-- 从分组复制账号（编辑时） -->
         <div v-if="copyAccountsGroupOptionsForEdit.length > 0">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.copyAccounts.title") }}
             </label>
             <HelpTooltip
@@ -1737,7 +1894,7 @@
             <span
               v-for="groupId in editForm.copy_accounts_from_group_ids"
               :key="groupId"
-              class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+              class="inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2.5 py-1 text-xs font-medium text-brand"
             >
               {{
                 copyAccountsGroupOptionsForEdit.find((o) => o.value === groupId)
@@ -1751,7 +1908,7 @@
                       (id) => id !== groupId,
                     )
                 "
-                class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"
+                class="ml-0.5 text-brand hover:text-brand"
               >
                 <Icon name="x" size="xs" />
               </button>
@@ -1819,7 +1976,7 @@
         </div>
         <div v-if="editForm.subscription_type !== 'subscription'">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.form.exclusive") }}
             </label>
             <HelpTooltip
@@ -1832,13 +1989,13 @@
                 <p class="font-medium">
                   {{ t("admin.groups.exclusiveTooltip.title") }}
                 </p>
-                <p class="leading-relaxed text-gray-300">
+                <p class="leading-relaxed text-foreground-subtle">
                   {{ t("admin.groups.exclusiveTooltip.description") }}
                 </p>
-                <div class="rounded bg-gray-800 p-2 dark:bg-gray-700">
-                  <p class="leading-relaxed text-gray-300">
+                <div class="rounded p-2 bg-foreground">
+                  <p class="leading-relaxed text-foreground-subtle">
                     <span
-                      class="inline-flex items-center gap-1 text-primary-400"
+                      class="inline-flex items-center gap-1 text-brand"
                       ><Icon name="lightbulb" size="xs" />
                       {{ t("admin.groups.exclusiveTooltip.example") }}</span
                     >
@@ -1855,18 +2012,18 @@
               :class="[
                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                 editForm.is_exclusive
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   editForm.is_exclusive ? 'translate-x-6' : 'translate-x-1',
                 ]"
               />
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-foreground-subtle">
               {{
                 editForm.is_exclusive
                   ? t("admin.groups.exclusive")
@@ -1899,7 +2056,7 @@
           <!-- Subscription limits (only show when subscription type is selected) -->
           <div
             v-if="editForm.subscription_type === 'subscription'"
-            class="space-y-4 border-l-2 border-primary-200 pl-4 dark:border-primary-800"
+            class="space-y-4 border-l-2 pl-4 border-brand/30"
           >
             <div>
               <label class="input-label">{{
@@ -1946,10 +2103,10 @@
         <div class="border-t pt-4">
           <div class="mb-3 flex items-center justify-between gap-3">
             <div>
-              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label class="text-sm font-medium text-foreground-muted">
                 {{ t("admin.groups.modelsList.title") }}
               </label>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-xs text-foreground-subtle">
                 {{ t("admin.groups.modelsList.hint") }}
               </p>
             </div>
@@ -1959,13 +2116,13 @@
               :class="[
                 'relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors',
                 editModelsListState.enabled
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   editModelsListState.enabled ? 'translate-x-6' : 'translate-x-1',
                 ]"
               />
@@ -1973,13 +2130,13 @@
           </div>
           <div
             v-if="editModelsListState.enabled"
-            class="overflow-hidden rounded-lg border border-gray-200 bg-gray-50/50 dark:border-dark-600 dark:bg-dark-800/40"
+            class="overflow-hidden rounded-panel border border-outline bg-surface-subtle"
           >
             <div
               v-if="!editModelsListLoading && editModelsListState.items.length > 0"
-              class="flex items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2 text-xs dark:border-dark-600 dark:bg-dark-800"
+              class="flex items-center justify-between gap-2 border-b border-outline bg-surface-subtle px-3 py-2 text-xs"
             >
-              <span class="text-gray-500 dark:text-gray-400">
+              <span class="text-foreground-subtle">
                 {{
                   t("admin.groups.modelsList.selectedSummary", {
                     selected: editModelsListSelectedCount,
@@ -1990,14 +2147,14 @@
               <div class="flex items-center gap-1.5">
                 <button
                   type="button"
-                  class="rounded px-2 py-1 font-medium text-primary-600 transition-colors hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
+                  class="rounded px-2 py-1 font-medium text-brand transition-colors hover:bg-brand-subtle"
                   @click="selectAllModelsListItems(editModelsListState)"
                 >
                   {{ t("admin.groups.modelsList.selectAll") }}
                 </button>
                 <button
                   type="button"
-                  class="rounded px-2 py-1 font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+                  class="rounded px-2 py-1 font-medium text-foreground-muted transition-colors hover:bg-surface-subtle"
                   @click="invertModelsListSelection(editModelsListState)"
                 >
                   {{ t("admin.groups.modelsList.invertSelection") }}
@@ -2007,32 +2164,32 @@
             <div
               class="max-h-64 space-y-2 overflow-y-auto p-2"
             >
-              <p v-if="editModelsListLoading" class="text-xs text-gray-500 dark:text-gray-400">
+              <p v-if="editModelsListLoading" class="text-xs text-foreground-subtle">
                 {{ t("admin.groups.modelsList.loading") }}
               </p>
               <p
                 v-else-if="editModelsListState.items.length === 0"
-                class="text-xs text-gray-500 dark:text-gray-400"
+                class="text-xs text-foreground-subtle"
               >
                 {{ t("admin.groups.modelsList.empty") }}
               </p>
               <div
                 v-for="(item, index) in editModelsListState.items"
                 :key="item.id"
-                class="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2 dark:border-dark-600 dark:bg-dark-800"
+                class="flex items-center gap-2 rounded border border-outline bg-surface px-3 py-2"
               >
                 <input
                   v-model="item.selected"
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus"
                 />
-                <span class="min-w-0 flex-1 break-all text-sm text-gray-700 dark:text-gray-300">
+                <span class="min-w-0 flex-1 break-all text-sm text-foreground-muted">
                   {{ item.id }}
                 </span>
                 <button
                   type="button"
                   :disabled="index === 0"
-                  class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 dark:hover:bg-dark-600 dark:hover:text-gray-200"
+                  class="rounded p-1 text-foreground-subtle hover:bg-surface-subtle hover:text-foreground disabled:opacity-40"
                   @click="moveEditModelsListItem(index, index - 1)"
                 >
                   <Icon name="arrowUp" size="sm" />
@@ -2040,7 +2197,7 @@
                 <button
                   type="button"
                   :disabled="index === editModelsListState.items.length - 1"
-                  class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 dark:hover:bg-dark-600 dark:hover:text-gray-200"
+                  class="rounded p-1 text-foreground-subtle hover:bg-surface-subtle hover:text-foreground disabled:opacity-40"
                   @click="moveEditModelsListItem(index, index + 1)"
                 >
                   <Icon name="arrowDown" size="sm" />
@@ -2056,29 +2213,29 @@
           class="border-t pt-4"
         >
           <label
-            class="block mb-2 font-medium text-gray-700 dark:text-gray-300"
+            class="block mb-2 font-medium text-foreground-muted"
           >
-            {{ t("admin.groups.imagePricing.title") }}
+            {{ t(imagePricingI18nKey(editForm.platform, "title")) }}
           </label>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-            {{ t("admin.groups.imagePricing.description") }}
+          <p class="text-xs text-foreground-subtle mb-3">
+            {{ t(imagePricingI18nKey(editForm.platform, "description")) }}
           </p>
           <div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
               <input
                 v-model="editForm.allow_image_generation"
                 type="checkbox"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="rounded border-outline-strong text-brand focus:ring-focus"
               />
-              {{ t("admin.groups.imagePricing.allowImageGeneration") }}
+              {{ t(imagePricingI18nKey(editForm.platform, "allowImageGeneration")) }}
             </label>
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
               <input
                 v-model="editForm.image_rate_independent"
                 type="checkbox"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="rounded border-outline-strong text-brand focus:ring-focus"
               />
-              {{ t("admin.groups.imagePricing.independentMultiplier") }}
+              {{ t(imagePricingI18nKey(editForm.platform, "independentMultiplier")) }}
             </label>
           </div>
           <div
@@ -2086,7 +2243,7 @@
             class="mb-4"
           >
             <label class="input-label">{{
-              t("admin.groups.imagePricing.imageMultiplier")
+              t(imagePricingI18nKey(editForm.platform, "imageMultiplier"))
             }}</label>
             <input
               v-model.number="editForm.image_rate_multiplier"
@@ -2106,7 +2263,7 @@
                 step="0.001"
                 min="0"
                 class="input"
-                placeholder="0.134"
+                :placeholder="getImagePricePlaceholder(editForm.platform, 'image_price_1k')"
               />
             </div>
             <div>
@@ -2117,7 +2274,7 @@
                 step="0.001"
                 min="0"
                 class="input"
-                placeholder="0.201"
+                :placeholder="getImagePricePlaceholder(editForm.platform, 'image_price_2k')"
               />
             </div>
             <div>
@@ -2128,16 +2285,16 @@
                 step="0.001"
                 min="0"
                 class="input"
-                placeholder="0.268"
+                :placeholder="getImagePricePlaceholder(editForm.platform, 'image_price_4k')"
               />
             </div>
           </div>
-          <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-            {{ t("admin.groups.imagePricing.modeHint") }}
+          <p class="mt-3 text-xs text-foreground-subtle">
+            {{ t(imagePricingI18nKey(editForm.platform, "modeHint")) }}
           </p>
-          <div class="mt-2 rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          <div class="mt-2 rounded-panel bg-surface-subtle p-3 text-xs text-foreground-muted">
             <div class="mb-1 font-medium">
-              {{ t("admin.groups.imagePricing.finalPricePreview") }}
+              {{ t(imagePricingI18nKey(editForm.platform, "finalPricePreview")) }}
             </div>
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div
@@ -2148,18 +2305,18 @@
               </div>
             </div>
           </div>
-          <div v-if="editForm.platform === 'gemini' && editForm.allow_image_generation" class="mt-4 border-t border-dashed border-gray-200 pt-4 dark:border-dark-700">
+          <div v-if="editForm.platform === 'gemini' && editForm.allow_image_generation" class="mt-4 border-t border-dashed border-outline pt-4">
             <label
-              class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="flex items-center gap-2 text-sm font-medium text-foreground-muted"
             >
               <input
                 v-model="editForm.allow_batch_image_generation"
                 type="checkbox"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="rounded border-outline-strong text-brand focus:ring-focus"
               />
               {{ t("admin.groups.imagePricing.allowBatchImageGeneration") }}
             </label>
-            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <p class="mt-2 text-xs text-foreground-subtle">
               {{ t("admin.groups.imagePricing.batchSectionHint") }}
             </p>
             <div
@@ -2196,20 +2353,112 @@
           </div>
           <p
             v-else-if="editForm.platform !== 'gemini'"
-            class="mt-4 border-t border-dashed border-gray-200 pt-4 text-xs text-gray-500 dark:border-dark-700 dark:text-gray-400"
+            class="mt-4 border-t border-dashed border-outline pt-4 text-xs text-foreground-subtle"
           >
             {{ t("admin.groups.imagePricing.batchGeminiOnlyHint") }}
           </p>
         </div>
 
+        <!-- 视频生成计费配置（仅 Grok 平台） -->
+        <div
+          v-if="supportsVideoPricingPlatform(editForm.platform)"
+          class="border-t pt-4"
+        >
+          <label
+            class="block mb-2 font-medium text-foreground-muted"
+          >
+            {{ t(videoPricingI18nKey("title")) }}
+          </label>
+          <p class="text-xs text-foreground-subtle mb-3">
+            {{ t(videoPricingI18nKey("description")) }}
+          </p>
+          <div class="mb-4">
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
+              <input
+                v-model="editForm.video_rate_independent"
+                type="checkbox"
+                class="rounded border-outline-strong text-brand focus:ring-info/20"
+              />
+              {{ t(videoPricingI18nKey("independentMultiplier")) }}
+            </label>
+          </div>
+          <div
+            v-if="editForm.video_rate_independent"
+            class="mb-4"
+          >
+            <label class="input-label">{{
+              t(videoPricingI18nKey("videoMultiplier"))
+            }}</label>
+            <input
+              v-model.number="editForm.video_rate_multiplier"
+              type="number"
+              step="0.0001"
+              min="0"
+              class="input"
+              placeholder="1"
+            />
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="input-label">480p ($/s)</label>
+              <input
+                v-model.number="editForm.video_price_480p"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+                :placeholder="getVideoPricePlaceholder(editForm.platform, 'video_price_480p')"
+              />
+            </div>
+            <div>
+              <label class="input-label">720p ($/s)</label>
+              <input
+                v-model.number="editForm.video_price_720p"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+                :placeholder="getVideoPricePlaceholder(editForm.platform, 'video_price_720p')"
+              />
+            </div>
+            <div>
+              <label class="input-label">1080p ($/s)</label>
+              <input
+                v-model.number="editForm.video_price_1080p"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+                :placeholder="getVideoPricePlaceholder(editForm.platform, 'video_price_1080p')"
+              />
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-foreground-subtle">
+            {{ t(videoPricingI18nKey("modeHint")) }}
+          </p>
+          <div class="mt-2 rounded-panel bg-surface-subtle p-3 text-xs text-foreground-muted">
+            <div class="mb-1 font-medium">
+              {{ t(videoPricingI18nKey("finalPricePreview")) }}
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div
+                v-for="item in editVideoFinalPricePreview"
+                :key="item.label"
+              >
+                {{ item.label }}: {{ item.value }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 高峰时段倍率配置（仅订阅类型分组） -->
         <div v-if="editForm.subscription_type === 'subscription'" class="border-t pt-4">
           <div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
               <input
                 v-model="editForm.peak_rate_enabled"
                 type="checkbox"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="rounded border-outline-strong text-brand focus:ring-focus"
               />
               <span>{{ t("admin.groups.peakRate.enable") }}</span>
             </label>
@@ -2252,7 +2501,7 @@
         <!-- 支持的模型系列（仅 antigravity 平台） -->
         <div v-if="editForm.platform === 'antigravity'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.supportedScopes.title") }}
             </label>
             <HelpTooltip
@@ -2267,9 +2516,9 @@
                 type="checkbox"
                 :checked="editForm.supported_model_scopes.includes('claude')"
                 @change="toggleEditScope('claude')"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-700"
+                class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus bg-surface-subtle"
               />
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{
+              <span class="text-sm text-foreground-muted">{{
                 t("admin.groups.supportedScopes.claude")
               }}</span>
             </label>
@@ -2280,9 +2529,9 @@
                   editForm.supported_model_scopes.includes('gemini_text')
                 "
                 @change="toggleEditScope('gemini_text')"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-700"
+                class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus bg-surface-subtle"
               />
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{
+              <span class="text-sm text-foreground-muted">{{
                 t("admin.groups.supportedScopes.geminiText")
               }}</span>
             </label>
@@ -2293,14 +2542,14 @@
                   editForm.supported_model_scopes.includes('gemini_image')
                 "
                 @change="toggleEditScope('gemini_image')"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-700"
+                class="h-4 w-4 rounded border-outline-strong text-brand focus:ring-focus bg-surface-subtle"
               />
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{
+              <span class="text-sm text-foreground-muted">{{
                 t("admin.groups.supportedScopes.geminiImage")
               }}</span>
             </label>
           </div>
-          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <p class="mt-2 text-xs text-foreground-subtle">
             {{ t("admin.groups.supportedScopes.hint") }}
           </p>
         </div>
@@ -2308,7 +2557,7 @@
         <!-- MCP XML 协议注入（仅 antigravity 平台） -->
         <div v-if="editForm.platform === 'antigravity'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.mcpXml.title") }}
             </label>
             <HelpTooltip
@@ -2324,18 +2573,18 @@
               :class="[
                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                 editForm.mcp_xml_inject
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   editForm.mcp_xml_inject ? 'translate-x-6' : 'translate-x-1',
                 ]"
               />
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-foreground-subtle">
               {{
                 editForm.mcp_xml_inject
                   ? t("admin.groups.mcpXml.enabled")
@@ -2348,7 +2597,7 @@
         <!-- Claude Code 客户端限制（仅 anthropic 平台） -->
         <div v-if="editForm.platform === 'anthropic'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.claudeCode.title") }}
             </label>
             <HelpTooltip
@@ -2364,18 +2613,18 @@
               :class="[
                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                 editForm.claude_code_only
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   editForm.claude_code_only ? 'translate-x-6' : 'translate-x-1',
                 ]"
               />
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-foreground-subtle">
               {{
                 editForm.claude_code_only
                   ? t("admin.groups.claudeCode.enabled")
@@ -2399,18 +2648,53 @@
           </div>
         </div>
 
+        <!-- Codex 网页搜索按次计费（仅 openai 平台） -->
+        <div
+          v-if="editForm.platform === 'openai'"
+          class="border-t border-outline pt-4 mt-4"
+        >
+          <h4 class="text-sm font-medium text-foreground-muted mb-3">
+            {{ t("admin.groups.webSearchPricing.title") }}
+          </h4>
+          <div>
+            <label class="input-label">{{
+              t("admin.groups.webSearchPricing.pricePerCall")
+            }}</label>
+            <input
+              v-model.number="editForm.web_search_price_per_call"
+              type="number"
+              step="0.001"
+              min="0"
+              placeholder="0.01"
+              class="input"
+            />
+            <p class="input-hint">
+              {{ t("admin.groups.webSearchPricing.pricePerCallHint") }}
+            </p>
+            <div
+              class="mt-2 rounded-panel bg-surface-subtle p-3 text-xs text-foreground-muted"
+            >
+              {{
+                t("admin.groups.webSearchPricing.finalPricePreview", {
+                  price: editWebSearchFinalPricePreview,
+                })
+              }}
+            </div>
+          </div>
+        </div>
+
         <!-- OpenAI Messages 调度配置（仅 openai 平台） -->
         <div
           v-if="editForm.platform === 'openai'"
-          class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4"
+          class="border-t border-outline pt-4 mt-4"
         >
-          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          <h4 class="text-sm font-medium text-foreground-muted mb-3">
             {{ t("admin.groups.openaiMessages.title") }}
           </h4>
 
           <!-- 允许 Messages 调度开关 -->
           <div class="flex items-center justify-between">
-            <label class="text-sm text-gray-600 dark:text-gray-400">{{
+            <label class="text-sm text-foreground-subtle">{{
               t("admin.groups.openaiMessages.allowDispatch")
             }}</label>
             <button
@@ -2422,12 +2706,12 @@
               class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
               :class="
                 editForm.allow_messages_dispatch
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600'
+                  ? 'bg-brand'
+                  : 'bg-outline'
               "
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out"
                 :class="
                   editForm.allow_messages_dispatch
                     ? 'translate-x-6'
@@ -2436,27 +2720,27 @@
               />
             </button>
           </div>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p class="text-xs text-foreground-subtle mt-1">
             {{ t("admin.groups.openaiMessages.allowDispatchHint") }}
           </p>
 
           <div v-if="editForm.allow_messages_dispatch" class="mt-3">
             <div
-              class="overflow-hidden rounded-lg border border-gray-200 bg-gray-50/40 dark:border-dark-600 dark:bg-dark-800/60"
+              class="overflow-hidden rounded-panel border border-outline bg-surface-subtle"
             >
               <div
-                class="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/40"
+                class="border-b border-outline bg-surface-subtle px-4 py-3"
               >
                 <div class="flex items-center gap-2">
-                  <div class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+                  <div class="h-2 w-2 rounded-full bg-outline-strong"></div>
                   <label
-                    class="text-sm font-medium text-gray-900 dark:text-white"
+                    class="text-sm font-medium text-foreground"
                     >{{
                       t("admin.groups.openaiMessages.familyMappingTitle")
                     }}</label
                   >
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t("admin.groups.openaiMessages.familyMappingHint") }}
                 </p>
               </div>
@@ -2506,24 +2790,24 @@
             </div>
 
             <div
-              class="relative mt-4 overflow-hidden rounded-lg border border-gray-200 bg-gray-50/40 dark:border-dark-600 dark:bg-dark-800/60"
+              class="relative mt-4 overflow-hidden rounded-panel border border-outline bg-surface-subtle"
             >
               <div
-                class="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-dark-700 dark:bg-dark-700/40"
+                class="border-b border-outline bg-surface-subtle px-4 py-3"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <div class="flex items-center gap-2">
-                      <div class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+                      <div class="h-2 w-2 rounded-full bg-outline-strong"></div>
                       <label
-                        class="text-sm font-medium text-gray-900 dark:text-white"
+                        class="text-sm font-medium text-foreground"
                         >{{
                           t("admin.groups.openaiMessages.exactMappingTitle")
                         }}</label
                       >
                     </div>
                     <p
-                      class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                      class="mt-1 text-xs text-foreground-subtle"
                     >
                       {{ t("admin.groups.openaiMessages.exactMappingHint") }}
                     </p>
@@ -2534,7 +2818,7 @@
               <div class="p-4">
                 <div
                   v-if="editForm.exact_model_mappings.length === 0"
-                  class="flex flex-col items-start justify-between gap-3 rounded-md border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600 sm:flex-row sm:items-center dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300"
+                  class="flex flex-col items-start justify-between gap-3 rounded-control border border-dashed border-outline-strong bg-surface px-4 py-3 text-sm text-foreground-muted sm:flex-row sm:items-center"
                 >
                   <span>{{
                     t("admin.groups.openaiMessages.noExactMappings")
@@ -2542,7 +2826,7 @@
                   <button
                     type="button"
                     @click="addEditMessagesDispatchMapping"
-                    class="flex items-center gap-1.5 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                    class="flex items-center gap-1.5 text-sm font-medium text-brand transition-colors hover:text-brand"
                   >
                     <Icon name="plus" size="sm" />
                     {{ t("admin.groups.openaiMessages.addExactMapping") }}
@@ -2553,7 +2837,7 @@
                   <div
                     v-for="row in editForm.exact_model_mappings"
                     :key="getEditMessagesDispatchRowKey(row)"
-                    class="group relative rounded-md border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 dark:border-dark-600 dark:bg-dark-700 dark:hover:border-dark-500"
+                    class="group relative rounded-control border border-outline bg-surface-subtle p-3 transition-colors hover:border-outline-strong"
                   >
                     <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                       <div
@@ -2571,11 +2855,11 @@
                                 'admin.groups.openaiMessages.claudeModelPlaceholder',
                               )
                             "
-                            class="input bg-gray-50 focus:bg-white dark:bg-dark-800 dark:focus:bg-dark-900"
+                            class="input bg-surface-subtle focus:bg-surface"
                           />
                         </div>
                         <div
-                          class="hidden md:flex md:justify-center md:pt-7 text-primary-300 dark:text-primary-700"
+                          class="hidden md:flex md:justify-center md:pt-7 text-brand"
                         >
                           <Icon
                             name="arrowRight"
@@ -2595,14 +2879,14 @@
                                 'admin.groups.openaiMessages.targetModelPlaceholder',
                               )
                             "
-                            class="input bg-gray-50 focus:bg-white dark:bg-dark-800 dark:focus:bg-dark-900"
+                            class="input bg-surface-subtle focus:bg-surface"
                           />
                         </div>
                       </div>
                       <button
                         type="button"
                         @click="removeEditMessagesDispatchMapping(row)"
-                        class="flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-md text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 sm:mt-6 sm:self-auto dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                        class="flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-control text-foreground-subtle transition-colors hover:bg-danger-subtle sm:mt-6 sm:self-auto hover:text-danger-foreground"
                         :title="
                           t('admin.groups.openaiMessages.removeExactMapping')
                         "
@@ -2615,7 +2899,7 @@
                   <button
                     type="button"
                     @click="addEditMessagesDispatchMapping"
-                    class="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:border-dark-600 dark:text-gray-400 dark:hover:border-dark-500 dark:hover:bg-dark-700 dark:hover:text-gray-200"
+                    class="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-outline-strong py-2.5 text-sm font-medium text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground hover:border-outline-strong"
                   >
                     <Icon name="plus" size="sm" />
                     {{ t("admin.groups.openaiMessages.addExactMapping") }}
@@ -2633,19 +2917,19 @@
               editForm.platform,
             )
           "
-          class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4 space-y-4"
+          class="border-t border-outline pt-4 mt-4 space-y-4"
         >
-          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          <h4 class="text-sm font-medium text-foreground-muted mb-3">
             {{ t("admin.groups.accountFilters.title") }}
           </h4>
 
           <!-- require_oauth_only toggle -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm text-gray-600 dark:text-gray-400"
+              <label class="text-sm text-foreground-subtle"
                 >{{ t("admin.groups.accountFilters.oauthOnly") }}</label
               >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p class="text-xs text-foreground-subtle mt-0.5">
                 {{
                   editForm.require_oauth_only
                     ? t("admin.groups.accountFilters.oauthOnlyEnabled")
@@ -2661,12 +2945,12 @@
               class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
               :class="
                 editForm.require_oauth_only
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600'
+                  ? 'bg-brand'
+                  : 'bg-outline'
               "
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out"
                 :class="
                   editForm.require_oauth_only
                     ? 'translate-x-6'
@@ -2679,10 +2963,10 @@
           <!-- require_privacy_set toggle -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm text-gray-600 dark:text-gray-400"
+              <label class="text-sm text-foreground-subtle"
                 >{{ t("admin.groups.accountFilters.privacySetOnly") }}</label
               >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p class="text-xs text-foreground-subtle mt-0.5">
                 {{
                   editForm.require_privacy_set
                     ? t("admin.groups.accountFilters.privacySetOnlyEnabled")
@@ -2698,12 +2982,12 @@
               class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
               :class="
                 editForm.require_privacy_set
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600'
+                  ? 'bg-brand'
+                  : 'bg-outline'
               "
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out"
                 :class="
                   editForm.require_privacy_set
                     ? 'translate-x-6'
@@ -2738,7 +3022,7 @@
         <!-- 模型路由配置（仅 anthropic 平台） -->
         <div v-if="editForm.platform === 'anthropic'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-sm font-medium text-foreground-muted">
               {{ t("admin.groups.modelRouting.title") }}
             </label>
             <HelpTooltip
@@ -2757,20 +3041,20 @@
               :class="[
                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                 editForm.model_routing_enabled
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
+                  ? 'bg-brand'
+                  : 'bg-outline',
               ]"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
                   editForm.model_routing_enabled
                     ? 'translate-x-6'
                     : 'translate-x-1',
                 ]"
               />
             </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-foreground-subtle">
               {{
                 editForm.model_routing_enabled
                   ? t("admin.groups.modelRouting.enabled")
@@ -2780,11 +3064,11 @@
           </div>
           <p
             v-if="!editForm.model_routing_enabled"
-            class="text-xs text-gray-500 dark:text-gray-400 mb-3"
+            class="text-xs text-foreground-subtle mb-3"
           >
             {{ t("admin.groups.modelRouting.disabledHint") }}
           </p>
-          <p v-else class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          <p v-else class="text-xs text-foreground-subtle mb-3">
             {{ t("admin.groups.modelRouting.noRulesHint") }}
           </p>
           <!-- 路由规则列表（仅在启用时显示） -->
@@ -2792,7 +3076,7 @@
             <div
               v-for="rule in editModelRoutingRules"
               :key="getEditRuleRenderKey(rule)"
-              class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+              class="rounded-panel border border-outline bg-surface-subtle p-3"
             >
               <div class="flex items-start gap-3">
                 <div class="flex-1 space-y-2">
@@ -2821,13 +3105,13 @@
                       <span
                         v-for="account in rule.accounts"
                         :key="account.id"
-                        class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                        class="inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2.5 py-1 text-xs font-medium text-brand"
                       >
                         {{ account.name }}
                         <button
                           type="button"
                           @click="removeSelectedAccount(rule, account.id, true)"
-                          class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"
+                          class="ml-0.5 text-brand hover:text-brand"
                         >
                           <Icon name="x" size="xs" />
                         </button>
@@ -2856,7 +3140,7 @@
                           accountSearchResults[getEditRuleSearchKey(rule)]
                             ?.length > 0
                         "
-                        class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800"
+                        class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-panel border bg-surface shadow-floating border-outline-strong"
                       >
                         <button
                           v-for="account in accountSearchResults[
@@ -2865,7 +3149,7 @@
                           :key="account.id"
                           type="button"
                           @click="selectAccount(rule, account, true)"
-                          class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700"
+                          class="w-full px-3 py-2 text-left text-sm hover:bg-surface-subtle"
                           :class="{
                             'opacity-50': rule.accounts.some(
                               (a) => a.id === account.id,
@@ -2876,13 +3160,13 @@
                           "
                         >
                           <span>{{ account.name }}</span>
-                          <span class="ml-2 text-xs text-gray-400"
+                          <span class="ml-2 text-xs text-foreground-subtle"
                             >#{{ account.id }}</span
                           >
                         </button>
                       </div>
                     </div>
-                    <p class="text-xs text-gray-400 mt-1">
+                    <p class="text-xs text-foreground-subtle mt-1">
                       {{ t("admin.groups.modelRouting.accountsHint") }}
                     </p>
                   </div>
@@ -2890,7 +3174,7 @@
                 <button
                   type="button"
                   @click="removeEditRoutingRule(rule)"
-                  class="mt-5 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                  class="mt-5 p-1.5 text-foreground-subtle hover:text-danger-foreground transition-colors"
                   :title="t('admin.groups.modelRouting.removeRule')"
                 >
                   <Icon name="trash" size="sm" />
@@ -2903,7 +3187,7 @@
             v-if="editForm.model_routing_enabled"
             type="button"
             @click="addEditRoutingRule"
-            class="mt-3 flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            class="mt-3 flex items-center gap-1.5 text-sm text-brand hover:text-brand"
           >
             <Icon name="plus" size="sm" />
             {{ t("admin.groups.modelRouting.addRule") }}
@@ -2973,7 +3257,7 @@
       @close="closeSortModal"
     >
       <div class="space-y-4">
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <p class="text-sm text-foreground-subtle">
           {{ t("admin.groups.sortOrderHint") }}
         </p>
         <VueDraggable
@@ -2984,16 +3268,16 @@
           <div
             v-for="group in sortableGroups"
             :key="group.id"
-            class="flex cursor-grab items-center gap-3 rounded-md border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 active:cursor-grabbing dark:border-dark-600 dark:bg-dark-700 dark:hover:border-dark-500"
+            class="flex cursor-grab items-center gap-3 rounded-control border border-outline bg-surface-subtle p-3 transition-colors hover:border-outline-strong active:cursor-grabbing"
           >
-            <div class="text-gray-400">
+            <div class="text-foreground-subtle">
               <Icon name="menu" size="md" />
             </div>
             <div class="flex-1">
-              <div class="font-medium text-gray-900 dark:text-white">
+              <div class="font-medium text-foreground">
                 {{ group.name }}
               </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">
+              <div class="text-xs text-foreground-subtle">
                 <span
                   class="badge badge-gray"
                 >
@@ -3001,7 +3285,7 @@
                 </span>
               </div>
             </div>
-            <div class="text-sm text-gray-400">#{{ group.id }}</div>
+            <div class="text-sm text-foreground-subtle">#{{ group.id }}</div>
           </div>
         </VueDraggable>
       </div>
@@ -3108,7 +3392,16 @@ import {
 } from "./groupsModelsList";
 import { createModelsListCandidatesTracker } from "./groupsModelsListCandidates";
 import { normalizeSupportedModelScopesForPlatform } from "./groupsSupportedModelScopes";
-import { supportsImagePricingPlatform } from "./groupsImagePricing";
+import {
+  getDefaultImagePreviewPrice,
+  getDefaultVideoPreviewPrice,
+  getImagePricePlaceholder,
+  getVideoPricePlaceholder,
+  imagePricingI18nKey,
+  supportsImagePricingPlatform,
+  supportsVideoPricingPlatform,
+  videoPricingI18nKey,
+} from "./groupsImagePricing";
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -3202,7 +3495,9 @@ const saveColumnsToStorage = () => {
 };
 
 const isColumnVisible = (key: string) => !hiddenColumns.has(key);
-const hasVisibleUsageColumn = computed(() => isColumnVisible("usage"));
+const hasVisibleUsageSummaryConsumer = computed(
+  () => isColumnVisible("usage") || isColumnVisible("billing_type"),
+);
 const hasVisibleCapacityColumn = computed(() => isColumnVisible("capacity"));
 
 const toggleColumn = (key: string) => {
@@ -3217,7 +3512,7 @@ const toggleColumn = (key: string) => {
   }
   saveColumnsToStorage();
 
-  if (wasHidden && key === "usage") {
+  if (wasHidden && (key === "usage" || key === "billing_type")) {
     loadUsageSummary();
   }
   if (wasHidden && key === "capacity") {
@@ -3377,9 +3672,12 @@ const copyAccountsGroupOptionsForEdit = computed(() => {
 
 const groups = ref<AdminGroup[]>([]);
 const loading = ref(false);
-const usageMap = ref<Map<number, { today_cost: number; total_cost: number }>>(
-  new Map(),
-);
+type GroupUsageSummary = {
+  today_cost: number;
+  total_cost: number;
+};
+
+const usageMap = ref<Map<number, GroupUsageSummary>>(new Map());
 const usageLoading = ref(false);
 const capacityMap = ref<
   Map<
@@ -3460,6 +3758,14 @@ const createForm = reactive({
   image_price_1k: null as number | null,
   image_price_2k: null as number | null,
   image_price_4k: null as number | null,
+  // 视频生成计费配置（仅 Grok 平台）
+  video_rate_independent: false,
+  video_rate_multiplier: 1,
+  video_price_480p: null as number | null,
+  video_price_720p: null as number | null,
+  video_price_1080p: null as number | null,
+  // Codex 网页搜索按次计费（仅 openai 平台使用）；null = 使用默认价 0.01
+  web_search_price_per_call: null as number | null,
   // 高峰时段倍率配置
   peak_rate_enabled: false,
   peak_start: "",
@@ -3799,6 +4105,14 @@ const editForm = reactive({
   image_price_1k: null as number | null,
   image_price_2k: null as number | null,
   image_price_4k: null as number | null,
+  // 视频生成计费配置（仅 Grok 平台）
+  video_rate_independent: false,
+  video_rate_multiplier: 1,
+  video_price_480p: null as number | null,
+  video_price_720p: null as number | null,
+  video_price_1080p: null as number | null,
+  // Codex 网页搜索按次计费（仅 openai 平台使用）；null = 使用默认价 0.01
+  web_search_price_per_call: null as number | null,
   // 高峰时段倍率配置
   peak_rate_enabled: false,
   peak_start: "",
@@ -3848,10 +4162,26 @@ type ImagePricingFormState = {
   peak_rate_multiplier: number;
 };
 
+type VideoPricingFormState = {
+  platform: GroupPlatform;
+  rate_multiplier: number;
+  video_rate_independent: boolean;
+  video_rate_multiplier: number;
+  video_price_480p: number | string | null;
+  video_price_720p: number | string | null;
+  video_price_1080p: number | string | null;
+};
+
 const imagePricingTiers = [
   { key: "image_price_1k", label: "1K" },
   { key: "image_price_2k", label: "2K" },
   { key: "image_price_4k", label: "4K" },
+] as const;
+
+const videoPricingTiers = [
+  { key: "video_price_480p", label: "480p" },
+  { key: "video_price_720p", label: "720p" },
+  { key: "video_price_1080p", label: "1080p" },
 ] as const;
 
 const normalizePreviewNumber = (value: number | string | null | undefined, fallback = 0) => {
@@ -3860,6 +4190,14 @@ const normalizePreviewNumber = (value: number | string | null | undefined, fallb
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parsePreviewPrice = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 };
 
 const formatImagePricePreview = (value: number | string | null | undefined) => {
@@ -3873,18 +4211,48 @@ const formatImagePricePreview = (value: number | string | null | undefined) => {
   return `$${price.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")}`;
 };
 
+const formatVideoPricePreview = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === "") {
+    return t("admin.groups.videoPricing.notConfigured");
+  }
+  const price = Number(value);
+  if (!Number.isFinite(price) || price < 0) {
+    return t("admin.groups.videoPricing.notConfigured");
+  }
+  return `$${price.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")}`;
+};
+
 const buildImageFinalPricePreview = (form: ImagePricingFormState) => {
   const imageMultiplier = form.image_rate_independent
     ? normalizePreviewNumber(form.image_rate_multiplier, 1)
     : normalizePreviewNumber(form.rate_multiplier, 1);
   const multiplier = imageMultiplier;
   return imagePricingTiers.map((tier) => {
-    const basePrice = normalizePreviewNumber(form[tier.key]);
+    const basePrice =
+      parsePreviewPrice(form[tier.key]) ??
+      getDefaultImagePreviewPrice(form.platform, tier.key);
     return {
       label: tier.label,
-      value: basePrice > 0
+      value: basePrice !== null
         ? formatImagePricePreview(basePrice * multiplier)
         : t("admin.groups.imagePricing.notConfigured"),
+    };
+  });
+};
+
+const buildVideoFinalPricePreview = (form: VideoPricingFormState) => {
+  const multiplier = form.video_rate_independent
+    ? normalizePreviewNumber(form.video_rate_multiplier, 1)
+    : normalizePreviewNumber(form.rate_multiplier, 1);
+  return videoPricingTiers.map((tier) => {
+    const basePrice =
+      parsePreviewPrice(form[tier.key]) ??
+      getDefaultVideoPreviewPrice(form.platform, tier.key);
+    return {
+      label: tier.label,
+      value: basePrice !== null
+        ? formatVideoPricePreview(basePrice * multiplier)
+        : t("admin.groups.videoPricing.notConfigured"),
     };
   });
 };
@@ -3894,6 +4262,33 @@ const createImageFinalPricePreview = computed(() =>
 );
 const editImageFinalPricePreview = computed(() =>
   buildImageFinalPricePreview(editForm),
+);
+const createVideoFinalPricePreview = computed(() =>
+  buildVideoFinalPricePreview(createForm),
+);
+const editVideoFinalPricePreview = computed(() =>
+  buildVideoFinalPricePreview(editForm),
+);
+
+// Codex 网页搜索单次默认价（与后端 defaultWebSearchPricePerCall 一致，官方 $10/1000 次）
+const DEFAULT_WEB_SEARCH_PRICE_PER_CALL = 0.01;
+
+const buildWebSearchFinalPricePreview = (form: {
+  web_search_price_per_call: number | string | null;
+  rate_multiplier: number | string | null;
+}) => {
+  const basePrice =
+    parsePreviewPrice(form.web_search_price_per_call) ??
+    DEFAULT_WEB_SEARCH_PRICE_PER_CALL;
+  const multiplier = normalizePreviewNumber(form.rate_multiplier, 1);
+  return formatImagePricePreview(basePrice * multiplier);
+};
+
+const createWebSearchFinalPricePreview = computed(() =>
+  buildWebSearchFinalPricePreview(createForm),
+);
+const editWebSearchFinalPricePreview = computed(() =>
+  buildWebSearchFinalPricePreview(editForm),
 );
 
 const resetDisabledBatchImagePricing = (
@@ -3952,7 +4347,7 @@ const loadGroups = async () => {
     groups.value = response.items;
     pagination.total = response.total;
     pagination.pages = response.pages;
-    if (hasVisibleUsageColumn.value) {
+    if (hasVisibleUsageSummaryConsumer.value) {
       loadUsageSummary();
     } else {
       usageLoading.value = false;
@@ -3983,8 +4378,28 @@ const formatCost = (cost: number): string => {
   return cost.toFixed(2);
 };
 
+const formatUsd = (cost: number | null | undefined): string =>
+  `$${formatCost(cost ?? 0)}`;
+
+const getQuotaUsageClass = (
+  used: number,
+  limit: number | null | undefined,
+): string => {
+  if (!limit || limit <= 0) {
+    return "font-medium text-foreground-muted";
+  }
+  const ratio = used / limit;
+  if (ratio >= 1) {
+    return "font-semibold text-danger-foreground";
+  }
+  if (ratio >= 0.8) {
+    return "font-semibold text-warning-foreground";
+  }
+  return "font-medium text-foreground-muted";
+};
+
 const loadUsageSummary = async () => {
-  if (!hasVisibleUsageColumn.value) {
+  if (!hasVisibleUsageSummaryConsumer.value) {
     usageLoading.value = false;
     return;
   }
@@ -3992,7 +4407,7 @@ const loadUsageSummary = async () => {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const data = await adminAPI.groups.getUsageSummary(tz);
-    const map = new Map<number, { today_cost: number; total_cost: number }>();
+    const map = new Map<number, GroupUsageSummary>();
     for (const item of data) {
       map.set(item.group_id, {
         today_cost: item.today_cost,
@@ -4096,6 +4511,12 @@ const closeCreateModal = () => {
   createForm.image_price_1k = null;
   createForm.image_price_2k = null;
   createForm.image_price_4k = null;
+  createForm.video_rate_independent = false;
+  createForm.video_rate_multiplier = 1;
+  createForm.video_price_480p = null;
+  createForm.video_price_720p = null;
+  createForm.video_price_1080p = null;
+  createForm.web_search_price_per_call = null;
   createForm.peak_rate_enabled = false;
   createForm.peak_start = "";
   createForm.peak_end = "";
@@ -4196,6 +4617,20 @@ const handleCreateGroup = async () => {
     requestData.batch_image_hold_multiplier = normalizeRateMultiplier(
       requestData.batch_image_hold_multiplier,
     );
+    requestData.video_rate_multiplier = normalizeRateMultiplier(
+      requestData.video_rate_multiplier,
+    );
+    // 媒体价格输入清空时 v-model.number 产生 ""，直接提交会被后端 *float64 反序列化拒绝（400），
+    // 创建时按"未配置"（null）处理。
+    requestData.image_price_1k = emptyToNull(requestData.image_price_1k);
+    requestData.image_price_2k = emptyToNull(requestData.image_price_2k);
+    requestData.image_price_4k = emptyToNull(requestData.image_price_4k);
+    requestData.video_price_480p = emptyToNull(requestData.video_price_480p);
+    requestData.video_price_720p = emptyToNull(requestData.video_price_720p);
+    requestData.video_price_1080p = emptyToNull(requestData.video_price_1080p);
+    requestData.web_search_price_per_call = emptyToNull(
+      requestData.web_search_price_per_call,
+    );
     requestData.peak_rate_enabled = createForm.peak_rate_enabled;
     requestData.peak_start = createForm.peak_start;
     requestData.peak_end = createForm.peak_end;
@@ -4244,6 +4679,12 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.image_price_1k = group.image_price_1k;
   editForm.image_price_2k = group.image_price_2k;
   editForm.image_price_4k = group.image_price_4k;
+  editForm.video_rate_independent = group.video_rate_independent ?? false;
+  editForm.video_rate_multiplier = group.video_rate_multiplier ?? 1;
+  editForm.video_price_480p = group.video_price_480p;
+  editForm.video_price_720p = group.video_price_720p;
+  editForm.video_price_1080p = group.video_price_1080p;
+  editForm.web_search_price_per_call = group.web_search_price_per_call ?? null;
   editForm.peak_rate_enabled = group.peak_rate_enabled ?? false;
   editForm.peak_start = group.peak_start ?? "";
   editForm.peak_end = group.peak_end ?? "";
@@ -4296,6 +4737,12 @@ const closeEditModal = () => {
   editForm.peak_start = "";
   editForm.peak_end = "";
   editForm.peak_rate_multiplier = 1.0;
+  editForm.video_rate_independent = false;
+  editForm.video_rate_multiplier = 1;
+  editForm.video_price_480p = null;
+  editForm.video_price_720p = null;
+  editForm.video_price_1080p = null;
+  editForm.web_search_price_per_call = null;
   resetMessagesDispatchFormState(editForm);
   resetModelsListState(editModelsListState);
 };
@@ -4360,6 +4807,22 @@ const handleUpdateGroup = async () => {
     );
     payload.batch_image_hold_multiplier = normalizeRateMultiplier(
       payload.batch_image_hold_multiplier,
+    );
+    payload.video_rate_multiplier = normalizeRateMultiplier(
+      payload.video_rate_multiplier,
+    );
+    // 媒体价格输入清空时 v-model.number 产生 ""，直接提交会被后端 *float64 反序列化拒绝（400）。
+    // 更新语义中 null 表示"不修改"，因此清空后的字段发送 -1：后端 normalizePrice 将负价归一为
+    // NULL，从而真正清除已配置的价格。
+    const emptyPriceToClear = (v: any) => (v === "" || v === null ? -1 : v);
+    payload.image_price_1k = emptyPriceToClear(payload.image_price_1k);
+    payload.image_price_2k = emptyPriceToClear(payload.image_price_2k);
+    payload.image_price_4k = emptyPriceToClear(payload.image_price_4k);
+    payload.video_price_480p = emptyPriceToClear(payload.video_price_480p);
+    payload.video_price_720p = emptyPriceToClear(payload.video_price_720p);
+    payload.video_price_1080p = emptyPriceToClear(payload.video_price_1080p);
+    payload.web_search_price_per_call = emptyPriceToClear(
+      payload.web_search_price_per_call,
     );
     payload.peak_rate_enabled = editForm.peak_rate_enabled;
     payload.peak_start = editForm.peak_start;
@@ -4639,7 +5102,7 @@ onUnmounted(() => {
   border: 1px solid var(--ui-border, #dbe3ee);
   border-radius: 8px;
   background: var(--ui-surface-raised, #fff);
-  box-shadow: var(--ui-shadow-lg, 0 14px 34px rgba(15, 23, 42, 0.14));
+  box-shadow: var(--ui-shadow-floating, 0 14px 34px rgba(15, 23, 42, 0.14));
 }
 
 .resource-menu > button {

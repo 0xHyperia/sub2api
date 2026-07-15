@@ -1,7 +1,7 @@
 <template>
   <div class="inline-flex flex-col gap-0.5 text-xs font-medium">
     <!-- Row 1: Platform + Type -->
-    <div class="inline-flex items-center overflow-hidden rounded-md">
+    <div class="inline-flex items-center overflow-hidden rounded-control">
       <span :class="['inline-flex items-center gap-1 px-2 py-1', platformClass]">
         <PlatformIcon :platform="platform" size="xs" />
         <span>{{ platformLabel }}</span>
@@ -31,8 +31,19 @@
       </span>
     </div>
     <!-- Row 2: Plan type + Privacy mode (only if either exists) -->
-    <div v-if="planLabel || privacyBadge" class="inline-flex items-center overflow-hidden rounded-md">
+    <div v-if="planLabel || privacyBadge" class="inline-flex items-center overflow-hidden rounded-control">
       <span v-if="planLabel" :class="['inline-flex items-center gap-1 px-1.5 py-1', planBadgeClass]">
+        <GrokFreeIcon
+          v-if="isGrokFreePlan"
+          data-testid="grok-free-plan-icon"
+        />
+        <Icon
+          v-else-if="planIconName"
+          :name="planIconName"
+          size="xs"
+          data-testid="grok-plan-icon"
+          aria-hidden="true"
+        />
         <span>{{ planLabel }}</span>
       </span>
       <span
@@ -47,7 +58,7 @@
       </span>
     </div>
     <!-- Row 3: Subscription expiration (non-free paid accounts only) -->
-    <div v-if="expiresLabel" class="text-[10px] leading-tight text-gray-400 dark:text-gray-500 pl-0.5" :title="subscriptionExpiresAt">
+    <div v-if="expiresLabel" class="text-[10px] leading-tight text-foreground-subtle pl-0.5" :title="subscriptionExpiresAt">
       {{ expiresLabel }}
     </div>
   </div>
@@ -57,6 +68,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AccountPlatform, AccountType } from '@/types'
+import GrokFreeIcon from './GrokFreeIcon.vue'
 import PlatformIcon from './PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 
@@ -97,10 +109,13 @@ const typeLabel = computed(() => {
   }
 })
 
+const normalizedPlanType = computed(() =>
+  (props.planType || '').trim().toLowerCase().replace(/[\s_-]+/g, '')
+)
+
 const planLabel = computed(() => {
-  if (!props.planType) return ''
-  const lower = props.planType.toLowerCase()
-  switch (lower) {
+  if (!normalizedPlanType.value) return ''
+  switch (normalizedPlanType.value) {
     case 'plus':
       return 'Plus'
     case 'team':
@@ -109,7 +124,12 @@ const planLabel = computed(() => {
     case 'pro':
       return 'Pro'
     case 'free':
-      return 'Free'
+    case 'basic':
+      return props.platform === 'grok' ? 'Grok Free' : 'Free'
+    case 'supergrok':
+      return 'SuperGrok'
+    case 'supergrokheavy':
+      return 'SuperGrok Heavy'
     case 'abnormal':
       return t('admin.accounts.subscriptionAbnormal')
     default:
@@ -117,41 +137,57 @@ const planLabel = computed(() => {
   }
 })
 
+const isGrokFreePlan = computed(() =>
+  props.platform === 'grok' &&
+  (normalizedPlanType.value === 'free' || normalizedPlanType.value === 'basic')
+)
+
+const planIconName = computed<'bolt' | null>(() => {
+  if (props.platform !== 'grok') return null
+  if (
+    normalizedPlanType.value === 'supergrok' ||
+    normalizedPlanType.value === 'supergrokheavy'
+  ) {
+    return 'bolt'
+  }
+  return null
+})
+
 const platformClass = computed(() => {
   if (props.platform === 'anthropic') {
-    return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    return 'bg-warning-subtle text-warning-foreground'
   }
   if (props.platform === 'openai') {
-    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+    return 'bg-success-subtle text-success-foreground'
   }
   if (props.platform === 'antigravity') {
-    return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+    return 'bg-brand/30 text-brand'
   }
   if (props.platform === 'grok') {
-    return 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+    return 'bg-foreground text-foreground-subtle'
   }
-  return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+  return 'bg-info-subtle text-info-foreground'
 })
 
 const typeClass = computed(() => {
   if (props.platform === 'anthropic') {
-    return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+    return 'bg-warning-subtle text-warning-foreground'
   }
   if (props.platform === 'openai') {
-    return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+    return 'bg-success-subtle text-success-foreground'
   }
   if (props.platform === 'antigravity') {
-    return 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+    return 'bg-brand/30 text-brand'
   }
   if (props.platform === 'grok') {
-    return 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
+    return 'bg-foreground text-foreground-subtle'
   }
-  return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+  return 'bg-info-subtle text-info-foreground'
 })
 
 const planBadgeClass = computed(() => {
-  if (props.planType && props.planType.toLowerCase() === 'abnormal') {
-    return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+  if (normalizedPlanType.value === 'abnormal') {
+    return 'bg-danger-subtle text-danger-foreground'
   }
   return typeClass.value
 })
@@ -159,7 +195,7 @@ const planBadgeClass = computed(() => {
 // Subscription expiration label (non-free only)
 const expiresLabel = computed(() => {
   if (!props.subscriptionExpiresAt || !props.planType) return ''
-  if (props.planType.toLowerCase() === 'free') return ''
+  if (normalizedPlanType.value === 'free' || normalizedPlanType.value === 'basic') return ''
   try {
     const d = new Date(props.subscriptionExpiresAt)
     if (isNaN(d.getTime())) return ''
@@ -183,16 +219,16 @@ const privacyBadge = computed(() => {
   switch (props.privacyMode) {
     // OpenAI states
     case 'training_off':
-      return { label: 'Private', icon: shieldCheck, title: t('admin.accounts.privacyTrainingOff'), class: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' }
+      return { label: 'Private', icon: shieldCheck, title: t('admin.accounts.privacyTrainingOff'), class: 'bg-success-subtle text-success-foreground' }
     case 'training_set_cf_blocked':
-      return { label: 'CF', icon: shieldX, title: t('admin.accounts.privacyCfBlocked'), class: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' }
+      return { label: 'CF', icon: shieldX, title: t('admin.accounts.privacyCfBlocked'), class: 'bg-warning-subtle text-warning-foreground' }
     case 'training_set_failed':
-      return { label: 'Fail', icon: shieldX, title: t('admin.accounts.privacyFailed'), class: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' }
+      return { label: 'Fail', icon: shieldX, title: t('admin.accounts.privacyFailed'), class: 'bg-danger-subtle text-danger-foreground' }
     // Antigravity states
     case 'privacy_set':
-      return { label: 'Private', icon: shieldCheck, title: t('admin.accounts.privacyAntigravitySet'), class: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' }
+      return { label: 'Private', icon: shieldCheck, title: t('admin.accounts.privacyAntigravitySet'), class: 'bg-success-subtle text-success-foreground' }
     case 'privacy_set_failed':
-      return { label: 'Fail', icon: shieldX, title: t('admin.accounts.privacyAntigravityFailed'), class: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' }
+      return { label: 'Fail', icon: shieldX, title: t('admin.accounts.privacyAntigravityFailed'), class: 'bg-danger-subtle text-danger-foreground' }
     default:
       return null
   }

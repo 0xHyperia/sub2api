@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-canvas text-foreground">
     <a
       href="#app-main-content"
-      class="fixed left-3 top-3 z-[100] -translate-y-20 rounded-md bg-gray-950 px-3 py-2 text-sm font-medium text-white shadow-lg transition-transform focus:translate-y-0 dark:bg-white dark:text-gray-950"
+      class="fixed left-3 top-3 z-[100] -translate-y-20 rounded-control px-3 py-2 text-sm font-medium shadow-floating transition-transform focus:translate-y-0 bg-surface text-foreground"
     >
       {{ skipLinkLabel }}
     </a>

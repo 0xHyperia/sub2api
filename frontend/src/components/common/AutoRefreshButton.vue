@@ -4,7 +4,7 @@
       :id="triggerId"
       ref="triggerRef"
       type="button"
-      class="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-outline bg-surface px-2.5 text-xs font-medium text-foreground-muted shadow-card transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
+      class="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-outline bg-surface px-2.5 text-xs font-medium text-foreground-muted shadow-card transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
       :title="t('common.autoRefresh.title')"
       :aria-label="t('common.autoRefresh.title')"
       :aria-expanded="showDropdown"
@@ -38,7 +38,7 @@
           tabindex="-1"
           :aria-checked="enabled"
           @click="toggleEnabled"
-          class="flex min-h-10 w-full items-center justify-between rounded-md px-3 py-2 text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:bg-surface-subtle focus-visible:text-foreground focus-visible:outline-none"
+          class="flex min-h-10 w-full items-center justify-between rounded-control px-3 py-2 text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:bg-surface-subtle focus-visible:text-foreground focus-visible:outline-none"
         >
           <span>{{ t('common.autoRefresh.enable') }}</span>
           <Icon v-if="enabled" name="check" size="sm" class="text-foreground" />
@@ -52,7 +52,7 @@
           tabindex="-1"
           :aria-checked="intervalSeconds === sec"
           @click="selectInterval(sec)"
-          class="flex min-h-10 w-full items-center justify-between rounded-md px-3 py-2 text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:bg-surface-subtle focus-visible:text-foreground focus-visible:outline-none"
+          class="flex min-h-10 w-full items-center justify-between rounded-control px-3 py-2 text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:bg-surface-subtle focus-visible:text-foreground focus-visible:outline-none"
         >
           <span>{{ t('common.autoRefresh.seconds', { n: sec }) }}</span>
           <Icon v-if="intervalSeconds === sec" name="check" size="sm" class="text-foreground" />

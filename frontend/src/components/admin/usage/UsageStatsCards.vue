@@ -28,7 +28,7 @@
               <Icon name="infoCircle" size="xs" class="text-foreground-subtle" aria-hidden="true" />
             </summary>
             <span
-              class="invisible absolute right-0 top-full z-30 mt-2 w-56 max-w-[calc(100vw-3rem)] rounded-panel border border-outline bg-surface-raised p-3 text-left text-xs text-foreground opacity-0 shadow-lg transition-opacity group-open:visible group-open:opacity-100"
+              class="invisible absolute right-0 top-full z-30 mt-2 w-56 max-w-[calc(100vw-3rem)] rounded-panel border border-outline bg-surface-raised p-3 text-left text-xs text-foreground opacity-0 shadow-floating transition-opacity group-open:visible group-open:opacity-100"
             >
               <span class="mb-2 block font-medium text-foreground">
                 {{ cacheDetailLabel() }}

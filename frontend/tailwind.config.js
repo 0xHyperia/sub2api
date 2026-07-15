@@ -22,6 +22,7 @@ export default {
         },
         brand: {
           DEFAULT: 'rgb(var(--color-brand) / <alpha-value>)',
+          subtle: 'rgb(var(--color-brand-subtle) / <alpha-value>)',
           hover: 'rgb(var(--color-brand-hover) / <alpha-value>)',
           foreground: 'rgb(var(--color-brand-foreground) / <alpha-value>)'
         },

@@ -1,23 +1,23 @@
 <template>
-  <div class="mb-4 flex items-center justify-between rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">
+  <div class="mb-4 flex items-center justify-between rounded-panel bg-brand-subtle p-3">
     <div class="flex flex-wrap items-center gap-2">
-      <span v-if="selectedIds.length > 0" class="text-sm font-medium text-primary-900 dark:text-primary-100">
+      <span v-if="selectedIds.length > 0" class="text-sm font-medium text-brand">
         {{ t('admin.accounts.bulkActions.selected', { count: selectedIds.length }) }}
       </span>
-      <span v-else class="text-sm font-medium text-primary-900 dark:text-primary-100">
+      <span v-else class="text-sm font-medium text-brand">
         {{ t('admin.accounts.bulkEdit.title') }}
       </span>
       <template v-if="selectedIds.length > 0">
       <button
         @click="$emit('select-page')"
-        class="text-xs font-medium text-primary-700 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200"
+        class="text-xs font-medium text-brand hover:text-brand"
       >
         {{ t('admin.accounts.bulkActions.selectCurrentPage') }}
       </button>
-      <span class="text-gray-300 dark:text-primary-800">•</span>
+      <span class="text-brand">•</span>
       <button
         @click="$emit('clear')"
-        class="text-xs font-medium text-primary-700 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200"
+        class="text-xs font-medium text-brand hover:text-brand"
       >
         {{ t('admin.accounts.bulkActions.clear') }}
       </button>

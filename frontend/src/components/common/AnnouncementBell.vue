@@ -2,7 +2,7 @@
   <div>
     <button
       type="button"
-      class="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground"
+      class="relative inline-flex h-10 w-10 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground"
       :class="{ 'text-foreground': unreadCount > 0 }"
       :aria-label="t('announcements.title')"
       :aria-expanded="isModalOpen"
@@ -58,7 +58,7 @@
               @click="openDetail(item)"
             >
               <span
-                class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md border border-outline"
+                class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control border border-outline"
                 :class="item.read_at ? 'bg-surface text-foreground-subtle' : 'bg-info-subtle text-info-foreground'"
                 aria-hidden="true"
               >
@@ -79,7 +79,7 @@
         </ul>
 
         <div v-else class="flex min-h-48 flex-col items-center justify-center text-center">
-          <span class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-surface-subtle text-foreground-subtle">
+          <span class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-panel bg-surface-subtle text-foreground-subtle">
             <Icon name="inbox" size="lg" />
           </span>
           <p class="text-sm font-semibold text-foreground">{{ t('announcements.empty') }}</p>
@@ -105,7 +105,7 @@
     >
       <div v-if="selectedAnnouncement" class="min-w-0">
         <div class="mb-4 flex flex-wrap items-center gap-2 text-xs text-foreground-muted">
-          <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 font-semibold text-foreground">
+          <span class="inline-flex items-center gap-1.5 rounded-control bg-surface-subtle px-2 py-1 font-semibold text-foreground">
             <Icon name="bell" size="xs" />
             {{ t('announcements.title') }}
           </span>

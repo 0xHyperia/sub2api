@@ -16,6 +16,12 @@
 
 </div>
 
+## USA0 メンテナンス版
+
+このリポジトリは、Sub2API の USA0 メンテナンス版です。`v1.0.6` リリース系列は公式 Sub2API `v0.1.155` と同期しつつ、刷新されたホーム、認証、管理画面 UI、ZeroBox アプリ認可、LDXP カード購入および自動引き換え機能を維持しています。
+
+USA0 は独自の `v1.x` リリースタグを使用します。対応する公式ベースラインとマージ状況は [UPSTREAM.md](UPSTREAM.md) に記録しています。
+
 ## ⚠️ 重要なお知らせ
 
 本プロジェクトをご利用になる前に、以下の内容を必ずよくお読みください：
@@ -30,6 +36,11 @@
 > [こちらに掲載しませんか？](mailto:support@sub2api.org)
 
 <table>
+
+<tr>
+<td width="180"><a href="https://cctk.ai/register?aff=SUB2API"><img src="assets/partners/logos/cctk.jpg" alt="CCTK.AI" width="150"></a></td>
+<td>CCTK.AI のご支援に感謝します！<a href="https://cctk.ai/register?aff=SUB2API">CCTK.AI</a> は安定性とコストパフォーマンスにこだわった AI API ゲートウェイで、Claude、OpenAI、Gemini など主要モデルの高速中継サービスを提供しています。Claude Code や Codex などの主要なコーディングツールにシームレスに対応し、公式価格を大きく下回るコストで同等のモデル能力を利用できます。<a href="https://cctk.ai/register?aff=SUB2API">こちらのリンク</a>から登録して、より速く、より安定した、よりお得な AI API 接続をお試しください。</td>
+</tr>
 
 <tr>
 <td width="180"><a href="https://www.openmodel.ai?ref=sub2api"><img src="assets/partners/logos/openmodel.jpg" alt="openmodel" width="150"></a></td>
@@ -322,6 +333,7 @@ cd sub2api/deploy
 
 # 2. 環境設定ファイルをコピー
 cp .env.example .env
+chmod 600 .env
 
 # 3. 設定を編集（セキュアなパスワードを生成）
 nano .env
@@ -441,7 +453,23 @@ rm -rf data/ postgres_data/ redis_data/
 
 ---
 
-### 方法3: ソースからビルド
+### 方法3: Apple container（macOS）
+
+Apple シリコン搭載 Mac と macOS 26 では、Apple `container` 1.1.0 以降を使用して Sub2API、PostgreSQL、Redis の完全なスタックを実行できます:
+
+```bash
+git clone https://github.com/Wei-Shaw/sub2api.git
+cd sub2api/deploy
+./apple-container.sh init
+./apple-container.sh up
+./apple-container.sh status
+```
+
+これはローカル開発および手動運用向けです。本番環境では引き続き Docker Compose を推奨します。ライフサイクル、永続化、アップグレード、制限については [deploy/APPLE_CONTAINER.md](deploy/APPLE_CONTAINER.md) を参照してください。
+
+---
+
+### 方法4: ソースからビルド
 
 開発やカスタマイズのためにソースコードからビルドして実行します。
 

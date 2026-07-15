@@ -1,11 +1,11 @@
 <template>
   <div class="card p-4">
-    <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+    <h3 class="mb-4 text-sm font-semibold text-foreground">
       {{ t('payment.admin.paymentDistribution') }}
     </h3>
     <div
       v-if="!methods?.length"
-      class="flex h-32 items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+      class="flex h-32 items-center justify-center text-sm text-foreground-subtle"
     >
       {{ t('payment.admin.noData') }}
     </div>
@@ -13,23 +13,23 @@
       <div v-for="method in methods" :key="method.type" class="space-y-1">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span :class="['inline-block h-3 w-3 rounded-full', colorMap[method.type] || 'bg-gray-400']"></span>
-            <span class="text-sm text-gray-700 dark:text-gray-300">
+            <span :class="['inline-block h-3 w-3 rounded-full', colorMap[method.type] || 'bg-outline-strong']"></span>
+            <span class="text-sm text-foreground-muted">
               {{ t('payment.methods.' + method.type, method.type) }}
             </span>
           </div>
           <div class="text-right">
-            <span class="text-sm font-medium text-gray-900 dark:text-white">
+            <span class="text-sm font-medium text-foreground">
               ${{ method.amount.toFixed(2) }}
             </span>
-            <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">
+            <span class="ml-2 text-xs text-foreground-subtle">
               ({{ method.count }})
             </span>
           </div>
         </div>
-        <div class="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-dark-700">
+        <div class="h-2 w-full overflow-hidden rounded-full bg-surface-subtle">
           <div
-            :class="['h-full rounded-full transition-all', barColorMap[method.type] || 'bg-gray-400']"
+            :class="['h-full rounded-full transition-all', barColorMap[method.type] || 'bg-outline-strong']"
             :style="{ width: barWidth(method.amount) + '%' }"
           ></div>
         </div>
@@ -49,19 +49,19 @@ const props = defineProps<{
 }>()
 
 const colorMap: Record<string, string> = {
-  alipay: 'bg-blue-500',
-  wxpay: 'bg-green-500',
-  alipay_direct: 'bg-blue-400',
-  wxpay_direct: 'bg-green-400',
-  stripe: 'bg-purple-500',
+  alipay: 'bg-info',
+  wxpay: 'bg-success',
+  alipay_direct: 'bg-info',
+  wxpay_direct: 'bg-success',
+  stripe: 'bg-brand',
 }
 
 const barColorMap: Record<string, string> = {
-  alipay: 'bg-blue-500',
-  wxpay: 'bg-green-500',
-  alipay_direct: 'bg-blue-400',
-  wxpay_direct: 'bg-green-400',
-  stripe: 'bg-purple-500',
+  alipay: 'bg-info',
+  wxpay: 'bg-success',
+  alipay_direct: 'bg-info',
+  wxpay_direct: 'bg-success',
+  stripe: 'bg-brand',
 }
 
 const maxAmount = computed(() => {

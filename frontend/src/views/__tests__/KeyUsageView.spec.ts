@@ -17,6 +17,9 @@ const messages: Record<string, string> = {
   'keyUsage.placeholder': 'sk-test',
   'keyUsage.query': 'Query',
   'keyUsage.querying': 'Querying...',
+  'keyUsage.queryPanel': 'API Key query',
+  'keyUsage.showKey': 'Show API Key',
+  'keyUsage.hideKey': 'Hide API Key',
   'keyUsage.privacyNote': 'Privacy note',
   'keyUsage.dateRange': 'Date Range:',
   'keyUsage.dateRangeToday': 'Today',
@@ -162,7 +165,28 @@ describe('KeyUsageView daily detail', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
+  })
+
+  it('uses the current surface and control tokens', () => {
+    const wrapper = mount(KeyUsageView, {
+      global: {
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: true,
+          Icon: true,
+        },
+      },
+    })
+
+    expect(wrapper.get('.key-usage-page').classes()).toContain('bg-canvas')
+    expect(wrapper.get('section[aria-label="API Key query"]').classes()).toContain('rounded-panel')
+    expect(wrapper.get('input').classes()).toContain('border-outline')
+    expect(wrapper.get('button.btn-primary').classes()).toContain('h-11')
+    expect(wrapper.get('button[aria-label="Show API Key"]').exists()).toBe(true)
+
+    wrapper.unmount()
   })
 
   it('renders daily usage detail rows after a successful query', async () => {
@@ -202,6 +226,31 @@ describe('KeyUsageView daily detail', () => {
     expect(text).toContain('30')
     expect(text).toContain('10')
     expect(text).toContain('$0.12')
+
+    wrapper.unmount()
+  })
+
+  it('queries the current local calendar date near midnight', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 6, 13, 0, 30))
+
+    const wrapper = mount(KeyUsageView, {
+      global: {
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: true,
+          Icon: true,
+        },
+      },
+    })
+
+    await wrapper.find('input').setValue('sk-test-key')
+    await wrapper.find('input').trigger('keydown.enter')
+    await flushPromises()
+
+    const requestUrl = String(vi.mocked(fetch).mock.calls[0][0])
+    expect(requestUrl).toContain('start_date=2026-07-13')
+    expect(requestUrl).toContain('end_date=2026-07-13')
 
     wrapper.unmount()
   })

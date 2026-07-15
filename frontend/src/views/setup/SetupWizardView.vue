@@ -46,10 +46,10 @@
         <!-- Step 1: Database -->
         <div v-if="currentStep === 0" class="space-y-6">
           <div class="mb-6 text-center">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-xl font-semibold text-foreground">
               {{ t('setup.database.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
+            <p class="mt-1 text-sm text-foreground-muted">
               {{ t('setup.database.description') }}
             </p>
           </div>
@@ -153,7 +153,7 @@
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            <Icon v-else-if="dbConnected" name="check" size="md" class="mr-2 text-green-500" :stroke-width="2" />
+            <Icon v-else-if="dbConnected" name="check" size="md" class="mr-2 text-success-foreground" :stroke-width="2" />
             {{
               testingDb
                 ? t('setup.status.testing')
@@ -167,10 +167,10 @@
         <!-- Step 2: Redis -->
         <div v-if="currentStep === 1" class="space-y-6">
           <div class="mb-6 text-center">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-xl font-semibold text-foreground">
               {{ t('setup.redis.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
+            <p class="mt-1 text-sm text-foreground-muted">
               {{ t('setup.redis.description') }}
             </p>
           </div>
@@ -263,7 +263,7 @@
               v-else-if="redisConnected"
               name="check"
               size="md"
-              class="mr-2 text-green-500"
+              class="mr-2 text-success-foreground"
               :stroke-width="2"
             />
             {{
@@ -279,10 +279,10 @@
         <!-- Step 3: Admin -->
         <div v-if="currentStep === 2" class="space-y-6">
           <div class="mb-6 text-center">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-xl font-semibold text-foreground">
               {{ t('setup.admin.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
+            <p class="mt-1 text-sm text-foreground-muted">
               {{ t('setup.admin.description') }}
             </p>
           </div>
@@ -330,10 +330,10 @@
         <!-- Step 4: Complete -->
         <div v-if="currentStep === 3" class="space-y-6">
           <div class="mb-6 text-center">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-xl font-semibold text-foreground">
               {{ t('setup.ready.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
+            <p class="mt-1 text-sm text-foreground-muted">
               {{ t('setup.ready.description') }}
             </p>
           </div>

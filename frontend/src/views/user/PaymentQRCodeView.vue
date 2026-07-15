@@ -132,7 +132,6 @@ const retryingStatus = ref(false)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
-let pollingStatus = false
 
 const countdownDisplay = computed(() => {
   const m = Math.floor(remainingSeconds.value / 60)
@@ -205,14 +204,17 @@ async function renderQR() {
   }
 }
 
+let pollInFlight = false
 async function pollStatus() {
-  if (!orderId.value || pollingStatus) return
-  pollingStatus = true
+  if (!orderId.value) return
+  if (pollInFlight) return
+  pollInFlight = true
   try {
     const order = await paymentStore.pollOrderStatus(orderId.value)
     pollFailureCount.value = 0
     pollUnavailable.value = false
     if (!order) return
+    if (!pollTimer) return
     if (order.status === 'COMPLETED' || order.status === 'PAID') {
       cleanup()
       router.push({ path: '/payment/result', query: { order_id: String(orderId.value), status: 'success' } })
@@ -224,7 +226,7 @@ async function pollStatus() {
     pollFailureCount.value += 1
     if (pollFailureCount.value >= 3) pollUnavailable.value = true
   } finally {
-    pollingStatus = false
+    pollInFlight = false
   }
 }
 

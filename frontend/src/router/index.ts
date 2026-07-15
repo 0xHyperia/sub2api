@@ -860,36 +860,48 @@ router.beforeEach(async (to, _from, next) => {
       }
     }
   }
-
-
-  // Check payment requirement (internal payment system only)
-  if (to.meta.requiresPayment) {
-    if (!appStore.publicSettingsLoaded) {
+  // 公共设置可能尚未加载（App.vue 的 onMounted 异步拉取晚于首次导航，且纯静态部署
+  // 无 __APP_CONFIG__ 注入）。此时 cachedPublicSettings 为空会把 payment/risk_control
+  // 误判为“未启用”而错误拦截，故这里先确保设置加载完成。
+  const requiresFeatureSettings = to.meta.requiresPayment ||
+    to.meta.requiresPaymentOrders ||
+    to.meta.requiresRiskControl
+  if (requiresFeatureSettings && !appStore.publicSettingsLoaded) {
+    try {
       await appStore.fetchPublicSettings()
-    }
-    const paymentEnabled = appStore.cachedPublicSettings?.payment_enabled
-    if (paymentEnabled === false) {
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
-      return
+    } catch (error) {
+      console.warn('Failed to load public settings in route guard', error)
     }
   }
 
-  if (to.meta.requiresPaymentOrders) {
+  // Only an explicit value from successfully loaded settings can disable a route.
+  // A transient settings failure is unknown state, not a confirmed feature toggle.
+  if (
+    to.meta.requiresPayment &&
+    appStore.publicSettingsLoaded &&
+    appStore.cachedPublicSettings?.payment_enabled === false
+  ) {
+    next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+    return
+  }
+
+  if (to.meta.requiresPaymentOrders && appStore.publicSettingsLoaded) {
     const settings = appStore.cachedPublicSettings
-    const paymentOrdersEnabled = settings?.payment_enabled === true
-      && (settings.payment_instant_enabled !== false || settings.payment_card_enabled === true)
+    const paymentOrdersEnabled = settings?.payment_enabled === true &&
+      (settings.payment_instant_enabled !== false || settings.payment_card_enabled === true)
     if (!paymentOrdersEnabled) {
       next('/purchase?tab=iframe')
       return
     }
   }
 
-  if (to.meta.requiresRiskControl) {
-    const riskControlEnabled = appStore.cachedPublicSettings?.risk_control_enabled === true
-    if (!riskControlEnabled) {
-      next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
-      return
-    }
+  if (
+    to.meta.requiresRiskControl &&
+    appStore.publicSettingsLoaded &&
+    appStore.cachedPublicSettings?.risk_control_enabled === false
+  ) {
+    next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
+    return
   }
 
   // 简易模式下限制访问某些页面

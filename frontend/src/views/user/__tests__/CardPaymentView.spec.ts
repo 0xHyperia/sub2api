@@ -208,4 +208,17 @@ describe('CardPaymentView', () => {
 
     wrapper.unmount()
   })
+
+  it('uses the semantic surface contract for the checkout workspace', async () => {
+    getCardCheckoutInfoMock.mockResolvedValue(createCheckoutInfo())
+    const wrapper = mountView()
+
+    await flushPromises()
+
+    expect(wrapper.get('[role="radiogroup"] button').classes()).toContain('bg-surface')
+    expect(wrapper.get('[data-testid="card-payment-submit"]').classes()).toContain('w-full')
+    expect(wrapper.html()).not.toMatch(/(?:bg|text|border)-gray-|dark:/)
+
+    wrapper.unmount()
+  })
 })

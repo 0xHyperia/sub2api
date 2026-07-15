@@ -142,11 +142,11 @@
                 class="space-y-1.5 border-t border-white/10 pt-2 first:border-t-0 first:pt-0"
               >
                 <p class="font-medium text-white">{{ item.title }}</p>
-                <p><span class="text-gray-300">{{ t('admin.settings.payment.guideOpenLabel') }}</span>{{ item.open }}</p>
-                <p><span class="text-gray-300">{{ t('admin.settings.payment.guideCallLabel') }}</span>{{ item.call }}</p>
-                <p><span class="text-gray-300">{{ t('admin.settings.payment.guideFallbackLabel') }}</span>{{ item.fallback }}</p>
+                <p><span class="text-foreground-subtle">{{ t('admin.settings.payment.guideOpenLabel') }}</span>{{ item.open }}</p>
+                <p><span class="text-foreground-subtle">{{ t('admin.settings.payment.guideCallLabel') }}</span>{{ item.call }}</p>
+                <p><span class="text-foreground-subtle">{{ t('admin.settings.payment.guideFallbackLabel') }}</span>{{ item.fallback }}</p>
               </div>
-              <p v-if="paymentGuide.note" class="border-t border-white/10 pt-2 text-[11px] text-gray-300">
+              <p v-if="paymentGuide.note" class="border-t border-white/10 pt-2 text-[11px] text-foreground-subtle">
                 {{ paymentGuide.note }}
               </p>
             </div>

@@ -4,7 +4,7 @@
       <template #filters>
         <div class="commerce-toolbar flex flex-wrap items-center gap-3">
           <div class="relative w-full md:w-64">
-            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
             <input
               v-model="orderSearch"
               type="search"
@@ -163,7 +163,7 @@
           <div><dt>{{ t('payment.orders.createdAt') }}</dt><dd>{{ formatDateTime(selectedOrder.created_at) }}</dd></div>
           <div><dt>{{ t('payment.admin.expiresAt') }}</dt><dd>{{ formatDateTime(selectedOrder.expires_at) }}</dd></div>
           <div v-if="selectedOrder.paid_at"><dt>{{ t('payment.admin.paidAt') }}</dt><dd>{{ formatDateTime(selectedOrder.paid_at) }}</dd></div>
-          <div v-if="selectedOrder.refund_amount"><dt>{{ t('payment.admin.refundAmount') }}</dt><dd class="text-red-600 dark:text-red-400">{{ creditedAmountSymbol }}{{ selectedOrder.refund_amount.toFixed(2) }}</dd></div>
+          <div v-if="selectedOrder.refund_amount"><dt>{{ t('payment.admin.refundAmount') }}</dt><dd class="text-danger-foreground">{{ creditedAmountSymbol }}{{ selectedOrder.refund_amount.toFixed(2) }}</dd></div>
           <div v-if="selectedOrder.refund_reason" class="sm:col-span-2"><dt>{{ t('payment.admin.refundReason') }}</dt><dd>{{ selectedOrder.refund_reason }}</dd></div>
         </dl>
 

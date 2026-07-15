@@ -214,7 +214,7 @@
               <Line v-else-if="userTrendChartData" :data="userTrendChartData" :options="lineOptions" />
               <div
                 v-else
-                class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+                class="flex h-full items-center justify-center text-sm text-foreground-subtle"
               >
                 {{ t('admin.dashboard.noDataAvailable') }}
               </div>
@@ -251,7 +251,7 @@ import Select from '@/components/common/Select.vue'
 import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
-import { useTheme } from '@/composables/useTheme'
+import { useChartTheme } from '@/composables/useChartTheme'
 
 import {
   Chart as ChartJS,
@@ -279,7 +279,7 @@ ChartJS.register(
 const appStore = useAppStore()
 const router = useRouter()
 const { canUseBatchImage, refreshBatchImageAccess } = useBatchImageAccess()
-const { isDark } = useTheme()
+const { chartTheme } = useChartTheme()
 const stats = ref<DashboardStats | null>(null)
 const loading = ref(false)
 const chartsLoading = ref(false)
@@ -330,8 +330,8 @@ const granularityOptions = computed(() => [
 
 // Chart colors
 const chartColors = computed(() => ({
-  text: isDark.value ? '#e5e7eb' : '#374151',
-  grid: isDark.value ? '#374151' : '#e5e7eb'
+  text: chartTheme.value.foregroundMuted,
+  grid: chartTheme.value.outline,
 }))
 
 // Line chart options (for user trend chart)

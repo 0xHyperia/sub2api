@@ -18,7 +18,7 @@
   </div>
   <div
     v-if="samplesLabel"
-    class="mt-1 text-[11px] text-gray-400 text-right"
+    class="mt-1 text-[11px] text-foreground-subtle text-right"
   >
     {{ samplesLabel }}
   </div>

@@ -1,29 +1,29 @@
 <template>
   <div v-if="!isDesktopViewport" class="min-w-0 max-w-full space-y-2">
     <template v-if="loading">
-      <div v-for="i in 5" :key="i" class="rounded-lg border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-900">
+      <div v-for="i in 5" :key="i" class="rounded-panel border border-outline p-3 bg-canvas">
         <div class="space-y-2">
           <div v-for="column in dataColumns" :key="column.key" class="flex justify-between">
-            <div class="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
-            <div class="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+            <div class="h-4 w-20 animate-pulse rounded bg-outline bg-surface-subtle"></div>
+            <div class="h-4 w-32 animate-pulse rounded bg-outline bg-surface-subtle"></div>
           </div>
-          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-2 dark:border-dark-700">
-            <div class="h-8 w-full animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+          <div v-if="hasActionsColumn" class="border-t border-outline pt-2">
+            <div class="h-8 w-full animate-pulse rounded bg-outline bg-surface-subtle"></div>
           </div>
         </div>
       </div>
     </template>
 
     <template v-else-if="!data || data.length === 0">
-      <div class="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-dark-700 dark:bg-dark-900">
+      <div class="rounded-panel border border-outline p-8 text-center bg-canvas">
         <slot name="empty">
           <div class="flex flex-col items-center">
             <Icon
               name="inbox"
               size="xl"
-              class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500"
+              class="mb-4 h-12 w-12 text-foreground-subtle"
             />
-            <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-lg font-medium text-foreground">
               {{ t('empty.noData') }}
             </p>
           </div>
@@ -35,7 +35,7 @@
       <div
         v-for="(row, index) in sortedData"
         :key="resolveRowKey(row, index)"
-        class="mobile-row-card relative min-w-0 rounded-lg border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-900"
+        class="mobile-row-card relative min-w-0 rounded-panel border border-outline p-3 bg-canvas"
         :class="{
           'cursor-pointer': clickableRows
         }"
@@ -44,7 +44,7 @@
         <button
           v-if="clickableRows"
           type="button"
-          class="mobile-row-trigger pointer-events-none absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          class="mobile-row-trigger pointer-events-none absolute inset-0 rounded-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           :aria-label="getRowAccessibleLabel(row, index)"
           @click.stop="handleRowActivation(row)"
         ></button>
@@ -54,16 +54,16 @@
             :key="column.key"
             class="flex min-w-0 items-start justify-between gap-3"
           >
-            <span class="max-w-[42%] flex-shrink-0 text-xs font-medium text-gray-500 dark:text-dark-400">
+            <span class="max-w-[42%] flex-shrink-0 text-xs font-medium text-foreground-muted">
               {{ column.label }}
             </span>
-            <div class="min-w-0 max-w-[58%] break-words text-right text-sm text-gray-900 dark:text-gray-100">
+            <div class="min-w-0 max-w-[58%] break-words text-right text-sm text-foreground">
               <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :expanded="actionsExpanded">
                 {{ column.formatter ? column.formatter(row[column.key], row) : row[column.key] }}
               </slot>
             </div>
           </div>
-          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-2 dark:border-dark-700">
+          <div v-if="hasActionsColumn" class="border-t border-outline pt-2">
             <slot name="cell-actions" :row="row" :value="row['actions']" :expanded="actionsExpanded"></slot>
           </div>
         </div>
@@ -80,8 +80,8 @@
       'is-scrollable': isScrollable
     }"
   >
-    <table class="w-full min-w-max divide-y divide-gray-200 dark:divide-dark-700">
-      <thead class="table-header bg-gray-50 dark:bg-dark-800">
+    <table class="w-full min-w-max divide-y divide-outline">
+      <thead class="table-header bg-surface">
         <tr>
           <th
             v-for="(column, index) in columns"
@@ -140,12 +140,12 @@
           </th>
         </tr>
       </thead>
-      <tbody class="table-body divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
+      <tbody class="table-body divide-y divide-outline bg-canvas">
         <!-- Loading skeleton -->
         <tr v-if="loading" v-for="i in 5" :key="i">
           <td v-for="column in columns" :key="column.key" :class="['whitespace-nowrap py-4', getAdaptivePaddingClass()]">
             <div class="animate-pulse">
-              <div class="h-4 w-3/4 rounded bg-gray-200 dark:bg-dark-700"></div>
+              <div class="h-4 w-3/4 rounded bg-outline bg-surface-subtle"></div>
             </div>
           </td>
         </tr>
@@ -154,16 +154,16 @@
         <tr v-else-if="!data || data.length === 0">
           <td
             :colspan="columns.length"
-            :class="['py-12 text-center text-gray-500 dark:text-dark-400', getAdaptivePaddingClass()]"
+            :class="['py-12 text-center text-foreground-muted', getAdaptivePaddingClass()]"
           >
             <slot name="empty">
               <div class="flex flex-col items-center">
                 <Icon
                   name="inbox"
                   size="xl"
-                  class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500"
+                  class="mb-4 h-12 w-12 text-foreground-subtle"
                 />
-                <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                <p class="text-lg font-medium text-foreground">
                   {{ t('empty.noData') }}
                 </p>
               </div>
@@ -171,7 +171,7 @@
           </td>
         </tr>
 
-        <!-- Data rows (virtual scroll) -->
+        <!-- Data rows: windowed when large, fully rendered when small (shared row/cell template) -->
         <template v-else>
           <tr v-if="virtualPaddingTop > 0" aria-hidden="true">
             <td :colspan="columns.length"
@@ -179,37 +179,37 @@
             </td>
           </tr>
           <tr
-            v-for="virtualRow in virtualItems"
-            :key="resolveRowKey(sortedData[virtualRow.index], virtualRow.index)"
-            :data-row-id="resolveRowKey(sortedData[virtualRow.index], virtualRow.index)"
-            :data-index="virtualRow.index"
-            :ref="measureElement"
-            class="hover:bg-gray-50 dark:hover:bg-dark-800"
+            v-for="item in renderRows"
+            :key="resolveRowKey(item.row, item.index)"
+            :data-row-id="resolveRowKey(item.row, item.index)"
+            :data-index="item.index"
+            :ref="item.measure ? measureElement : undefined"
+            class="hover:bg-surface-subtle"
             :class="{
               'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus': clickableRows
             }"
             :tabindex="clickableRows ? 0 : undefined"
-            :aria-label="clickableRows ? getRowAccessibleLabel(sortedData[virtualRow.index], virtualRow.index) : undefined"
-            @click="handleRowPointerActivation($event, sortedData[virtualRow.index])"
-            @keydown="handleRowKeydown($event, sortedData[virtualRow.index])"
+            :aria-label="clickableRows ? getRowAccessibleLabel(item.row, item.index) : undefined"
+            @click="handleRowPointerActivation($event, item.row)"
+            @keydown="handleRowKeydown($event, item.row)"
           >
             <td
               v-for="(column, colIndex) in columns"
               :key="column.key"
               :class="[
-                'whitespace-nowrap py-4 text-sm text-gray-900 dark:text-gray-100',
+                'whitespace-nowrap py-4 text-sm text-foreground',
                 getAdaptivePaddingClass(),
                 getStickyColumnClass(column, colIndex),
                 column.class
               ]"
             >
               <slot :name="`cell-${column.key}`"
-                    :row="sortedData[virtualRow.index]"
-                    :value="sortedData[virtualRow.index][column.key]"
+                    :row="item.row"
+                    :value="item.row[column.key]"
                     :expanded="actionsExpanded">
                 {{ column.formatter
-                   ? column.formatter(sortedData[virtualRow.index][column.key], sortedData[virtualRow.index])
-                   : sortedData[virtualRow.index][column.key] }}
+                   ? column.formatter(item.row[column.key], item.row)
+                   : item.row[column.key] }}
               </slot>
             </td>
           </tr>
@@ -422,6 +422,12 @@ interface Props {
   estimateRowHeight?: number
   /** Number of rows to render beyond the visible area (default 5) */
   overscan?: number
+  /**
+   * Only virtualize when the row count exceeds this threshold (default 100).
+   * Smaller lists render in full, avoiding the scroll-compensation jank caused by
+   * estimated-vs-actual row heights when rows have variable height.
+   */
+  virtualizeThreshold?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -727,9 +733,21 @@ const sortedData = computed(() => {
 })
 
 // --- Virtual scrolling ---
+// 是否启用虚拟化:仅桌面端且行数超过阈值时开启。小列表全量渲染,彻底绕开虚拟器的
+// 估算/测量/滚动补偿链路,消除可变行高导致的滚动抖动。
+const shouldVirtualize = computed(() =>
+  isDesktopViewport.value && (sortedData.value?.length ?? 0) > (props.virtualizeThreshold ?? 100)
+)
+
 const rowVirtualizer = useVirtualizer(computed(() => ({
-  count: isDesktopViewport.value ? (sortedData.value?.length ?? 0) : 0,
+  count: shouldVirtualize.value ? (sortedData.value?.length ?? 0) : 0,
   getScrollElement: () => tableWrapperRef.value,
+  // 用行主键(与模板 :key 一致)而非默认的 index 作为 itemSizeCache 键,
+  // 这样排序/筛选/跨阈值来回都能复用正确的已测行高,而不是残留的按 index 缓存 → 消除高度校正抖动。
+  getItemKey: (index: number) => {
+    const row = sortedData.value?.[index]
+    return row != null ? resolveRowKey(row, index) : index
+  },
   estimateSize: () => props.estimateRowHeight ?? 56,
   overscan: props.overscan ?? 5,
   // 兜底高度:首个有效高度读数到来前,先按一屏渲染,避免空白帧
@@ -758,6 +776,16 @@ const measureElement = (el: any) => {
     rowVirtualizer.value.measureElement(el as Element)
   }
 }
+
+// 统一的渲染行列表:虚拟化开启时只取窗口内的行(需 measure 交给虚拟器测量),
+// 关闭时取全部行(无需测量)。模板据此渲染,两种模式共用同一套单元格结构。
+const renderRows = computed<Array<{ index: number; row: any; measure: boolean }>>(() => {
+  const data = sortedData.value ?? []
+  if (shouldVirtualize.value) {
+    return virtualItems.value.map(vr => ({ index: vr.index, row: data[vr.index], measure: true }))
+  }
+  return data.map((row, index) => ({ index, row, measure: false }))
+})
 
 const hasActionsColumn = computed(() => {
   return props.columns.some(column => column.key === 'actions')
@@ -858,6 +886,7 @@ watch(
 
 defineExpose({
   virtualizer: rowVirtualizer,
+  shouldVirtualize,
   sortedData,
   resolveRowKey,
   tableWrapperEl: tableWrapperRef,

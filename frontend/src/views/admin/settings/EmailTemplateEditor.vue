@@ -1,19 +1,19 @@
 <template>
-  <div class="card" :aria-busy="loadingList || editorBusy">
+  <div class="overflow-hidden rounded-panel border border-outline bg-surface shadow-card" :aria-busy="loadingList || editorBusy">
     <div
-      class="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 dark:border-dark-700 sm:px-6 lg:flex-row lg:items-start lg:justify-between"
+      class="flex flex-col gap-3 border-b border-outline px-4 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between"
     >
       <div class="min-w-0">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <h2 class="text-lg font-semibold text-foreground">
           {{ t("admin.settings.emailTemplates.title") }}
         </h2>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p class="mt-1 text-sm text-foreground-muted">
           {{ t("admin.settings.emailTemplates.description") }}
         </p>
         <p
           v-if="isDirty"
           id="email-template-unsaved-status"
-          class="mt-2 text-sm font-medium text-amber-700 dark:text-amber-300"
+          class="mt-2 text-sm font-medium text-warning-foreground"
           role="status"
         >
           {{ t("admin.settings.emailTemplates.unsavedChanges") }}
@@ -53,12 +53,12 @@
     <div class="space-y-6 p-4 sm:p-6">
       <div
         v-if="loadingList"
-        class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+        class="flex items-center gap-2 text-sm text-foreground-subtle"
         role="status"
         aria-live="polite"
       >
         <span
-          class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"
+          class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"
           aria-hidden="true"
         ></span>
         {{ t("common.loading") }}
@@ -112,34 +112,34 @@
 
         <div
           v-if="selectedEventMeta"
-          class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800/60"
+          class="rounded-panel border border-outline bg-surface-subtle p-4"
         >
           <div class="flex flex-wrap items-center gap-2">
-            <div class="text-sm font-semibold text-gray-900 dark:text-white">
+            <div class="text-sm font-semibold text-foreground">
               {{ selectedEventMeta.label }}
             </div>
             <span
-              class="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200 dark:bg-dark-700 dark:text-gray-300 dark:ring-dark-600"
+              class="rounded-control border border-outline bg-surface px-2.5 py-1 text-xs font-medium text-foreground-muted"
             >
               {{ selectedEventMeta.categoryLabel }}
             </span>
             <span
-              class="rounded-md px-2.5 py-1 text-xs font-medium"
+              class="rounded-control px-2.5 py-1 text-xs font-medium"
               :class="
                 selectedEventMeta.optional
-                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                  : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                  ? 'bg-warning-subtle text-warning-foreground'
+                  : 'bg-success-subtle text-success-foreground'
               "
             >
               {{ selectedEventMeta.optional ? localText("可退订通知", "Optional") : localText("事务邮件", "Transactional") }}
             </span>
           </div>
-          <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+          <p class="mt-2 text-sm leading-6 text-foreground-muted">
             {{ selectedEventMeta.timing }}
           </p>
           <p
             v-if="selectedEventDescription"
-            class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+            class="mt-1 text-xs text-foreground-subtle"
           >
             {{ selectedEventDescription }}
           </p>
@@ -147,14 +147,14 @@
 
         <div
           v-if="!eventOptions.length || !localeOptions.length"
-          class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
+          class="rounded-panel border border-warning/30 bg-warning-subtle p-4 text-sm text-warning-foreground"
         >
           {{ t("admin.settings.emailTemplates.empty") }}
         </div>
 
         <div
           v-else-if="templateLoadFailed"
-          class="flex flex-col items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 sm:flex-row sm:items-center sm:justify-between"
+          class="flex flex-col items-start gap-3 rounded-panel border border-danger/30 bg-danger-subtle p-4 text-sm text-danger-foreground sm:flex-row sm:items-center sm:justify-between"
           role="alert"
         >
           <span>{{ t("admin.settings.emailTemplates.loadFailed") }}</span>
@@ -201,12 +201,12 @@
             </div>
 
             <div
-              class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800/60"
+              class="rounded-panel border border-outline bg-surface-subtle p-4"
             >
-              <div class="text-sm font-medium text-gray-900 dark:text-white">
+              <div class="text-sm font-medium text-foreground">
                 {{ t("admin.settings.emailTemplates.placeholders") }}
               </div>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-xs text-foreground-subtle">
                 {{ t("admin.settings.emailTemplates.placeholdersHelp") }}
               </p>
               <div class="mt-3 flex flex-wrap gap-2">
@@ -214,7 +214,7 @@
                   v-for="placeholder in placeholderList"
                   :key="placeholder"
                   type="button"
-                  class="max-w-full break-all rounded-md border border-gray-200 bg-white px-3 py-1 text-left font-mono text-xs text-gray-700 transition-colors hover:border-primary-300 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
+                  class="max-w-full break-all rounded-control border border-outline bg-surface px-3 py-1 text-left font-mono text-xs text-foreground-muted transition-colors hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                   @click="copyPlaceholder(placeholder)"
                 >
                   {{ placeholder }}
@@ -225,29 +225,29 @@
 
           <div class="min-w-0 space-y-4">
             <div
-              class="min-w-0 rounded-lg border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800"
+              class="min-w-0 overflow-hidden rounded-panel border border-outline bg-surface"
             >
               <div
-                class="flex min-w-0 items-start justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-dark-700"
+                class="flex min-w-0 items-start justify-between gap-3 border-b border-outline px-4 py-3"
               >
                 <div class="min-w-0">
-                  <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  <div class="text-sm font-medium text-foreground">
                     {{ t("admin.settings.emailTemplates.livePreview") }}
                   </div>
-                  <div class="mt-0.5 break-words text-xs text-gray-500 dark:text-gray-400">
+                  <div class="mt-0.5 break-words text-xs text-foreground-subtle">
                     {{ previewSubject || t("admin.settings.emailTemplates.noPreview") }}
                   </div>
                 </div>
                 <span
                   v-if="isCustomTemplate"
-                  class="flex-shrink-0 rounded-md bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                  class="flex-shrink-0 rounded-control bg-brand-subtle px-2.5 py-1 text-xs font-medium text-brand"
                 >
                   {{ t("admin.settings.emailTemplates.customized") }}
                 </span>
               </div>
-              <div class="min-w-0 bg-gray-100 p-3 dark:bg-dark-900">
+              <div class="min-w-0 bg-canvas p-3">
                 <iframe
-                  class="h-[36rem] w-full min-w-0 max-w-full rounded-md border border-gray-200 bg-white dark:border-dark-700"
+                  class="h-[36rem] w-full min-w-0 max-w-full rounded-control border border-outline bg-white"
                   sandbox=""
                   :srcdoc="previewHtml"
                   :title="t('admin.settings.emailTemplates.livePreview')"
@@ -255,7 +255,7 @@
               </div>
             </div>
 
-            <p class="text-xs text-gray-500 dark:text-gray-400">
+            <p class="text-xs text-foreground-subtle">
               {{ t("admin.settings.emailTemplates.previewSecurityHint") }}
             </p>
           </div>

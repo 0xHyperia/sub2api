@@ -1348,13 +1348,19 @@ onUnmounted(() => {
 .usa-home[data-theme="dark"] .sun { opacity: 0; transform: scale(.6) rotate(30deg); }
 
 .usa-home .primary-link {
-  min-height: 44px;
-  padding: 9px 15px;
+  display: inline-flex;
+  height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
   border-radius: 999px;
   background: var(--foreground);
   color: var(--background);
   font-size: 14px;
   font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .hero {

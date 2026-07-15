@@ -2,20 +2,20 @@
   <BaseDialog :show="show" :title="t('admin.users.replaceGroupTitle')" width="narrow" @close="$emit('close')">
     <div v-if="oldGroup" class="space-y-4">
       <!-- 提示信息 -->
-      <p class="text-sm text-gray-600 dark:text-gray-400">
+      <p class="text-sm text-foreground-subtle">
         {{ t('admin.users.replaceGroupHint', { old: oldGroup.name }) }}
       </p>
 
       <!-- 当前分组 -->
-      <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-dark-600 dark:bg-dark-800">
+      <div class="rounded-panel border p-3 border-outline-strong bg-surface">
         <div class="flex items-center gap-2">
-          <Icon name="shield" size="sm" class="text-purple-500" />
-          <span class="font-medium text-gray-900 dark:text-white">{{ oldGroup.name }}</span>
-          <Icon name="arrowRight" size="sm" class="ml-auto text-gray-400" />
-          <span v-if="selectedGroupId" class="font-medium text-primary-600 dark:text-primary-400">
+          <Icon name="shield" size="sm" class="text-brand" />
+          <span class="font-medium text-foreground">{{ oldGroup.name }}</span>
+          <Icon name="arrowRight" size="sm" class="ml-auto text-foreground-subtle" />
+          <span v-if="selectedGroupId" class="font-medium text-brand">
             {{ availableGroups.find(g => g.id === selectedGroupId)?.name }}
           </span>
-          <span v-else class="text-sm text-gray-400">?</span>
+          <span v-else class="text-sm text-foreground-subtle">?</span>
         </div>
       </div>
 
@@ -24,10 +24,10 @@
         <label
           v-for="group in availableGroups"
           :key="group.id"
-          class="flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3 transition-all"
+          class="flex cursor-pointer items-center gap-3 rounded-panel border-2 p-3 transition-all"
           :class="selectedGroupId === group.id
-            ? 'border-primary-400 bg-primary-50/50 dark:border-primary-500 dark:bg-primary-900/20'
-            : 'border-gray-200 hover:border-gray-300 dark:border-dark-600 dark:hover:border-dark-500'"
+            ? 'border-brand bg-brand-subtle'
+            : 'border-outline hover:border-outline-strong'"
         >
           <input
             type="radio"
@@ -38,20 +38,20 @@
           <div
             class="flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all"
             :class="selectedGroupId === group.id
-              ? 'border-primary-500 bg-primary-500'
-              : 'border-gray-300 dark:border-dark-500'"
+              ? 'border-brand bg-brand'
+              : 'border-outline-strong'"
           >
             <div v-if="selectedGroupId === group.id" class="h-2 w-2 rounded-full bg-white"></div>
           </div>
           <div class="flex-1">
-            <span class="font-medium text-gray-900 dark:text-white">{{ group.name }}</span>
-            <span class="ml-2 text-xs text-gray-400">{{ group.platform }}</span>
+            <span class="font-medium text-foreground">{{ group.name }}</span>
+            <span class="ml-2 text-xs text-foreground-subtle">{{ group.platform }}</span>
           </div>
         </label>
       </div>
 
       <!-- 无可选分组 -->
-      <div v-else class="py-6 text-center text-sm text-gray-400">
+      <div v-else class="py-6 text-center text-sm text-foreground-subtle">
         {{ t('admin.users.noOtherGroups') }}
       </div>
     </div>

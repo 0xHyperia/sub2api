@@ -177,7 +177,7 @@
                   class="flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
                 >
                   <span>{{ col.label }}</span>
-                  <Icon v-if="isCurrentColumnVisible(col.key)" name="check" size="sm" class="text-primary-500" />
+                  <Icon v-if="isCurrentColumnVisible(col.key)" name="check" size="sm" class="text-brand" />
                 </button>
               </div>
             </div>
@@ -460,6 +460,7 @@ const billingModeOptions = computed<SelectOption[]>(() => [
   { value: 'token', label: t('admin.usage.billingModeToken') },
   { value: 'per_request', label: t('admin.usage.billingModePerRequest') },
   { value: 'image', label: t('admin.usage.billingModeImage') },
+  { value: 'video', label: t('admin.usage.billingModeVideo') },
 ])
 
 const apiKeys = ref<ApiKey[]>([])
@@ -779,8 +780,7 @@ const allColumns = computed<Column[]>(() => [
   { key: 'billing_mode', label: t('admin.usage.billingMode'), sortable: false },
   { key: 'tokens', label: t('usage.tokens'), sortable: false },
   { key: 'cost', label: t('usage.cost'), sortable: false },
-  { key: 'first_token', label: t('usage.firstToken'), sortable: false },
-  { key: 'duration', label: t('usage.duration'), sortable: false },
+  { key: 'latency', label: t('usage.latency'), sortable: false },
   { key: 'created_at', label: t('usage.time'), sortable: true },
   { key: 'user_agent', label: t('usage.userAgent'), sortable: false },
 ])

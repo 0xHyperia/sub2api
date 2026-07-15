@@ -9,7 +9,7 @@
               <Icon
                 name="search"
                 size="md"
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
               />
               <input
                 v-model="searchQuery"
@@ -103,7 +103,7 @@
       <template #table>
         <div ref="proxyTableRef" class="flex min-h-0 flex-1 flex-col overflow-visible lg:overflow-hidden">
         <div v-if="selectedCount > 0" class="resource-selection-bar">
-          <span class="text-sm font-medium text-gray-800 dark:text-gray-100">
+          <span class="text-sm font-medium text-foreground">
             {{ t('common.selectedCount', { count: selectedCount }) }}
           </span>
           <div class="flex items-center gap-2">
@@ -136,7 +136,7 @@
           <template #header-select>
             <input
               type="checkbox"
-              class="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="h-4 w-4 cursor-pointer rounded border-outline-strong text-brand focus:ring-focus"
               :checked="allVisibleSelected"
               @click.stop
               @change="toggleSelectAllVisible($event)"
@@ -146,7 +146,7 @@
           <template #cell-select="{ row }">
             <input
               type="checkbox"
-              class="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="h-4 w-4 cursor-pointer rounded border-outline-strong text-brand focus:ring-focus"
               :checked="selectedProxyIds.has(row.id)"
               @click.stop
               @change="toggleSelectRow(row.id, $event)"
@@ -154,7 +154,7 @@
           </template>
 
           <template #cell-name="{ value }">
-            <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
+            <span class="font-medium text-foreground">{{ value }}</span>
           </template>
 
           <template #cell-protocol="{ value }">
@@ -164,7 +164,7 @@
             >
               {{ value.toUpperCase() }}
             </span>
-            <span v-else class="text-sm text-gray-400">-</span>
+            <span v-else class="text-sm text-foreground-subtle">-</span>
           </template>
 
           <template #cell-address="{ row }">
@@ -174,7 +174,7 @@
                 <button
                   :id="getCopyMenuTriggerId(row.id)"
                   type="button"
-                  class="rounded p-0.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
+                  class="rounded p-0.5 text-foreground-subtle hover:text-brand"
                   :title="t('admin.proxies.copyProxyUrl')"
                   :aria-label="t('admin.proxies.copyProxyUrl')"
                   aria-haspopup="menu"
@@ -201,10 +201,10 @@
                     :key="fmt.label"
                     type="button"
                     role="menuitem"
-                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-dark-600"
+                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-surface-subtle"
                     @click.stop="copyFormat(fmt.value)"
                   >
-                    <span class="truncate font-mono text-gray-600 dark:text-gray-300">{{ fmt.label }}</span>
+                    <span class="truncate font-mono text-foreground-muted">{{ fmt.label }}</span>
                   </button>
                 </div>
               </div>
@@ -214,15 +214,15 @@
           <template #cell-auth="{ row }">
             <div v-if="row.username || row.password" class="flex items-center gap-1.5">
               <div class="flex flex-col text-xs">
-                <span v-if="row.username" class="text-gray-700 dark:text-gray-200">{{ row.username }}</span>
-                <span v-if="row.password" class="font-mono text-gray-500 dark:text-gray-400">
+                <span v-if="row.username" class="text-foreground-muted">{{ row.username }}</span>
+                <span v-if="row.password" class="font-mono text-foreground-subtle">
                   {{ visiblePasswordIds.has(row.id) ? row.password : '••••••' }}
                 </span>
               </div>
               <button
                 v-if="row.password"
                 type="button"
-                class="ml-1 rounded p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                class="ml-1 rounded p-0.5 text-foreground-subtle hover:text-foreground-muted"
                 :aria-label="t('admin.proxies.password')"
                 :aria-pressed="visiblePasswordIds.has(row.id)"
                 @click.stop="visiblePasswordIds.has(row.id) ? visiblePasswordIds.delete(row.id) : visiblePasswordIds.add(row.id)"
@@ -230,7 +230,7 @@
                 <Icon :name="visiblePasswordIds.has(row.id) ? 'eyeOff' : 'eye'" size="sm" />
               </button>
             </div>
-            <span v-else class="text-sm text-gray-400">-</span>
+            <span v-else class="text-sm text-foreground-subtle">-</span>
           </template>
 
           <template #cell-location="{ row }">
@@ -241,10 +241,10 @@
                 :alt="row.country || row.country_code"
                 class="h-4 w-6 rounded-sm"
               />
-              <span v-if="formatLocation(row)" class="text-sm text-gray-700 dark:text-gray-200">
+              <span v-if="formatLocation(row)" class="text-sm text-foreground-muted">
                 {{ formatLocation(row) }}
               </span>
-              <span v-else class="text-sm text-gray-400">-</span>
+              <span v-else class="text-sm text-foreground-subtle">-</span>
             </div>
           </template>
 
@@ -252,14 +252,14 @@
             <button
               v-if="(value || 0) > 0"
               type="button"
-              class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-primary-700 hover:bg-gray-200 dark:bg-dark-600 dark:text-primary-300 dark:hover:bg-dark-500"
+              class="inline-flex items-center rounded-control bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand hover:bg-surface-subtle"
               @click="openAccountsModal(row)"
             >
               {{ t('admin.groups.accountsCount', { count: value || 0 }) }}
             </button>
             <span
               v-else
-              class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-dark-600 dark:text-gray-300"
+              class="inline-flex items-center rounded bg-surface-subtle px-2 py-0.5 text-xs font-medium bg-outline text-foreground-muted"
             >
               {{ t('admin.groups.accountsCount', { count: 0 }) }}
             </span>
@@ -280,10 +280,10 @@
               >
                 {{ row.latency_ms }}ms
               </span>
-              <span v-else class="text-sm text-gray-400">-</span>
+              <span v-else class="text-sm text-foreground-subtle">-</span>
               <div
                 v-if="typeof row.quality_checked === 'number'"
-                class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+                class="flex items-center gap-1 text-xs text-foreground-subtle"
                 :title="row.quality_summary || undefined"
               >
                 <span>{{ t('admin.proxies.qualityInline', { grade: row.quality_grade || '-', score: row.quality_score ?? '-' }) }}</span>
@@ -295,15 +295,15 @@
           </template>
 
           <template #cell-expiry="{ row }">
-            <span v-if="!row.expires_at" class="text-sm text-gray-400">{{ t('admin.proxies.neverExpires') }}</span>
+            <span v-if="!row.expires_at" class="text-sm text-foreground-subtle">{{ t('admin.proxies.neverExpires') }}</span>
             <div v-else class="flex flex-col text-xs">
-              <span class="text-gray-700 dark:text-gray-200">{{ formatDateTime(row.expires_at) }}</span>
+              <span class="text-foreground-muted">{{ formatDateTime(row.expires_at) }}</span>
               <span :class="expiryBadgeClass(row)">{{ expiryLabel(row) }}</span>
             </div>
           </template>
 
           <template #cell-created_at="{ row }">
-            <span class="text-xs text-gray-600 dark:text-gray-300">{{ formatDateTime(row.created_at) }}</span>
+            <span class="text-xs text-foreground-muted">{{ formatDateTime(row.created_at) }}</span>
           </template>
 
           <template #cell-status="{ value }">
@@ -433,7 +433,7 @@
     >
       <!-- Tab Switch -->
       <div
-        class="mb-6 flex items-center justify-between gap-3 border-b border-gray-200 dark:border-dark-600"
+        class="mb-6 flex items-center justify-between gap-3 border-b border-outline"
       >
         <div class="flex min-w-0 shrink-0">
           <button
@@ -442,8 +442,8 @@
             :class="[
               '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
               createMode === 'standard'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                ? 'border-brand text-brand'
+                : 'border-transparent text-foreground-subtle hover:text-foreground'
             ]"
           >
             <Icon name="plus" size="sm" class="mr-1.5 inline" />
@@ -455,8 +455,8 @@
             :class="[
               '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
               createMode === 'batch'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                ? 'border-brand text-brand'
+                : 'border-transparent text-foreground-subtle hover:text-foreground'
             ]"
           >
             <svg
@@ -543,7 +543,7 @@
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle hover:text-foreground-muted"
               :aria-label="t('admin.proxies.password')"
               :aria-pressed="createPasswordVisible"
               @click="createPasswordVisible = !createPasswordVisible"
@@ -607,11 +607,11 @@
         </div>
 
         <!-- Parse Result -->
-        <div v-if="batchParseResult.total > 0" class="rounded-lg bg-gray-50 p-4 dark:bg-dark-700">
+        <div v-if="batchParseResult.total > 0" class="rounded-panel bg-surface-subtle p-4">
             <div class="flex items-center gap-4 text-sm">
               <div class="flex items-center gap-1.5">
-              <Icon name="checkCircle" size="sm" :stroke-width="2" class="text-primary-500" />
-              <span class="text-gray-700 dark:text-gray-300">
+              <Icon name="checkCircle" size="sm" :stroke-width="2" class="text-brand" />
+              <span class="text-foreground-muted">
                 {{ t('admin.proxies.parsedCount', { count: batchParseResult.valid }) }}
               </span>
             </div>
@@ -620,15 +620,15 @@
                 name="exclamationCircle"
                 size="sm"
                 :stroke-width="2"
-                class="text-amber-500"
+                class="text-warning-foreground"
               />
-              <span class="text-amber-600 dark:text-amber-400">
+              <span class="text-warning-foreground">
                 {{ t('admin.proxies.invalidCount', { count: batchParseResult.invalid }) }}
               </span>
             </div>
             <div v-if="batchParseResult.duplicate > 0" class="flex items-center gap-1.5">
               <svg
-                class="h-4 w-4 text-gray-400"
+                class="h-4 w-4 text-foreground-subtle"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -640,7 +640,7 @@
                   d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"
                 />
               </svg>
-              <span class="text-gray-500 dark:text-gray-400">
+              <span class="text-foreground-subtle">
                 {{ t('admin.proxies.duplicateCount', { count: batchParseResult.duplicate }) }}
               </span>
             </div>
@@ -774,7 +774,7 @@
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle hover:text-foreground-muted"
               :aria-label="t('admin.proxies.password')"
               :aria-pressed="editPasswordVisible"
               @click="editPasswordVisible = !editPasswordVisible"
@@ -909,26 +909,26 @@
       @close="closeQualityReportDialog"
     >
       <div v-if="qualityReport" class="space-y-4">
-        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-700">
+        <div class="rounded-panel border border-outline bg-surface-subtle p-4">
           <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div>
-              <div class="text-sm text-gray-500 dark:text-gray-400">
+              <div class="text-sm text-foreground-subtle">
                 {{ qualityReportProxy?.name || '-' }}
               </div>
-              <div class="mt-1 text-sm text-gray-700 dark:text-gray-200">
+              <div class="mt-1 text-sm text-foreground-muted">
                 {{ qualityReport.summary }}
               </div>
             </div>
             <div class="text-left sm:text-right">
-              <div class="text-2xl font-semibold text-gray-900 dark:text-white">
+              <div class="text-2xl font-semibold text-foreground">
                 {{ qualityReport.score }}
               </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">
+              <div class="text-xs text-foreground-subtle">
                 {{ t('admin.proxies.qualityGrade', { grade: qualityReport.grade }) }}
               </div>
             </div>
           </div>
-          <div class="mt-3 grid grid-cols-1 gap-2 text-xs text-gray-600 sm:grid-cols-2 dark:text-gray-300">
+          <div class="mt-3 grid grid-cols-1 gap-2 text-xs text-foreground-muted sm:grid-cols-2">
             <div>{{ t('admin.proxies.qualityExitIP') }}: {{ qualityReport.exit_ip || '-' }}</div>
             <div>{{ t('admin.proxies.qualityCountry') }}: {{ qualityReport.country || '-' }}</div>
             <div>
@@ -939,9 +939,9 @@
           </div>
         </div>
 
-        <div class="max-h-80 overflow-auto rounded-lg border border-gray-200 dark:border-dark-600">
-          <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
-            <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-dark-800 dark:text-dark-400">
+        <div class="max-h-80 overflow-auto rounded-panel border border-outline">
+          <table class="min-w-full divide-y divide-outline text-sm">
+            <thead class="text-xs uppercase bg-surface text-foreground-muted">
               <tr>
                 <th class="px-3 py-2 text-left">{{ t('admin.proxies.qualityTableTarget') }}</th>
                 <th class="px-3 py-2 text-left">{{ t('admin.proxies.qualityTableStatus') }}</th>
@@ -950,19 +950,19 @@
                 <th class="px-3 py-2 text-left">{{ t('admin.proxies.qualityTableMessage') }}</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
+            <tbody class="divide-y divide-outline bg-canvas">
               <tr v-for="item in qualityReport.items" :key="item.target">
-                <td class="px-3 py-2 text-gray-900 dark:text-white">{{ qualityTargetLabel(item.target) }}</td>
+                <td class="px-3 py-2 text-foreground">{{ qualityTargetLabel(item.target) }}</td>
                 <td class="px-3 py-2">
                   <span class="badge" :class="qualityStatusClass(item.status)">{{ qualityStatusLabel(item.status) }}</span>
                 </td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ item.http_status ?? '-' }}</td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-300">
+                <td class="px-3 py-2 text-foreground-muted">{{ item.http_status ?? '-' }}</td>
+                <td class="px-3 py-2 text-foreground-muted">
                   {{ typeof item.latency_ms === 'number' ? `${item.latency_ms}ms` : '-' }}
                 </td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-300">
+                <td class="px-3 py-2 text-foreground-muted">
                   <span>{{ item.message || '-' }}</span>
-                  <span v-if="item.cf_ray" class="ml-1 text-xs text-gray-400">(cf-ray: {{ item.cf_ray }})</span>
+                  <span v-if="item.cf_ray" class="ml-1 text-xs text-foreground-subtle">(cf-ray: {{ item.cf_ray }})</span>
                 </td>
               </tr>
             </tbody>
@@ -985,29 +985,29 @@
       width="normal"
       @close="closeAccountsModal"
     >
-      <div v-if="accountsLoading" class="flex items-center justify-center py-8 text-sm text-gray-500">
+      <div v-if="accountsLoading" class="flex items-center justify-center py-8 text-sm text-foreground-subtle">
         <Icon name="refresh" size="md" class="mr-2 animate-spin" />
         {{ t('common.loading') }}
       </div>
-      <div v-else-if="proxyAccounts.length === 0" class="py-6 text-center text-sm text-gray-500">
+      <div v-else-if="proxyAccounts.length === 0" class="py-6 text-center text-sm text-foreground-subtle">
         {{ t('admin.proxies.accountsEmpty') }}
       </div>
       <div v-else class="max-h-80 overflow-auto">
-        <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
-          <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-dark-800 dark:text-dark-400">
+        <table class="min-w-full divide-y divide-outline text-sm">
+          <thead class="text-xs uppercase bg-surface text-foreground-muted">
             <tr>
               <th class="px-4 py-2 text-left">{{ t('admin.proxies.accountName') }}</th>
               <th class="px-4 py-2 text-left">{{ t('admin.accounts.columns.platformType') }}</th>
               <th class="px-4 py-2 text-left">{{ t('admin.proxies.accountNotes') }}</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
+          <tbody class="divide-y divide-outline bg-canvas">
             <tr v-for="account in proxyAccounts" :key="account.id">
-              <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ account.name }}</td>
+              <td class="px-4 py-2 font-medium text-foreground">{{ account.name }}</td>
               <td class="px-4 py-2">
                 <PlatformTypeBadge :platform="account.platform" :type="account.type" />
               </td>
-              <td class="px-4 py-2 text-gray-600 dark:text-gray-300">
+              <td class="px-4 py-2 text-foreground-muted">
                 {{ account.notes || '-' }}
               </td>
             </tr>
@@ -2207,7 +2207,7 @@ onUnmounted(() => {
   border: 1px solid var(--ui-border, #dbe3ee);
   border-radius: 8px;
   background: var(--ui-surface-raised, #fff);
-  box-shadow: var(--ui-shadow-lg, 0 14px 34px rgba(15, 23, 42, 0.14));
+  box-shadow: var(--ui-shadow-floating, 0 14px 34px rgba(15, 23, 42, 0.14));
 }
 
 .resource-menu > button {

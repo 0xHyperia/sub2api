@@ -18,9 +18,9 @@
         <DataTable :columns="columns" :data="monitors" :loading="loading">
           <template #cell-name="{ row, value }">
             <div class="flex items-center gap-1.5">
-              <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
+              <span class="font-medium text-foreground">{{ value }}</span>
               <HelpTooltip v-if="row.api_key_decrypt_failed" :content="t('admin.channelMonitor.apiKeyDecryptFailed')">
-                <Icon name="exclamationTriangle" size="sm" class="text-red-500" />
+                <Icon name="exclamationTriangle" size="sm" class="text-danger-foreground" />
               </HelpTooltip>
             </div>
           </template>

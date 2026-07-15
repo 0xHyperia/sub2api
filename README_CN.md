@@ -16,6 +16,11 @@
 
 </div>
 
+## USA0 维护分支
+
+本仓库是 Sub2API 的 USA0 维护版本。`v1.0.6` 版本线已同步官方 Sub2API `v0.1.155`，同时保留新版首页、认证页与后台 UI、ZeroBox 应用授权，以及链动小铺卡密购买和自动兑换流程。
+
+USA0 使用独立的 `v1.x` 发布标签；对应的官方基线和合并状态记录在 [UPSTREAM.md](UPSTREAM.md)。
 
 ## ⚠️ 重要提醒
 
@@ -31,6 +36,11 @@
 > [想出现在这里？](mailto:support@sub2api.org)
 
 <table>
+
+<tr>
+<td width="180"><a href="https://cctk.ai/register?aff=SUB2API"><img src="assets/partners/logos/cctk.jpg" alt="CCTK.AI" width="150"></a></td>
+<td>感谢 CCTK.AI 赞助了本项目！<a href="https://cctk.ai/register?aff=SUB2API">CCTK.AI</a> 是一个专注于稳定与性价比的 AI API 网关平台，提供 Claude、OpenAI、Gemini 等主流模型的高速中转服务，无缝兼容 Claude Code、Codex 等主流编程工具，以远低于官方的成本获得同等的模型能力。点击<a href="https://cctk.ai/register?aff=SUB2API">此链接</a>注册，即刻体验更快、更稳、更省的 AI API 接入。</td>
+</tr>
 
 <tr>
 <td width="180"><a href="https://www.openmodel.ai?ref=sub2api"><img src="assets/partners/logos/openmodel.jpg" alt="openmodel" width="150"></a></td>
@@ -328,6 +338,7 @@ cd sub2api/deploy
 
 # 2. 复制环境配置文件
 cp .env.example .env
+chmod 600 .env
 
 # 3. 编辑配置（生成安全密码）
 nano .env
@@ -459,7 +470,23 @@ rm -rf data/ postgres_data/ redis_data/
 
 ---
 
-### 方式三：源码编译
+### 方式三：Apple container（macOS）
+
+Apple 芯片 Mac 在 macOS 26 上可使用 Apple `container` 1.1.0 或更高版本运行完整的 Sub2API、PostgreSQL 和 Redis：
+
+```bash
+git clone https://github.com/Wei-Shaw/sub2api.git
+cd sub2api/deploy
+./apple-container.sh init
+./apple-container.sh up
+./apple-container.sh status
+```
+
+该方式面向本地开发和人工运维，不提供持续重启监管；生产部署仍推荐 Docker Compose。生命周期命令、持久化、升级和运行时限制见 [deploy/APPLE_CONTAINER.md](deploy/APPLE_CONTAINER.md)。
+
+---
+
+### 方式四：源码编译
 
 从源码编译安装，适合开发或定制需求。
 

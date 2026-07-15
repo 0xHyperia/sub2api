@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center gap-1.5">
       <button
         type="button"
-        class="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium text-cyan-700 transition-colors hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-cyan-300 dark:hover:bg-cyan-900/30"
+        class="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 text-info-foreground hover:bg-info-subtle/30"
         :disabled="loading"
         :title="t('admin.accounts.usageWindow.grokProbeTooltip')"
         @click="handleProbe"
@@ -27,7 +27,7 @@
 
       <button
         type="button"
-        class="inline-flex cursor-not-allowed items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium text-gray-400 opacity-70 dark:text-gray-500"
+        class="inline-flex cursor-not-allowed items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground-subtle opacity-70"
         disabled
         :title="t('admin.accounts.usageWindow.grokResetUnsupportedTooltip')"
       >
@@ -35,10 +35,10 @@
       </button>
     </div>
 
-    <div v-if="summary" class="text-[10px] text-gray-600 dark:text-gray-300">
+    <div v-if="summary" class="text-[10px] text-foreground-muted">
       {{ summary }}
     </div>
-    <div v-if="error" class="truncate text-[10px] text-red-600 dark:text-red-400" :title="error">
+    <div v-if="error" class="truncate text-[10px] text-danger-foreground" :title="error">
       {{ truncatedError }}
     </div>
   </div>
@@ -54,6 +54,8 @@ import type { Account } from '@/types'
 const props = defineProps<{
   account: Account
 }>()
+
+const emit = defineEmits<{ probed: [result: GrokQuotaProbeResult] }>()
 
 const { t } = useI18n()
 
@@ -92,18 +94,27 @@ const retryAfterLabel = computed(() => {
 const summary = computed(() => {
   const snapshot = data.value?.snapshot
   if (!data.value) return ''
-  if (!snapshot) return t('admin.accounts.usageWindow.grokNoHeaders')
-  const parts = [
-    formatWindow(t('admin.accounts.usageWindow.grokRequests'), snapshot.requests),
-    formatWindow(t('admin.accounts.usageWindow.grokTokens'), snapshot.tokens)
-  ].filter(Boolean)
+  const billing = data.value.billing
+  const parts: Array<string | null> = []
+  if (billing?.period_type?.toLowerCase() === 'weekly' && billing.usage_percent != null) {
+    parts.push(t('admin.accounts.usageWindow.grokWeeklyUsage', {
+      percent: Math.round(Math.min(100, Math.max(0, billing.usage_percent)))
+    }))
+  }
+  if (snapshot) {
+    parts.push(
+      formatWindow(t('admin.accounts.usageWindow.grokRequests'), snapshot.requests),
+      formatWindow(t('admin.accounts.usageWindow.grokTokens'), snapshot.tokens)
+    )
+  }
   if (retryAfterLabel.value) {
     parts.push(t('admin.accounts.usageWindow.grokRetryAfter', { time: retryAfterLabel.value }))
   }
-  if (snapshot.entitlement_status) {
+  if (snapshot?.entitlement_status) {
     parts.push(snapshot.entitlement_status)
   }
-  return parts.length > 0 ? parts.join(' | ') : t('admin.accounts.usageWindow.grokNoHeaders')
+  const visibleParts = parts.filter((part): part is string => Boolean(part))
+  return visibleParts.length > 0 ? visibleParts.join(' | ') : t('admin.accounts.usageWindow.grokNoHeaders')
 })
 
 const truncatedError = computed(() => {
@@ -117,6 +128,8 @@ const handleProbe = async () => {
   error.value = null
   try {
     data.value = await adminAPI.grok.queryQuota(props.account.id)
+    error.value = data.value.probe_error || null
+    emit('probed', data.value)
   } catch (e) {
     error.value = extractErrorMessage(e)
   } finally {

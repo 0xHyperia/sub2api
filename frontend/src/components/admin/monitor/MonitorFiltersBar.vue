@@ -6,7 +6,7 @@
         <Icon
           name="search"
           size="md"
-          class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
         />
         <input
           v-model="search"
@@ -70,6 +70,7 @@ import {
   PROVIDER_OPENAI,
   PROVIDER_ANTHROPIC,
   PROVIDER_GEMINI,
+  PROVIDER_GROK,
 } from '@/constants/channelMonitor'
 
 defineProps<{
@@ -94,6 +95,7 @@ const providerFilterOptions = computed(() => [
   { value: PROVIDER_OPENAI, label: t('monitorCommon.providers.openai') },
   { value: PROVIDER_ANTHROPIC, label: t('monitorCommon.providers.anthropic') },
   { value: PROVIDER_GEMINI, label: t('monitorCommon.providers.gemini') },
+  { value: PROVIDER_GROK, label: t('monitorCommon.providers.grok') },
 ])
 
 const enabledFilterOptions = computed(() => [

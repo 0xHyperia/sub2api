@@ -14,6 +14,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	paymentprovider "github.com/Wei-Shaw/sub2api/internal/payment/provider"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/servertiming"
 )
 
 // --- Cancel & Expire ---
@@ -200,12 +201,17 @@ func (s *PaymentService) checkPaidWithOptions(ctx context.Context, o *dbent.Paym
 		return ""
 	}
 	if cp, ok := prov.(payment.CancelableProvider); ok {
+		finishProviderCall := servertiming.ObserveDependency(ctx, "payment")
 		_ = cp.CancelPayment(ctx, queryRef)
+		finishProviderCall()
 	}
 	return ""
 }
 
 func (s *PaymentService) queryProviderOrder(ctx context.Context, order *dbent.PaymentOrder, prov payment.Provider, queryRef string) (*payment.QueryOrderResponse, error) {
+	finishProviderCall := servertiming.ObserveDependency(ctx, "payment")
+	defer finishProviderCall()
+
 	if ldxp, ok := prov.(*paymentprovider.Ldxp); ok && order != nil && order.OrderType == payment.OrderTypeCard {
 		info, err := ldxp.GetOrderInfoWithCards(ctx, queryRef, ldxpOrderQueryPassword(order))
 		if err != nil {

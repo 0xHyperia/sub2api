@@ -81,132 +81,134 @@
       </section>
 
       <section class="usage-records" aria-labelledby="usage-records-title">
-      <UsageFilters v-model="filters" :mode="activeTab === 'errors' ? 'errors' : 'usage'" :start-date="startDate" :end-date="endDate" :exporting="exporting" :model-options="modelNameOptions" @change="applyFilters" @refresh="refreshData" @reset="resetFilters" @cleanup="openCleanupDialog" @export="exportToExcel">
-        <template #after-reset>
-          <div class="relative" ref="columnDropdownRootRef">
+        <div class="usage-records-header">
+          <h2 id="usage-records-title" class="sr-only">{{ t('admin.usage.title') }}</h2>
+          <div class="usage-tabs" role="tablist" :aria-label="t('admin.usage.title')">
             <button
-              :id="columnMenuTriggerId"
-              ref="columnMenuTriggerRef"
+              v-for="tab in detailTabs"
+              :id="`${tab.key}-tab`"
+              :key="tab.key"
               type="button"
-              @click="toggleColumnMenu"
-              @keydown="handleColumnTriggerKeydown"
-              class="btn btn-secondary px-2 md:px-3"
-              :title="t('admin.users.columnSettings')"
-              :aria-label="t('admin.users.columnSettings')"
-              :aria-expanded="showColumnDropdown"
-              :aria-controls="showColumnDropdown ? columnMenuId : undefined"
-              aria-haspopup="menu"
+              role="tab"
+              data-testid="usage-detail-tab"
+              class="usage-tab"
+              :class="{ 'usage-tab-active': activeTab === tab.key }"
+              :aria-selected="activeTab === tab.key"
+              :aria-controls="`${tab.key}-panel`"
+              :tabindex="activeTab === tab.key ? 0 : -1"
+              @click="switchTab(tab.key)"
+              @keydown="handleUsageTabKeydown($event, tab.key)"
             >
-              <svg class="h-4 w-4 md:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" />
-              </svg>
-              <span class="hidden md:inline">{{ t('admin.users.columnSettings') }}</span>
+              <Icon :name="tab.icon" size="sm" />
+              {{ tab.label }}
             </button>
-            <div
-              v-if="showColumnDropdown"
-              :id="columnMenuId"
-              ref="columnMenuRef"
-              role="menu"
-              :aria-labelledby="columnMenuTriggerId"
-              class="absolute right-0 top-full z-50 mt-1 max-h-80 w-52 overflow-y-auto rounded-panel border border-outline bg-surface py-1 shadow-floating"
-              @keydown="handleColumnMenuKeydown"
-            >
-              <button
-                v-for="col in currentToggleableColumns"
-                :key="col.key"
-                type="button"
-                role="menuitemcheckbox"
-                tabindex="-1"
-                :aria-checked="isCurrentColumnVisible(col.key)"
-                @click="toggleCurrentColumn(col.key)"
-                class="flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
-              >
-                <span>{{ col.label }}</span>
-                <Icon
-                  v-if="isCurrentColumnVisible(col.key)"
-                  name="check"
-                  size="sm"
-                  class="text-foreground"
-                  :stroke-width="2"
-                />
-              </button>
-            </div>
           </div>
-        </template>
-      </UsageFilters>
-      <div class="usage-records-header">
-        <h2 id="usage-records-title" class="sr-only">{{ t('admin.usage.title') }}</h2>
-        <div class="usage-tabs" role="tablist" :aria-label="t('admin.usage.title')">
-        <button
-          id="usage-tab"
-          type="button"
-          role="tab"
-          class="usage-tab"
-          :class="{ 'usage-tab-active': activeTab === 'usage' }"
-          :aria-selected="activeTab === 'usage'"
-          :tabindex="activeTab === 'usage' ? 0 : -1"
-          aria-controls="usage-panel"
-          @click="activeTab = 'usage'"
-          @keydown="handleUsageTabKeydown($event, 'usage')"
-        >
-          {{ t('usage.tabs.usage') }}
-        </button>
-        <button
-          id="errors-tab"
-          type="button"
-          role="tab"
-          class="usage-tab"
-          :class="{ 'usage-tab-active': activeTab === 'errors' }"
-          :aria-selected="activeTab === 'errors'"
-          :tabindex="activeTab === 'errors' ? 0 : -1"
-          aria-controls="errors-panel"
-          @click="switchToErrorsTab"
-          @keydown="handleUsageTabKeydown($event, 'errors')"
-        >
-          {{ t('usage.tabs.errors') }}
-        </button>
         </div>
-      </div>
-      <div id="usage-panel" v-show="activeTab === 'usage'" role="tabpanel" aria-labelledby="usage-tab" class="usage-table-panel">
-        <div
-          v-if="logsLoadFailed"
-          class="m-3 flex flex-col gap-3 rounded-panel border border-danger/30 bg-danger-subtle p-3 text-danger-foreground sm:flex-row sm:items-center sm:justify-between"
-          role="alert"
-          data-test="usage-logs-error"
-        >
-          <span class="text-sm font-medium">{{ t('usage.failedToLoad') }}</span>
-          <button type="button" class="btn btn-secondary btn-sm" :disabled="loading" @click="loadLogs">
-            <Icon name="refresh" size="sm" :class="{ 'animate-spin': loading }" />
-            {{ t('common.retry') }}
-          </button>
+
+        <UsageFilters ref="usageFiltersRef" v-model="filters" :mode="activeTab" :start-date="startDate" :end-date="endDate" :exporting="exporting" :model-options="modelNameOptions" @change="applyFilters" @refresh="refreshData" @reset="resetFilters" @cleanup="openCleanupDialog" @export="exportToExcel">
+          <template #after-reset>
+            <div v-if="activeTab !== 'ranking'" ref="columnDropdownRootRef" class="relative">
+              <button
+                :id="columnMenuTriggerId"
+                ref="columnMenuTriggerRef"
+                type="button"
+                class="btn btn-secondary px-2 md:px-3"
+                :title="t('admin.users.columnSettings')"
+                :aria-label="t('admin.users.columnSettings')"
+                :aria-expanded="showColumnDropdown"
+                :aria-controls="showColumnDropdown ? columnMenuId : undefined"
+                aria-haspopup="menu"
+                @click="toggleColumnMenu"
+                @keydown="handleColumnTriggerKeydown"
+              >
+                <svg class="h-4 w-4 md:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" />
+                </svg>
+                <span class="hidden md:inline">{{ t('admin.users.columnSettings') }}</span>
+              </button>
+              <div
+                v-if="showColumnDropdown"
+                :id="columnMenuId"
+                ref="columnMenuRef"
+                role="menu"
+                :aria-labelledby="columnMenuTriggerId"
+                class="absolute right-0 top-full z-50 mt-1 max-h-80 w-52 overflow-y-auto rounded-panel border border-outline bg-surface py-1 shadow-floating"
+                @keydown="handleColumnMenuKeydown"
+              >
+                <button
+                  v-for="col in currentToggleableColumns"
+                  :key="col.key"
+                  type="button"
+                  role="menuitemcheckbox"
+                  tabindex="-1"
+                  :aria-checked="isCurrentColumnVisible(col.key)"
+                  @click="toggleCurrentColumn(col.key)"
+                  class="flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
+                >
+                  <span>{{ col.label }}</span>
+                  <Icon
+                    v-if="isCurrentColumnVisible(col.key)"
+                    name="check"
+                    size="sm"
+                    class="text-foreground"
+                    :stroke-width="2"
+                  />
+                </button>
+              </div>
+            </div>
+          </template>
+        </UsageFilters>
+
+        <div id="usage-panel" v-show="activeTab === 'usage'" role="tabpanel" aria-labelledby="usage-tab" class="usage-table-panel">
+          <div
+            v-if="logsLoadFailed"
+            class="m-3 flex flex-col gap-3 rounded-panel border border-danger/30 bg-danger-subtle p-3 text-danger-foreground sm:flex-row sm:items-center sm:justify-between"
+            role="alert"
+            data-test="usage-logs-error"
+          >
+            <span class="text-sm font-medium">{{ t('usage.failedToLoad') }}</span>
+            <button type="button" class="btn btn-secondary btn-sm" :disabled="loading" @click="loadLogs">
+              <Icon name="refresh" size="sm" :class="{ 'animate-spin': loading }" />
+              {{ t('common.retry') }}
+            </button>
+          </div>
+          <UsageTable
+            :data="usageLogs"
+            :loading="loading"
+            :columns="visibleColumns"
+            :server-side-sort="true"
+            :default-sort-key="'created_at'"
+            :default-sort-order="'desc'"
+            @sort="handleSort"
+            @userClick="handleUserClick"
+            @ipGeoBatchFailed="handleIpGeoBatchFailed"
+          />
+          <Pagination v-if="pagination.total > 0" :page="pagination.page" :total="pagination.total" :page-size="pagination.page_size" @update:page="handlePageChange" @update:pageSize="handlePageSizeChange" />
         </div>
-        <UsageTable
-          :data="usageLogs"
-          :loading="loading"
-          :columns="visibleColumns"
-          :server-side-sort="true"
-          :default-sort-key="'created_at'"
-          :default-sort-order="'desc'"
-          @sort="handleSort"
-          @userClick="handleUserClick"
-          @ipGeoBatchFailed="handleIpGeoBatchFailed"
-        />
-        <Pagination v-if="pagination.total > 0" :page="pagination.page" :total="pagination.total" :page-size="pagination.page_size" @update:page="handlePageChange" @update:pageSize="handlePageSizeChange" />
-      </div>
-      <div id="errors-panel" v-show="activeTab === 'errors'" role="tabpanel" aria-labelledby="errors-tab" class="usage-table-panel">
-        <OpsErrorLogTable
-          :rows="errRows" :total="errTotal" :loading="errLoading"
-          :page="errPage" :page-size="errPageSize"
-          :visible-column-keys="errVisibleColumnKeys"
-          user-clickable
-          @userClick="handleUserClick"
-          @openErrorDetail="openError"
-          @sort="onErrSort"
-          @update:page="onErrPage"
-          @update:pageSize="onErrPageSize"
-          @ipGeoBatchFailed="handleIpGeoBatchFailed" />
+        <div id="errors-panel" v-show="activeTab === 'errors'" role="tabpanel" aria-labelledby="errors-tab" class="usage-table-panel">
+          <OpsErrorLogTable
+            :rows="errRows" :total="errTotal" :loading="errLoading"
+            :page="errPage" :page-size="errPageSize"
+            :visible-column-keys="errVisibleColumnKeys"
+            user-clickable
+            @userClick="handleUserClick"
+            @openErrorDetail="openError"
+            @sort="onErrSort"
+            @update:page="onErrPage"
+            @update:pageSize="onErrPageSize"
+            @ipGeoBatchFailed="handleIpGeoBatchFailed" />
+        </div>
+        <div v-if="rankingMounted" v-show="activeTab === 'ranking'" id="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab" class="usage-table-panel">
+          <UserTokenRanking
+            ref="rankingRef"
+            :start-date="startDate"
+            :end-date="endDate"
+            :filters="breakdownFilters"
+            :model="filters.model"
+            @select-user="handleRankingSelectUser"
+          />
+        </div>
         <OpsErrorDetailModal v-model:show="showErrorModal" :error-id="selectedErrorId" :error-type="'request'" />
-      </div>
       </section>
     </div>
   </AppLayout>
@@ -240,6 +242,7 @@ import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import AppLayout from '@/components/layout/AppLayout.vue'; import Pagination from '@/components/common/Pagination.vue'; import Select from '@/components/common/Select.vue'; import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import UsageStatsCards from '@/components/admin/usage/UsageStatsCards.vue'; import UsageFilters from '@/components/admin/usage/UsageFilters.vue'
 import UsageTable from '@/components/admin/usage/UsageTable.vue'; import UsageExportProgress from '@/components/admin/usage/UsageExportProgress.vue'
+import UserTokenRanking from '@/components/admin/usage/UserTokenRanking.vue'
 import UsageCleanupDialog from '@/components/admin/usage/UsageCleanupDialog.vue'
 import UserBalanceHistoryModal from '@/components/admin/user/UserBalanceHistoryModal.vue'
 import OpsErrorLogTable from '@/views/admin/ops/components/OpsErrorLogTable.vue'
@@ -316,6 +319,15 @@ const handleUserClick = async (userId: number) => {
   } catch {
     appStore.showError(t('admin.usage.failedToLoadUser'))
   }
+}
+
+// Drill down from the per-user token ranking: scope the whole usage view to
+// that user and jump to the usage-detail tab so the drill-down is visible.
+const handleRankingSelectUser = (userId: number, email: string) => {
+  filters.value = { ...filters.value, user_id: userId }
+  usageFiltersRef.value?.setUserKeyword?.(email || '')
+  activeTab.value = 'usage'
+  applyFilters()
 }
 
 const granularityOptions = computed(() => [{ value: 'day', label: t('admin.dashboard.day') }, { value: 'hour', label: t('admin.dashboard.hour') }])
@@ -574,6 +586,7 @@ const refreshData = () => {
   loadModelStats(modelDistributionSource.value, true)
   loadChartData()
   if (activeTab.value === 'errors') loadAdminErrors()
+  if (rankingMounted.value) rankingRef.value?.reload()
 }
 const resetFilters = () => {
   const range = getLast24HoursRangeDates()
@@ -679,8 +692,7 @@ const allColumns = computed(() => [
   { key: 'billing_mode', label: t('admin.usage.billingMode'), sortable: false },
   { key: 'tokens', label: t('usage.tokens'), sortable: false },
   { key: 'cost', label: t('usage.cost'), sortable: false },
-  { key: 'first_token', label: t('usage.firstToken'), sortable: false },
-  { key: 'duration', label: t('usage.duration'), sortable: false },
+  { key: 'latency', label: t('usage.latency'), sortable: false },
   { key: 'created_at', label: t('usage.time'), sortable: true },
   { key: 'user_agent', label: t('usage.userAgent'), sortable: false },
   { key: 'ip_address', label: t('admin.usage.ipAddress'), sortable: false }
@@ -800,8 +812,25 @@ const loadSavedColumns = () => {
   }
 }
 
+// Detail tabs
+type DetailTab = 'usage' | 'errors' | 'ranking'
+const activeTab = ref<DetailTab>('usage')
+const detailTabs = computed(() => [
+  { key: 'usage' as const, label: t('usage.tabs.usage'), icon: 'document' as const },
+  { key: 'errors' as const, label: t('usage.tabs.errors'), icon: 'exclamationTriangle' as const },
+  { key: 'ranking' as const, label: t('usage.tabs.ranking'), icon: 'chart' as const },
+])
+const usageFiltersRef = ref<InstanceType<typeof UsageFilters> | null>(null)
+const rankingMounted = ref(false)
+const rankingRef = ref<InstanceType<typeof UserTokenRanking> | null>(null)
+
+const switchTab = (tab: DetailTab) => {
+  activeTab.value = tab
+  if (tab === 'errors' && errRows.value.length === 0) loadAdminErrors()
+  if (tab === 'ranking') rankingMounted.value = true
+}
+
 // Error tab state
-const activeTab = ref<'usage' | 'errors'>('usage')
 const errRows = ref<OpsErrorLog[]>([])
 const errLoading = ref(false)
 const errPage = ref(1)
@@ -855,26 +884,24 @@ const onErrSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
 const onErrPage = (p: number) => { errPage.value = p; loadAdminErrors() }
 const onErrPageSize = (s: number) => { errPageSize.value = s; errPage.value = 1; loadAdminErrors() }
 const openError = (id: number) => { selectedErrorId.value = id; showErrorModal.value = true }
-const switchToErrorsTab = () => { activeTab.value = 'errors'; if (errRows.value.length === 0) loadAdminErrors() }
 
-const activateUsageTab = (tab: 'usage' | 'errors') => {
-  if (tab === 'errors') switchToErrorsTab()
-  else activeTab.value = 'usage'
-}
-
-const handleUsageTabKeydown = (event: KeyboardEvent, current: 'usage' | 'errors') => {
-  let target: 'usage' | 'errors' | null = null
-  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-    target = current === 'usage' ? 'errors' : 'usage'
+const handleUsageTabKeydown = (event: KeyboardEvent, current: DetailTab) => {
+  const keys = detailTabs.value.map(tab => tab.key)
+  const index = keys.indexOf(current)
+  let target: DetailTab | null = null
+  if (event.key === 'ArrowRight') {
+    target = keys[(index + 1) % keys.length]
+  } else if (event.key === 'ArrowLeft') {
+    target = keys[(index - 1 + keys.length) % keys.length]
   } else if (event.key === 'Home') {
-    target = 'usage'
+    target = keys[0]
   } else if (event.key === 'End') {
-    target = 'errors'
+    target = keys[keys.length - 1]
   }
   if (!target) return
 
   event.preventDefault()
-  activateUsageTab(target)
+  switchTab(target)
   window.requestAnimationFrame(() => document.getElementById(`${target}-tab`)?.focus())
 }
 

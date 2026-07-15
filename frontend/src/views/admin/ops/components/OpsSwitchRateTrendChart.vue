@@ -32,12 +32,15 @@ interface Props {
 const props = defineProps<Props>()
 const { t } = useI18n()
 
-const { isDarkMode } = useOpsChartTheme()
+const { chartTheme } = useOpsChartTheme()
 const colors = computed(() => ({
-  teal: '#14b8a6',
-  tealAlpha: '#14b8a620',
-  grid: isDarkMode.value ? '#374151' : '#f3f4f6',
-  text: isDarkMode.value ? '#9ca3af' : '#6b7280'
+  teal: chartTheme.value.info,
+  tealAlpha: chartTheme.value.infoAlpha,
+  grid: chartTheme.value.outline,
+  text: chartTheme.value.foregroundSubtle,
+  tooltip: chartTheme.value.surfaceRaised,
+  tooltipTitle: chartTheme.value.foreground,
+  tooltipBody: chartTheme.value.foregroundMuted,
 }))
 
 const totalRequests = computed(() => sumNumbers(props.points.map((p) => p.request_count)))
@@ -85,9 +88,9 @@ const options = computed(() => {
         labels: { color: c.text, usePointStyle: true, boxWidth: 6, font: { size: 10 } }
       },
       tooltip: {
-        backgroundColor: isDarkMode.value ? '#1f2937' : '#ffffff',
-        titleColor: isDarkMode.value ? '#f3f4f6' : '#111827',
-        bodyColor: isDarkMode.value ? '#d1d5db' : '#4b5563',
+        backgroundColor: c.tooltip,
+        titleColor: c.tooltipTitle,
+        bodyColor: c.tooltipBody,
         borderColor: c.grid,
         borderWidth: 1,
         padding: 10,
@@ -143,7 +146,7 @@ const options = computed(() => {
     <div class="min-h-0 flex-1">
       <Line v-if="state === 'ready' && chartData" :data="chartData" :options="options" />
       <div v-else class="flex h-full items-center justify-center">
-        <div v-if="state === 'loading'" class="animate-pulse text-sm text-gray-400">{{ t('common.loading') }}</div>
+        <div v-if="state === 'loading'" class="animate-pulse text-sm text-foreground-subtle">{{ t('common.loading') }}</div>
         <EmptyState v-else :title="t('common.noData')" :description="t('admin.ops.charts.emptyRequest')" />
       </div>
     </div>

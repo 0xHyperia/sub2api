@@ -1,6 +1,6 @@
 <template>
   <div class="card p-4">
-    <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+    <h3 class="mb-4 text-sm font-semibold text-foreground">
       {{ t('payment.admin.dailyRevenue') }}
     </h3>
     <div class="h-64">
@@ -10,7 +10,7 @@
       <Line v-else-if="chartData" :data="chartData" :options="chartOptions" />
       <div
         v-else
-        class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+        class="flex h-full items-center justify-center text-sm text-foreground-subtle"
       >
         {{ t('payment.admin.noData') }}
       </div>
@@ -33,12 +33,12 @@ import {
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { useTheme } from '@/composables/useTheme'
+import { useChartTheme } from '@/composables/useChartTheme'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
 
 const { t } = useI18n()
-const { isDark } = useTheme()
+const { chartTheme } = useChartTheme()
 
 const props = defineProps<{
   data: { date: string; amount: number; count: number }[]
@@ -53,8 +53,8 @@ const chartData = computed(() => {
       {
         label: t('payment.admin.revenue'),
         data: props.data.map(d => d.amount),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: chartTheme.value.info,
+        backgroundColor: chartTheme.value.infoAlpha,
         fill: true,
         tension: 0.3,
         pointRadius: 3,
@@ -63,8 +63,8 @@ const chartData = computed(() => {
       {
         label: t('payment.admin.orderCount'),
         data: props.data.map(d => d.count),
-        borderColor: 'rgb(16, 185, 129)',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderColor: chartTheme.value.success,
+        backgroundColor: chartTheme.value.successAlpha,
         fill: false,
         tension: 0.3,
         pointRadius: 3,
@@ -84,23 +84,23 @@ const chartOptions = computed(() => ({
       type: 'linear' as const,
       display: true,
       position: 'left' as const,
-      grid: { color: isDark.value ? '#374151' : '#e5e7eb' },
-      ticks: { color: isDark.value ? '#e5e7eb' : '#374151' },
+      grid: { color: chartTheme.value.outline },
+      ticks: { color: chartTheme.value.foregroundMuted },
       title: {
         display: true,
         text: t('payment.admin.revenue'),
-        color: isDark.value ? '#e5e7eb' : '#374151',
+        color: chartTheme.value.foregroundMuted,
       },
     },
     y1: {
       type: 'linear' as const,
       display: true,
       position: 'right' as const,
-      ticks: { color: isDark.value ? '#e5e7eb' : '#374151' },
+      ticks: { color: chartTheme.value.foregroundMuted },
       title: {
         display: true,
         text: t('payment.admin.orderCount'),
-        color: isDark.value ? '#e5e7eb' : '#374151',
+        color: chartTheme.value.foregroundMuted,
       },
       grid: { drawOnChartArea: false },
     }
@@ -108,7 +108,7 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: {
       position: 'top' as const,
-      labels: { color: isDark.value ? '#e5e7eb' : '#374151' },
+      labels: { color: chartTheme.value.foregroundMuted },
     },
   }
 }))

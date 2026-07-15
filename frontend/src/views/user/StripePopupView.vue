@@ -84,22 +84,28 @@ const success = ref(false)
 const hint = ref(t('payment.stripePopup.redirecting'))
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
-let handshakeTimer: ReturnType<typeof setTimeout> | null = null
+let initTimeoutTimer: ReturnType<typeof setTimeout> | null = null
 let messageHandler: ((event: MessageEvent) => void) | null = null
 
 function closeWindow() { window.close() }
+
+function clearInitTimeout() {
+  if (initTimeoutTimer) {
+    clearTimeout(initTimeoutTimer)
+    initTimeoutTimer = null
+  }
+}
 
 onMounted(() => {
   messageHandler = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return
     if (event.data?.type !== 'STRIPE_POPUP_INIT') return
-    if (messageHandler) window.removeEventListener('message', messageHandler)
-    messageHandler = null
-    if (handshakeTimer) {
-      clearTimeout(handshakeTimer)
-      handshakeTimer = null
-    }
     error.value = ''
+    clearInitTimeout()
+    if (messageHandler) {
+      window.removeEventListener('message', messageHandler)
+      messageHandler = null
+    }
     initStripe(event.data.clientSecret, event.data.publishableKey)
   }
   window.addEventListener('message', messageHandler)
@@ -108,8 +114,7 @@ onMounted(() => {
     window.opener.postMessage({ type: 'STRIPE_POPUP_READY' }, window.location.origin)
   }
 
-  handshakeTimer = setTimeout(() => {
-    handshakeTimer = null
+  initTimeoutTimer = setTimeout(() => {
     if (!error.value && !success.value) {
       error.value = t('payment.stripePopup.timeout')
     }
@@ -117,9 +122,12 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (pollTimer) clearInterval(pollTimer)
-  if (handshakeTimer) clearTimeout(handshakeTimer)
-  if (messageHandler) window.removeEventListener('message', messageHandler)
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+  clearInitTimeout()
+  if (messageHandler) {
+    window.removeEventListener('message', messageHandler)
+    messageHandler = null
+  }
 })
 
 async function initStripe(clientSecret: string, publishableKey: string) {
@@ -160,10 +168,15 @@ async function initStripe(clientSecret: string, publishableKey: string) {
 }
 
 function startPolling() {
+  let inFlight = false
   pollTimer = setInterval(async () => {
+    // 防重入：接口响应慢于轮询间隔时避免并发重叠请求。
+    if (inFlight) return
+    inFlight = true
     try {
-      const token = document.cookie.split('; ').find(c => c.startsWith('token='))?.split('=')[1]
-        || localStorage.getItem('token') || ''
+      // access token 存储在 localStorage 的 'auth_token' 键下（见 api/client.ts），
+      // 之前误读 'token' 导致轮询请求不带认证、永远 401，支付成功无法被检测到。
+      const token = localStorage.getItem('auth_token') || ''
       const res = await fetch(buildApiUrl(`/payment/orders/${orderId}`), {
         headers: token ? { Authorization: 'Bearer ' + token } : {},
         credentials: 'include',
@@ -176,7 +189,9 @@ function startPolling() {
         success.value = true
         setTimeout(closeWindow, 2000)
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore */ } finally {
+      inFlight = false
+    }
   }, 3000)
 }
 </script>

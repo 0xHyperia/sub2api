@@ -6,12 +6,12 @@
     <div class="space-y-6" :aria-busy="isLoading || isSendingCode">
       <!-- Title -->
       <div class="auth-form-heading">
-        <h2 v-if="!props.embedded" class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 v-if="!props.embedded" class="text-2xl font-bold text-foreground">
           {{ t('auth.verifyYourEmail') }}
         </h2>
-        <p class="verification-email-copy mt-2 text-sm text-gray-500 dark:text-dark-400">
+        <p class="verification-email-copy mt-2 text-sm text-foreground-muted">
           {{ t('auth.sendCodeDesc') }}
-          <span class="font-medium text-gray-700 dark:text-gray-300">{{ email }}</span>
+          <span class="font-medium text-foreground-muted">{{ email }}</span>
         </p>
       </div>
 
@@ -27,14 +27,14 @@
       <!-- No Data Warning -->
       <div
         v-if="!hasRegisterData"
-        class="verification-notice rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20"
+        class="verification-notice rounded-panel border bg-warning-subtle p-4 border-warning/30"
         role="alert"
       >
         <div class="flex items-start gap-3">
           <div class="flex-shrink-0">
-            <Icon name="exclamationCircle" size="md" class="text-amber-500" />
+            <Icon name="exclamationCircle" size="md" class="text-warning-foreground" />
           </div>
-          <div class="text-sm text-amber-700 dark:text-amber-400">
+          <div class="text-sm text-warning-foreground">
             <p class="font-medium">{{ t('auth.sessionExpired') }}</p>
             <p class="mt-1">{{ t('auth.sessionExpiredDesc') }}</p>
           </div>
@@ -92,15 +92,15 @@
         <!-- Code Status -->
         <div
           v-if="codeSent"
-          class="verification-notice rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800/50 dark:bg-green-900/20"
+          class="verification-notice rounded-panel border p-4 border-success/30 bg-success-subtle"
           role="status"
           aria-live="polite"
         >
           <div class="flex items-start gap-3">
             <div class="flex-shrink-0">
-              <Icon name="checkCircle" size="md" class="text-green-500" />
+              <Icon name="checkCircle" size="md" class="text-success-foreground" />
             </div>
-            <p class="text-sm text-green-700 dark:text-green-400">
+            <p class="text-sm text-success-foreground">
               {{ t('auth.codeSentSuccess') }}
             </p>
           </div>
@@ -165,7 +165,7 @@
             v-if="countdown > 0"
             type="button"
             disabled
-            class="cursor-not-allowed text-sm text-gray-400 dark:text-dark-500"
+            class="cursor-not-allowed text-sm text-foreground-subtle"
           >
             {{ t('auth.resendCountdown', { countdown }) }}
           </button>
@@ -176,7 +176,7 @@
             :disabled="
               isSendingCode || (turnstileEnabled && showResendTurnstile && !resendTurnstileToken)
             "
-            class="text-sm text-primary-600 transition-colors hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-50 dark:text-primary-400 dark:hover:text-primary-300"
+            class="text-sm text-brand transition-colors hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span v-if="isSendingCode">{{ t('auth.sendingCode') }}</span>
             <span v-else-if="turnstileEnabled && !showResendTurnstile">
@@ -193,7 +193,7 @@
       <button
         type="button"
         @click="handleBack"
-        class="flex items-center gap-2 text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-gray-300"
+        class="flex items-center gap-2 transition-colors text-foreground-muted hover:text-foreground-muted"
       >
         <Icon name="arrowLeft" size="sm" />
         {{ t('auth.backToRegistration') }}

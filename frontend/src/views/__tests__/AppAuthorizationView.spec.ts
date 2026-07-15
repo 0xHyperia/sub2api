@@ -98,4 +98,23 @@ describe('AppAuthorizationView', () => {
 
     expect(mocks.submitDecision).toHaveBeenCalledWith('request-456', 'deny')
   })
+
+  it('uses the semantic authorization surface', async () => {
+    mocks.authenticated = true
+    mocks.query = { request_id: 'request-789' }
+    mocks.getContext.mockResolvedValue({
+      request_id: 'request-789',
+      client_id: 'zerobox-desktop',
+      client_name: 'ZeroBox',
+      device_name: 'Workstation',
+      platform: 'windows',
+      scopes: ['profile:read']
+    })
+
+    const wrapper = mount(AppAuthorizationView)
+    await flushPromises()
+
+    expect(wrapper.get('section').classes()).toContain('bg-surface')
+    expect(wrapper.html()).not.toMatch(/(?:bg|text|border)-gray-|dark:/)
+  })
 })

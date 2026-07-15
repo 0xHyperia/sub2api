@@ -7,7 +7,7 @@ const ThemeProbe = defineComponent({
   setup() {
     return useOpsChartTheme()
   },
-  template: '<span>{{ isDarkMode ? "dark" : "light" }}</span>',
+  template: '<span data-testid="mode">{{ isDarkMode ? "dark" : "light" }}</span><span data-testid="surface">{{ chartTheme.surface }}</span>',
 })
 
 describe('useOpsChartTheme', () => {
@@ -17,13 +17,15 @@ describe('useOpsChartTheme', () => {
 
   it('tracks theme class changes while mounted', async () => {
     const wrapper = mount(ThemeProbe)
-    expect(wrapper.text()).toBe('light')
+    expect(wrapper.get('[data-testid="mode"]').text()).toBe('light')
+    const lightSurface = wrapper.get('[data-testid="surface"]').text()
 
     document.documentElement.classList.add('dark')
     await nextTick()
     await nextTick()
 
-    expect(wrapper.text()).toBe('dark')
+    expect(wrapper.get('[data-testid="mode"]').text()).toBe('dark')
+    expect(wrapper.get('[data-testid="surface"]').text()).not.toBe(lightSurface)
     wrapper.unmount()
   })
 })

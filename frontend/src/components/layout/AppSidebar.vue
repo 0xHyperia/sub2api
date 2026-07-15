@@ -60,7 +60,11 @@
       </button>
     </div>
 
-    <nav class="admin-sidebar-nav" :aria-label="localText('后台导航', 'Admin navigation')">
+    <nav
+      ref="sidebarNavRef"
+      class="admin-sidebar-nav"
+      :aria-label="localText('后台导航', 'Admin navigation')"
+    >
       <template v-if="showAdminNavigation">
         <section
           v-for="section in adminNavSections"
@@ -236,6 +240,7 @@ import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } 
 import VersionBadge from '@/components/common/VersionBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
+import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 import {
@@ -265,8 +270,9 @@ let previousBodyOverflow = ''
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
 const isAdmin = computed(() => authStore.isAdmin)
+const sidebarNavRef = ref<HTMLElement | null>(null)
 const siteName = computed(() => appStore.siteName)
-const siteLogo = computed(() => appStore.siteLogo)
+const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
 const siteVersion = computed(() => appStore.siteVersion)
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
 
@@ -666,9 +672,15 @@ onMounted(() => {
   desktopMediaQuery.addEventListener('change', handleDesktopMediaChange)
   document.addEventListener('keydown', handleGlobalKeydown)
   void refreshBatchImageAccess()
+  if (appStore.sidebarScrollTop > 0 && sidebarNavRef.value) {
+    void nextTick(() => {
+      if (sidebarNavRef.value) sidebarNavRef.value.scrollTop = appStore.sidebarScrollTop
+    })
+  }
 })
 
 onBeforeUnmount(() => {
+  if (sidebarNavRef.value) appStore.sidebarScrollTop = sidebarNavRef.value.scrollTop
   desktopMediaQuery?.removeEventListener('change', handleDesktopMediaChange)
   document.removeEventListener('keydown', handleGlobalKeydown)
   unlockBodyScroll()
@@ -688,7 +700,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-logo {
-  @apply flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border border-outline bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
+  @apply flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-control border border-outline bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
 }
 
 .sidebar-brand {
@@ -716,7 +728,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-header-action {
-  @apply ml-auto flex h-10 w-10 items-center justify-center rounded-md text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply ml-auto flex h-10 w-10 items-center justify-center rounded-control text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .admin-sidebar-nav {
@@ -750,7 +762,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-link {
-  @apply relative mb-0.5 flex min-h-10 items-center gap-2.5 overflow-hidden rounded-md px-2.5 py-2 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply relative mb-0.5 flex min-h-10 items-center gap-2.5 overflow-hidden rounded-control px-2.5 py-2 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .sidebar-link-active {
@@ -791,7 +803,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-child-link {
-  @apply mb-0.5 flex min-h-9 items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply mb-0.5 flex min-h-9 items-center gap-2 rounded-control px-2 py-1.5 text-[13px] font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .sidebar-child-link-active {

@@ -2,10 +2,10 @@
   <AuthLayout :busy="!errorMessage" :busy-label="callbackProcessingText">
     <div class="space-y-6">
       <div class="auth-form-heading">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 class="text-2xl font-bold text-foreground">
           {{ callbackTitleText }}
         </h2>
-        <p v-if="!errorMessage" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        <p v-if="!errorMessage" class="mt-2 text-sm text-foreground-subtle">
           {{ callbackProcessingText }}
         </p>
       </div>

@@ -27,7 +27,7 @@
           </template>
           <template #cell-group_id="{ value }">
             <span v-if="isGroupMissing(value)" class="text-sm">
-              <span class="text-gray-400">#{{ value }}</span>
+              <span class="text-foreground-subtle">#{{ value }}</span>
               <span class="ml-1 badge badge-danger">{{ t('payment.admin.groupMissing') }}</span>
             </span>
             <GroupBadge
@@ -36,12 +36,12 @@
               :platform="getGroup(value)!.platform"
               :rate-multiplier="getGroup(value)!.rate_multiplier"
             />
-            <span v-else class="text-sm text-gray-400">-</span>
+            <span v-else class="text-sm text-foreground-subtle">-</span>
           </template>
           <template #cell-price="{ value, row }">
             <div class="text-sm tabular-nums">
-              <span class="font-semibold text-gray-900 dark:text-white">${{ (value ?? 0).toFixed(2) }}</span>
-              <span v-if="row.original_price" class="ml-1 text-xs text-gray-400 line-through">${{ row.original_price.toFixed(2) }}</span>
+              <span class="font-semibold text-foreground">${{ (value ?? 0).toFixed(2) }}</span>
+              <span v-if="row.original_price" class="ml-1 text-xs text-foreground-subtle line-through">${{ row.original_price.toFixed(2) }}</span>
             </div>
           </template>
           <template #cell-validity_days="{ value, row }">
@@ -139,7 +139,7 @@ function isGroupMissing(id: number): boolean {
 
 function getPlanNameClass(groupId: number): string {
   const group = getGroup(groupId)
-  return group ? platformTextClass(group.platform) : 'text-gray-900 dark:text-white'
+  return group ? platformTextClass(group.platform) : 'text-foreground'
 }
 
 

@@ -21,7 +21,7 @@
             <div class="truncate font-semibold text-foreground" :title="account.name">{{ account.name }}</div>
             <div class="flex flex-wrap items-center gap-1.5 text-xs text-foreground-subtle">
               <span
-                class="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium uppercase dark:bg-dark-500"
+                class="rounded bg-outline px-1.5 py-0.5 text-[10px] font-medium uppercase bg-outline-strong"
               >
                 {{ account.type }}
               </span>
@@ -42,7 +42,7 @@
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="text-sm font-medium text-foreground-muted">
           {{ t('admin.accounts.selectTestModel') }}
         </label>
         <Select
@@ -68,7 +68,7 @@
       </div>
 
       <div v-if="isOpenAIAccount" class="space-y-1.5">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="text-sm font-medium text-foreground-muted">
           {{ t('admin.accounts.openai.testMode') }}
         </label>
         <Select
@@ -93,14 +93,14 @@
       <div class="group relative">
         <div
           ref="terminalRef"
-          class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-panel border border-gray-700 bg-gray-950 p-4 font-mono text-sm text-gray-200"
+          class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-panel border border-outline-strong bg-foreground p-4 font-mono text-sm text-foreground-muted"
         >
           <!-- Status Line -->
-          <div v-if="status === 'idle'" class="flex items-center gap-2 text-gray-500">
+          <div v-if="status === 'idle'" class="flex items-center gap-2 text-foreground-subtle">
             <Icon name="play" size="sm" :stroke-width="2" />
             <span>{{ t('admin.accounts.readyToTest') }}</span>
           </div>
-          <div v-else-if="status === 'connecting'" class="flex items-center gap-2 text-yellow-400">
+          <div v-else-if="status === 'connecting'" class="flex items-center gap-2 text-warning-foreground">
             <Icon name="refresh" size="sm" class="animate-spin" :stroke-width="2" />
             <span>{{ t('admin.accounts.connectingToApi') }}</span>
           </div>
@@ -111,21 +111,21 @@
           </div>
 
           <!-- Streaming Content -->
-          <div v-if="streamingContent" class="text-green-400">
+          <div v-if="streamingContent" class="text-success-foreground">
             {{ streamingContent }}<span class="animate-pulse">_</span>
           </div>
 
           <!-- Result Status -->
           <div
             v-if="status === 'success'"
-            class="mt-3 flex items-center gap-2 border-t border-gray-700 pt-3 text-green-400"
+            class="mt-3 flex items-center gap-2 border-t border-outline-strong pt-3 text-success-foreground"
           >
             <Icon name="check" size="sm" :stroke-width="2" />
             <span>{{ t('admin.accounts.testCompleted') }}</span>
           </div>
           <div
             v-else-if="status === 'error'"
-            class="mt-3 flex items-center gap-2 border-t border-gray-700 pt-3 text-red-400"
+            class="mt-3 flex items-center gap-2 border-t border-outline-strong pt-3 text-danger-foreground"
           >
             <Icon name="x" size="sm" :stroke-width="2" />
             <span>{{ errorMessage }}</span>
@@ -137,7 +137,7 @@
           v-if="outputLines.length > 0"
           type="button"
           @click="copyOutput"
-          class="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-control bg-gray-800 text-gray-300 opacity-100 transition-colors hover:bg-gray-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+          class="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-control bg-foreground text-foreground-subtle opacity-100 transition-colors hover:bg-surface/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
           :title="t('admin.accounts.copyOutput')"
           :aria-label="t('admin.accounts.copyOutput')"
         >
@@ -146,7 +146,7 @@
       </div>
 
       <div v-if="generatedImages.length > 0" class="space-y-2">
-        <div class="text-xs font-medium text-gray-600 dark:text-gray-300">
+        <div class="text-xs font-medium text-foreground-muted">
           {{ t('admin.accounts.imagePreview') }}
         </div>
         <div class="flex flex-wrap justify-center gap-3">
@@ -160,9 +160,9 @@
           >
             <img :src="image.url" :alt="`test-image-${index + 1}`" class="max-h-[360px] w-full object-contain" />
             <div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/img:bg-black/20">
-              <Icon name="eye" size="lg" class="text-white opacity-0 drop-shadow-lg transition-opacity group-hover/img:opacity-100" :stroke-width="2" />
+              <Icon name="eye" size="lg" class="text-white opacity-0 drop-shadow-floating transition-opacity group-hover/img:opacity-100" :stroke-width="2" />
             </div>
-            <div class="border-t border-gray-100 px-3 py-1.5 text-xs text-gray-500 dark:border-dark-500 dark:text-gray-300">
+            <div class="border-t px-3 py-1.5 text-xs border-outline-strong text-foreground-muted">
               {{ image.mimeType || 'image/*' }}
             </div>
           </button>
@@ -199,7 +199,7 @@
       </Teleport>
 
       <!-- Test Info -->
-      <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-gray-500 dark:text-gray-400">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-foreground-subtle">
         <div class="flex items-center gap-3">
           <span class="flex items-center gap-1">
             <Icon name="grid" size="sm" :stroke-width="2" />
@@ -274,6 +274,7 @@ import TextArea from '@/components/common/TextArea.vue'
 import { Icon } from '@/components/icons'
 import { useClipboard } from '@/composables/useClipboard'
 import { buildApiUrl } from '@/api/client'
+import { ADMIN_UI_REQUEST_HEADER } from '@/api/adminUIRequest'
 import { adminAPI } from '@/api/admin'
 import type { Account, ClaudeModel } from '@/types'
 
@@ -428,7 +429,7 @@ onUnmounted(() => {
   abortStream()
 })
 
-const addLine = (text: string, className: string = 'text-gray-300') => {
+const addLine = (text: string, className: string = 'text-foreground-subtle') => {
   outputLines.value.push({ text, class: className })
   scrollToBottom()
 }
@@ -445,9 +446,9 @@ const startTest = async () => {
 
   resetState()
   status.value = 'connecting'
-  addLine(t('admin.accounts.startingTestForAccount', { name: props.account.name }), 'text-blue-400')
-  addLine(t('admin.accounts.testAccountTypeLabel', { type: props.account.type }), 'text-gray-400')
-  addLine('', 'text-gray-300')
+  addLine(t('admin.accounts.startingTestForAccount', { name: props.account.name }), 'text-info-foreground')
+  addLine(t('admin.accounts.testAccountTypeLabel', { type: props.account.type }), 'text-foreground-subtle')
+  addLine('', 'text-foreground-subtle')
 
   abortStream()
 
@@ -474,7 +475,8 @@ const startTest = async () => {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        [ADMIN_UI_REQUEST_HEADER]: '1'
       },
       body: JSON.stringify(requestBody),
       signal: abortController.signal
@@ -522,7 +524,7 @@ const startTest = async () => {
     status.value = 'error'
     const msg = error instanceof Error ? error.message : 'Unknown error'
     errorMessage.value = msg
-    addLine(`Error: ${msg}`, 'text-red-400')
+    addLine(`Error: ${msg}`, 'text-danger-foreground')
   }
 }
 
@@ -537,18 +539,18 @@ const handleEvent = (event: {
 }) => {
   switch (event.type) {
     case 'test_start':
-      addLine(t('admin.accounts.connectedToApi'), 'text-green-400')
+      addLine(t('admin.accounts.connectedToApi'), 'text-success-foreground')
       if (event.model) {
-        addLine(t('admin.accounts.usingModel', { model: event.model }), 'text-cyan-400')
+        addLine(t('admin.accounts.usingModel', { model: event.model }), 'text-info-foreground')
       }
       addLine(
         supportsImageTest.value
             ? t('admin.accounts.sendingImageRequest')
             : t('admin.accounts.sendingTestMessage'),
-        'text-gray-400'
+        'text-foreground-subtle'
       )
-      addLine('', 'text-gray-300')
-      addLine(t('admin.accounts.response'), 'text-yellow-400')
+      addLine('', 'text-foreground-subtle')
+      addLine(t('admin.accounts.response'), 'text-warning-foreground')
       break
 
     case 'content':
@@ -564,20 +566,20 @@ const handleEvent = (event: {
           url: event.image_url,
           mimeType: event.mime_type
         })
-        addLine(t('admin.accounts.imageReceived', { count: generatedImages.value.length }), 'text-purple-300')
+        addLine(t('admin.accounts.imageReceived', { count: generatedImages.value.length }), 'text-brand')
       }
       break
 
     case 'status':
       if (event.text) {
-        addLine(event.text, 'text-cyan-300')
+        addLine(event.text, 'text-info-foreground')
       }
       break
 
     case 'test_complete':
       // Move streaming content to output lines
       if (streamingContent.value) {
-        addLine(streamingContent.value, 'text-green-300')
+        addLine(streamingContent.value, 'text-success-foreground')
         streamingContent.value = ''
       }
       if (event.success) {
@@ -592,7 +594,7 @@ const handleEvent = (event: {
       status.value = 'error'
       errorMessage.value = event.error || 'Unknown error'
       if (streamingContent.value) {
-        addLine(streamingContent.value, 'text-green-300')
+        addLine(streamingContent.value, 'text-success-foreground')
         streamingContent.value = ''
       }
       break

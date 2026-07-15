@@ -9,7 +9,7 @@
         :aria-label="t('common.loading')"
       >
         <div
-          class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600"
+          class="h-8 w-8 animate-spin rounded-full border-b-2 border-brand"
         ></div>
       </div>
 
@@ -68,27 +68,27 @@
           <!-- Admin API Key Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.adminApiKey.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.adminApiKey.description") }}
               </p>
             </div>
             <div class="space-y-4 p-6">
               <!-- Security Warning -->
               <div
-                class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20"
+                class="rounded-panel border border-warning/30 bg-warning-subtle p-4"
               >
                 <div class="flex items-start">
                   <Icon
                     name="exclamationTriangle"
                     size="md"
-                    class="mt-0.5 flex-shrink-0 text-amber-500"
+                    class="mt-0.5 flex-shrink-0 text-warning-foreground"
                   />
-                  <p class="ml-3 text-sm text-amber-700 dark:text-amber-300">
+                  <p class="ml-3 text-sm text-warning-foreground">
                     {{ t("admin.settings.adminApiKey.securityWarning") }}
                   </p>
                 </div>
@@ -97,10 +97,10 @@
               <!-- Loading State -->
               <div
                 v-if="adminApiKeyLoading"
-                class="flex items-center gap-2 text-gray-500"
+                class="flex items-center gap-2 text-foreground-subtle"
               >
                 <div
-                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"
+                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"
                 ></div>
                 {{ t("common.loading") }}
               </div>
@@ -110,7 +110,7 @@
                 v-else-if="!adminApiKeyExists"
                 class="flex items-center justify-between"
               >
-                <span class="text-gray-500 dark:text-gray-400">
+                <span class="text-foreground-subtle">
                   {{ t("admin.settings.adminApiKey.notConfigured") }}
                 </span>
                 <button
@@ -152,12 +152,12 @@
                 <div class="flex items-center justify-between">
                   <div>
                     <label
-                      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-1 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.adminApiKey.currentKey") }}
                     </label>
                     <code
-                      class="rounded bg-gray-100 px-2 py-1 font-mono text-sm text-gray-900 dark:bg-dark-700 dark:text-gray-100"
+                      class="rounded bg-surface-subtle px-2 py-1 font-mono text-sm text-foreground"
                     >
                       {{ adminApiKeyMasked }}
                     </code>
@@ -179,7 +179,7 @@
                       type="button"
                       @click="deleteAdminApiKey"
                       :disabled="adminApiKeyOperating"
-                      class="btn btn-secondary btn-sm text-red-600 hover:text-red-700 dark:text-red-400"
+                      class="btn btn-secondary btn-sm text-danger-foreground hover:text-danger-foreground"
                     >
                       {{ t("admin.settings.adminApiKey.delete") }}
                     </button>
@@ -189,16 +189,16 @@
                 <!-- Newly Generated Key Display -->
                 <div
                   v-if="newAdminApiKey"
-                  class="space-y-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20"
+                  class="space-y-3 rounded-panel border p-4 border-success/30 bg-success-subtle"
                 >
                   <p
-                    class="text-sm font-medium text-green-700 dark:text-green-300"
+                    class="text-sm font-medium text-success-foreground"
                   >
                     {{ t("admin.settings.adminApiKey.keyWarning") }}
                   </p>
                   <div class="flex items-center gap-2">
                     <code
-                      class="flex-1 select-all break-all rounded border border-green-300 bg-white px-3 py-2 font-mono text-sm dark:border-green-700 dark:bg-dark-800"
+                      class="flex-1 select-all break-all rounded border bg-surface px-3 py-2 font-mono text-sm border-success/30"
                     >
                       {{ newAdminApiKey }}
                     </code>
@@ -210,7 +210,7 @@
                       {{ t("admin.settings.adminApiKey.copyKey") }}
                     </button>
                   </div>
-                  <p class="text-xs text-green-600 dark:text-green-400">
+                  <p class="text-xs text-success-foreground">
                     {{ t("admin.settings.adminApiKey.usage") }}
                   </p>
                 </div>
@@ -225,22 +225,22 @@
           <!-- Overload Cooldown (529) Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.overloadCooldown.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.overloadCooldown.description") }}
               </p>
             </div>
             <div class="space-y-5 p-6">
               <div
                 v-if="overloadCooldownLoading"
-                class="flex items-center gap-2 text-gray-500"
+                class="flex items-center gap-2 text-foreground-subtle"
               >
                 <div
-                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"
+                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"
                 ></div>
                 {{ t("common.loading") }}
               </div>
@@ -248,10 +248,10 @@
               <template v-else>
                 <div class="flex items-center justify-between">
                   <div>
-                    <label class="font-medium text-gray-900 dark:text-white">{{
+                    <label class="font-medium text-foreground">{{
                       t("admin.settings.overloadCooldown.enabled")
                     }}</label>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-foreground-subtle">
                       {{ t("admin.settings.overloadCooldown.enabledHint") }}
                     </p>
                   </div>
@@ -263,11 +263,11 @@
 
                 <div
                   v-if="overloadCooldownForm.enabled"
-                  class="space-y-4 border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="space-y-4 border-t border-outline pt-4"
                 >
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.overloadCooldown.cooldownMinutes") }}
                     </label>
@@ -278,7 +278,7 @@
                       max="120"
                       class="input w-32"
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         t("admin.settings.overloadCooldown.cooldownMinutesHint")
                       }}
@@ -287,7 +287,7 @@
                 </div>
 
                 <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="flex justify-end border-t border-outline pt-4"
                 >
                   <button
                     type="button"
@@ -329,22 +329,22 @@
           <!-- Rate Limit Cooldown (429) Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.rateLimit429Cooldown.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.rateLimit429Cooldown.description") }}
               </p>
             </div>
             <div class="space-y-5 p-6">
               <div
                 v-if="rateLimit429CooldownLoading"
-                class="flex items-center gap-2 text-gray-500"
+                class="flex items-center gap-2 text-foreground-subtle"
               >
                 <div
-                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"
+                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"
                 ></div>
                 {{ t("common.loading") }}
               </div>
@@ -352,10 +352,10 @@
               <template v-else>
                 <div class="flex items-center justify-between">
                   <div>
-                    <label class="font-medium text-gray-900 dark:text-white">{{
+                    <label class="font-medium text-foreground">{{
                       t("admin.settings.rateLimit429Cooldown.enabled")
                     }}</label>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-foreground-subtle">
                       {{ t("admin.settings.rateLimit429Cooldown.enabledHint") }}
                     </p>
                   </div>
@@ -367,11 +367,11 @@
 
                 <div
                   v-if="rateLimit429CooldownForm.enabled"
-                  class="space-y-4 border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="space-y-4 border-t border-outline pt-4"
                 >
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{
                         t(
@@ -386,7 +386,7 @@
                       max="7200"
                       class="input w-32"
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         t(
                           "admin.settings.rateLimit429Cooldown.cooldownSecondsHint",
@@ -397,7 +397,7 @@
                 </div>
 
                 <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="flex justify-end border-t border-outline pt-4"
                 >
                   <button
                     type="button"
@@ -439,12 +439,12 @@
           <!-- Stream Timeout Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.streamTimeout.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.streamTimeout.description") }}
               </p>
             </div>
@@ -452,10 +452,10 @@
               <!-- Loading State -->
               <div
                 v-if="streamTimeoutLoading"
-                class="flex items-center gap-2 text-gray-500"
+                class="flex items-center gap-2 text-foreground-subtle"
               >
                 <div
-                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"
+                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"
                 ></div>
                 {{ t("common.loading") }}
               </div>
@@ -464,10 +464,10 @@
                 <!-- Enable Stream Timeout -->
                 <div class="flex items-center justify-between">
                   <div>
-                    <label class="font-medium text-gray-900 dark:text-white">{{
+                    <label class="font-medium text-foreground">{{
                       t("admin.settings.streamTimeout.enabled")
                     }}</label>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-foreground-subtle">
                       {{ t("admin.settings.streamTimeout.enabledHint") }}
                     </p>
                   </div>
@@ -480,12 +480,12 @@
                 <!-- Settings - Only show when enabled -->
                 <div
                   v-if="streamTimeoutForm.enabled"
-                  class="space-y-4 border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="space-y-4 border-t border-outline pt-4"
                 >
                   <!-- Action -->
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.streamTimeout.action") }}
                     </label>
@@ -505,7 +505,7 @@
                         {{ t("admin.settings.streamTimeout.actionNone") }}
                       </option>
                     </select>
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.streamTimeout.actionHint") }}
                     </p>
                   </div>
@@ -513,7 +513,7 @@
                   <!-- Temp Unsched Minutes (only show when action is temp_unsched) -->
                   <div v-if="streamTimeoutForm.action === 'temp_unsched'">
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.streamTimeout.tempUnschedMinutes") }}
                     </label>
@@ -524,7 +524,7 @@
                       max="60"
                       class="input w-32"
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         t("admin.settings.streamTimeout.tempUnschedMinutesHint")
                       }}
@@ -534,7 +534,7 @@
                   <!-- Threshold Count -->
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.streamTimeout.thresholdCount") }}
                     </label>
@@ -545,7 +545,7 @@
                       max="10"
                       class="input w-32"
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.streamTimeout.thresholdCountHint") }}
                     </p>
                   </div>
@@ -553,7 +553,7 @@
                   <!-- Threshold Window Minutes -->
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{
                         t("admin.settings.streamTimeout.thresholdWindowMinutes")
@@ -568,7 +568,7 @@
                       max="60"
                       class="input w-32"
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         t(
                           "admin.settings.streamTimeout.thresholdWindowMinutesHint",
@@ -580,7 +580,7 @@
 
                 <!-- Save Button -->
                 <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="flex justify-end border-t border-outline pt-4"
                 >
                   <button
                     type="button"
@@ -622,12 +622,12 @@
           <!-- Request Rectifier Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.rectifier.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.rectifier.description") }}
               </p>
             </div>
@@ -635,10 +635,10 @@
               <!-- Loading State -->
               <div
                 v-if="rectifierLoading"
-                class="flex items-center gap-2 text-gray-500"
+                class="flex items-center gap-2 text-foreground-subtle"
               >
                 <div
-                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"
+                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"
                 ></div>
                 {{ t("common.loading") }}
               </div>
@@ -647,10 +647,10 @@
                 <!-- Master Toggle -->
                 <div class="flex items-center justify-between">
                   <div>
-                    <label class="font-medium text-gray-900 dark:text-white">{{
+                    <label class="font-medium text-foreground">{{
                       t("admin.settings.rectifier.enabled")
                     }}</label>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-foreground-subtle">
                       {{ t("admin.settings.rectifier.enabledHint") }}
                     </p>
                   </div>
@@ -663,18 +663,18 @@
                 <!-- Sub-toggles (only show when master is enabled) -->
                 <div
                   v-if="rectifierForm.enabled"
-                  class="space-y-4 border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="space-y-4 border-t border-outline pt-4"
                 >
                   <!-- Thinking Signature Rectifier -->
                   <div class="flex items-center justify-between">
                     <div>
                       <label
-                        class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                        class="text-sm font-medium text-foreground-muted"
                         >{{
                           t("admin.settings.rectifier.thinkingSignature")
                         }}</label
                       >
-                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                      <p class="text-xs text-foreground-subtle">
                         {{
                           t("admin.settings.rectifier.thinkingSignatureHint")
                         }}
@@ -690,12 +690,12 @@
                   <div class="flex items-center justify-between">
                     <div>
                       <label
-                        class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                        class="text-sm font-medium text-foreground-muted"
                         >{{
                           t("admin.settings.rectifier.thinkingBudget")
                         }}</label
                       >
-                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                      <p class="text-xs text-foreground-subtle">
                         {{ t("admin.settings.rectifier.thinkingBudgetHint") }}
                       </p>
                     </div>
@@ -709,12 +709,12 @@
                   <div class="flex items-center justify-between">
                     <div>
                       <label
-                        class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                        class="text-sm font-medium text-foreground-muted"
                         >{{
                           t("admin.settings.rectifier.apikeySignature")
                         }}</label
                       >
-                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                      <p class="text-xs text-foreground-subtle">
                         {{ t("admin.settings.rectifier.apikeySignatureHint") }}
                       </p>
                     </div>
@@ -727,16 +727,16 @@
                   <!-- Custom Patterns (only when apikey_signature_enabled) -->
                   <div
                     v-if="rectifierForm.apikey_signature_enabled"
-                    class="ml-4 space-y-3 border-l-2 border-gray-200 pl-4 dark:border-dark-600"
+                    class="ml-4 space-y-3 border-l-2 border-outline pl-4"
                   >
                     <div>
                       <label
-                        class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                        class="text-sm font-medium text-foreground-muted"
                         >{{
                           t("admin.settings.rectifier.apikeyPatterns")
                         }}</label
                       >
-                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                      <p class="text-xs text-foreground-subtle">
                         {{ t("admin.settings.rectifier.apikeyPatternsHint") }}
                       </p>
                     </div>
@@ -764,7 +764,7 @@
                             1,
                           )
                         "
-                        class="btn btn-ghost btn-xs text-red-500 hover:text-red-700"
+                        class="btn btn-ghost btn-xs text-danger-foreground hover:text-danger-foreground"
                       >
                         <svg
                           aria-hidden="true"
@@ -785,7 +785,7 @@
                     <button
                       type="button"
                       @click="rectifierForm.apikey_signature_patterns.push('')"
-                      class="btn btn-ghost btn-xs text-primary-600 dark:text-primary-400"
+                      class="btn btn-ghost btn-xs text-brand"
                     >
                       + {{ t("admin.settings.rectifier.addPattern") }}
                     </button>
@@ -794,7 +794,7 @@
 
                 <!-- Save Button -->
                 <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="flex justify-end border-t border-outline pt-4"
                 >
                   <button
                     type="button"
@@ -833,12 +833,12 @@
           <!-- Beta Policy Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.betaPolicy.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.betaPolicy.description") }}
               </p>
             </div>
@@ -846,10 +846,10 @@
               <!-- Loading State -->
               <div
                 v-if="betaPolicyLoading"
-                class="flex items-center gap-2 text-gray-500"
+                class="flex items-center gap-2 text-foreground-subtle"
               >
                 <div
-                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"
+                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"
                 ></div>
                 {{ t("common.loading") }}
               </div>
@@ -859,16 +859,16 @@
                 <div
                   v-for="rule in betaPolicyForm.rules"
                   :key="rule.beta_token"
-                  class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+                  class="rounded-panel border border-outline bg-surface-subtle p-4"
                 >
                   <div class="mb-3 flex items-center gap-2">
                     <span
-                      class="text-sm font-medium text-gray-900 dark:text-white"
+                      class="text-sm font-medium text-foreground"
                     >
                       {{ getBetaDisplayName(rule.beta_token) }}
                     </span>
                     <span
-                      class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-dark-700 dark:text-gray-400"
+                      class="rounded bg-surface-subtle px-2 py-0.5 text-xs text-foreground-subtle"
                     >
                       {{ rule.beta_token }}
                     </span>
@@ -878,7 +878,7 @@
                     <!-- Action -->
                     <div>
                       <label
-                        class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                        class="mb-1 block text-xs font-medium text-foreground-subtle"
                       >
                         {{ t("admin.settings.betaPolicy.action") }}
                       </label>
@@ -892,7 +892,7 @@
                     <!-- Scope -->
                     <div>
                       <label
-                        class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                        class="mb-1 block text-xs font-medium text-foreground-subtle"
                       >
                         {{ t("admin.settings.betaPolicy.scope") }}
                       </label>
@@ -907,7 +907,7 @@
                   <!-- Error Message (only when action=block) -->
                   <div v-if="rule.action === 'block'" class="mt-3">
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.betaPolicy.errorMessage") }}
                     </label>
@@ -919,7 +919,7 @@
                         t('admin.settings.betaPolicy.errorMessagePlaceholder')
                       "
                     />
-                    <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                    <p class="mt-1 text-xs text-foreground-subtle">
                       {{ t("admin.settings.betaPolicy.errorMessageHint") }}
                     </p>
                   </div>
@@ -927,7 +927,7 @@
                   <!-- Quick Presets (only for tokens with presets) -->
                   <div v-if="betaPresets[rule.beta_token]?.length" class="mt-3">
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.betaPolicy.quickPresets") }}
                     </label>
@@ -936,7 +936,7 @@
                         v-for="preset in betaPresets[rule.beta_token]"
                         :key="preset.label"
                         type="button"
-                        class="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                        class="inline-flex items-center gap-1 rounded-control border bg-brand-subtle px-2.5 py-1 text-xs font-medium text-brand transition-colors border-brand/30 hover:bg-brand-subtle"
                         @click="applyBetaPreset(rule, preset)"
                         :title="preset.description"
                       >
@@ -948,11 +948,11 @@
                   <!-- Model Whitelist -->
                   <div class="mt-3">
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.betaPolicy.modelWhitelist") }}
                     </label>
-                    <p class="mb-2 text-xs text-gray-400 dark:text-gray-500">
+                    <p class="mb-2 text-xs text-foreground-subtle">
                       {{ t("admin.settings.betaPolicy.modelWhitelistHint") }}
                     </p>
                     <!-- Existing patterns -->
@@ -973,7 +973,7 @@
                         type="button"
                         :aria-label="`${t('common.delete')} ${index + 1}`"
                         @click="rule.model_whitelist!.splice(index, 1)"
-                        class="shrink-0 rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                        class="shrink-0 rounded p-1 text-danger-foreground transition-colors hover:bg-danger-subtle hover:text-danger-foreground"
                       >
                         <svg
                           aria-hidden="true"
@@ -998,7 +998,7 @@
                         if (!rule.model_whitelist) rule.model_whitelist = [];
                         rule.model_whitelist.push('');
                       "
-                      class="mb-2 inline-flex items-center gap-1 text-xs text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                      class="mb-2 inline-flex items-center gap-1 text-xs text-brand transition-colors hover:text-brand"
                     >
                       <svg
                         class="h-3.5 w-3.5"
@@ -1017,7 +1017,7 @@
                     </button>
                     <!-- Common pattern chips -->
                     <div class="flex flex-wrap items-center gap-1.5">
-                      <span class="text-xs text-gray-400 dark:text-gray-500"
+                      <span class="text-xs text-foreground-subtle"
                         >{{
                           t("admin.settings.betaPolicy.commonPatterns")
                         }}:</span
@@ -1026,7 +1026,7 @@
                         v-for="pattern in commonModelPatterns"
                         :key="pattern"
                         type="button"
-                        class="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-600 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 dark:border-dark-600 dark:text-gray-400 dark:hover:border-primary-700 dark:hover:bg-primary-900/30 dark:hover:text-primary-300"
+                        class="rounded border border-outline px-2 py-0.5 text-xs text-foreground-subtle transition-colors hover:border-brand hover:bg-brand-subtle hover:text-brand"
                         @click="addQuickPattern(rule, pattern)"
                       >
                         {{ pattern }}
@@ -1042,7 +1042,7 @@
                     class="mt-3"
                   >
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.betaPolicy.fallbackAction") }}
                     </label>
@@ -1051,7 +1051,7 @@
                       @update:modelValue="rule.fallback_action = $event as any"
                       :options="betaPolicyActionOptions"
                     />
-                    <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                    <p class="mt-1 text-xs text-foreground-subtle">
                       {{ t("admin.settings.betaPolicy.fallbackActionHint") }}
                     </p>
                     <!-- Fallback Error Message (only when fallback_action=block) -->
@@ -1066,7 +1066,7 @@
                           )
                         "
                       />
-                      <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                      <p class="mt-1 text-xs text-foreground-subtle">
                         {{ t("admin.settings.betaPolicy.errorMessageHint") }}
                       </p>
                     </div>
@@ -1075,7 +1075,7 @@
 
                 <!-- Save Button -->
                 <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
+                  class="flex justify-end border-t border-outline pt-4"
                 >
                   <button
                     type="button"
@@ -1114,12 +1114,12 @@
           <!-- OpenAI Fast/Flex Policy Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.openaiFastPolicy.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.openaiFastPolicy.description") }}
               </p>
             </div>
@@ -1127,7 +1127,7 @@
               <!-- Empty state -->
               <div
                 v-if="openaiFastPolicyForm.rules.length === 0"
-                class="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400"
+                class="rounded-panel border border-dashed border-outline p-6 text-center text-sm text-foreground-subtle"
               >
                 {{ t("admin.settings.openaiFastPolicy.empty") }}
               </div>
@@ -1136,11 +1136,11 @@
               <div
                 v-for="(rule, ruleIndex) in openaiFastPolicyForm.rules"
                 :key="ruleIndex"
-                class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+                class="rounded-panel border border-outline bg-surface-subtle p-4"
               >
                 <div class="mb-3 flex items-center justify-between">
                   <span
-                    class="text-sm font-medium text-gray-900 dark:text-white"
+                    class="text-sm font-medium text-foreground"
                   >
                     {{
                       t("admin.settings.openaiFastPolicy.ruleHeader", {
@@ -1151,7 +1151,7 @@
                   <button
                     type="button"
                     @click="removeOpenAIFastPolicyRule(ruleIndex)"
-                    class="rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                    class="rounded p-1 text-danger-foreground transition-colors hover:bg-danger-subtle hover:text-danger-foreground"
                     :title="t('admin.settings.openaiFastPolicy.removeRule')"
                   >
                     <svg
@@ -1174,7 +1174,7 @@
                   <!-- Service Tier -->
                   <div>
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.openaiFastPolicy.serviceTier") }}
                     </label>
@@ -1193,7 +1193,7 @@
                   <!-- Action -->
                   <div>
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.openaiFastPolicy.action") }}
                     </label>
@@ -1213,7 +1213,7 @@
                   <!-- Scope -->
                   <div>
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.openaiFastPolicy.scope") }}
                     </label>
@@ -1231,10 +1231,26 @@
                   </div>
                 </div>
 
+                <!-- User Scope -->
+                <div class="mt-3">
+                  <label
+                    class="mb-1 block text-xs font-medium text-foreground-subtle"
+                  >
+                    {{ t("admin.settings.openaiFastPolicy.userIds") }}
+                  </label>
+                  <p class="mb-2 text-xs text-foreground-subtle">
+                    {{ t("admin.settings.openaiFastPolicy.userIdsHint") }}
+                  </p>
+                  <OpenAIFastPolicyUserSelector
+                    :model-value="rule.user_ids || []"
+                    @update:model-value="rule.user_ids = $event"
+                  />
+                </div>
+
                 <!-- Error Message (only when action=block) -->
                 <div v-if="rule.action === 'block'" class="mt-3">
                   <label
-                    class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                    class="mb-1 block text-xs font-medium text-foreground-subtle"
                   >
                     {{ t("admin.settings.openaiFastPolicy.errorMessage") }}
                   </label>
@@ -1248,7 +1264,7 @@
                       )
                     "
                   />
-                  <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  <p class="mt-1 text-xs text-foreground-subtle">
                     {{ t("admin.settings.openaiFastPolicy.errorMessageHint") }}
                   </p>
                 </div>
@@ -1256,11 +1272,11 @@
                 <!-- Model Whitelist -->
                 <div class="mt-3">
                   <label
-                    class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                    class="mb-1 block text-xs font-medium text-foreground-subtle"
                   >
                     {{ t("admin.settings.openaiFastPolicy.modelWhitelist") }}
                   </label>
-                  <p class="mb-2 text-xs text-gray-400 dark:text-gray-500">
+                  <p class="mb-2 text-xs text-foreground-subtle">
                     {{
                       t("admin.settings.openaiFastPolicy.modelWhitelistHint")
                     }}
@@ -1285,7 +1301,7 @@
                       @click="
                         removeOpenAIFastPolicyModelPattern(rule, patternIdx)
                       "
-                      class="shrink-0 rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                      class="shrink-0 rounded p-1 text-danger-foreground transition-colors hover:bg-danger-subtle hover:text-danger-foreground"
                     >
                       <svg
                         class="h-4 w-4"
@@ -1305,7 +1321,7 @@
                   <button
                     type="button"
                     @click="addOpenAIFastPolicyModelPattern(rule)"
-                    class="mb-2 inline-flex items-center gap-1 text-xs text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                    class="mb-2 inline-flex items-center gap-1 text-xs text-brand transition-colors hover:text-brand"
                   >
                     <svg
                       class="h-3.5 w-3.5"
@@ -1332,7 +1348,7 @@
                   class="mt-3"
                 >
                   <label
-                    class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                    class="mb-1 block text-xs font-medium text-foreground-subtle"
                   >
                     {{ t("admin.settings.openaiFastPolicy.fallbackAction") }}
                   </label>
@@ -1347,7 +1363,7 @@
                     "
                     :options="openaiFastPolicyActionOptions"
                   />
-                  <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  <p class="mt-1 text-xs text-foreground-subtle">
                     {{
                       t("admin.settings.openaiFastPolicy.fallbackActionHint")
                     }}
@@ -1389,7 +1405,7 @@
                   </svg>
                   {{ t("admin.settings.openaiFastPolicy.addRule") }}
                 </button>
-                <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                <p class="mt-2 text-xs text-foreground-subtle">
                   {{ t("admin.settings.openaiFastPolicy.saveHint") }}
                 </p>
               </div>
@@ -1403,12 +1419,12 @@
           <!-- Registration Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.registration.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.registration.description") }}
               </p>
             </div>
@@ -1416,10 +1432,10 @@
               <!-- Enable Registration -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.registration.enableRegistration")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{
                       t("admin.settings.registration.enableRegistrationHint")
                     }}
@@ -1433,13 +1449,13 @@
 
               <!-- Email Verification -->
               <div
-                class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.registration.emailVerification")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.registration.emailVerificationHint") }}
                   </p>
                 </div>
@@ -1450,28 +1466,28 @@
               </div>
 
               <!-- Email Suffix Whitelist -->
-              <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
-                <label class="font-medium text-gray-900 dark:text-white">{{
+              <div class="border-t border-outline pt-4">
+                <label class="font-medium text-foreground">{{
                   t("admin.settings.registration.emailSuffixWhitelist")
                 }}</label>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-sm text-foreground-subtle">
                   {{
                     t("admin.settings.registration.emailSuffixWhitelistHint")
                   }}
                 </p>
                 <div
-                  class="mt-3 rounded-lg border border-gray-300 bg-white p-2 dark:border-dark-500 dark:bg-dark-700"
+                  class="mt-3 rounded-panel border border-outline bg-surface-subtle p-2"
                 >
                   <div class="flex flex-wrap items-center gap-2">
                     <span
                       v-for="suffix in registrationEmailSuffixWhitelistTags"
                       :key="suffix"
-                      class="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs font-mono text-gray-700 dark:bg-dark-600 dark:text-gray-200"
+                      class="inline-flex items-center gap-1 rounded bg-surface-subtle px-2 py-1 text-xs font-mono text-foreground-muted bg-outline"
                     >
                       <span>{{ suffix }}</span>
                       <button
                         type="button"
-                        class="rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-dark-500 dark:hover:text-white"
+                        class="rounded-full text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
                         @click="
                           removeRegistrationEmailSuffixWhitelistTag(suffix)
                         "
@@ -1486,12 +1502,12 @@
                     </span>
 
                     <div
-                      class="flex min-w-[220px] flex-1 items-center gap-1 rounded border border-transparent px-2 py-1 focus-within:border-primary-300 dark:focus-within:border-primary-700"
+                      class="flex min-w-[220px] flex-1 items-center gap-1 rounded border border-transparent px-2 py-1 focus-within:border-brand"
                     >
                       <input
                         v-model="registrationEmailSuffixWhitelistDraft"
                         type="text"
-                        class="w-full bg-transparent text-sm font-mono text-gray-900 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
+                        class="w-full bg-transparent text-sm font-mono text-foreground outline-none placeholder:text-foreground-subtle"
                         :placeholder="
                           t(
                             'admin.settings.registration.emailSuffixWhitelistPlaceholder',
@@ -1509,7 +1525,7 @@
                     </div>
                   </div>
                 </div>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-2 text-xs text-foreground-subtle">
                   {{
                     t(
                       "admin.settings.registration.emailSuffixWhitelistInputHint",
@@ -1520,13 +1536,13 @@
 
               <!-- Promo Code -->
               <div
-                class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.registration.promoCode")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.registration.promoCodeHint") }}
                   </p>
                 </div>
@@ -1538,13 +1554,13 @@
 
               <!-- Invitation Code -->
               <div
-                class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.registration.invitationCode")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.registration.invitationCodeHint") }}
                   </p>
                 </div>
@@ -1556,13 +1572,13 @@
               <!-- Password Reset - Only show when email verification is enabled -->
               <div
                 v-if="form.email_verify_enabled"
-                class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.registration.passwordReset")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.registration.passwordResetHint") }}
                   </p>
                 </div>
@@ -1574,10 +1590,10 @@
               <!-- Frontend URL - Only show when password reset is enabled -->
               <div
                 v-if="form.email_verify_enabled && form.password_reset_enabled"
-                class="border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="border-t border-outline pt-4"
               >
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.registration.frontendUrl") }}
                 </label>
@@ -1589,26 +1605,26 @@
                     t('admin.settings.registration.frontendUrlPlaceholder')
                   "
                 />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{ t("admin.settings.registration.frontendUrlHint") }}
                 </p>
               </div>
 
               <!-- TOTP 2FA -->
               <div
-                class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.registration.totp")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.registration.totpHint") }}
                   </p>
                   <!-- Warning when encryption key not configured -->
                   <p
                     v-if="!form.totp_encryption_key_configured"
-                    class="mt-2 text-sm text-amber-600 dark:text-amber-400"
+                    class="mt-2 text-sm text-warning-foreground"
                   >
                     {{ t("admin.settings.registration.totpKeyNotConfigured") }}
                   </p>
@@ -1625,22 +1641,22 @@
           <!-- API Key IP ACL Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.apiKeyAcl.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.apiKeyAcl.description") }}
               </p>
             </div>
             <div class="space-y-5 p-6">
               <div class="flex items-center justify-between gap-4">
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">
+                  <label class="font-medium text-foreground">
                     {{ t("admin.settings.apiKeyAcl.trustForwardedIp") }}
                   </label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.apiKeyAcl.trustForwardedIpHint") }}
                   </p>
                 </div>
@@ -1655,12 +1671,12 @@
           <!-- Cloudflare Turnstile Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.turnstile.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.turnstile.description") }}
               </p>
             </div>
@@ -1668,10 +1684,10 @@
               <!-- Enable Turnstile -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.turnstile.enableTurnstile")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.turnstile.enableTurnstileHint") }}
                   </p>
                 </div>
@@ -1684,12 +1700,12 @@
               <!-- Turnstile Keys - Only show when enabled -->
               <div
                 v-if="form.turnstile_enabled"
-                class="border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="border-t border-outline pt-4"
               >
                 <div class="grid grid-cols-1 gap-6">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.turnstile.siteKey") }}
                     </label>
@@ -1699,12 +1715,12 @@
                       class="input font-mono text-sm"
                       placeholder="0x4AAAAAAA..."
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.turnstile.siteKeyHint") }}
                       <a
                         href="https://dash.cloudflare.com/"
                         target="_blank"
-                        class="text-primary-600 hover:text-primary-500"
+                        class="text-brand hover:text-brand"
                         >{{
                           t("admin.settings.turnstile.cloudflareDashboard")
                         }}</a
@@ -1713,7 +1729,7 @@
                   </div>
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.turnstile.secretKey") }}
                     </label>
@@ -1723,7 +1739,7 @@
                       class="input font-mono text-sm"
                       placeholder="0x4AAAAAAA..."
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         form.turnstile_secret_key_configured
                           ? t(
@@ -1741,22 +1757,22 @@
           <!-- LinuxDo Connect OAuth 登录 -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.linuxdo.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.linuxdo.description") }}
               </p>
             </div>
             <div class="space-y-5 p-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.linuxdo.enable")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.linuxdo.enableHint") }}
                   </p>
                 </div>
@@ -1768,12 +1784,12 @@
 
               <div
                 v-if="form.linuxdo_connect_enabled"
-                class="border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="border-t border-outline pt-4"
               >
                 <div class="grid grid-cols-1 gap-6">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.linuxdo.clientId") }}
                     </label>
@@ -1785,14 +1801,14 @@
                         t('admin.settings.linuxdo.clientIdPlaceholder')
                       "
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.linuxdo.clientIdHint") }}
                     </p>
                   </div>
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.linuxdo.clientSecret") }}
                     </label>
@@ -1808,7 +1824,7 @@
                           : t('admin.settings.linuxdo.clientSecretPlaceholder')
                       "
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         form.linuxdo_connect_client_secret_configured
                           ? t(
@@ -1821,7 +1837,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.linuxdo.redirectUrl") }}
                     </label>
@@ -1845,12 +1861,12 @@
                       </button>
                       <code
                         v-if="linuxdoRedirectUrlSuggestion"
-                        class="select-all break-all rounded bg-gray-50 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300"
+                        class="select-all break-all rounded px-2 py-1 font-mono text-xs text-foreground-muted bg-surface"
                       >
                         {{ linuxdoRedirectUrlSuggestion }}
                       </code>
                     </div>
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.linuxdo.redirectUrlHint") }}
                     </p>
                   </div>
@@ -1862,12 +1878,12 @@
           <!-- GitHub / Google 邮箱快捷登录 -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ localText("邮箱快捷登录", "Email OAuth Sign-in") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{
                   localText(
                     "开启 GitHub 或 Google 邮箱授权登录后，系统会读取已验证邮箱，存在则直接登录，不存在则自动注册。",
@@ -1878,13 +1894,13 @@
             </div>
             <div class="space-y-6 p-6">
               <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                <div class="rounded-panel border border-outline p-4">
                   <div class="flex items-start justify-between gap-4">
                     <div>
-                      <h3 class="font-medium text-gray-900 dark:text-white">
+                      <h3 class="font-medium text-foreground">
                         GitHub
                       </h3>
-                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      <p class="mt-1 text-sm text-foreground-subtle">
                         {{
                           localText(
                             "GitHub OAuth App 需要 read:user user:email 权限，回调地址填写下方后端地址。",
@@ -1900,7 +1916,7 @@
                   </div>
 
                   <div v-if="form.github_oauth_enabled" class="mt-4 space-y-4">
-                    <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
+                    <div class="rounded-panel px-3 py-2 text-xs text-foreground-muted bg-surface">
                       <template v-if="isZhLocale">
                         开通引导：GitHub Settings → Developer settings →
                         <a
@@ -1908,7 +1924,7 @@
                           href="https://github.com/settings/developers"
                           target="_blank"
                           rel="noopener noreferrer"
-                          class="font-medium text-primary-600 hover:underline dark:text-primary-400"
+                          class="font-medium text-brand hover:underline"
                         >OAuth Apps</a>
                         → New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址。
                       </template>
@@ -1919,7 +1935,7 @@
                           href="https://github.com/settings/developers"
                           target="_blank"
                           rel="noopener noreferrer"
-                          class="font-medium text-primary-600 hover:underline dark:text-primary-400"
+                          class="font-medium text-brand hover:underline"
                         >OAuth Apps</a>
                         → New OAuth App. Use your site origin as Homepage URL and the backend callback URL below as Authorization callback URL.
                       </template>
@@ -1927,7 +1943,7 @@
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Client ID</label>
+                        <label class="mb-2 block text-sm font-medium text-foreground-muted">Client ID</label>
                         <input
                           v-model="form.github_oauth_client_id"
                           type="text"
@@ -1936,7 +1952,7 @@
                         />
                       </div>
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Client Secret</label>
+                        <label class="mb-2 block text-sm font-medium text-foreground-muted">Client Secret</label>
                         <input
                           v-model="form.github_oauth_client_secret"
                           type="password"
@@ -1951,7 +1967,7 @@
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label class="mb-2 block text-sm font-medium text-foreground-muted">
                         {{ localText("后端回调地址", "Backend Callback URL") }}
                       </label>
                       <input
@@ -1970,7 +1986,7 @@
                         </button>
                         <code
                           v-if="githubOAuthRedirectUrlSuggestion"
-                          class="select-all break-all rounded bg-gray-50 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300"
+                          class="select-all break-all rounded px-2 py-1 font-mono text-xs text-foreground-muted bg-surface"
                         >
                           {{ githubOAuthRedirectUrlSuggestion }}
                         </code>
@@ -1978,7 +1994,7 @@
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label class="mb-2 block text-sm font-medium text-foreground-muted">
                         {{ localText("前端回跳地址", "Frontend Callback URL") }}
                       </label>
                       <input
@@ -1991,13 +2007,13 @@
                   </div>
                 </div>
 
-                <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                <div class="rounded-panel border border-outline p-4">
                   <div class="flex items-start justify-between gap-4">
                     <div>
-                      <h3 class="font-medium text-gray-900 dark:text-white">
+                      <h3 class="font-medium text-foreground">
                         Google
                       </h3>
-                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      <p class="mt-1 text-sm text-foreground-subtle">
                         {{
                           localText(
                             "Google OAuth 客户端需要 openid email profile 范围，并在凭据里登记后端回调地址。",
@@ -2013,7 +2029,7 @@
                   </div>
 
                   <div v-if="form.google_oauth_enabled" class="mt-4 space-y-4">
-                    <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
+                    <div class="rounded-panel px-3 py-2 text-xs text-foreground-muted bg-surface">
                       {{
                         localText(
                           "开通引导：Google Cloud Console → APIs & Services → OAuth consent screen 完成同意屏幕；Credentials → Create Credentials → OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs。",
@@ -2024,7 +2040,7 @@
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Client ID</label>
+                        <label class="mb-2 block text-sm font-medium text-foreground-muted">Client ID</label>
                         <input
                           v-model="form.google_oauth_client_id"
                           type="text"
@@ -2033,7 +2049,7 @@
                         />
                       </div>
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Client Secret</label>
+                        <label class="mb-2 block text-sm font-medium text-foreground-muted">Client Secret</label>
                         <input
                           v-model="form.google_oauth_client_secret"
                           type="password"
@@ -2048,7 +2064,7 @@
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label class="mb-2 block text-sm font-medium text-foreground-muted">
                         {{ localText("后端回调地址", "Backend Callback URL") }}
                       </label>
                       <input
@@ -2067,7 +2083,7 @@
                         </button>
                         <code
                           v-if="googleOAuthRedirectUrlSuggestion"
-                          class="select-all break-all rounded bg-gray-50 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300"
+                          class="select-all break-all rounded px-2 py-1 font-mono text-xs text-foreground-muted bg-surface"
                         >
                           {{ googleOAuthRedirectUrlSuggestion }}
                         </code>
@@ -2075,7 +2091,7 @@
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label class="mb-2 block text-sm font-medium text-foreground-muted">
                         {{ localText("前端回跳地址", "Frontend Callback URL") }}
                       </label>
                       <input
@@ -2094,22 +2110,22 @@
           <!-- WeChat Connect OAuth 登录 -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.wechatConnect.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.wechatConnect.description") }}
               </p>
             </div>
             <div class="space-y-5 p-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.wechatConnect.enabledLabel")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.wechatConnect.enabledHint") }}
                   </p>
                 </div>
@@ -2122,18 +2138,18 @@
 
               <div
                 v-if="form.wechat_connect_enabled"
-                class="space-y-6 border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="space-y-6 border-t border-outline pt-4"
               >
                 <div class="space-y-4">
                   <div
-                    class="rounded-lg border border-gray-200 p-4 dark:border-dark-700"
+                    class="rounded-panel border border-outline p-4"
                   >
                     <div class="flex items-start justify-between gap-4">
                       <div>
-                        <h3 class="font-medium text-gray-900 dark:text-white">
+                        <h3 class="font-medium text-foreground">
                           {{ localText("PC 应用", "PC App") }}
                         </h3>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-foreground-subtle">
                           {{
                             localText(
                               "桌面浏览器通过微信开放平台扫码登录。可与公众号或移动应用同时存在。",
@@ -2155,7 +2171,7 @@
                     >
                       <div>
                         <label
-                          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
                           {{ localText("PC AppID", "PC App ID") }}
                         </label>
@@ -2174,7 +2190,7 @@
                       </div>
                       <div>
                         <label
-                          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
                           {{ localText("PC AppSecret", "PC App Secret") }}
                         </label>
@@ -2200,14 +2216,14 @@
                   </div>
 
                   <div
-                    class="rounded-lg border border-gray-200 p-4 dark:border-dark-700"
+                    class="rounded-panel border border-outline p-4"
                   >
                     <div class="flex items-start justify-between gap-4">
                       <div>
-                        <h3 class="font-medium text-gray-900 dark:text-white">
+                        <h3 class="font-medium text-foreground">
                           {{ localText("公众号", "Official Account") }}
                         </h3>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-foreground-subtle">
                           {{
                             localText(
                               "仅在微信内浏览器可用；非微信环境下会显示不可用。",
@@ -2229,7 +2245,7 @@
                     >
                       <div>
                         <label
-                          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
                           {{ localText("公众号 AppID", "Official Account App ID") }}
                         </label>
@@ -2248,7 +2264,7 @@
                       </div>
                       <div>
                         <label
-                          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
                           {{
                             localText(
@@ -2279,14 +2295,14 @@
                   </div>
 
                   <div
-                    class="rounded-lg border border-gray-200 p-4 dark:border-dark-700"
+                    class="rounded-panel border border-outline p-4"
                   >
                     <div class="flex items-start justify-between gap-4">
                       <div>
-                        <h3 class="font-medium text-gray-900 dark:text-white">
+                        <h3 class="font-medium text-foreground">
                           {{ localText("移动应用", "Mobile App") }}
                         </h3>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-foreground-subtle">
                           {{
                             localText(
                               "原生移动端通过微信 SDK 唤起授权，网页端不会直接发起该流程。",
@@ -2308,7 +2324,7 @@
                     >
                       <div>
                         <label
-                          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
                           {{ localText("移动应用 AppID", "Mobile App ID") }}
                         </label>
@@ -2327,7 +2343,7 @@
                       </div>
                       <div>
                         <label
-                          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
                           {{ localText("移动应用 AppSecret", "Mobile App Secret") }}
                         </label>
@@ -2359,7 +2375,7 @@
                     (form.wechat_connect_mp_enabled ||
                       form.wechat_connect_mobile_enabled)
                   "
-                  class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-300"
+                  class="rounded-panel border px-4 py-3 text-sm text-warning-foreground border-warning/30 bg-warning-subtle"
                 >
                   {{
                     localText(
@@ -2372,7 +2388,7 @@
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{
                         localText(
@@ -2388,7 +2404,7 @@
                       class="input font-mono text-sm"
                       :placeholder="t('admin.settings.wechatConnect.redirectUrlPlaceholder')"
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         localText(
                           "用于 PC 应用和公众号的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调。",
@@ -2408,7 +2424,7 @@
                       </button>
                       <code
                         v-if="wechatRedirectUrlSuggestion"
-                        class="select-all break-all rounded bg-gray-50 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300"
+                        class="select-all break-all rounded px-2 py-1 font-mono text-xs text-foreground-muted bg-surface"
                       >
                         {{ wechatRedirectUrlSuggestion }}
                       </code>
@@ -2418,7 +2434,7 @@
 
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.wechatConnect.frontendRedirectUrlLabel") }}
                   </label>
@@ -2429,7 +2445,7 @@
                     class="input font-mono text-sm"
                     :placeholder="t('admin.settings.wechatConnect.frontendRedirectUrlPlaceholder')"
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.wechatConnect.frontendRedirectUrlHint") }}
                   </p>
                 </div>
@@ -2440,22 +2456,22 @@
           <!-- DingTalk Connect OAuth 登录 -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.dingtalk.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.dingtalk.description") }}
               </p>
             </div>
             <div class="space-y-5 p-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.dingtalk.enable")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.dingtalk.enableHint") }}
                   </p>
                 </div>
@@ -2467,12 +2483,12 @@
 
               <div
                 v-if="form.dingtalk_connect_enabled"
-                class="border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="border-t border-outline pt-4"
               >
                 <div class="grid grid-cols-1 gap-6">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.dingtalk.clientId") }}
                     </label>
@@ -2484,14 +2500,14 @@
                         t('admin.settings.dingtalk.clientIdPlaceholder')
                       "
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.dingtalk.clientIdHint") }}
                     </p>
                   </div>
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.dingtalk.clientSecret") }}
                     </label>
@@ -2507,7 +2523,7 @@
                           : t('admin.settings.dingtalk.clientSecretPlaceholder')
                       "
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         form.dingtalk_connect_client_secret_configured
                           ? t(
@@ -2520,7 +2536,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.dingtalk.redirectUrl") }}
                     </label>
@@ -2532,17 +2548,17 @@
                         t('admin.settings.dingtalk.redirectUrlPlaceholder')
                       "
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.dingtalk.redirectUrlHint") }}
                     </p>
                   </div>
 
                   <!-- Corp Restriction Policy -->
-                  <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <div class="border-t border-outline pt-4">
+                    <label class="mb-2 block text-sm font-medium text-foreground-muted">
                       {{ t("admin.settings.dingtalk.corpPolicy.label") }}
                     </label>
-                    <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mb-3 text-xs text-foreground-subtle">
                       {{ t("admin.settings.dingtalk.corpPolicy.hint") }}
                     </p>
                     <div class="space-y-2">
@@ -2551,9 +2567,9 @@
                           v-model="form.dingtalk_connect_corp_restriction_policy"
                           type="radio"
                           value="none"
-                          class="h-4 w-4 text-primary-600"
+                          class="h-4 w-4 text-brand"
                         />
-                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                        <span class="text-sm text-foreground-muted">
                           {{ t("admin.settings.dingtalk.corpPolicy.none") }}
                         </span>
                       </label>
@@ -2562,9 +2578,9 @@
                           v-model="form.dingtalk_connect_corp_restriction_policy"
                           type="radio"
                           value="internal_only"
-                          class="h-4 w-4 text-primary-600"
+                          class="h-4 w-4 text-brand"
                         />
-                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                        <span class="text-sm text-foreground-muted">
                           {{ t("admin.settings.dingtalk.corpPolicy.internalOnly") }}
                         </span>
                       </label>
@@ -2574,13 +2590,13 @@
                   <!-- bypass_registration toggle（仅 internal_only 模式下可见可用） -->
                   <div
                     v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
-                    class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-dark-700"
+                    class="flex items-center justify-between pt-4 border-t border-outline"
                   >
                     <div>
-                      <label class="font-medium text-gray-900 dark:text-white">{{
+                      <label class="font-medium text-foreground">{{
                         t("admin.settings.dingtalk.bypassRegistration")
                       }}</label>
-                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                      <p class="text-sm text-foreground-subtle">
                         {{ t("admin.settings.dingtalk.bypassRegistrationHint") }}
                       </p>
                     </div>
@@ -2593,14 +2609,14 @@
                   <!-- 身份同步开关（仅 internal_only 模式下可见） -->
                   <div
                     v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
-                    class="pt-4 border-t border-gray-100 dark:border-dark-700 space-y-2"
+                    class="pt-4 border-t border-outline space-y-2"
                   >
                     <div class="flex items-center justify-between">
                       <div>
-                        <label class="font-medium text-gray-900 dark:text-white">{{
+                        <label class="font-medium text-foreground">{{
                           t("admin.settings.dingtalk.syncDisplayName")
                         }}</label>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                        <p class="text-sm text-foreground-subtle">
                           {{ t("admin.settings.dingtalk.syncDisplayNameHint") }}
                         </p>
                       </div>
@@ -2611,7 +2627,7 @@
                     </div>
                     <div v-if="form.dingtalk_connect_sync_display_name" class="space-y-2">
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[5rem]">
+                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
                           {{ t("admin.settings.dingtalk.syncDisplayNameTarget") }}
                         </label>
                         <input
@@ -2622,7 +2638,7 @@
                         />
                       </div>
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[5rem]">
+                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
                           {{ t("admin.settings.dingtalk.syncAttrDisplayName") }}
                         </label>
                         <input
@@ -2633,23 +2649,23 @@
                         />
                       </div>
                     </div>
-                    <p v-if="form.dingtalk_connect_sync_display_name" class="text-xs text-gray-400 dark:text-gray-500">
+                    <p v-if="form.dingtalk_connect_sync_display_name" class="text-xs text-foreground-subtle">
                       {{ t("admin.settings.dingtalk.syncDisplayNameTargetHint") }}
                     </p>
                   </div>
                   <div
                     v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
-                    class="pt-4 border-t border-gray-100 dark:border-dark-700 space-y-2"
+                    class="pt-4 border-t border-outline space-y-2"
                   >
                     <div class="flex items-center justify-between">
                       <div>
-                        <label class="font-medium text-gray-900 dark:text-white">{{
+                        <label class="font-medium text-foreground">{{
                           t("admin.settings.dingtalk.syncCorpEmail")
                         }}</label>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                        <p class="text-sm text-foreground-subtle">
                           {{ t("admin.settings.dingtalk.syncCorpEmailHint") }}
                         </p>
-                        <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        <p class="text-xs text-warning-foreground mt-1">
                           {{ t("admin.settings.dingtalk.syncCorpEmailPermissionHint") }}
                         </p>
                       </div>
@@ -2660,7 +2676,7 @@
                     </div>
                     <div v-if="form.dingtalk_connect_sync_corp_email" class="space-y-2">
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[5rem]">
+                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
                           {{ t("admin.settings.dingtalk.syncCorpEmailTarget") }}
                         </label>
                         <input
@@ -2671,7 +2687,7 @@
                         />
                       </div>
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[5rem]">
+                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
                           {{ t("admin.settings.dingtalk.syncAttrDisplayName") }}
                         </label>
                         <input
@@ -2682,23 +2698,23 @@
                         />
                       </div>
                     </div>
-                    <p v-if="form.dingtalk_connect_sync_corp_email" class="text-xs text-gray-400 dark:text-gray-500">
+                    <p v-if="form.dingtalk_connect_sync_corp_email" class="text-xs text-foreground-subtle">
                       {{ t("admin.settings.dingtalk.syncCorpEmailTargetHint") }}
                     </p>
                   </div>
                   <div
                     v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
-                    class="pt-4 border-t border-gray-100 dark:border-dark-700 space-y-2"
+                    class="pt-4 border-t border-outline space-y-2"
                   >
                     <div class="flex items-center justify-between">
                       <div>
-                        <label class="font-medium text-gray-900 dark:text-white">{{
+                        <label class="font-medium text-foreground">{{
                           t("admin.settings.dingtalk.syncDept")
                         }}</label>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                        <p class="text-sm text-foreground-subtle">
                           {{ t("admin.settings.dingtalk.syncDeptHint") }}
                         </p>
-                        <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        <p class="text-xs text-warning-foreground mt-1">
                           {{ t("admin.settings.dingtalk.syncDeptPermissionHint") }}
                         </p>
                       </div>
@@ -2709,7 +2725,7 @@
                     </div>
                     <div v-if="form.dingtalk_connect_sync_dept" class="space-y-2">
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[5rem]">
+                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
                           {{ t("admin.settings.dingtalk.syncDeptTarget") }}
                         </label>
                         <input
@@ -2720,7 +2736,7 @@
                         />
                       </div>
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[5rem]">
+                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
                           {{ t("admin.settings.dingtalk.syncAttrDisplayName") }}
                         </label>
                         <input
@@ -2731,7 +2747,7 @@
                         />
                       </div>
                     </div>
-                    <p v-if="form.dingtalk_connect_sync_dept" class="text-xs text-gray-400 dark:text-gray-500">
+                    <p v-if="form.dingtalk_connect_sync_dept" class="text-xs text-foreground-subtle">
                       {{ t("admin.settings.dingtalk.syncDeptTargetHint") }}
                     </p>
                   </div>
@@ -2743,22 +2759,22 @@
           <!-- Generic OIDC OAuth 登录 -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.oidc.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.oidc.description") }}
               </p>
             </div>
             <div class="space-y-5 p-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.oidc.enable")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.oidc.enableHint") }}
                   </p>
                 </div>
@@ -2770,12 +2786,12 @@
 
               <div
                 v-if="form.oidc_connect_enabled"
-                class="space-y-6 border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="space-y-6 border-t border-outline pt-4"
               >
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.providerName") }}
                     </label>
@@ -2791,7 +2807,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.clientId") }}
                     </label>
@@ -2807,7 +2823,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.clientSecret") }}
                     </label>
@@ -2823,7 +2839,7 @@
                           : t('admin.settings.oidc.clientSecretPlaceholder')
                       "
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
                         form.oidc_connect_client_secret_configured
                           ? t("admin.settings.oidc.clientSecretConfiguredHint")
@@ -2836,7 +2852,7 @@
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.issuerUrl") }}
                     </label>
@@ -2852,7 +2868,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.discoveryUrl") }}
                     </label>
@@ -2868,7 +2884,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.authorizeUrl") }}
                     </label>
@@ -2884,7 +2900,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.tokenUrl") }}
                     </label>
@@ -2900,7 +2916,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.userinfoUrl") }}
                     </label>
@@ -2916,7 +2932,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.jwksUrl") }}
                     </label>
@@ -2932,7 +2948,7 @@
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.scopes") }}
                     </label>
@@ -2942,14 +2958,14 @@
                       class="input font-mono text-sm"
                       :placeholder="t('admin.settings.oidc.scopesPlaceholder')"
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.oidc.scopesHint") }}
                     </p>
                   </div>
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.redirectUrl") }}
                     </label>
@@ -2973,19 +2989,19 @@
                       </button>
                       <code
                         v-if="oidcRedirectUrlSuggestion"
-                        class="select-all break-all rounded bg-gray-50 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300"
+                        class="select-all break-all rounded px-2 py-1 font-mono text-xs text-foreground-muted bg-surface"
                       >
                         {{ oidcRedirectUrlSuggestion }}
                       </code>
                     </div>
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.oidc.redirectUrlHint") }}
                     </p>
                   </div>
 
                   <div class="lg:col-span-2">
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.frontendRedirectUrl") }}
                     </label>
@@ -2997,7 +3013,7 @@
                         t('admin.settings.oidc.frontendRedirectUrlPlaceholder')
                       "
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.oidc.frontendRedirectUrlHint") }}
                     </p>
                   </div>
@@ -3006,7 +3022,7 @@
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.tokenAuthMethod") }}
                     </label>
@@ -3026,7 +3042,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.clockSkewSeconds") }}
                     </label>
@@ -3041,7 +3057,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.allowedSigningAlgs") }}
                     </label>
@@ -3058,10 +3074,10 @@
 
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                   <div
-                    class="flex items-center justify-between rounded border border-gray-200 px-4 py-3 dark:border-dark-700"
+                    class="flex items-center justify-between rounded border border-outline px-4 py-3"
                   >
                     <div>
-                      <label class="font-medium text-gray-900 dark:text-white">
+                      <label class="font-medium text-foreground">
                         {{ t("admin.settings.oidc.usePkce") }}
                       </label>
                     </div>
@@ -3073,10 +3089,10 @@
                   </div>
 
                   <div
-                    class="flex items-center justify-between rounded border border-gray-200 px-4 py-3 dark:border-dark-700"
+                    class="flex items-center justify-between rounded border border-outline px-4 py-3"
                   >
                     <div>
-                      <label class="font-medium text-gray-900 dark:text-white">
+                      <label class="font-medium text-foreground">
                         {{ t("admin.settings.oidc.validateIdToken") }}
                       </label>
                     </div>
@@ -3088,10 +3104,10 @@
                   </div>
 
                   <div
-                    class="flex items-center justify-between rounded border border-gray-200 px-4 py-3 dark:border-dark-700"
+                    class="flex items-center justify-between rounded border border-outline px-4 py-3"
                   >
                     <div>
-                      <label class="font-medium text-gray-900 dark:text-white">
+                      <label class="font-medium text-foreground">
                         {{ t("admin.settings.oidc.requireEmailVerified") }}
                       </label>
                     </div>
@@ -3105,7 +3121,7 @@
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.userinfoEmailPath") }}
                     </label>
@@ -3121,7 +3137,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.userinfoIdPath") }}
                     </label>
@@ -3137,7 +3153,7 @@
 
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.oidc.userinfoUsernamePath") }}
                     </label>
@@ -3162,12 +3178,12 @@
           <!-- Default Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.defaults.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.defaults.description") }}
               </p>
             </div>
@@ -3175,7 +3191,7 @@
               <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.defaults.defaultBalance") }}
                   </label>
@@ -3187,13 +3203,13 @@
                     class="input"
                     placeholder="0.00"
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.defaults.defaultBalanceHint") }}
                   </p>
                 </div>
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.defaults.defaultConcurrency") }}
                   </label>
@@ -3204,13 +3220,13 @@
                     class="input"
                     placeholder="1"
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.defaults.defaultConcurrencyHint") }}
                   </p>
                 </div>
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.defaults.defaultUserRpmLimit") }}
                   </label>
@@ -3222,19 +3238,19 @@
                     class="input"
                     placeholder="0"
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.defaults.defaultUserRpmLimitHint") }}
                   </p>
                 </div>
               </div>
 
-              <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+              <div class="border-t border-outline pt-4">
                 <div class="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div class="min-w-0">
-                    <label class="font-medium text-gray-900 dark:text-white">
+                    <label class="font-medium text-foreground">
                       {{ t("admin.settings.defaults.defaultSubscriptions") }}
                     </label>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-foreground-subtle">
                       {{
                         t("admin.settings.defaults.defaultSubscriptionsHint")
                       }}
@@ -3252,7 +3268,7 @@
 
                 <div
                   v-if="form.default_subscriptions.length === 0"
-                  class="rounded border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400"
+                  class="rounded border border-dashed border-outline-strong px-4 py-3 text-sm text-foreground-subtle"
                 >
                   {{ t("admin.settings.defaults.defaultSubscriptionsEmpty") }}
                 </div>
@@ -3261,11 +3277,11 @@
                   <div
                     v-for="(item, index) in form.default_subscriptions"
                     :key="`default-sub-${index}`"
-                    class="grid grid-cols-1 gap-3 rounded border border-gray-200 p-3 md:grid-cols-[1fr_160px_auto] dark:border-dark-600"
+                    class="grid grid-cols-1 gap-3 rounded border border-outline bg-surface-subtle p-3 md:grid-cols-[1fr_160px_auto]"
                   >
                     <div>
                       <label
-                        class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                        class="mb-1 block text-xs font-medium text-foreground-subtle"
                       >
                         {{ t("admin.settings.defaults.subscriptionGroup") }}
                       </label>
@@ -3301,7 +3317,7 @@
                               ).rate
                             "
                           />
-                          <span v-else class="text-gray-400">
+                          <span v-else class="text-foreground-subtle">
                             {{ t("admin.settings.defaults.subscriptionGroup") }}
                           </span>
                         </template>
@@ -3339,7 +3355,7 @@
                     </div>
                     <div>
                       <label
-                        class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                        class="mb-1 block text-xs font-medium text-foreground-subtle"
                       >
                         {{
                           t("admin.settings.defaults.subscriptionValidityDays")
@@ -3356,7 +3372,7 @@
                     <div class="flex items-end">
                       <button
                         type="button"
-                        class="btn btn-secondary default-sub-delete-btn w-full text-red-600 hover:text-red-700 dark:text-red-400"
+                        class="btn btn-secondary default-sub-delete-btn w-full text-danger-foreground hover:text-danger-foreground"
                         @click="removeDefaultSubscription(index)"
                       >
                         {{ t("common.delete") }}
@@ -3367,22 +3383,22 @@
               </div>
 
               <!-- ★ 新增：系统全局默认平台限额矩阵 -->
-              <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+              <div class="border-t border-outline pt-4">
                 <div class="mb-3">
-                  <label class="font-medium text-gray-900 dark:text-white">
+                  <label class="font-medium text-foreground">
                     {{ t("admin.settings.defaults.defaultPlatformQuotas") }}
                   </label>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <p class="mt-1 text-sm text-foreground-subtle">
                     {{ t("admin.settings.defaults.defaultPlatformQuotasHint") }}
                   </p>
-                  <p class="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+                  <p class="mt-0.5 text-xs text-warning-foreground">
                     {{ t("admin.settings.defaults.platformQuotaNotice") }}
                   </p>
                 </div>
                 <div class="overflow-x-auto">
                   <table class="min-w-full text-sm">
                     <thead>
-                      <tr class="text-left text-xs text-gray-500 dark:text-gray-400">
+                      <tr class="text-left text-xs text-foreground-subtle">
                         <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.platform") }}</th>
                         <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.daily") }}</th>
                         <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.weekly") }}</th>
@@ -3392,7 +3408,7 @@
                     <tbody class="space-y-2">
                       <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity', 'grok'] as const)" :key="p" class="align-top">
                         <td class="pr-4 py-1">
-                          <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ p }}</span>
+                          <span class="font-mono text-xs text-foreground-muted">{{ p }}</span>
                         </td>
                         <td class="pr-4 py-1">
                           <input
@@ -3435,24 +3451,24 @@
 
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.authSourceDefaults.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.authSourceDefaults.description") }}
               </p>
             </div>
             <div class="space-y-6 p-6">
               <div
-                class="flex items-center justify-between rounded border border-gray-200 px-4 py-3 dark:border-dark-700"
+                class="flex items-center justify-between rounded border border-outline px-4 py-3"
               >
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">
+                  <label class="font-medium text-foreground">
                     {{ t("admin.settings.authSourceDefaults.requireEmailLabel") }}
                   </label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.authSourceDefaults.requireEmailHint") }}
                   </p>
                 </div>
@@ -3466,14 +3482,14 @@
                 <div
                   v-for="authSource in authSourceDefaultsMeta"
                   :key="authSource.source"
-                  class="rounded-lg border border-gray-200 p-4 dark:border-dark-700"
+                  class="rounded-panel border border-outline p-4"
                 >
                   <div class="flex items-center justify-between gap-4">
                     <div>
-                      <div class="font-medium text-gray-900 dark:text-white">
+                      <div class="font-medium text-foreground">
                         {{ authSource.title }}
                       </div>
-                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      <p class="mt-1 text-sm text-foreground-subtle">
                         {{ authSource.description }}
                       </p>
                     </div>
@@ -3489,16 +3505,16 @@
                   <div
                     v-if="authSourceDefaults[authSource.source].grant_on_signup"
                     :data-testid="`auth-source-${authSource.source}-panel`"
-                    class="mt-4 space-y-4 border-t border-gray-100 pt-4 dark:border-dark-700"
+                    class="mt-4 space-y-4 border-t border-outline pt-4"
                   >
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-foreground-subtle">
                       {{ t("admin.settings.authSourceDefaults.enabledHint") }}
                     </p>
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
                         <label
-                          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
                           {{ t("admin.settings.defaults.defaultBalance") }}
                         </label>
@@ -3515,7 +3531,7 @@
                       </div>
                       <div>
                         <label
-                          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
                           {{ t("admin.settings.defaults.defaultConcurrency") }}
                         </label>
@@ -3532,16 +3548,16 @@
                     </div>
 
                     <div
-                      class="flex items-center justify-between rounded border border-gray-200 px-4 py-3 dark:border-dark-700"
+                      class="flex items-center justify-between rounded border border-outline px-4 py-3"
                     >
                       <div>
                         <label
-                          class="font-medium text-gray-900 dark:text-white"
+                          class="font-medium text-foreground"
                         >
                           {{ t("admin.settings.authSourceDefaults.grantOnFirstBindLabel") }}
                         </label>
                         <p
-                          class="mt-0.5 text-xs text-gray-500 dark:text-gray-400"
+                          class="mt-0.5 text-xs text-foreground-subtle"
                         >
                           {{ t("admin.settings.authSourceDefaults.grantOnFirstBindHint") }}
                         </p>
@@ -3558,11 +3574,11 @@
                     <div class="mb-3 flex items-center justify-between">
                       <div>
                         <label
-                          class="font-medium text-gray-900 dark:text-white"
+                          class="font-medium text-foreground"
                         >
                           {{ t("admin.settings.authSourceDefaults.defaultSubscriptionsLabel") }}
                         </label>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                        <p class="text-sm text-foreground-subtle">
                           {{ t("admin.settings.authSourceDefaults.defaultSubscriptionsHint") }}
                         </p>
                       </div>
@@ -3585,7 +3601,7 @@
                         authSourceDefaults[authSource.source].subscriptions
                           .length === 0
                       "
-                      class="rounded border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400"
+                      class="rounded border border-dashed border-outline-strong px-4 py-3 text-sm text-foreground-subtle"
                     >
                       {{ t("admin.settings.authSourceDefaults.noSourceSubscriptions") }}
                     </div>
@@ -3596,11 +3612,11 @@
                           authSource.source
                         ].subscriptions"
                         :key="`${authSource.source}-sub-${index}`"
-                        class="grid grid-cols-1 gap-3 rounded border border-gray-200 p-3 md:grid-cols-[1fr_160px_auto] dark:border-dark-600"
+                        class="grid grid-cols-1 gap-3 rounded border border-outline bg-surface-subtle p-3 md:grid-cols-[1fr_160px_auto]"
                       >
                         <div>
                           <label
-                            class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                            class="mb-1 block text-xs font-medium text-foreground-subtle"
                           >
                             {{ t("admin.settings.defaults.subscriptionGroup") }}
                           </label>
@@ -3636,7 +3652,7 @@
                                   ).rate
                                 "
                               />
-                              <span v-else class="text-gray-400">
+                              <span v-else class="text-foreground-subtle">
                                 {{
                                   t("admin.settings.defaults.subscriptionGroup")
                                 }}
@@ -3676,7 +3692,7 @@
                         </div>
                         <div>
                           <label
-                            class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                            class="mb-1 block text-xs font-medium text-foreground-subtle"
                           >
                             {{
                               t(
@@ -3695,7 +3711,7 @@
                         <div class="flex items-end">
                           <button
                             type="button"
-                            class="btn btn-secondary w-full text-red-600 hover:text-red-700 dark:text-red-400"
+                            class="btn btn-secondary w-full text-danger-foreground hover:text-danger-foreground"
                             @click="
                               removeAuthSourceDefaultSubscription(
                                 authSource.source,
@@ -3710,19 +3726,19 @@
                     </div>
 
                     <!-- ★ 新增：auth source 平台限额覆盖区块 -->
-                    <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+                    <div class="border-t border-outline pt-4">
                       <div class="mb-3">
-                        <label class="font-medium text-gray-900 dark:text-white">
+                        <label class="font-medium text-foreground">
                           {{ t("admin.settings.authSourceDefaults.platformQuotasOverride") }}
                         </label>
-                        <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        <p class="mt-0.5 text-xs text-foreground-subtle">
                           {{ t("admin.settings.authSourceDefaults.platformQuotasOverrideHint") }}
                         </p>
                       </div>
                       <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
                           <thead>
-                            <tr class="text-left text-xs text-gray-500 dark:text-gray-400">
+                            <tr class="text-left text-xs text-foreground-subtle">
                               <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.platform") }}</th>
                               <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.daily") }}</th>
                               <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.weekly") }}</th>
@@ -3732,7 +3748,7 @@
                           <tbody>
                             <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity', 'grok'] as const)" :key="`${authSource.source}-pq-${p}`" class="align-top">
                               <td class="pr-4 py-1">
-                                <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ p }}</span>
+                                <span class="font-mono text-xs text-foreground-muted">{{ p }}</span>
                               </td>
                               <td class="pr-4 py-1">
                                 <input
@@ -3783,19 +3799,19 @@
           <!-- Claude Code Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.claudeCode.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.claudeCode.description") }}
               </p>
             </div>
             <div class="p-6">
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.claudeCode.minVersion") }}
                 </label>
@@ -3807,13 +3823,13 @@
                     t('admin.settings.claudeCode.minVersionPlaceholder')
                   "
                 />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{ t("admin.settings.claudeCode.minVersionHint") }}
                 </p>
               </div>
               <div class="mt-4">
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.claudeCode.maxVersion") }}
                 </label>
@@ -3825,7 +3841,7 @@
                     t('admin.settings.claudeCode.maxVersionPlaceholder')
                   "
                 />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{ t("admin.settings.claudeCode.maxVersionHint") }}
                 </p>
               </div>
@@ -3835,25 +3851,25 @@
           <!-- Codex Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.gatewayForwarding.codexHardeningTitle") }}
               </h2>
             </div>
             <div class="p-6 space-y-4">
                 <div>
-                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                  <h3 class="text-base font-semibold text-foreground">
                     {{ t("admin.settings.gatewayForwarding.codexClientRestrictionTitle") }}
                   </h3>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <p class="mt-1 text-sm text-foreground-subtle">
                     {{ t("admin.settings.gatewayForwarding.codexHardeningDesc") }}
                   </p>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.gatewayForwarding.minCodexVersion") }}
                     </label>
@@ -3870,7 +3886,7 @@
                   </div>
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.gatewayForwarding.maxCodexVersion") }}
                     </label>
@@ -3886,15 +3902,15 @@
                     />
                   </div>
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-xs text-foreground-subtle">
                   {{ t("admin.settings.gatewayForwarding.codexVersionHint") }}
                 </p>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label class="block text-sm font-medium text-foreground-muted">
                     {{ t("admin.settings.gatewayForwarding.codexFingerprintSignals") }}
                   </label>
-                  <p class="mb-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mb-2 mt-1 text-xs text-foreground-subtle">
                     {{ t("admin.settings.gatewayForwarding.codexFingerprintSignalsDesc") }}
                   </p>
                   <div
@@ -3913,13 +3929,13 @@
                       class="input flex-1 font-mono text-sm"
                       :placeholder="t('admin.settings.gatewayForwarding.codexFpMatchPlaceholder')"
                     />
-                    <label class="flex shrink-0 items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                    <label class="flex shrink-0 items-center gap-1 text-xs text-foreground-subtle">
                       <input v-model="row.required" type="checkbox" />
                       {{ t("admin.settings.gatewayForwarding.codexFpRequired") }}
                     </label>
                     <button
                       type="button"
-                      class="btn btn-secondary btn-sm shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                      class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
                       @click="removeCodexFingerprintRow(i)"
                     >
                       {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
@@ -3930,7 +3946,7 @@
                   </button>
                   <p
                     v-if="codexFingerprintNoRequired"
-                    class="mt-2 text-xs text-amber-600 dark:text-amber-500"
+                    class="mt-2 text-xs text-warning-foreground"
                   >
                     {{ t("admin.settings.gatewayForwarding.codexFingerprintNoRequiredWarn") }}
                   </p>
@@ -3939,13 +3955,13 @@
                 <div class="flex items-center justify-between">
                   <div class="pr-4">
                     <label
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="block text-sm font-medium text-foreground-muted"
                     >
                       {{
                         t("admin.settings.gatewayForwarding.codexAllowAppServer")
                       }}
                     </label>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1 text-xs text-foreground-subtle">
                       {{
                         t(
                           "admin.settings.gatewayForwarding.codexAllowAppServerDesc",
@@ -3961,11 +3977,11 @@
 
                 <div>
                   <label
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.gatewayForwarding.codexBlacklist") }}
                   </label>
-                  <p class="mb-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mb-2 mt-1 text-xs text-foreground-subtle">
                     {{ t("admin.settings.gatewayForwarding.codexBlacklistDesc") }}
                   </p>
                   <div
@@ -3995,7 +4011,7 @@
                     />
                     <button
                       type="button"
-                      class="btn btn-secondary btn-sm shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                      class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
                       @click="removeCodexBlacklistRow(i)"
                     >
                       {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
@@ -4012,11 +4028,11 @@
 
                 <div>
                   <label
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.gatewayForwarding.codexWhitelist") }}
                   </label>
-                  <p class="mb-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mb-2 mt-1 text-xs text-foreground-subtle">
                     {{ t("admin.settings.gatewayForwarding.codexWhitelistDesc") }}
                   </p>
                   <div
@@ -4045,7 +4061,7 @@
                       "
                     />
                     <label
-                      class="flex shrink-0 items-center gap-1 text-xs text-gray-600 dark:text-gray-400"
+                      class="flex shrink-0 items-center gap-1 text-xs text-foreground-subtle"
                       :title="
                         t(
                           'admin.settings.gatewayForwarding.codexWhitelistSkipFingerprintTooltip',
@@ -4064,7 +4080,7 @@
                     </label>
                     <button
                       type="button"
-                      class="btn btn-secondary btn-sm shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                      class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
                       @click="removeCodexWhitelistRow(i)"
                     >
                       {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
@@ -4084,12 +4100,12 @@
           <!-- Gateway Scheduling Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.scheduling.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.scheduling.description") }}
               </p>
             </div>
@@ -4097,11 +4113,11 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.scheduling.allowUngroupedKey") }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.scheduling.allowUngroupedKeyHint") }}
                   </p>
                 </div>
@@ -4114,11 +4130,11 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.openaiExperimentalScheduler.title") }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t("admin.settings.openaiExperimentalScheduler.description")
                     }}
@@ -4132,15 +4148,15 @@
 
               <div
                 v-if="form.openai_advanced_scheduler_enabled"
-                class="flex items-center justify-between border-t border-gray-100 pt-5 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-5"
               >
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.openaiExperimentalScheduler.stickyWeightedTitle") }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t("admin.settings.openaiExperimentalScheduler.stickyWeightedDescription")
                     }}
@@ -4154,15 +4170,15 @@
 
               <div
                 v-if="form.openai_advanced_scheduler_enabled"
-                class="flex items-center justify-between border-t border-gray-100 pt-5 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-5"
               >
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.openaiExperimentalScheduler.subscriptionPriorityTitle") }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t("admin.settings.openaiExperimentalScheduler.subscriptionPriorityDescription")
                     }}
@@ -4176,15 +4192,15 @@
 
               <div
                 v-if="form.openai_advanced_scheduler_enabled"
-                class="border-t border-gray-100 pt-5 dark:border-dark-700"
+                class="border-t border-outline pt-5"
               >
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.openaiExperimentalScheduler.weightsTitle") }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t("admin.settings.openaiExperimentalScheduler.weightsDescription")
                     }}
@@ -4197,7 +4213,7 @@
                     :key="field.key"
                     class="block"
                   >
-                    <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <span class="text-xs font-medium text-foreground-subtle">
                       {{ field.label }}
                     </span>
                     <input
@@ -4216,12 +4232,12 @@
           <!-- Gateway Forwarding Behavior -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.gatewayForwarding.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.gatewayForwarding.description") }}
               </p>
             </div>
@@ -4230,7 +4246,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{
                       t(
@@ -4238,7 +4254,7 @@
                       )
                     }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.fingerprintUnificationHint",
@@ -4256,13 +4272,13 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{
                       t("admin.settings.gatewayForwarding.metadataPassthrough")
                     }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.metadataPassthroughHint",
@@ -4280,11 +4296,11 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.gatewayForwarding.cchSigning") }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.gatewayForwarding.cchSigningHint") }}
                   </p>
                 </div>
@@ -4298,7 +4314,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{
                       t(
@@ -4306,7 +4322,7 @@
                       )
                     }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.claudeOAuthSystemPromptInjectionHint",
@@ -4322,7 +4338,7 @@
 
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{
                     t(
@@ -4334,7 +4350,7 @@
                   <div
                     v-for="(block, index) in claudeOAuthSystemPromptBlocks"
                     :key="block.id"
-                    class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800/60"
+                    class="rounded-panel border border-outline bg-surface-subtle p-4"
                   >
                     <div
                       :class="[
@@ -4344,7 +4360,7 @@
                     >
                       <div class="min-w-0">
                         <div
-                          class="text-sm font-medium text-gray-900 dark:text-white"
+                          class="text-sm font-medium text-foreground"
                         >
                           {{
                             t(
@@ -4354,7 +4370,7 @@
                           }}
                         </div>
                         <div
-                          class="mt-0.5 text-xs text-gray-500 dark:text-gray-400"
+                          class="mt-0.5 text-xs text-foreground-subtle"
                         >
                           {{ getClaudeOAuthPresetLabel(block.preset) }}
                         </div>
@@ -4412,7 +4428,7 @@
                         />
                         <button
                           type="button"
-                          class="btn btn-secondary btn-sm px-2 text-red-600 hover:text-red-700 dark:text-red-400"
+                          class="btn btn-secondary btn-sm px-2 text-danger-foreground hover:text-danger-foreground"
                           @click="removeClaudeOAuthSystemPromptBlock(index)"
                         >
                           <Icon name="trash" size="xs" />
@@ -4424,7 +4440,7 @@
                       <div class="grid gap-3 md:grid-cols-2">
                         <div>
                           <label
-                            class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300"
+                            class="mb-1 block text-xs font-medium text-foreground-muted"
                           >
                             {{
                               t(
@@ -4443,7 +4459,7 @@
                         </div>
                         <div>
                           <label
-                            class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300"
+                            class="mb-1 block text-xs font-medium text-foreground-muted"
                           >
                             {{
                               t(
@@ -4460,7 +4476,7 @@
 
                       <div class="mt-3">
                         <label
-                          class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300"
+                          class="mb-1 block text-xs font-medium text-foreground-muted"
                         >
                           {{ t("admin.settings.gatewayForwarding.systemBlockText") }}
                         </label>
@@ -4478,7 +4494,7 @@
                         <div class="flex items-center justify-between gap-4">
                           <div>
                             <label
-                              class="text-xs font-medium text-gray-600 dark:text-gray-300"
+                              class="text-xs font-medium text-foreground-muted"
                             >
                               {{
                                 t(
@@ -4523,7 +4539,7 @@
                     }}
                   </button>
                 </div>
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{
                     t(
                       "admin.settings.gatewayForwarding.claudeOAuthSystemPromptBlocksHint",
@@ -4536,7 +4552,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{
                       t(
@@ -4544,7 +4560,7 @@
                       )
                     }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.anthropicCacheTTL1hInjectionHint",
@@ -4562,7 +4578,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{
                       t(
@@ -4570,7 +4586,7 @@
                       )
                     }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.rewriteMessageCacheControlHint",
@@ -4588,7 +4604,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{
                       t(
@@ -4596,7 +4612,7 @@
                       )
                     }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.clientDatelineNormalizationHint",
@@ -4613,7 +4629,7 @@
               <!-- Antigravity UA 版本 -->
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{
                     t(
@@ -4631,7 +4647,7 @@
                     )
                   "
                 />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{
                     t(
                       "admin.settings.gatewayForwarding.antigravityUserAgentVersionHint",
@@ -4643,7 +4659,7 @@
               <!-- OpenAI Codex UA -->
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{
                     t(
@@ -4661,7 +4677,7 @@
                     )
                   "
                 />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{
                     t(
                       "admin.settings.gatewayForwarding.openaiCodexUserAgentHint",
@@ -4676,12 +4692,12 @@
           <!-- Web Search Emulation -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.webSearchEmulation.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.webSearchEmulation.description") }}
               </p>
             </div>
@@ -4690,11 +4706,11 @@
               <div class="flex items-center justify-between">
                 <div>
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.webSearchEmulation.enabled") }}
                   </label>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.webSearchEmulation.enabledHint") }}
                   </p>
                 </div>
@@ -4708,7 +4724,7 @@
               <div v-if="webSearchConfig.enabled" class="space-y-4">
                 <div class="flex items-center justify-between">
                   <label
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.webSearchEmulation.providers") }}
                   </label>
@@ -4723,7 +4739,7 @@
 
                 <div
                   v-if="webSearchConfig.providers.length === 0"
-                  class="rounded-lg border border-dashed border-gray-300 p-4 text-center text-sm text-gray-400 dark:border-dark-600"
+                  class="rounded-panel border border-dashed border-outline-strong p-4 text-center text-sm text-foreground-subtle"
                 >
                   {{ t("admin.settings.webSearchEmulation.noProviders") }}
                 </div>
@@ -4731,7 +4747,7 @@
                 <div
                   v-for="(provider, pIdx) in webSearchConfig.providers"
                   :key="pIdx"
-                  class="rounded-lg border border-gray-200 dark:border-dark-600"
+                  class="rounded-panel border border-outline"
                 >
                   <!-- Collapsible header -->
                   <div
@@ -4740,7 +4756,7 @@
                   >
                     <div class="flex items-center gap-3">
                       <svg
-                        class="h-4 w-4 text-gray-400 transition-transform"
+                        class="h-4 w-4 text-foreground-subtle transition-transform"
                         :class="{ 'rotate-90': expandedProviders[pIdx] }"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -4763,7 +4779,7 @@
                         @click.stop
                       />
                       <!-- Quota summary (always visible) -->
-                      <span class="text-xs text-gray-400">
+                      <span class="text-xs text-foreground-subtle">
                         {{ provider.quota_used ?? 0 }} /
                         {{
                           provider.quota_limit != null &&
@@ -4777,7 +4793,7 @@
                           !expandedProviders[pIdx] &&
                           provider.api_key_configured
                         "
-                        class="text-xs text-green-500"
+                        class="text-xs text-success-foreground"
                       >
                         {{
                           t(
@@ -4788,7 +4804,7 @@
                     </div>
                     <button
                       type="button"
-                      class="text-red-500 hover:text-red-700 text-xs"
+                      class="text-danger-foreground hover:text-danger-foreground text-xs"
                       @click.stop="removeWebSearchProvider(pIdx)"
                     >
                       {{
@@ -4800,11 +4816,11 @@
                   <!-- Expanded content -->
                   <div
                     v-if="expandedProviders[pIdx]"
-                    class="space-y-3 border-t border-gray-100 px-4 pb-4 pt-3 dark:border-dark-700"
+                    class="space-y-3 border-t border-outline px-4 pb-4 pt-3"
                   >
                     <!-- API Key with inline show/copy -->
                     <div>
-                      <label class="text-xs text-gray-500">{{
+                      <label class="text-xs text-foreground-subtle">{{
                         t("admin.settings.webSearchEmulation.apiKey")
                       }}</label>
                       <div class="relative">
@@ -4831,7 +4847,7 @@
                         >
                           <button
                             type="button"
-                            class="rounded p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            class="rounded p-1 text-foreground-subtle hover:text-foreground-muted"
                             :title="
                               apiKeyVisible[pIdx]
                                 ? t(
@@ -4880,7 +4896,7 @@
                           </button>
                           <button
                             type="button"
-                            class="rounded p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            class="rounded p-1 text-foreground-subtle hover:text-foreground-muted"
                             :class="{
                               'opacity-30 cursor-not-allowed':
                                 !provider.api_key,
@@ -4912,7 +4928,7 @@
                     <!-- Quota + Subscription in compact row -->
                     <div class="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
                       <div>
-                        <label class="text-xs text-gray-500">{{
+                        <label class="text-xs text-foreground-subtle">{{
                           t("admin.settings.webSearchEmulation.quotaLimit")
                         }}</label>
                         <input
@@ -4922,7 +4938,7 @@
                           class="input text-sm"
                           :placeholder="'∞'"
                         />
-                        <p class="mt-0.5 text-xs text-gray-400">
+                        <p class="mt-0.5 text-xs text-foreground-subtle">
                           {{
                             t(
                               "admin.settings.webSearchEmulation.quotaLimitHint",
@@ -4931,7 +4947,7 @@
                         </p>
                       </div>
                       <div>
-                        <label class="text-xs text-gray-500">{{
+                        <label class="text-xs text-foreground-subtle">{{
                           t("admin.settings.webSearchEmulation.subscribedAt")
                         }}</label>
                         <input
@@ -4944,7 +4960,7 @@
                             )
                           "
                         />
-                        <p class="mt-0.5 text-xs text-gray-400">
+                        <p class="mt-0.5 text-xs text-foreground-subtle">
                           {{
                             t(
                               "admin.settings.webSearchEmulation.subscribedAtHint",
@@ -4956,7 +4972,7 @@
 
                     <!-- Usage display -->
                     <div class="flex items-center gap-2">
-                      <span class="text-xs text-gray-500"
+                      <span class="text-xs text-foreground-subtle"
                         >{{
                           t("admin.settings.webSearchEmulation.quotaUsage")
                         }}:</span
@@ -4966,17 +4982,17 @@
                           provider.quota_limit != null &&
                           provider.quota_limit > 0
                         "
-                        class="flex-1 rounded-full bg-gray-200 dark:bg-dark-600"
+                        class="flex-1 rounded-full bg-outline"
                         style="height: 6px"
                       >
                         <div
                           class="h-full rounded-full transition-all"
                           :class="
                             quotaPercentage(provider) > 90
-                              ? 'bg-red-500'
+                              ? 'bg-danger'
                               : quotaPercentage(provider) > 70
-                                ? 'bg-yellow-500'
-                                : 'bg-green-500'
+                                ? 'bg-warning'
+                                : 'bg-success'
                           "
                           :style="{
                             width:
@@ -4985,7 +5001,7 @@
                         />
                       </div>
                       <div v-else class="flex-1" />
-                      <span class="text-xs text-gray-500"
+                      <span class="text-xs text-foreground-subtle"
                         >{{ provider.quota_used ?? 0 }} /
                         {{
                           provider.quota_limit != null &&
@@ -4997,7 +5013,7 @@
                       <button
                         v-if="(provider.quota_used ?? 0) > 0"
                         type="button"
-                        class="text-xs text-primary-600 hover:text-primary-700"
+                        class="text-xs text-brand hover:text-brand"
                         @click="resetWebSearchUsage(pIdx)"
                       >
                         {{ t("admin.settings.webSearchEmulation.resetUsage") }}
@@ -5007,7 +5023,7 @@
                     <!-- Proxy + Test on same row -->
                     <div class="flex items-end gap-3">
                       <div class="flex-1">
-                        <label class="text-xs text-gray-500">{{
+                        <label class="text-xs text-foreground-subtle">{{
                           t("admin.settings.webSearchEmulation.proxy")
                         }}</label>
                         <ProxySelector
@@ -5063,10 +5079,10 @@
               <!-- Test results -->
               <div
                 v-if="wsTestResult"
-                class="mt-4 max-h-80 overflow-y-auto rounded-lg border border-outline bg-surface-subtle p-4"
+                class="mt-4 max-h-80 overflow-y-auto rounded-panel border border-outline bg-surface-subtle p-4"
               >
                 <p
-                  class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 text-sm font-medium text-foreground-muted"
                 >
                   {{
                     t("admin.settings.webSearchEmulation.testResultProvider")
@@ -5074,22 +5090,22 @@
                 </p>
                 <div
                   v-if="wsTestResult.results.length === 0"
-                  class="text-sm text-gray-400"
+                  class="text-sm text-foreground-subtle"
                 >
                   {{ t("admin.settings.webSearchEmulation.testNoResults") }}
                 </div>
                 <div
                   v-for="(r, rIdx) in wsTestResult.results"
                   :key="rIdx"
-                  class="mt-2 border-t border-gray-200 pt-2 first:mt-0 first:border-0 first:pt-0 dark:border-dark-600"
+                  class="mt-2 border-t border-outline pt-2 first:mt-0 first:border-0 first:pt-0"
                 >
                   <a
                     :href="r.url"
                     target="_blank"
-                    class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                    class="text-sm font-medium text-brand hover:underline"
                     >{{ r.title }}</a
                   >
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{ r.snippet }}
                   </p>
                 </div>
@@ -5110,11 +5126,11 @@
 
         <!-- Usage Records Settings -->
         <div class="card">
-          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <div class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">
               {{ t('admin.settings.usageRecords.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-sm text-foreground-subtle">
               {{ t('admin.settings.usageRecords.description') }}
             </p>
           </div>
@@ -5122,10 +5138,10 @@
             <!-- User error requests visibility -->
             <div class="flex items-center justify-between">
               <div>
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label class="text-sm font-medium text-foreground-muted">
                   {{ t('admin.settings.user_error_view.label') }}
                 </label>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-xs text-foreground-subtle">
                   {{ t('admin.settings.user_error_view.description') }}
                 </p>
               </div>
@@ -5144,25 +5160,25 @@
           <!-- Site Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.site.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.site.description") }}
               </p>
             </div>
             <div class="space-y-6 p-6">
               <!-- Backend Mode -->
               <div
-                class="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20"
+                class="flex items-center justify-between rounded-panel border border-warning/30 bg-warning-subtle p-4"
               >
                 <div>
-                  <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                  <h3 class="text-sm font-medium text-foreground">
                     {{ t("admin.settings.site.backendMode") }}
                   </h3>
-                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1 text-xs text-foreground-subtle">
                     {{ t("admin.settings.site.backendModeDescription") }}
                   </p>
 	                </div>
@@ -5175,7 +5191,7 @@
 	              <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.site.siteName") }}
                   </label>
@@ -5185,13 +5201,13 @@
                     class="input"
                     :placeholder="t('admin.settings.site.siteNamePlaceholder')"
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.site.siteNameHint") }}
                   </p>
                 </div>
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.site.siteSubtitle") }}
                   </label>
@@ -5203,7 +5219,7 @@
                       t('admin.settings.site.siteSubtitlePlaceholder')
                     "
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.site.siteSubtitleHint") }}
                   </p>
                 </div>
@@ -5212,7 +5228,7 @@
               <!-- API Base URL -->
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.site.apiBaseUrl") }}
                 </label>
@@ -5222,23 +5238,23 @@
                   class="input font-mono text-sm"
                   :placeholder="t('admin.settings.site.apiBaseUrlPlaceholder')"
                 />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{ t("admin.settings.site.apiBaseUrlHint") }}
                 </p>
               </div>
 
               <!-- Global Table Preferences -->
-              <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
-                <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+              <div class="border-t border-outline pt-4">
+                <h3 class="text-sm font-medium text-foreground">
                   {{ t("admin.settings.site.tablePreferencesTitle") }}
                 </h3>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t("admin.settings.site.tablePreferencesDescription") }}
                 </p>
                 <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.site.tableDefaultPageSize") }}
                     </label>
@@ -5250,13 +5266,13 @@
                       step="1"
                       class="input w-40"
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.site.tableDefaultPageSizeHint") }}
                     </p>
                   </div>
                   <div>
                     <label
-                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{ t("admin.settings.site.tablePageSizeOptions") }}
                     </label>
@@ -5268,7 +5284,7 @@
                         t('admin.settings.site.tablePageSizeOptionsPlaceholder')
                       "
                     />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.site.tablePageSizeOptionsHint") }}
                     </p>
                   </div>
@@ -5278,11 +5294,11 @@
               <!-- Custom Endpoints -->
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.site.customEndpoints.title") }}
                 </label>
-                <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mb-3 text-xs text-foreground-subtle">
                   {{ t("admin.settings.site.customEndpoints.description") }}
                 </p>
 
@@ -5290,11 +5306,11 @@
                   <div
                     v-for="(ep, index) in form.custom_endpoints"
                     :key="index"
-                    class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+                    class="rounded-panel border border-outline bg-surface-subtle p-4"
                   >
                     <div class="mb-3 flex items-center justify-between">
                       <span
-                        class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                        class="text-sm font-medium text-foreground-muted"
                       >
                         {{
                           t("admin.settings.site.customEndpoints.itemLabel", {
@@ -5304,7 +5320,7 @@
                       </span>
                       <button
                         type="button"
-                        class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                        class="rounded p-1 text-danger-foreground hover:bg-danger-subtle hover:text-danger-foreground"
                         @click="removeEndpoint(index)"
                       >
                         <svg
@@ -5325,7 +5341,7 @@
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <label
-                          class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                          class="mb-1 block text-xs font-medium text-foreground-subtle"
                         >
                           {{ t("admin.settings.site.customEndpoints.name") }}
                         </label>
@@ -5342,7 +5358,7 @@
                       </div>
                       <div>
                         <label
-                          class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                          class="mb-1 block text-xs font-medium text-foreground-subtle"
                         >
                           {{
                             t("admin.settings.site.customEndpoints.endpointUrl")
@@ -5361,7 +5377,7 @@
                       </div>
                       <div class="sm:col-span-2">
                         <label
-                          class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                          class="mb-1 block text-xs font-medium text-foreground-subtle"
                         >
                           {{
                             t(
@@ -5386,7 +5402,7 @@
 
                 <button
                   type="button"
-                  class="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-2.5 text-sm text-gray-500 transition-colors hover:border-primary-400 hover:text-primary-600 dark:border-dark-600 dark:text-gray-400 dark:hover:border-primary-500 dark:hover:text-primary-400"
+                  class="mt-3 flex w-full items-center justify-center gap-2 rounded-panel border-2 border-dashed border-outline-strong px-4 py-2.5 text-sm text-foreground-subtle transition-colors hover:text-brand hover:border-brand"
                   @click="addEndpoint"
                 >
                   <svg
@@ -5409,7 +5425,7 @@
               <!-- Contact Info -->
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.site.contactInfo") }}
                 </label>
@@ -5419,7 +5435,7 @@
                   class="input"
                   :placeholder="t('admin.settings.site.contactInfoPlaceholder')"
                 />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{ t("admin.settings.site.contactInfoHint") }}
                 </p>
               </div>
@@ -5427,7 +5443,7 @@
               <!-- Doc URL -->
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.site.docUrl") }}
                 </label>
@@ -5437,7 +5453,7 @@
                   class="input font-mono text-sm"
                   :placeholder="t('admin.settings.site.docUrlPlaceholder')"
                 />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{ t("admin.settings.site.docUrlHint") }}
                 </p>
               </div>
@@ -5445,7 +5461,7 @@
               <!-- Site Logo Upload -->
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.site.siteLogo") }}
                 </label>
@@ -5462,7 +5478,7 @@
               <!-- Home Content -->
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{ t("admin.settings.site.homeContent") }}
                 </label>
@@ -5472,24 +5488,24 @@
                   class="input font-mono text-sm"
                   :placeholder="t('admin.settings.site.homeContentPlaceholder')"
                 ></textarea>
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-subtle">
                   {{ t("admin.settings.site.homeContentHint") }}
                 </p>
                 <!-- iframe CSP Warning -->
-                <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                <p class="mt-2 text-xs text-warning-foreground">
                   {{ t("admin.settings.site.homeContentIframeWarning") }}
                 </p>
               </div>
 
               <!-- Hide CCS Import Button -->
               <div
-                class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.site.hideCcsImportButton")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.site.hideCcsImportButtonHint") }}
                   </p>
                 </div>
@@ -5504,12 +5520,12 @@
           <!-- Custom Menu Items -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.customMenu.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.customMenu.description") }}
               </p>
             </div>
@@ -5518,11 +5534,11 @@
               <div
                 v-for="(item, index) in form.custom_menu_items"
                 :key="item.id || index"
-                class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+                class="rounded-panel border border-outline bg-surface-subtle p-4"
               >
                 <div class="mb-3 flex items-center justify-between">
                   <span
-                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="text-sm font-medium text-foreground-muted"
                   >
                     {{
                       t("admin.settings.customMenu.itemLabel", { n: index + 1 })
@@ -5533,7 +5549,7 @@
                     <button
                       v-if="index > 0"
                       type="button"
-                      class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
+                      class="rounded p-1 text-foreground-subtle hover:bg-surface-subtle hover:text-foreground-muted"
                       :title="t('admin.settings.customMenu.moveUp')"
                       @click="moveMenuItem(index, -1)"
                     >
@@ -5555,7 +5571,7 @@
                     <button
                       v-if="index < form.custom_menu_items.length - 1"
                       type="button"
-                      class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
+                      class="rounded p-1 text-foreground-subtle hover:bg-surface-subtle hover:text-foreground-muted"
                       :title="t('admin.settings.customMenu.moveDown')"
                       @click="moveMenuItem(index, 1)"
                     >
@@ -5576,7 +5592,7 @@
                     <!-- Delete -->
                     <button
                       type="button"
-                      class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                      class="rounded p-1 text-danger-foreground hover:bg-danger-subtle hover:text-danger-foreground"
                       :title="t('admin.settings.customMenu.remove')"
                       @click="removeMenuItem(index)"
                     >
@@ -5601,7 +5617,7 @@
                   <!-- Label -->
                   <div>
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.customMenu.name") }}
                     </label>
@@ -5618,7 +5634,7 @@
                   <!-- Visibility -->
                   <div>
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.customMenu.visibility") }}
                     </label>
@@ -5635,7 +5651,7 @@
                   <!-- URL (full width) -->
                   <div class="sm:col-span-2">
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.customMenu.url") }}
                     </label>
@@ -5652,7 +5668,7 @@
                   <!-- SVG Icon (full width) -->
                   <div class="sm:col-span-2">
                     <label
-                      class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                      class="mb-1 block text-xs font-medium text-foreground-subtle"
                     >
                       {{ t("admin.settings.customMenu.iconSvg") }}
                     </label>
@@ -5671,7 +5687,7 @@
               <!-- Add button -->
               <button
                 type="button"
-                class="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 py-3 text-sm text-gray-500 transition-colors hover:border-primary-400 hover:text-primary-600 dark:border-dark-600 dark:text-gray-400 dark:hover:border-primary-500 dark:hover:text-primary-400"
+                class="flex w-full items-center justify-center gap-2 rounded-panel border-2 border-dashed border-outline-strong py-3 text-sm text-foreground-subtle transition-colors hover:text-brand hover:border-brand"
                 @click="addMenuItem"
               >
                 <svg
@@ -5697,13 +5713,13 @@
 	        <!-- Tab: Login Agreement -->
 	        <div v-show="activeTab === 'agreement'" class="space-y-6">
 	          <div class="card">
-	            <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+	            <div class="border-b border-outline px-6 py-4">
 	              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 	                <div>
-	                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+	                  <h2 class="text-lg font-semibold text-foreground">
 	                    {{ localText("登录条款确认", "Login agreement") }}
 	                  </h2>
-	                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+	                  <p class="mt-1 text-sm text-foreground-subtle">
 	                    {{
 	                      localText(
 	                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档。",
@@ -5713,7 +5729,7 @@
 	                  </p>
 	                </div>
 	                <div class="flex items-center gap-3">
-	                  <span class="text-sm text-gray-600 dark:text-gray-300">
+	                  <span class="text-sm text-foreground-muted">
 	                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
 	                  </span>
 	                  <Toggle
@@ -5727,7 +5743,7 @@
 	            <div class="space-y-6 p-6">
 	              <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
 	                <div>
-	                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+	                  <label class="mb-2 block text-sm font-medium text-foreground-muted">
 	                    {{ localText("展示形式", "Display mode") }}
 	                  </label>
                   <div
@@ -5764,7 +5780,7 @@
                       {{ localText("复选框", "Checkbox") }}
                     </button>
                   </div>
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{
                       form.login_agreement_mode === "checkbox"
                         ? localText("复选框会显示在登录按钮下方，未勾选前所有登录入口禁用。", "The checkbox appears below the login button and gates all login actions.")
@@ -5774,7 +5790,7 @@
                 </div>
 
                 <div>
-                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label class="mb-2 block text-sm font-medium text-foreground-muted">
                     {{ localText("条款更新日期", "Updated date") }}
                   </label>
                   <input
@@ -5782,7 +5798,7 @@
                     type="date"
                     class="input"
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{ localText("日期或文档内容变化后，用户需要重新同意。", "Changing the date or content requires fresh consent.") }}
                   </p>
                 </div>
@@ -5791,10 +5807,10 @@
               <div>
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                    <h3 class="text-sm font-medium text-foreground">
                       {{ localText("协议文档", "Agreement documents") }}
                     </h3>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-1 text-xs text-foreground-subtle">
                       {{
                         localText(
                           "文档名称可自定义，内容按 Markdown 保存。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款。",
@@ -5817,11 +5833,11 @@
                   <div
                     v-for="(doc, index) in form.login_agreement_documents"
                     :key="doc.id || index"
-                    class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800/60"
+                    class="rounded-panel border border-outline bg-surface-subtle p-4"
                   >
                     <div class="mb-3 flex items-center justify-between gap-3">
                       <div class="flex min-w-0 items-center gap-3">
-                        <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-dark-200">
+                        <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control bg-surface-subtle text-foreground-muted">
                           <Icon
                             :name="
                               index === 1
@@ -5836,17 +5852,17 @@
                           />
                         </span>
                         <div class="min-w-0">
-                          <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                          <p class="truncate text-sm font-semibold text-foreground">
                             {{ doc.title || localText("未命名文档", "Untitled document") }}
                           </p>
-                          <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                          <p class="truncate text-xs text-foreground-subtle">
                             {{ loginAgreementRoutePath(doc, index) }}
                           </p>
                         </div>
                       </div>
                       <button
                         type="button"
-                        class="rounded-md p-2 text-red-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-red-900/20"
+                        class="rounded-control p-2 text-danger-foreground transition hover:bg-danger-subtle hover:text-danger-foreground disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="
                           form.login_agreement_enabled &&
                           form.login_agreement_documents.length <= 1
@@ -5859,7 +5875,7 @@
 
                     <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
                       <div>
-                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        <label class="mb-1 block text-xs font-medium text-foreground-subtle">
                           {{ localText("文档名称", "Document title") }}
                         </label>
                         <input
@@ -5870,24 +5886,24 @@
                         />
                       </div>
                       <div>
-                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        <label class="mb-1 block text-xs font-medium text-foreground-subtle">
                           {{ localText("路由标识", "Route slug") }}
                         </label>
-                        <div class="flex overflow-hidden rounded-lg border border-gray-300 bg-white focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 dark:border-dark-600 dark:bg-dark-900">
-                          <span class="inline-flex flex-shrink-0 items-center border-r border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-400">
+                        <div class="flex overflow-hidden rounded-panel border border-outline-strong focus-within:border-brand focus-within:ring-1 focus-within:ring-focus bg-canvas">
+                          <span class="inline-flex flex-shrink-0 items-center border-r border-outline px-3 text-sm bg-surface text-foreground-muted">
                             /legal/
                           </span>
                           <input
                             v-model="doc.id"
                             type="text"
-                            class="min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:ring-0 dark:text-white dark:placeholder:text-dark-500"
+                            class="min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-sm text-foreground outline-none placeholder:text-foreground-subtle focus:ring-0"
                             placeholder="usage-policy"
                           />
                         </div>
                       </div>
                     </div>
                     <div class="mt-3">
-                      <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                      <label class="mb-1 block text-xs font-medium text-foreground-subtle">
                         {{ localText("Markdown 内容", "Markdown content") }}
                       </label>
                         <textarea
@@ -5909,17 +5925,17 @@
         <div v-show="activeTab === 'features'" class="space-y-6">
 
         <div class="card">
-          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <div class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">
               {{ t('admin.settings.features.channelMonitor.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-sm text-foreground-subtle">
               {{ t('admin.settings.features.channelMonitor.description') }}
             </p>
             <p class="mt-1.5 text-xs">
               <router-link
                 to="/admin/channels/monitor"
-                class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
+                class="inline-flex items-center gap-1 text-brand hover:underline"
               >
                 {{ t('admin.settings.features.channelMonitor.configureLink') }}
                 <span aria-hidden="true">→</span>
@@ -5929,10 +5945,10 @@
           <div class="space-y-5 p-6">
             <div class="flex items-center justify-between">
               <div>
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label class="text-sm font-medium text-foreground-muted">
                   {{ t('admin.settings.features.channelMonitor.enabled') }}
                 </label>
-                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-0.5 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.channelMonitor.enabledHint') }}
                 </p>
               </div>
@@ -5945,7 +5961,7 @@
             <div v-if="form.channel_monitor_enabled">
               <label class="input-label">
                 {{ t('admin.settings.features.channelMonitor.defaultInterval') }}
-                <span class="text-red-500">*</span>
+                <span class="text-danger-foreground">*</span>
               </label>
               <input
                 v-model.number="form.channel_monitor_default_interval_seconds"
@@ -5954,7 +5970,7 @@
                 max="3600"
                 class="input"
               />
-              <p class="mt-1 text-xs text-gray-400">
+              <p class="mt-1 text-xs text-foreground-subtle">
                 {{ t('admin.settings.features.channelMonitor.defaultIntervalHint') }}
               </p>
             </div>
@@ -5962,17 +5978,17 @@
         </div>
 
         <div class="card">
-          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <div class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">
               {{ t('admin.settings.features.availableChannels.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-sm text-foreground-subtle">
               {{ t('admin.settings.features.availableChannels.description') }}
             </p>
             <p class="mt-1.5 text-xs">
               <router-link
                 to="/admin/channels/pricing"
-                class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
+                class="inline-flex items-center gap-1 text-brand hover:underline"
               >
                 {{ t('admin.settings.features.availableChannels.configureLink') }}
                 <span aria-hidden="true">→</span>
@@ -5982,10 +5998,10 @@
           <div class="space-y-5 p-6">
             <div class="flex items-center justify-between">
               <div>
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label class="text-sm font-medium text-foreground-muted">
                   {{ t('admin.settings.features.availableChannels.enabled') }}
                 </label>
-                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-0.5 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.availableChannels.enabledHint') }}
                 </p>
               </div>
@@ -5998,17 +6014,17 @@
         </div>
 
         <div class="card">
-          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <div class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">
               {{ t('admin.settings.features.riskControl.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-sm text-foreground-subtle">
               {{ t('admin.settings.features.riskControl.description') }}
             </p>
             <p class="mt-1.5 text-xs">
               <router-link
                 to="/admin/risk-control"
-                class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
+                class="inline-flex items-center gap-1 text-brand hover:underline"
               >
                 {{ t('admin.settings.features.riskControl.configureLink') }}
                 <span aria-hidden="true">→</span>
@@ -6018,10 +6034,10 @@
           <div class="space-y-5 p-6">
             <div class="flex items-center justify-between">
               <div>
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label class="text-sm font-medium text-foreground-muted">
                   {{ t('admin.settings.features.riskControl.enabled') }}
                 </label>
-                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-0.5 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.riskControl.enabledHint') }}
                 </p>
               </div>
@@ -6033,10 +6049,10 @@
 
             <div class="flex items-center justify-between">
               <div>
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label class="text-sm font-medium text-foreground-muted">
                   {{ t('admin.settings.features.riskControl.cyberSessionBlock') }}
                 </label>
-                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-0.5 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.riskControl.cyberSessionBlockHint') }}
                 </p>
               </div>
@@ -6049,7 +6065,7 @@
             <div v-if="form.cyber_session_block_enabled">
               <label class="input-label">
                 {{ t('admin.settings.features.riskControl.cyberSessionBlockTTL') }}
-                <span class="text-red-500">*</span>
+                <span class="text-danger-foreground">*</span>
               </label>
               <input
                 v-model.number="form.cyber_session_block_ttl_seconds"
@@ -6063,21 +6079,21 @@
 
         <!-- Affiliate (邀请返利) feature card -->
         <div class="card">
-          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <div class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">
               {{ t('admin.settings.features.affiliate.title') }}
             </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-sm text-foreground-subtle">
               {{ t('admin.settings.features.affiliate.description') }}
             </p>
           </div>
           <div class="space-y-5 p-6">
             <div class="flex items-center justify-between">
               <div>
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label class="text-sm font-medium text-foreground-muted">
                   {{ t('admin.settings.features.affiliate.enabled') }}
                 </label>
-                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-0.5 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.affiliate.enabledHint') }}
                 </p>
               </div>
@@ -6102,9 +6118,9 @@
                     class="input pr-8"
                     placeholder="20"
                   />
-                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle">%</span>
                 </div>
-                <p class="mt-1 text-xs text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.affiliate.rebateRateHint') }}
                 </p>
               </div>
@@ -6121,7 +6137,7 @@
                   max="720"
                   class="input"
                 />
-                <p class="mt-1 text-xs text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.affiliate.freezeHoursDesc') }}
                 </p>
               </div>
@@ -6138,7 +6154,7 @@
                   max="3650"
                   class="input"
                 />
-                <p class="mt-1 text-xs text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.affiliate.durationDaysDesc') }}
                 </p>
               </div>
@@ -6154,19 +6170,19 @@
                   min="0"
                   class="input"
                 />
-                <p class="mt-1 text-xs text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.affiliate.perInviteeCapDesc') }}
                 </p>
               </div>
 
               <!-- 专属用户管理 -->
-              <div class="border-t border-gray-100 pt-6 dark:border-dark-700">
+              <div class="border-t border-outline pt-6">
                 <div class="mb-3 flex items-center justify-between">
                   <div>
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                    <h3 class="text-sm font-semibold text-foreground">
                       {{ t('admin.settings.features.affiliate.customUsers.title') }}
                     </h3>
-                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-0.5 text-xs text-foreground-subtle">
                       {{ t('admin.settings.features.affiliate.customUsers.description') }}
                     </p>
                   </div>
@@ -6198,9 +6214,9 @@
                   </button>
                 </div>
 
-                <div class="hidden overflow-x-auto rounded-lg border border-gray-200 dark:border-dark-700 md:block">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
-                    <thead class="bg-gray-50 dark:bg-dark-800">
+                <div class="hidden overflow-x-auto rounded-panel border border-outline md:block">
+                  <table class="min-w-full divide-y divide-outline">
+                    <thead class="bg-surface">
                       <tr>
                         <th class="px-3 py-2 text-left">
                           <input
@@ -6210,21 +6226,21 @@
                             @change="toggleAffiliateSelectAll"
                           />
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.settings.features.affiliate.customUsers.col.email') }}</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.settings.features.affiliate.customUsers.col.username') }}</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.settings.features.affiliate.customUsers.col.code') }}</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.settings.features.affiliate.customUsers.col.rate') }}</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.settings.features.affiliate.customUsers.col.actions') }}</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.email') }}</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.username') }}</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.code') }}</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.rate') }}</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.actions') }}</th>
                       </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
+                    <tbody class="divide-y divide-outline bg-canvas">
                       <tr v-if="affiliateState.loading">
-                        <td colspan="6" class="px-3 py-6 text-center text-sm text-gray-500">
+                        <td colspan="6" class="px-3 py-6 text-center text-sm text-foreground-subtle">
                           {{ t('common.loading') }}
                         </td>
                       </tr>
                       <tr v-else-if="affiliateState.entries.length === 0">
-                        <td colspan="6" class="px-3 py-6 text-center text-sm text-gray-500">
+                        <td colspan="6" class="px-3 py-6 text-center text-sm text-foreground-subtle">
                           {{ t('admin.settings.features.affiliate.customUsers.empty') }}
                         </td>
                       </tr>
@@ -6237,27 +6253,27 @@
                             @change="toggleAffiliateSelect(entry.user_id)"
                           />
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 dark:text-white">{{ entry.email }}</td>
-                        <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">{{ entry.username }}</td>
+                        <td class="px-3 py-2 text-sm text-foreground">{{ entry.email }}</td>
+                        <td class="px-3 py-2 text-sm text-foreground-muted">{{ entry.username }}</td>
                         <td class="px-3 py-2 text-sm font-mono">
                           {{ entry.aff_code }}
                           <span
                             v-if="entry.aff_code_custom"
-                            class="ml-1 inline-block rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                            class="ml-1 inline-block rounded bg-brand-subtle px-1.5 py-0.5 text-[10px] font-medium text-brand"
                           >{{ t('admin.settings.features.affiliate.customUsers.customBadge') }}</span>
                         </td>
                         <td class="px-3 py-2 text-sm">
                           <span v-if="entry.aff_rebate_rate_percent != null">{{ entry.aff_rebate_rate_percent }}%</span>
-                          <span v-else class="text-gray-400">{{ t('admin.settings.features.affiliate.customUsers.useGlobal') }}</span>
+                          <span v-else class="text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.useGlobal') }}</span>
                         </td>
                         <td class="px-3 py-2 text-sm">
                           <div class="flex items-center gap-2">
-                            <button type="button" class="text-primary-600 hover:underline" @click="openAffiliateModal(entry)">
+                            <button type="button" class="text-brand hover:underline" @click="openAffiliateModal(entry)">
                               {{ t('common.edit') }}
                             </button>
                             <button
                               type="button"
-                              class="text-red-600 hover:underline"
+                              class="text-danger-foreground hover:underline"
                               @click="askResetAffiliateUser(entry)"
                             >
                               {{ t('common.delete') }}
@@ -6269,21 +6285,21 @@
                   </table>
                 </div>
 
-                <div class="border-y border-gray-200 dark:border-dark-700 md:hidden">
+                <div class="border-y border-outline md:hidden">
                   <div
                     v-if="affiliateState.loading"
-                    class="px-3 py-8 text-center text-sm text-gray-500"
+                    class="px-3 py-8 text-center text-sm text-foreground-subtle"
                     role="status"
                   >
                     {{ t('common.loading') }}
                   </div>
                   <div
                     v-else-if="affiliateState.entries.length === 0"
-                    class="px-3 py-8 text-center text-sm text-gray-500"
+                    class="px-3 py-8 text-center text-sm text-foreground-subtle"
                   >
                     {{ t('admin.settings.features.affiliate.customUsers.empty') }}
                   </div>
-                  <div v-else class="divide-y divide-gray-200 dark:divide-dark-700">
+                  <div v-else class="divide-y divide-outline">
                     <article
                       v-for="entry in affiliateState.entries"
                       :key="`mobile-${entry.user_id}`"
@@ -6298,42 +6314,42 @@
                           @change="toggleAffiliateSelect(entry.user_id)"
                         />
                         <div class="min-w-0 flex-1">
-                          <p class="break-all text-sm font-medium text-gray-900 dark:text-white">
+                          <p class="break-all text-sm font-medium text-foreground">
                             {{ entry.email }}
                           </p>
-                          <p class="mt-0.5 break-all text-xs text-gray-500 dark:text-gray-400">
+                          <p class="mt-0.5 break-all text-xs text-foreground-subtle">
                             {{ entry.username }}
                           </p>
                         </div>
                       </div>
                       <dl class="grid grid-cols-1 gap-x-3 gap-y-2 pl-7 text-sm min-[420px]:grid-cols-2">
                         <div class="min-w-0">
-                          <dt class="text-xs text-gray-500 dark:text-gray-400">
+                          <dt class="text-xs text-foreground-subtle">
                             {{ t('admin.settings.features.affiliate.customUsers.col.code') }}
                           </dt>
-                          <dd class="mt-0.5 break-all font-mono text-gray-900 dark:text-white">
+                          <dd class="mt-0.5 break-all font-mono text-foreground">
                             {{ entry.aff_code }}
                             <span
                               v-if="entry.aff_code_custom"
-                              class="mt-1 inline-block rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                              class="mt-1 inline-block rounded bg-brand-subtle px-1.5 py-0.5 text-[10px] font-medium text-brand"
                             >{{ t('admin.settings.features.affiliate.customUsers.customBadge') }}</span>
                           </dd>
                         </div>
                         <div class="min-w-0">
-                          <dt class="text-xs text-gray-500 dark:text-gray-400">
+                          <dt class="text-xs text-foreground-subtle">
                             {{ t('admin.settings.features.affiliate.customUsers.col.rate') }}
                           </dt>
-                          <dd class="mt-0.5 text-gray-900 dark:text-white">
+                          <dd class="mt-0.5 text-foreground">
                             <span v-if="entry.aff_rebate_rate_percent != null">{{ entry.aff_rebate_rate_percent }}%</span>
-                            <span v-else class="text-gray-400">{{ t('admin.settings.features.affiliate.customUsers.useGlobal') }}</span>
+                            <span v-else class="text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.useGlobal') }}</span>
                           </dd>
                         </div>
                       </dl>
                       <div class="flex items-center justify-end gap-3 pl-7 text-sm">
-                        <button type="button" class="text-primary-600 hover:underline" @click="openAffiliateModal(entry)">
+                        <button type="button" class="text-brand hover:underline" @click="openAffiliateModal(entry)">
                           {{ t('common.edit') }}
                         </button>
-                        <button type="button" class="text-red-600 hover:underline" @click="askResetAffiliateUser(entry)">
+                        <button type="button" class="text-danger-foreground hover:underline" @click="askResetAffiliateUser(entry)">
                           {{ t('common.delete') }}
                         </button>
                       </div>
@@ -6342,7 +6358,7 @@
                 </div>
 
                 <div v-if="affiliateState.total > affiliateState.pageSize" class="mt-3 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                  <span class="text-gray-500">
+                  <span class="text-foreground-subtle">
                     {{ t('admin.settings.features.affiliate.customUsers.totalLabel', { total: affiliateState.total }) }}
                   </span>
                   <div class="flex flex-wrap items-center gap-2">
@@ -6354,7 +6370,7 @@
                     >
                       {{ t('pagination.previous') }}
                     </button>
-                    <span class="text-gray-500">{{ affiliateState.page }} / {{ Math.max(1, Math.ceil(affiliateState.total / affiliateState.pageSize)) }}</span>
+                    <span class="text-foreground-subtle">{{ affiliateState.page }} / {{ Math.max(1, Math.ceil(affiliateState.total / affiliateState.pageSize)) }}</span>
                     <button
                       type="button"
                       class="btn btn-secondary btn-sm"
@@ -6383,15 +6399,15 @@
                 <!-- Chip showing the picked user; clicking it re-opens the search -->
                 <div
                   v-if="affiliateModal.selectedUser"
-                  class="flex items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-3 py-2 dark:border-primary-700/50 dark:bg-primary-900/20"
+                  class="flex items-center justify-between rounded-control border bg-brand-subtle px-3 py-2 border-brand/50"
                 >
                   <div class="text-sm">
-                    <span class="font-medium text-gray-900 dark:text-white">{{ affiliateModal.selectedUser.email }}</span>
-                    <span class="ml-1 text-xs text-gray-500">({{ affiliateModal.selectedUser.username }})</span>
+                    <span class="font-medium text-foreground">{{ affiliateModal.selectedUser.email }}</span>
+                    <span class="ml-1 text-xs text-foreground-subtle">({{ affiliateModal.selectedUser.username }})</span>
                   </div>
                   <button
                     type="button"
-                    class="text-lg leading-none text-gray-400 hover:text-red-600"
+                    class="text-lg leading-none text-foreground-subtle hover:text-danger-foreground"
                     :title="t('admin.settings.features.affiliate.modal.changeUser')"
                     @click="clearSelectedAffiliateUser"
                   >
@@ -6409,16 +6425,16 @@
                   />
                   <div
                     v-if="affiliateModal.userResults.length > 0"
-                    class="mt-1 max-h-40 overflow-y-auto rounded border border-gray-200 dark:border-dark-700"
+                    class="mt-1 max-h-40 overflow-y-auto rounded border border-outline"
                   >
                     <button
                       v-for="u in affiliateModal.userResults"
                       :key="u.id"
                       type="button"
-                      class="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-800"
+                      class="w-full px-3 py-1.5 text-left text-sm hover:bg-surface-subtle"
                       @click="selectAffiliateUser(u)"
                     >
-                      {{ u.email }} <span class="text-xs text-gray-500">({{ u.username }})</span>
+                      {{ u.email }} <span class="text-xs text-foreground-subtle">({{ u.username }})</span>
                     </button>
                   </div>
                 </template>
@@ -6442,7 +6458,7 @@
                   :placeholder="t('admin.settings.features.affiliate.modal.codePlaceholder')"
                   maxlength="32"
                 />
-                <p class="mt-1 text-xs text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.affiliate.modal.codeHint') }}
                 </p>
               </div>
@@ -6459,9 +6475,9 @@
                     class="input pr-8"
                     :placeholder="t('admin.settings.features.affiliate.modal.ratePlaceholder')"
                   />
-                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle">%</span>
                 </div>
-                <p class="mt-1 text-xs text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t('admin.settings.features.affiliate.modal.rateHint') }}
                 </p>
               </div>
@@ -6471,7 +6487,7 @@
             <div class="flex w-full items-center justify-between gap-3">
               <p
                 v-if="!affiliateModalCanSubmit"
-                class="text-xs text-gray-500 dark:text-gray-400"
+                class="text-xs text-foreground-subtle"
               >
                 {{ t('admin.settings.features.affiliate.modal.errorEmpty') }}
               </p>
@@ -6501,7 +6517,7 @@
           @close="affiliateBatchModal.open = false"
         >
           <div>
-            <p class="mb-4 text-sm text-gray-500">
+            <p class="mb-4 text-sm text-foreground-subtle">
               {{ t('admin.settings.features.affiliate.batchModal.hint') }}
             </p>
             <div class="relative">
@@ -6514,9 +6530,9 @@
                 class="input pr-8"
                 :placeholder="t('admin.settings.features.affiliate.batchModal.placeholder')"
               />
-              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle">%</span>
             </div>
-            <p class="mt-2 text-xs text-gray-400">
+            <p class="mt-2 text-xs text-foreground-subtle">
               {{ t('admin.settings.features.affiliate.batchModal.clearHint') }}
             </p>
           </div>
@@ -6545,18 +6561,18 @@
           <!-- Payment System Settings -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.payment.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.payment.description") }}
                 <a
                   :href="paymentGuideHref"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="ml-2 inline-flex items-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                  class="ml-2 inline-flex items-center text-brand hover:text-brand"
                 >
                   <svg
                     class="mr-0.5 h-3.5 w-3.5"
@@ -6579,10 +6595,10 @@
               <!-- Enable toggle -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.payment.enabled")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.payment.enabledHint") }}
                   </p>
                 </div>
@@ -6593,30 +6609,30 @@
               </div>
               <template v-if="form.payment_enabled">
                 <div class="grid gap-4 md:grid-cols-2">
-                  <div class="flex items-start justify-between rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                  <div class="flex items-start justify-between rounded-panel border border-outline p-4">
                     <div class="pr-4">
-                      <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.instantEnabled") }}</label>
-                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.instantEnabledHint") }}</p>
+                      <label class="font-medium text-foreground">{{ t("admin.settings.payment.instantEnabled") }}</label>
+                      <p class="mt-1 text-sm text-foreground-subtle">{{ t("admin.settings.payment.instantEnabledHint") }}</p>
                     </div>
                     <Toggle
                       v-model="form.payment_instant_enabled"
                       :aria-label="t('admin.settings.payment.instantEnabled')"
                     />
                   </div>
-                  <div class="flex items-start justify-between rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                  <div class="flex items-start justify-between rounded-panel border border-outline p-4">
                     <div class="pr-4">
-                      <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.cardEnabled") }}</label>
-                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.cardEnabledHint") }}</p>
+                      <label class="font-medium text-foreground">{{ t("admin.settings.payment.cardEnabled") }}</label>
+                      <p class="mt-1 text-sm text-foreground-subtle">{{ t("admin.settings.payment.cardEnabledHint") }}</p>
                     </div>
                     <Toggle
                       v-model="form.payment_card_enabled"
                       :aria-label="t('admin.settings.payment.cardEnabled')"
                     />
                   </div>
-                  <div class="flex items-start justify-between rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                  <div class="flex items-start justify-between rounded-panel border border-outline p-4">
                     <div class="pr-4">
-                      <label class="font-medium text-gray-900 dark:text-white">{{ t("admin.settings.payment.iframeEnabled") }}</label>
-                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.iframeEnabledHint") }}</p>
+                      <label class="font-medium text-foreground">{{ t("admin.settings.payment.iframeEnabled") }}</label>
+                      <p class="mt-1 text-sm text-foreground-subtle">{{ t("admin.settings.payment.iframeEnabledHint") }}</p>
                     </div>
                     <Toggle
                       v-model="form.purchase_subscription_enabled"
@@ -6632,7 +6648,7 @@
                     class="input"
                     placeholder="https://pay.ldxp.cn/shop/FWW9YE0U"
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ t("admin.settings.payment.iframeUrlHint") }}</p>
+                  <p class="mt-1.5 text-xs text-foreground-subtle">{{ t("admin.settings.payment.iframeUrlHint") }}</p>
                 </div>
                 <!-- Row 1: Product name -->
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -6663,7 +6679,7 @@
                       t("admin.settings.payment.preview")
                     }}</label>
                     <div
-                      class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300"
+                      class="rounded-panel border border-outline bg-surface-subtle px-3 py-2 text-sm text-foreground-muted"
                     >
                       {{
                         (form.payment_product_name_prefix || "Sub2API") +
@@ -6749,7 +6765,7 @@
                       min="0.01"
                       class="input"
                     />
-                    <p class="mt-0.5 text-xs text-gray-400">
+                    <p class="mt-0.5 text-xs text-foreground-subtle">
                       {{
                         t(
                           "admin.settings.payment.balanceRechargeMultiplierHint",
@@ -6757,7 +6773,7 @@
                       }}
                     </p>
                     <p
-                      class="mt-1 text-xs font-medium text-primary-600 dark:text-primary-400"
+                      class="mt-1 text-xs font-medium text-brand"
                     >
                       {{
                         t("admin.settings.payment.balanceRechargePreview", {
@@ -6791,7 +6807,7 @@
                         )
                       "
                     />
-                    <p class="mt-0.5 text-xs text-gray-400">
+                    <p class="mt-0.5 text-xs text-foreground-subtle">
                       {{
                         t("admin.settings.payment.subscriptionUsdToCnyRateHint")
                       }}
@@ -6825,16 +6841,16 @@
                         class="input pr-8"
                       />
                       <span
-                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400"
+                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-foreground-subtle"
                         >%</span
                       >
                     </div>
-                    <p class="mt-0.5 text-xs text-gray-400">
+                    <p class="mt-0.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.payment.rechargeFeeRateHint") }}
                     </p>
                     <p
                       v-if="(Number(form.payment_recharge_fee_rate) || 0) > 0"
-                      class="mt-1 text-xs font-medium text-primary-600 dark:text-primary-400"
+                      class="mt-1 text-xs font-medium text-brand"
                     >
                       {{
                         t("admin.settings.payment.rechargeFeePreview", {
@@ -6848,7 +6864,7 @@
                   <div>
                     <label class="input-label"
                       >{{ t("admin.settings.payment.orderTimeout") }}
-                      <span class="text-red-500">*</span></label
+                      <span class="text-danger-foreground">*</span></label
                     ><input
                       v-model.number="form.payment_order_timeout_minutes"
                       type="number"
@@ -6856,7 +6872,7 @@
                       class="input"
                       required
                     />
-                    <p class="mt-0.5 text-xs text-gray-400">
+                    <p class="mt-0.5 text-xs text-foreground-subtle">
                       {{ t("admin.settings.payment.orderTimeoutHint") }}
                     </p>
                   </div>
@@ -6895,10 +6911,10 @@
                         :aria-label="t('admin.settings.payment.cancelRateLimit')"
                         :aria-checked="form.payment_cancel_rate_limit_enabled"
                         :class="[
-                          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2',
                           form.payment_cancel_rate_limit_enabled
-                            ? 'bg-primary-500'
-                            : 'bg-gray-300 dark:bg-dark-600',
+                            ? 'bg-brand'
+                            : 'bg-outline',
                         ]"
                         @click="
                           form.payment_cancel_rate_limit_enabled =
@@ -6907,7 +6923,7 @@
                       >
                         <span
                           :class="[
-                            'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                            'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                             form.payment_cancel_rate_limit_enabled
                               ? 'translate-x-5'
                               : 'translate-x-0',
@@ -6924,8 +6940,8 @@
                         :class="[
                           'text-sm whitespace-nowrap',
                           form.payment_cancel_rate_limit_enabled
-                            ? 'text-gray-700 dark:text-gray-300'
-                            : 'text-gray-400 dark:text-gray-600',
+                            ? 'text-foreground-muted'
+                            : 'text-foreground-muted',
                         ]"
                         >{{
                           t("admin.settings.payment.cancelRateLimitEvery")
@@ -6949,8 +6965,8 @@
                         :class="[
                           'text-sm whitespace-nowrap',
                           form.payment_cancel_rate_limit_enabled
-                            ? 'text-gray-700 dark:text-gray-300'
-                            : 'text-gray-400 dark:text-gray-600',
+                            ? 'text-foreground-muted'
+                            : 'text-foreground-muted',
                         ]"
                         >{{
                           t("admin.settings.payment.cancelRateLimitAllowMax")
@@ -6968,8 +6984,8 @@
                         :class="[
                           'text-sm whitespace-nowrap',
                           form.payment_cancel_rate_limit_enabled
-                            ? 'text-gray-700 dark:text-gray-300'
-                            : 'text-gray-400 dark:text-gray-600',
+                            ? 'text-foreground-muted'
+                            : 'text-foreground-muted',
                         ]"
                         >{{
                           t("admin.settings.payment.cancelRateLimitTimes")
@@ -6988,10 +7004,10 @@
                         :aria-label="t('admin.settings.payment.alipayForceQRCode')"
                         :aria-checked="form.payment_alipay_force_qrcode"
                         :class="[
-                          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2',
                           form.payment_alipay_force_qrcode
-                            ? 'bg-primary-500'
-                            : 'bg-gray-300 dark:bg-dark-600',
+                            ? 'bg-brand'
+                            : 'bg-outline',
                         ]"
                         @click="
                           form.payment_alipay_force_qrcode =
@@ -7000,14 +7016,14 @@
                       >
                         <span
                           :class="[
-                            'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                            'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                             form.payment_alipay_force_qrcode
                               ? 'translate-x-5'
                               : 'translate-x-0',
                           ]"
                         />
                       </button>
-                      <span class="text-sm text-gray-500 dark:text-gray-400">{{
+                      <span class="text-sm text-foreground-subtle">{{
                         t("admin.settings.payment.alipayForceQRCodeHint")
                       }}</span>
                     </div>
@@ -7025,22 +7041,22 @@
                       type="button"
                       @click="togglePaymentType(pt.value)"
                       :class="[
-                        'rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
+                        'rounded-panel border px-3 py-1.5 text-sm font-medium transition-all',
                         isPaymentTypeEnabled(pt.value)
-                          ? 'border-primary-500 bg-primary-500 text-white shadow-sm'
-                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:border-dark-500',
+                          ? 'border-brand bg-brand text-white shadow-sm'
+                          : 'border-outline-strong bg-surface text-foreground-muted hover:border-outline-strong hover:bg-surface-subtle',
                       ]"
                     >
                       {{ pt.label }}
                     </button>
                   </div>
-                  <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                  <p class="mt-2 text-xs text-foreground-subtle">
                     {{ t("admin.settings.payment.enabledPaymentTypesHint") }}
                     <a
                       :href="paymentMethodsHref"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="ml-1 text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+                      class="ml-1 text-brand hover:text-brand"
                     >
                       {{ t("admin.settings.payment.findProvider") }}
                       <svg
@@ -7119,13 +7135,13 @@
                 <Icon
                   name="mail"
                   size="md"
-                  class="mt-0.5 flex-shrink-0 text-gray-400 dark:text-gray-500"
+                  class="mt-0.5 flex-shrink-0 text-foreground-subtle"
                 />
                 <div>
-                  <h3 class="font-medium text-gray-900 dark:text-white">
+                  <h3 class="font-medium text-foreground">
                     {{ t("admin.settings.emailTabDisabledTitle") }}
                   </h3>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <p class="mt-1 text-sm text-foreground-subtle">
                     {{ t("admin.settings.emailTabDisabledHint") }}
                   </p>
                 </div>
@@ -7136,13 +7152,13 @@
           <!-- SMTP Settings - Only show when email verification is enabled -->
           <div v-if="form.email_verify_enabled" class="card">
             <div
-              class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="flex items-center justify-between border-b border-outline px-6 py-4"
             >
               <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <h2 class="text-lg font-semibold text-foreground">
                   {{ t("admin.settings.smtp.title") }}
                 </h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-sm text-foreground-subtle">
                   {{ t("admin.settings.smtp.description") }}
                 </p>
               </div>
@@ -7183,7 +7199,7 @@
               <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.smtp.host") }}
                   </label>
@@ -7196,7 +7212,7 @@
                 </div>
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.smtp.port") }}
                   </label>
@@ -7211,7 +7227,7 @@
                 </div>
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.smtp.username") }}
                   </label>
@@ -7224,7 +7240,7 @@
                 </div>
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.smtp.password") }}
                   </label>
@@ -7243,7 +7259,7 @@
                         : t('admin.settings.smtp.passwordPlaceholder')
                     "
                   />
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{
                       form.smtp_password_configured
                         ? t("admin.settings.smtp.passwordConfiguredHint")
@@ -7253,7 +7269,7 @@
                 </div>
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.smtp.fromEmail") }}
                   </label>
@@ -7266,7 +7282,7 @@
                 </div>
                 <div>
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.smtp.fromName") }}
                   </label>
@@ -7281,13 +7297,13 @@
 
               <!-- Use TLS Toggle -->
               <div
-                class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
-                  <label class="font-medium text-gray-900 dark:text-white">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.smtp.useTls")
                   }}</label>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.smtp.useTlsHint") }}
                   </p>
                 </div>
@@ -7302,12 +7318,12 @@
           <!-- Send Test Email - Only show when email verification is enabled -->
           <div v-if="form.email_verify_enabled" class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.testEmail.title") }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.testEmail.description") }}
               </p>
             </div>
@@ -7315,7 +7331,7 @@
               <div class="flex items-end gap-4">
                 <div class="flex-1">
                   <label
-                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.testEmail.recipientEmail") }}
                   </label>
@@ -7369,12 +7385,12 @@
           <!-- 订阅到期提醒 -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h3 class="text-base font-medium text-gray-900 dark:text-white">
+              <h3 class="text-base font-medium text-foreground">
                 {{ t("admin.settings.subscriptionExpiryNotify.title") }}
               </h3>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.subscriptionExpiryNotify.description") }}
               </p>
             </div>
@@ -7382,11 +7398,11 @@
               <div class="flex items-center justify-between gap-4">
                 <div>
                   <label
-                    class="mb-0 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="mb-0 block text-sm font-medium text-foreground-muted"
                   >
                     {{ t("admin.settings.subscriptionExpiryNotify.enabled") }}
                   </label>
-                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <p class="mt-1 text-xs text-foreground-subtle">
                     {{ t("admin.settings.subscriptionExpiryNotify.enabledHint") }}
                   </p>
                 </div>
@@ -7403,19 +7419,19 @@
           <!-- Balance Low Notification -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h3 class="text-base font-medium text-gray-900 dark:text-white">
+              <h3 class="text-base font-medium text-foreground">
                 {{ t("admin.settings.balanceNotify.title") }}
               </h3>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.balanceNotify.description") }}
               </p>
             </div>
             <div class="px-6 py-6 space-y-4">
               <div class="flex items-center justify-between">
                 <label
-                  class="mb-0 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-0 block text-sm font-medium text-foreground-muted"
                   >{{ t("admin.settings.balanceNotify.enabled") }}</label
                 >
                 <Toggle
@@ -7425,12 +7441,12 @@
               </div>
               <div v-if="form.balance_low_notify_enabled">
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                   >{{ t("admin.settings.balanceNotify.threshold") }}</label
                 >
                 <div class="relative">
                   <span
-                    class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
                     >$</span
                   >
                   <input
@@ -7441,13 +7457,13 @@
                     class="input pl-7"
                   />
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t("admin.settings.balanceNotify.thresholdHint") }}
                 </p>
               </div>
               <div>
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                   >{{ t("admin.settings.balanceNotify.rechargeUrl") }}</label
                 >
                 <input
@@ -7456,7 +7472,7 @@
                   class="input"
                   :placeholder="currentOrigin"
                 />
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t("admin.settings.balanceNotify.rechargeUrlHint") }}
                 </p>
               </div>
@@ -7466,19 +7482,19 @@
           <!-- Account Quota Notification -->
           <div class="card">
             <div
-              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+              class="border-b border-outline px-6 py-4"
             >
-              <h3 class="text-base font-medium text-gray-900 dark:text-white">
+              <h3 class="text-base font-medium text-foreground">
                 {{ t("admin.settings.quotaNotify.title") }}
               </h3>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.quotaNotify.description") }}
               </p>
             </div>
             <div class="px-6 py-6 space-y-4">
               <div class="flex items-center justify-between">
                 <label
-                  class="mb-0 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-0 block text-sm font-medium text-foreground-muted"
                   >{{ t("admin.settings.quotaNotify.enabled") }}</label
                 >
                 <Toggle
@@ -7488,7 +7504,7 @@
               </div>
               <div v-if="form.account_quota_notify_enabled">
                 <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="mb-2 block text-sm font-medium text-foreground-muted"
                   >{{ t("admin.settings.quotaNotify.emails") }}</label
                 >
                 <div class="space-y-2">
@@ -7508,7 +7524,7 @@
                         class="sr-only peer"
                       />
                       <div
-                        class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:after:border-gray-500 peer-checked:bg-primary-600"
+                        class="w-9 h-5 bg-outline peer-focus:outline-none rounded-full peer bg-outline-strong peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-outline-strong after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"
                       ></div>
                     </label>
                     <input
@@ -7535,7 +7551,7 @@
                     + {{ t("admin.settings.quotaNotify.addEmail") }}
                   </button>
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t("admin.settings.quotaNotify.emailsHint") }}
                 </p>
               </div>
@@ -7678,6 +7694,7 @@ import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
 import BackupSettings from "@/views/admin/BackupView.vue";
 import EmailTemplateEditor from "@/views/admin/settings/EmailTemplateEditor.vue";
+import OpenAIFastPolicyUserSelector from "@/views/admin/settings/OpenAIFastPolicyUserSelector.vue";
 import { useClipboard } from "@/composables/useClipboard";
 import { affiliatesAPI, type AffiliateAdminEntry, type SimpleUser as AffiliateSimpleUser } from "@/api/admin/affiliates";
 import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiError";
@@ -9566,6 +9583,7 @@ async function loadSettings() {
       openaiFastPolicyForm.rules =
         settings.openai_fast_policy_settings.rules.map((rule) => ({
           ...rule,
+          user_ids: rule.user_ids ? [...rule.user_ids] : [],
           model_whitelist: rule.model_whitelist
             ? [...rule.model_whitelist]
             : [],
@@ -10077,6 +10095,10 @@ async function saveSettings() {
             service_tier: rule.service_tier,
             action: rule.action,
             scope: rule.scope,
+            user_ids:
+              rule.user_ids && rule.user_ids.length > 0
+                ? [...rule.user_ids]
+                : undefined,
             error_message:
               rule.action === "block" ? rule.error_message : undefined,
             model_whitelist: hasWhitelist ? whitelist : undefined,
@@ -10153,6 +10175,7 @@ async function saveSettings() {
       openaiFastPolicyForm.rules =
         updated.openai_fast_policy_settings.rules.map((rule) => ({
           ...rule,
+          user_ids: rule.user_ids ? [...rule.user_ids] : [],
           model_whitelist: rule.model_whitelist
             ? [...rule.model_whitelist]
             : [],
@@ -10582,6 +10605,7 @@ function addOpenAIFastPolicyRule() {
     service_tier: "priority",
     action: "filter",
     scope: "all",
+    user_ids: [],
     error_message: "",
     model_whitelist: [],
     fallback_action: "pass",

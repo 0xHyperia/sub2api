@@ -2,8 +2,8 @@
   <div class="card-shop-embed">
     <div v-if="!shopUrl" class="flex min-h-[420px] items-center justify-center px-6 text-center">
       <div>
-        <Icon name="link" size="xl" class="mx-auto mb-3 text-gray-300 dark:text-dark-600" />
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('purchase.notConfiguredDesc') }}</p>
+        <Icon name="link" size="xl" class="mx-auto mb-3 text-foreground-subtle" />
+        <p class="text-sm text-foreground-subtle">{{ t('purchase.notConfiguredDesc') }}</p>
       </div>
     </div>
 

@@ -619,13 +619,9 @@ onUnmounted(() => {
 
 .gateway-auth :deep(.input:disabled) { background: var(--muted); }
 .gateway-auth :deep(.input-hint),
-.gateway-auth :deep(.text-gray-500),
-.gateway-auth :deep(.text-gray-400),
-.gateway-auth :deep(.dark\:text-dark-400),
-.gateway-auth :deep(.dark\:text-dark-500) { color: var(--muted-foreground) !important; }
+.gateway-auth :deep(.text-foreground-subtle) { color: var(--muted-foreground) !important; }
 
-.gateway-auth :deep(.bg-gray-200),
-.gateway-auth :deep(.dark\:bg-dark-700) { background: var(--border) !important; }
+.gateway-auth :deep(.bg-outline) { background: var(--border) !important; }
 
 .gateway-auth :deep(.auth-submit.btn-primary) {
   min-height: 46px;

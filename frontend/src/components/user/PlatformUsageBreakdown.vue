@@ -31,7 +31,7 @@
       :id="tooltipId"
       role="tooltip"
       :class="[
-        'pointer-events-none absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-panel border border-outline bg-surface-raised px-3 py-2 text-xs text-foreground shadow-lg transition-opacity duration-100',
+        'pointer-events-none absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-panel border border-outline bg-surface-raised px-3 py-2 text-xs text-foreground shadow-floating transition-opacity duration-100',
         tooltipOpen ? 'visible opacity-100' : 'invisible opacity-0'
       ]"
     >

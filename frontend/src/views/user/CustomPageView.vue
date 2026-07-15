@@ -18,14 +18,14 @@
         >
           <div class="max-w-md">
             <div
-              class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700"
+              class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle"
             >
-              <Icon name="link" size="lg" class="text-gray-400" />
+              <Icon name="link" size="lg" class="text-foreground-subtle" />
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="text-lg font-semibold text-foreground">
               {{ t('customPage.notFoundTitle') }}
             </h3>
-            <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
+            <p class="mt-2 text-sm text-foreground-muted">
               {{ t('customPage.notFoundDesc') }}
             </p>
           </div>
@@ -125,14 +125,14 @@
         <div v-else-if="!isValidUrl" class="flex h-full items-center justify-center p-10 text-center">
           <div class="max-w-md">
             <div
-              class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700"
+              class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle"
             >
-              <Icon name="link" size="lg" class="text-gray-400" />
+              <Icon name="link" size="lg" class="text-foreground-subtle" />
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="text-lg font-semibold text-foreground">
               {{ t('customPage.notConfiguredTitle') }}
             </h3>
-            <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
+            <p class="mt-2 text-sm text-foreground-muted">
               {{ t('customPage.notConfiguredDesc') }}
             </p>
           </div>
@@ -582,7 +582,7 @@ onUnmounted(() => {
     min-width: 0;
     max-width: none;
     height: 100%;
-    box-shadow: var(--ui-shadow-lg);
+    box-shadow: var(--ui-shadow-floating);
   }
 }
 
@@ -741,12 +741,12 @@ onUnmounted(() => {
 .markdown-page-content li { @apply mb-1; }
 .markdown-page-content a { @apply text-info-foreground hover:underline underline-offset-4; }
 .markdown-page-content blockquote { @apply border-l-4 border-outline-strong pl-4 italic text-foreground-muted my-4; }
-.markdown-page-content img { @apply max-w-full h-auto rounded-lg my-4; }
+.markdown-page-content img { @apply max-w-full h-auto rounded-panel my-4; }
 .markdown-page-content table { @apply my-4 block w-full overflow-x-auto border-collapse; }
 .markdown-page-content th { @apply border border-outline px-3 py-2 bg-surface-subtle font-semibold text-left; }
 .markdown-page-content td { @apply border border-outline px-3 py-2; }
 .markdown-page-content code { @apply bg-surface-subtle px-1.5 py-0.5 rounded text-sm font-mono; }
-.markdown-page-content pre { @apply bg-gray-900 dark:bg-dark-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4 relative; }
+.markdown-page-content pre { @apply bg-foreground bg-canvas text-surface p-4 rounded-panel overflow-x-auto my-4 relative; }
 .markdown-page-content pre code { @apply bg-transparent p-0 text-inherit; }
 .markdown-page-content hr { @apply my-6 border-outline; }
 
