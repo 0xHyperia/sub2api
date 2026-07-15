@@ -40,6 +40,15 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/download',
+    name: 'ClientDownload',
+    component: () => import('@/views/DownloadView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '客户端下载'
+    }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/auth/LoginView.vue'),
@@ -730,7 +739,7 @@ let authInitialized = false
 const navigationLoading = useNavigationLoadingState()
 // 延迟初始化预加载，传入 router 实例
 let routePrefetch: ReturnType<typeof useRoutePrefetch> | null = null
-const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/payment/result', '/payment/airwallex', '/legal', '/oauth/authorize']
+const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/download', '/setup', '/payment/result', '/payment/airwallex', '/legal', '/oauth/authorize']
 const BACKEND_MODE_CALLBACK_PATHS = [
   '/auth/callback',
   '/auth/linuxdo/callback',
