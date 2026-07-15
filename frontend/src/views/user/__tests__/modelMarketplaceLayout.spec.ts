@@ -18,7 +18,7 @@ describe('model marketplace toolbar layout', () => {
   })
 
   it('replaces the mobile filter sidebar with a compact toolbar and filter sheet', () => {
-    expect(source).toContain('class="hidden h-fit lg:sticky')
+    expect(source).toContain('class="hidden h-fit rounded-panel border')
     expect(source).toContain('class="space-y-2.5 lg:hidden"')
     expect(source).toContain('<ModelMarketplaceFilterDrawer')
     expect(source).toContain(':result-count="mobileFilterResultCount"')
@@ -35,8 +35,15 @@ describe('model marketplace toolbar layout', () => {
 
   it('uses compact responsive cards and a dedicated detail drawer', () => {
     expect(source).toContain('xl:grid-cols-3 2xl:grid-cols-4')
-    expect(source).toContain('min-h-[216px]')
-    expect(source).toContain('sm:min-h-[230px]')
+    expect(source).toContain('data-testid="marketplace-model-card"')
+    expect(source).toContain('min-h-[230px]')
+    expect(source).toContain('hasMonitorTimeline(entry)')
+    expect(source).toContain('divide-x divide-outline')
+    expect(source).toContain("activeEntryGroup(entry)?.name")
+    expect(source).toContain('grid-cols-[minmax(0,1fr)_96px]')
+    expect(source).toContain('v-if="entry.groups.length > 1"')
+    expect(source).toContain('marketplace-rate-tooltip')
+    expect(source).toContain('group/rate')
     expect(source).toContain('<ModelMarketplaceDetailDrawer')
     expect(source).toContain("cardBillingCategory(entry) === 'usage'")
     expect(source).toContain("t('modelMarketplace.realtimeRate')")

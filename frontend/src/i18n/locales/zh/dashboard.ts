@@ -820,6 +820,9 @@ export default {
 
   modelMarketplace: {
     realtimeRate: '实时倍率',
+    realtimeRateOfficial: '官方汇率',
+    realtimeRateRecharge: '充值汇率',
+    realtimeRateGroup: '分组倍率',
     realtimeRateHint: '相对官方美元价换算：1 USD = {cny} CNY，1 CNY = {usd} 平台 USD，分组倍率 {group}×，最终为 {rate}×。数值越低，相对官方价格越划算。',
     loadMore: '加载更多模型',
     monitor: {

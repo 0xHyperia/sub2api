@@ -13,9 +13,9 @@
         </button>
       </div>
 
-      <div class="grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <div class="grid min-w-0 gap-4 lg:grid-cols-[232px_minmax(0,1fr)]">
         <aside
-          class="hidden h-fit lg:sticky lg:top-20 lg:block lg:border-r lg:pr-4"
+          class="hidden h-fit rounded-panel border border-outline bg-surface p-3 lg:sticky lg:top-20 lg:block"
           :aria-label="t('modelMarketplace.filters.title')"
         >
           <div class="flex items-center justify-between">
@@ -121,7 +121,7 @@
         <section class="min-w-0" :aria-label="t('modelMarketplace.results')">
           <div
             data-testid="marketplace-toolbar"
-            class="border-b border-outline pb-3"
+            class="rounded-panel border border-outline bg-surface p-2.5"
           >
             <div class="space-y-2.5 lg:hidden">
               <div class="flex min-w-0 items-center gap-2">
@@ -222,7 +222,7 @@
           </div>
 
           <div v-if="loading && entries.length === 0" class="grid gap-3 pt-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="status">
-            <div v-for="index in 8" :key="index" class="card h-56 animate-pulse bg-surface-subtle"></div>
+            <div v-for="index in 8" :key="index" class="card h-[230px] animate-pulse bg-surface-subtle"></div>
             <span class="sr-only">{{ t('common.loading') }}</span>
           </div>
 
@@ -241,8 +241,9 @@
             <article
               v-for="entry in visibleEntries"
               :key="entry.key"
+              data-testid="marketplace-model-card"
               tabindex="0"
-              class="card group/card flex min-h-[216px] min-w-0 cursor-pointer flex-col p-3 transition-[transform,border-color,box-shadow] duration-150 hover:-translate-y-px hover:border-outline-strong hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus sm:min-h-[230px] sm:p-3.5"
+              class="card group/card flex min-h-[230px] min-w-0 cursor-pointer flex-col p-3.5 transition-[border-color,box-shadow] duration-150 hover:border-outline-strong hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               :aria-label="t('modelMarketplace.details.open', { model: entry.name })"
               @click="openDetails(entry)"
               @keydown.enter.self.prevent="openDetails(entry)"
@@ -274,6 +275,13 @@
                     <span class="text-[10px] font-medium text-foreground-subtle">
                       {{ billingModeLabel(cardBillingCategory(entry)) }}
                     </span>
+                    <template v-if="modelMonitorEnabled">
+                      <span class="h-3 w-px bg-outline"></span>
+                      <span class="inline-flex min-w-0 items-center gap-1 text-[9px] font-medium" :class="monitorTextClass(entry.monitorStatus?.status)">
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>
+                        <span class="truncate">{{ monitorStatusLabel(entry.monitorStatus?.status) }}</span>
+                      </span>
+                    </template>
                   </div>
                 </div>
                 <button
@@ -287,7 +295,7 @@
                 </button>
               </div>
 
-              <div v-if="modelMonitorEnabled" class="mt-3 border-t border-outline pt-2.5">
+              <div v-if="modelMonitorEnabled && hasMonitorTimeline(entry)" class="mt-3 border-t border-outline pt-2.5">
                 <div class="flex items-center justify-between gap-3 text-xs">
                   <span class="inline-flex items-center gap-1.5 font-medium" :class="monitorTextClass(entry.monitorStatus?.status)">
                     <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ monitorStatusLabel(entry.monitorStatus?.status) }}
@@ -297,10 +305,10 @@
                 <ModelMonitorTimeline class="mt-2" :points="entry.monitorStatus?.timeline" />
               </div>
 
-              <div v-if="entry.pricing" class="mt-3">
+              <div v-if="entry.pricing" class="mt-3 min-h-20 border-t border-outline pt-3">
                 <template v-if="cardBillingCategory(entry) === 'usage'">
-                  <dl class="grid grid-cols-2 gap-4">
-                    <div v-for="row in cardPrimaryPriceRows(entry)" :key="row.key" class="min-w-0">
+                  <dl class="grid grid-cols-2 divide-x divide-outline">
+                    <div v-for="row in cardPrimaryPriceRows(entry)" :key="row.key" class="min-w-0 px-3 first:pl-0 last:pr-0">
                       <dt class="text-[10px] font-medium text-foreground-subtle">{{ row.label }}</dt>
                       <dd class="mt-0.5 flex items-baseline gap-1.5">
                         <span class="font-mono text-lg font-semibold tabular-nums text-foreground">{{ row.value }}</span>
@@ -324,19 +332,55 @@
                   </div>
                 </template>
               </div>
-              <div v-else class="mt-3 flex min-h-14 items-center text-xs text-foreground-subtle">
+              <div v-else class="mt-3 flex min-h-20 items-center border-t border-outline pt-3 text-xs text-foreground-subtle">
                 {{ t('modelMarketplace.noPricing') }}
               </div>
 
               <div class="mt-auto border-t border-outline pt-2.5">
-                <div
-                  class="mb-2 flex items-center justify-between gap-3 text-xs"
-                  :title="t('modelMarketplace.realtimeRateHint', { cny: formatRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
-                >
-                  <span class="font-medium text-foreground-muted">{{ t('modelMarketplace.realtimeRate') }}</span>
-                  <span class="font-mono font-semibold tabular-nums text-brand">{{ formatRate(cardRealtimeRate(entry)) }}&times;</span>
+                <div class="grid min-h-11 grid-cols-[minmax(0,1fr)_96px] divide-x divide-outline">
+                  <div class="min-w-0 pr-3">
+                    <div class="text-[9px] font-medium text-foreground-subtle">{{ t('modelMarketplace.details.billingGroup') }}</div>
+                    <div class="mt-1 flex min-w-0 items-center gap-1.5">
+                      <span class="truncate text-xs font-medium text-foreground">{{ activeEntryGroup(entry)?.name ?? '-' }}</span>
+                      <span class="shrink-0 font-mono text-[10px] tabular-nums text-foreground-muted">&times;{{ formatRate(effectiveRate(entry)) }}</span>
+                    </div>
+                  </div>
+                  <div
+                    class="group/rate relative cursor-help pl-3 text-right outline-none"
+                    tabindex="0"
+                    :aria-label="t('modelMarketplace.realtimeRateHint', { cny: formatRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
+                  >
+                    <div class="text-[9px] font-medium text-foreground-subtle">{{ t('modelMarketplace.realtimeRate') }}</div>
+                    <div class="mt-0.5 inline-flex items-center gap-1 font-mono text-sm font-semibold tabular-nums text-foreground">
+                      {{ formatRate(cardRealtimeRate(entry)) }}&times;
+                      <Icon name="infoCircle" size="xs" class="text-foreground-subtle" />
+                    </div>
+                    <div class="marketplace-rate-tooltip" role="tooltip">
+                      <div class="flex items-center justify-between gap-4 border-b border-outline pb-2">
+                        <span class="text-xs font-semibold text-foreground">{{ t('modelMarketplace.realtimeRate') }}</span>
+                        <span class="font-mono text-sm font-semibold tabular-nums text-foreground">{{ formatRate(cardRealtimeRate(entry)) }}&times;</span>
+                      </div>
+                      <dl class="mt-2 space-y-1.5 text-[10px]">
+                        <div class="flex items-center justify-between gap-4">
+                          <dt class="text-foreground-subtle">{{ t('modelMarketplace.realtimeRateOfficial') }}</dt>
+                          <dd class="font-mono tabular-nums text-foreground">1 USD = {{ formatRate(officialUsdToCnyRate) }} CNY</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                          <dt class="text-foreground-subtle">{{ t('modelMarketplace.realtimeRateRecharge') }}</dt>
+                          <dd class="font-mono tabular-nums text-foreground">1 CNY = {{ formatRate(balanceRechargeMultiplier) }} USD</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                          <dt class="text-foreground-subtle">{{ t('modelMarketplace.realtimeRateGroup') }}</dt>
+                          <dd class="font-mono tabular-nums text-foreground">{{ formatRate(effectiveRate(entry)) }}&times;</dd>
+                        </div>
+                      </dl>
+                      <div class="mt-2 border-t border-dashed border-outline pt-2 text-left font-mono text-[10px] tabular-nums text-foreground-muted">
+                        {{ formatRate(effectiveRate(entry)) }} / {{ formatRate(balanceRechargeMultiplier) }} / {{ formatRate(officialUsdToCnyRate) }} = {{ formatRate(cardRealtimeRate(entry)) }}&times;
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex min-w-0 items-center gap-1.5">
+                <div v-if="entry.groups.length > 1" class="mt-2 flex min-w-0 items-center gap-1.5 border-t border-dashed border-outline pt-2">
                   <button
                     v-for="group in cardGroups(entry)"
                     :key="group.id"
@@ -646,6 +690,7 @@ function loadMore() { visibleCount.value = Math.min(visibleCount.value + BATCH_S
 function monitorStatusLabel(status?: string) { return status ? t(`modelMarketplace.monitor.${status}`) : t('modelMarketplace.monitor.unknown') }
 function monitorTextClass(status?: string) { return status === 'operational' ? 'text-success-foreground' : status === 'degraded' ? 'text-warning-foreground' : status === 'failed' || status === 'error' ? 'text-danger-foreground' : 'text-foreground-subtle' }
 function monitorAvailability(entry: MarketplaceModelEntry) { const value = entry.monitorStatus?.availability_7d; return value == null ? t('modelMarketplace.monitor.noData') : t('modelMarketplace.monitor.availability', { value: value.toFixed(2) }) }
+function hasMonitorTimeline(entry: MarketplaceModelEntry) { return (entry.monitorStatus?.timeline?.length ?? 0) > 0 }
 
 function resetFilters() {
   searchQuery.value = ''
@@ -795,5 +840,43 @@ onBeforeUnmount(() => loadMoreObserver?.disconnect())
 .marketplace-filter-option-active .marketplace-filter-count {
   background: rgb(var(--color-surface));
   color: rgb(var(--color-brand));
+}
+
+.marketplace-rate-tooltip {
+  position: absolute;
+  z-index: 30;
+  right: -4px;
+  bottom: calc(100% + 10px);
+  width: min(284px, calc(100vw - 32px));
+  visibility: hidden;
+  border: 1px solid rgb(var(--color-border-strong));
+  border-radius: var(--radius-md);
+  background: rgb(var(--color-surface-raised));
+  box-shadow: var(--shadow-floating);
+  padding: 11px 12px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+}
+
+.marketplace-rate-tooltip::after {
+  position: absolute;
+  right: 18px;
+  bottom: -5px;
+  width: 9px;
+  height: 9px;
+  border-right: 1px solid rgb(var(--color-border-strong));
+  border-bottom: 1px solid rgb(var(--color-border-strong));
+  background: rgb(var(--color-surface-raised));
+  content: '';
+  transform: rotate(45deg);
+}
+
+.group\/rate:hover .marketplace-rate-tooltip,
+.group\/rate:focus .marketplace-rate-tooltip,
+.group\/rate:focus-within .marketplace-rate-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>
