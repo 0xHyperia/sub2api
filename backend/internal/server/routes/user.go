@@ -15,6 +15,9 @@ func RegisterUserRoutes(
 	jwtAuth middleware.JWTAuthMiddleware,
 	settingService *service.SettingService,
 ) {
+	// 首页模型橱窗仅返回公开分组的匿名安全摘要。
+	v1.GET("/models/showcase", h.AvailableChannel.ListShowcase)
+
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
 	authenticated.Use(middleware.BackendModeUserGuard(settingService))

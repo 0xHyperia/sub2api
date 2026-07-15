@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strings"
 
@@ -26,6 +27,7 @@ type AvailableChannelHandler struct {
 	channelService      *service.ChannelService
 	apiKeyService       *service.APIKeyService
 	settingService      *service.SettingService
+	groupRepo           service.GroupRepository
 	accountRepo         service.AccountRepository
 	pricingService      *service.PricingService
 	modelMonitorService *service.ModelMonitorService
@@ -36,6 +38,7 @@ func NewAvailableChannelHandler(
 	channelService *service.ChannelService,
 	apiKeyService *service.APIKeyService,
 	settingService *service.SettingService,
+	groupRepo service.GroupRepository,
 	accountRepo service.AccountRepository,
 	pricingService *service.PricingService,
 	modelMonitorService *service.ModelMonitorService,
@@ -44,6 +47,7 @@ func NewAvailableChannelHandler(
 		channelService:      channelService,
 		apiKeyService:       apiKeyService,
 		settingService:      settingService,
+		groupRepo:           groupRepo,
 		accountRepo:         accountRepo,
 		pricingService:      pricingService,
 		modelMonitorService: modelMonitorService,
@@ -149,6 +153,24 @@ type userMarketplacePlatform struct {
 	Platform        string                 `json:"platform"`
 	Groups          []userAvailableGroup   `json:"groups"`
 	SupportedModels []userMarketplaceModel `json:"supported_models"`
+}
+
+const publicShowcaseModelLimit = 6
+
+// publicModelShowcaseModel is the anonymous-safe model summary used by the
+// landing page. Group identities are intentionally omitted.
+type publicModelShowcaseModel struct {
+	Name           string                       `json:"name"`
+	Platform       string                       `json:"platform"`
+	Pricing        *userSupportedModelPricing   `json:"pricing"`
+	RateMultiplier float64                      `json:"rate_multiplier"`
+	MonitorStatus  *service.ModelMonitorSummary `json:"monitor_status"`
+}
+
+type publicModelShowcasePlatform struct {
+	Platform   string                     `json:"platform"`
+	ModelCount int                        `json:"model_count"`
+	Models     []publicModelShowcaseModel `json:"models"`
 }
 
 // List 列出当前用户可见的「可用渠道」。
@@ -270,6 +292,128 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 	return out, nil
 }
 
+func (h *AvailableChannelHandler) showcaseForPublic(ctx context.Context) ([]publicModelShowcasePlatform, error) {
+	if h.groupRepo == nil || h.accountRepo == nil || h.pricingService == nil {
+		return nil, errors.New("model showcase dependencies unavailable")
+	}
+
+	groups, err := h.groupRepo.ListActive(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	type modelAggregate struct {
+		rate    float64
+		hasRate bool
+	}
+	byPlatform := make(map[string]map[string]*modelAggregate)
+	for i := range groups {
+		group := groups[i]
+		platform := strings.TrimSpace(group.Platform)
+		if platform == "" || group.IsExclusive {
+			continue
+		}
+		accounts, listErr := h.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, group.ID, platform)
+		if listErr != nil {
+			return nil, listErr
+		}
+		if len(accounts) == 0 {
+			continue
+		}
+		if byPlatform[platform] == nil {
+			byPlatform[platform] = make(map[string]*modelAggregate)
+		}
+		for _, model := range marketplaceModelIDs(group, accounts) {
+			aggregate := byPlatform[platform][model]
+			if aggregate == nil {
+				aggregate = &modelAggregate{}
+				byPlatform[platform][model] = aggregate
+			}
+			if !aggregate.hasRate || group.RateMultiplier < aggregate.rate {
+				aggregate.rate = group.RateMultiplier
+				aggregate.hasRate = true
+			}
+		}
+	}
+
+	out := make([]publicModelShowcasePlatform, 0, len(byPlatform))
+	keys := make([]service.ModelCatalogEntry, 0)
+	for platform, modelsByName := range byPlatform {
+		models := make([]publicModelShowcaseModel, 0, len(modelsByName))
+		for name, aggregate := range modelsByName {
+			models = append(models, publicModelShowcaseModel{
+				Name:           name,
+				Platform:       platform,
+				Pricing:        toUserPricing(h.pricingService.GetDisplayModelPricing(name)),
+				RateMultiplier: aggregate.rate,
+			})
+			keys = append(keys, service.ModelCatalogEntry{Platform: platform, Model: name})
+		}
+		out = append(out, publicModelShowcasePlatform{Platform: platform, ModelCount: len(models), Models: models})
+	}
+
+	if h.modelMonitorService != nil && h.settingService != nil && h.settingService.GetModelMonitorRuntime(ctx).Enabled {
+		summaries, summaryErr := h.modelMonitorService.PublicSummaries(ctx, keys)
+		if summaryErr != nil {
+			return nil, summaryErr
+		}
+		for i := range out {
+			for j := range out[i].Models {
+				key := service.ModelMonitorKey(out[i].Platform, out[i].Models[j].Name)
+				if summary, ok := summaries[key]; ok {
+					copy := summary
+					out[i].Models[j].MonitorStatus = &copy
+				}
+			}
+		}
+	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		left, right := showcasePlatformRank(out[i].Platform), showcasePlatformRank(out[j].Platform)
+		if left != right {
+			return left < right
+		}
+		return out[i].Platform < out[j].Platform
+	})
+	for i := range out {
+		sort.SliceStable(out[i].Models, func(a, b int) bool {
+			left, right := out[i].Models[a], out[i].Models[b]
+			leftOrder, rightOrder := 0, 0
+			if left.MonitorStatus != nil {
+				leftOrder = left.MonitorStatus.DisplayOrder
+			}
+			if right.MonitorStatus != nil {
+				rightOrder = right.MonitorStatus.DisplayOrder
+			}
+			if leftOrder != rightOrder {
+				return leftOrder > rightOrder
+			}
+			return left.Name > right.Name
+		})
+		if len(out[i].Models) > publicShowcaseModelLimit {
+			out[i].Models = out[i].Models[:publicShowcaseModelLimit]
+		}
+	}
+	return out, nil
+}
+
+func showcasePlatformRank(platform string) int {
+	switch strings.ToLower(strings.TrimSpace(platform)) {
+	case service.PlatformOpenAI:
+		return 0
+	case service.PlatformAnthropic:
+		return 1
+	case service.PlatformGemini:
+		return 2
+	case service.PlatformGrok:
+		return 3
+	case service.PlatformAntigravity:
+		return 4
+	default:
+		return 100
+	}
+}
+
 func marketplaceModelIDs(group service.Group, accounts []service.Account) []string {
 	models := group.ModelsListConfig.Models
 	if !group.ModelsListConfig.Enabled || len(models) == 0 {
@@ -343,6 +487,21 @@ func (h *AvailableChannelHandler) ListMarketplace(c *gin.Context) {
 	}
 
 	out, err := h.marketplaceForUser(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, out)
+}
+
+// ListShowcase returns a bounded, anonymous-safe catalog for the landing page.
+// GET /api/v1/models/showcase
+func (h *AvailableChannelHandler) ListShowcase(c *gin.Context) {
+	if !h.marketplaceEnabled(c) {
+		response.Success(c, []publicModelShowcasePlatform{})
+		return
+	}
+	out, err := h.showcaseForPublic(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

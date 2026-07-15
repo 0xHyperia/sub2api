@@ -15,7 +15,7 @@
           @click="handleMobileNavNavigation"
         >
           <a href="#overview">功能总览</a>
-          <a href="#providers">模型能力</a>
+          <a v-if="showcaseVisible" href="#models">模型能力</a>
           <a href="#routes">接入端点</a>
           <a href="#pricing">价格估算</a>
           <RouterLink to="/key-usage">Key 用量</RouterLink>
@@ -150,40 +150,136 @@
             </article>
           </div>
         </div>
-        <div class="section-inner model-pricing-inner">
-          <section v-for="group in modelPricingGroups" :key="group.key" class="model-group">
-            <h3 :id="`pricing-${group.key}-title`" class="model-group-title">
-              <span class="provider-symbol" :class="group.symbolClass" aria-hidden="true">{{ group.symbol }}</span>
-              <strong>{{ group.name }}</strong>
-              <span>· {{ group.models.length }} 个模型</span>
-            </h3>
-            <div class="pricing-table-wrap">
-              <table class="pricing-table" :aria-labelledby="`pricing-${group.key}-title`">
-                <thead>
-                  <tr>
-                    <th scope="col">模型</th>
-                    <th v-for="label in priceColumnLabels" :key="label" scope="col">{{ label }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="model in group.models" :key="model.id">
-                    <th scope="row" class="model-cell">
-                      <strong>
-                        <span>{{ model.id }}</span>
-                        <em v-if="model.badge">{{ model.badge }}</em>
-                        <button class="copy-id" type="button" :data-copy="model.id"></button>
-                      </strong>
-                      <small>{{ model.description }}</small>
-                    </th>
-                    <td v-for="(price, index) in model.prices" :key="index" :data-label="priceColumnLabels[index]">
-                      <span>{{ price.value }}</span>
-                      <small v-if="price.note" class="price-note">{{ price.note }}</small>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+        <div v-if="showcaseVisible" id="models" class="section-inner model-showcase-inner">
+          <div class="showcase-heading">
+            <div>
+              <p class="eyebrow">MODEL CATALOG</p>
+              <h3>主流模型，一套接口接入</h3>
+              <p>公开模型、参考价格与可用状态保持同步，登录后可查看实际分组与最终倍率。</p>
             </div>
-          </section>
+            <RouterLink class="showcase-all-link" to="/model-marketplace">
+              查看全部模型
+              <Icon name="arrowRight" size="sm" aria-hidden="true" />
+            </RouterLink>
+          </div>
+
+          <div v-if="showcaseLoading" class="showcase-loading" role="status" aria-label="正在加载模型目录">
+            <span v-for="index in 4" :key="index"></span>
+          </div>
+
+          <template v-else-if="activeShowcasePlatform && featuredShowcaseModel">
+            <div class="showcase-provider-tabs" role="tablist" aria-label="模型厂商" @keydown="handleShowcaseTabKeydown">
+              <button
+                v-for="provider in showcasePlatforms"
+                :id="`showcase-tab-${provider.platform}`"
+                :key="provider.platform"
+                type="button"
+                role="tab"
+                :aria-selected="activeShowcaseProvider === provider.platform"
+                :aria-controls="`showcase-panel-${provider.platform}`"
+                :tabindex="activeShowcaseProvider === provider.platform ? 0 : -1"
+                :class="{ active: activeShowcaseProvider === provider.platform }"
+                @click="activeShowcaseProvider = provider.platform"
+              >
+                <PlatformIcon :platform="provider.platform as GroupPlatform" size="sm" />
+                <span>{{ showcaseProviderLabel(provider.platform) }}</span>
+                <small>{{ provider.model_count }}</small>
+              </button>
+            </div>
+
+            <section
+              :id="`showcase-panel-${activeShowcasePlatform.platform}`"
+              class="showcase-stage"
+              role="tabpanel"
+              :aria-labelledby="`showcase-tab-${activeShowcasePlatform.platform}`"
+            >
+              <article class="showcase-featured">
+                <div class="featured-provider-line">
+                  <span>{{ showcaseProviderLabel(activeShowcasePlatform.platform) }}</span>
+                  <span>{{ activeShowcasePlatform.model_count }} 个模型可供选择</span>
+                </div>
+                <div class="featured-model-title">
+                  <h4>{{ featuredShowcaseModel.name }}</h4>
+                  <span v-if="featuredShowcaseModel.monitor_status?.label" class="model-label">
+                    {{ featuredShowcaseModel.monitor_status.label }}
+                  </span>
+                  <button
+                    class="showcase-copy-button"
+                    type="button"
+                    :aria-label="`复制模型名称 ${featuredShowcaseModel.name}`"
+                    title="复制模型名称"
+                    @click="copyShowcaseModel(featuredShowcaseModel.name)"
+                  >
+                    <Icon name="copy" size="sm" aria-hidden="true" />
+                  </button>
+                </div>
+                <p class="featured-trait">{{ showcaseModelTrait(featuredShowcaseModel) }}</p>
+                <div class="featured-status" :class="showcaseStatusClass(featuredShowcaseModel.monitor_status?.status)">
+                  <span aria-hidden="true"></span>
+                  {{ showcaseStatusLabel(featuredShowcaseModel.monitor_status?.status) }}
+                  <small v-if="featuredShowcaseModel.monitor_status?.availability_7d != null">
+                    近 7 天 {{ featuredShowcaseModel.monitor_status.availability_7d.toFixed(2) }}%
+                  </small>
+                </div>
+                <div class="featured-monitor-history">
+                  <div class="featured-monitor-heading">
+                    <span>最近监测</span>
+                    <small>{{ showcaseHistoryLabel(featuredShowcaseModel) }}</small>
+                  </div>
+                  <ModelMonitorTimeline
+                    :points="featuredShowcaseModel.monitor_status?.timeline"
+                    :limit="30"
+                  />
+                </div>
+                <div class="featured-prices">
+                  <div v-for="price in showcasePriceRows(featuredShowcaseModel)" :key="price.key">
+                    <span>{{ price.label }}</span>
+                    <strong>{{ price.value }}</strong>
+                    <small>{{ price.unit }}</small>
+                  </div>
+                  <div v-if="showcasePriceRows(featuredShowcaseModel).length === 0" class="price-unavailable">
+                    <span>计费信息</span>
+                    <strong>查看定价</strong>
+                  </div>
+                </div>
+                <div class="featured-footer">
+                  <span>公开参考倍率 {{ formatShowcaseRate(featuredShowcaseModel.rate_multiplier) }}x</span>
+                  <RouterLink to="/model-marketplace">查看模型详情 <Icon name="arrowRight" size="sm" aria-hidden="true" /></RouterLink>
+                </div>
+              </article>
+
+              <div class="showcase-model-list" aria-label="更多代表模型">
+                <article v-for="model in secondaryShowcaseModels" :key="model.name" class="showcase-model-row">
+                  <div class="showcase-row-main">
+                    <div class="showcase-row-title">
+                      <RouterLink to="/model-marketplace">{{ model.name }}</RouterLink>
+                      <span v-if="model.monitor_status?.label" class="model-label">{{ model.monitor_status.label }}</span>
+                      <button
+                        class="showcase-copy-button compact"
+                        type="button"
+                        :aria-label="`复制模型名称 ${model.name}`"
+                        title="复制模型名称"
+                        @click="copyShowcaseModel(model.name)"
+                      >
+                        <Icon name="copy" size="xs" aria-hidden="true" />
+                      </button>
+                    </div>
+                    <p>{{ showcaseModelTrait(model) }}</p>
+                  </div>
+                  <div class="showcase-row-price">
+                    <span>{{ showcasePrimaryPrice(model).label }}</span>
+                    <strong>{{ showcasePrimaryPrice(model).value }}</strong>
+                    <small>{{ showcasePrimaryPrice(model).unit }}</small>
+                  </div>
+                  <span class="showcase-row-status" :class="showcaseStatusClass(model.monitor_status?.status)" :title="showcaseStatusLabel(model.monitor_status?.status)"></span>
+                </article>
+                <RouterLink v-if="remainingShowcaseCount > 0" class="showcase-more-row" to="/model-marketplace">
+                  还有 {{ remainingShowcaseCount }} 个 {{ showcaseProviderLabel(activeShowcasePlatform.platform) }} 模型
+                  <Icon name="arrowRight" size="sm" aria-hidden="true" />
+                </RouterLink>
+              </div>
+            </section>
+          </template>
         </div>
       </section>
 
@@ -355,9 +451,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { getHomeMetrics } from '@/api/home'
+import { getHomeMetrics, getHomeShowcase, type HomeShowcaseModel, type HomeShowcasePlatform } from '@/api/home'
+import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
+import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
 import { useTheme } from '@/composables/useTheme'
+import type { GroupPlatform } from '@/types'
+import { platformLabel } from '@/utils/platformColors'
 
 const props = defineProps<{
   siteName: string
@@ -375,80 +475,27 @@ const entryButtonLabel = computed(() => props.isAuthenticated ? '进入控制台
 const baseUrl = computed(() => `${window.location.origin}/v1`)
 const { resolvedTheme: homeTheme, toggleTheme } = useTheme()
 
-interface ModelPrice {
-  value: string
-  note?: string
-}
-
-interface ModelPricingItem {
-  id: string
-  badge?: string
-  description: string
-  prices: [ModelPrice, ModelPrice, ModelPrice]
-}
-
-interface ModelPricingGroup {
-  key: string
-  name: string
-  symbol: string
-  symbolClass: string
-  models: ModelPricingItem[]
-}
-
-const priceColumnLabels = ['输入 / 百万', '输出 / 百万', '缓存 / 百万']
-const modelPricingGroups: ModelPricingGroup[] = [
-  {
-    key: 'openai',
-    name: 'OPENAI',
-    symbol: '◎',
-    symbolClass: 'openai-symbol',
-    models: [
-      { id: 'gpt-5.6', badge: '最新', description: '新一代 · 通用', prices: [{ value: '$5.00' }, { value: '$30.00' }, { value: '$0.50' }] },
-      { id: 'gpt-5.5', badge: '热门', description: '旗舰 · 通用', prices: [{ value: '$5.00' }, { value: '$30.00' }, { value: '$0.50' }] },
-      { id: 'gpt-5.4', description: '通用 · 高性能', prices: [{ value: '$2.50' }, { value: '$15.00' }, { value: '$0.25' }] },
-      { id: 'gpt-5.4-mini', description: '高性价比 · 轻量', prices: [{ value: '$0.75' }, { value: '$4.50' }, { value: '$0.075' }] },
-      { id: 'gpt-5.3-codex', description: '编程 · Codex', prices: [{ value: '$1.75' }, { value: '$14.00' }, { value: '$0.175' }] }
-    ]
-  },
-  {
-    key: 'claude',
-    name: 'CLAUDE CODE',
-    symbol: '✣',
-    symbolClass: 'claude-symbol',
-    models: [
-      { id: 'claude-sonnet-5', badge: '热门', description: '新一代 · 通用', prices: [{ value: '$3.00' }, { value: '$15.00' }, { value: '$0.30' }] },
-      { id: 'claude-fable-5', badge: '热门', description: '新一代 · 旗舰', prices: [{ value: '$10.00' }, { value: '$50.00' }, { value: '$1.00' }] },
-      { id: 'claude-opus-4-8', badge: '热门', description: '旗舰 · 编程', prices: [{ value: '$5.00' }, { value: '$25.00' }, { value: '$0.50' }] },
-      { id: 'claude-opus-4-7', description: '旗舰 · 编程', prices: [{ value: '$5.00' }, { value: '$25.00' }, { value: '$0.50' }] },
-      { id: 'claude-opus-4-6', description: '旗舰 · 编程', prices: [{ value: '$5.00' }, { value: '$25.00' }, { value: '$0.50' }] },
-      { id: 'claude-sonnet-4-6', description: '通用 · 平衡', prices: [{ value: '$3.00' }, { value: '$15.00' }, { value: '$0.30' }] },
-      { id: 'claude-haiku-4-5-20251001', description: '高性价比 · 轻量', prices: [{ value: '$1.00' }, { value: '$5.00' }, { value: '$0.10' }] }
-    ]
-  },
-  {
-    key: 'gemini',
-    name: 'GEMINI',
-    symbol: '✦',
-    symbolClass: 'gemini-symbol',
-    models: [
-      { id: 'gemini-3.5-flash', badge: '最新', description: '速度优先 · 搜索与 grounding', prices: [{ value: '$1.50' }, { value: '$9.00' }, { value: '$0.15' }] },
-      { id: 'gemini-3.1-pro-preview', badge: '旗舰', description: '多模态 · Agent 与复杂任务', prices: [{ value: '$2.00', note: '≤200k' }, { value: '$12.00', note: '≤200k' }, { value: '$0.20', note: '≤200k' }] },
-      { id: 'gemini-3.1-flash-lite', badge: '低价', description: '高吞吐 · 翻译与轻量处理', prices: [{ value: '$0.25' }, { value: '$1.50' }, { value: '$0.025' }] },
-      { id: 'gemini-2.5-pro', description: '推理 · 编程与复杂任务', prices: [{ value: '$1.25', note: '≤200k' }, { value: '$10.00', note: '≤200k' }, { value: '$0.125', note: '≤200k' }] },
-      { id: 'gemini-2.5-flash', description: '平衡 · 1M 上下文', prices: [{ value: '$0.30' }, { value: '$2.50' }, { value: '$0.03' }] },
-      { id: 'gemini-2.5-flash-lite', description: '批量 · 极低成本', prices: [{ value: '$0.10' }, { value: '$0.40' }, { value: '$0.01' }] }
-    ]
-  }
-]
-
 const homeRoot = ref<HTMLElement | null>(null)
 const themeToggleRef = ref<HTMLButtonElement | null>(null)
 const mobileNavRef = ref<HTMLElement | null>(null)
 const mobileNavToggleRef = ref<HTMLButtonElement | null>(null)
 const mobileNavOpen = ref(false)
 const activeTab = ref<RouteTabKey>('chat')
+const showcasePlatforms = ref<HomeShowcasePlatform[]>([])
+const showcaseLoading = ref(true)
+const activeShowcaseProvider = ref('')
 const monthlyTokenMillions = ref(40)
+const activeShowcasePlatform = computed(() =>
+  showcasePlatforms.value.find(provider => provider.platform === activeShowcaseProvider.value)
+  ?? showcasePlatforms.value[0]
+  ?? null,
+)
+const featuredShowcaseModel = computed(() => activeShowcasePlatform.value?.models[0] ?? null)
+const secondaryShowcaseModels = computed(() => activeShowcasePlatform.value?.models.slice(1, 4) ?? [])
+const remainingShowcaseCount = computed(() => Math.max(0, (activeShowcasePlatform.value?.model_count ?? 0) - 4))
+const showcaseVisible = computed(() => showcaseLoading.value || showcasePlatforms.value.length > 0)
 const HOME_METRICS_REFRESH_MS = 60_000
+const HOME_SHOWCASE_REFRESH_MS = 60_000
 const HOME_TOKEN_STORAGE_KEY = 'usa_home_today_tokens_state'
 let fallbackTokenDateKey = getLocalDateKey()
 let fallbackTokenProfile = createFallbackTokenProfile(fallbackTokenDateKey)
@@ -467,6 +514,7 @@ const copyToastMessage = ref('已复制')
 let cleanupCallbacks: Array<() => void> = []
 let copyToastTimer: number | undefined
 let homeMetricsRefreshing = false
+let homeShowcaseRefreshing = false
 let availabilityMetricAnimationFrame: number | undefined
 let tokenMetricAnimationFrame: number | undefined
 let latencyMetricAnimationFrame: number | undefined
@@ -705,6 +753,31 @@ function startHomeMetricsRefresh() {
   cleanupCallbacks.push(() => window.clearInterval(latencyTimer))
 }
 
+async function refreshHomeShowcase() {
+  if (homeShowcaseRefreshing) return
+  homeShowcaseRefreshing = true
+  try {
+    const providers = await getHomeShowcase()
+    showcasePlatforms.value = Array.isArray(providers)
+      ? providers.filter(provider => provider.models.length > 0)
+      : []
+    if (!showcasePlatforms.value.some(provider => provider.platform === activeShowcaseProvider.value)) {
+      activeShowcaseProvider.value = showcasePlatforms.value[0]?.platform ?? ''
+    }
+  } catch {
+    // Keep the last successful catalog. On initial failure the showcase stays hidden.
+  } finally {
+    showcaseLoading.value = false
+    homeShowcaseRefreshing = false
+  }
+}
+
+function startHomeShowcaseRefresh() {
+  void refreshHomeShowcase()
+  const timer = window.setInterval(() => void refreshHomeShowcase(), HOME_SHOWCASE_REFRESH_MS)
+  cleanupCallbacks.push(() => window.clearInterval(timer))
+}
+
 function startMetricIntroAnimation() {
   const timer = window.setTimeout(() => {
     animateAvailability()
@@ -884,6 +957,115 @@ function handleTablistKeydown(event: KeyboardEvent): void {
   const nextTab = routeTabs[nextIndex]
   activeTab.value = nextTab.key
   void nextTick(() => document.getElementById(`route-tab-${nextTab.key}`)?.focus())
+}
+
+function handleShowcaseTabKeydown(event: KeyboardEvent): void {
+  const providers = showcasePlatforms.value
+  if (providers.length === 0) return
+  const currentIndex = Math.max(0, providers.findIndex(provider => provider.platform === activeShowcaseProvider.value))
+  let nextIndex = currentIndex
+  if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % providers.length
+  else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + providers.length) % providers.length
+  else if (event.key === 'Home') nextIndex = 0
+  else if (event.key === 'End') nextIndex = providers.length - 1
+  else return
+
+  event.preventDefault()
+  const provider = providers[nextIndex]
+  activeShowcaseProvider.value = provider.platform
+  void nextTick(() => document.getElementById(`showcase-tab-${provider.platform}`)?.focus())
+}
+
+function showcaseProviderLabel(platform: string): string {
+  return platformLabel(platform)
+}
+
+function formatShowcaseRate(rate: number): string {
+  if (!Number.isFinite(rate)) return '1'
+  return Number(rate.toFixed(4)).toString()
+}
+
+function formatShowcaseAmount(value: number | null, scale: number, rate: number): string {
+  if (value == null || !Number.isFinite(value)) return '查看定价'
+  const amount = value * scale * (Number.isFinite(rate) ? rate : 1)
+  if (amount === 0) return '$0'
+  const digits = amount >= 100 ? 0 : amount >= 1 ? 2 : 4
+  return `$${amount.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1')}`
+}
+
+interface ShowcasePriceRow {
+  key: string
+  label: string
+  value: string
+  unit: string
+}
+
+function showcasePriceRows(model: HomeShowcaseModel): ShowcasePriceRow[] {
+  const pricing = model.pricing
+  if (!pricing) return []
+  if (pricing.billing_mode === 'token') {
+    const rows = [
+      { key: 'input', label: '输入', raw: pricing.input_price },
+      { key: 'output', label: '输出', raw: pricing.output_price },
+    ]
+    return rows
+      .filter(row => row.raw != null)
+      .map(row => ({
+        key: row.key,
+        label: row.label,
+        value: formatShowcaseAmount(row.raw, 1_000_000, model.rate_multiplier),
+        unit: '/ 1M',
+      }))
+  }
+  const requestPrice = pricing.per_request_price ?? pricing.image_output_price
+  return requestPrice == null ? [] : [{
+    key: 'request',
+    label: '每次',
+    value: formatShowcaseAmount(requestPrice, 1, model.rate_multiplier),
+    unit: '/ 次',
+  }]
+}
+
+function showcasePrimaryPrice(model: HomeShowcaseModel): ShowcasePriceRow {
+  return showcasePriceRows(model)[0] ?? { key: 'unpriced', label: '参考价格', value: '查看定价', unit: '' }
+}
+
+function showcaseModelTrait(model: HomeShowcaseModel): string {
+  const name = model.name.toLowerCase()
+  const billing = model.pricing?.billing_mode === 'token' ? '按量计费' : model.pricing ? '按次数计费' : '定价待配置'
+  if (/(codex|code|coder)/.test(name)) return `编程与 Agent · ${billing}`
+  if (/(image|imagine|vision|video)/.test(name)) return `多模态生成 · ${billing}`
+  if (/(flash|mini|haiku|lite)/.test(name)) return `高吞吐轻量模型 · ${billing}`
+  if (/(opus|reason|pro)/.test(name)) return `复杂任务与深度推理 · ${billing}`
+  return `通用模型 · ${billing}`
+}
+
+function showcaseStatusLabel(status?: string): string {
+  if (status === 'operational') return '状态正常'
+  if (status === 'degraded') return '状态波动'
+  if (status === 'failed' || status === 'error') return '暂不可用'
+  return '状态待检测'
+}
+
+function showcaseStatusClass(status?: string): string {
+  if (status === 'operational') return 'is-operational'
+  if (status === 'degraded') return 'is-degraded'
+  if (status === 'failed' || status === 'error') return 'is-failed'
+  return 'is-unknown'
+}
+
+function showcaseHistoryLabel(model: HomeShowcaseModel): string {
+  const count = model.monitor_status?.timeline?.length ?? 0
+  return count > 0 ? `最近 ${Math.min(count, 30)} 次` : '暂无监测历史'
+}
+
+async function copyShowcaseModel(name: string) {
+  try {
+    await navigator.clipboard.writeText(name)
+    showCopyToast('模型名称已复制')
+  } catch {
+    showCopyToast('复制失败，请手动复制')
+  }
 }
 
 function setupPricingRange() {
@@ -1125,6 +1307,7 @@ function startCtaDotMatrix(canvas: HTMLCanvasElement | null) {
 
 onMounted(() => {
   startHomeMetricsRefresh()
+  startHomeShowcaseRefresh()
   startMetricIntroAnimation()
   setupHeader()
   setupPricingRange()
@@ -2110,151 +2293,321 @@ onUnmounted(() => {
   color: #22c55e;
   font-weight: 840;
 }
-.model-pricing-inner {
-  display: grid;
-  gap: 34px;
-  margin-top: clamp(44px, 7vw, 74px);
+.model-showcase-inner {
+  margin-top: clamp(46px, 7vw, 78px);
+  scroll-margin-top: 96px;
 }
-.model-group {
-  min-width: 0;
-}
-.model-group-title {
+.showcase-heading {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  color: var(--muted-foreground);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
-  letter-spacing: .18em;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 26px;
 }
-.model-group-title strong {
+.showcase-heading h3 {
+  margin: 8px 0 10px;
   color: var(--foreground);
-  font-weight: 840;
-}
-.provider-symbol {
-  display: inline-grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 50%;
-  color: var(--foreground);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 18px;
+  font-size: clamp(28px, 3vw, 42px);
+  font-weight: 860;
   letter-spacing: 0;
 }
-.provider-symbol.claude-symbol { color: #f97316; }
-.provider-symbol.gemini-symbol { color: #3b82f6; }
-.pricing-table-wrap {
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
-  box-shadow: var(--soft-shadow);
-  backdrop-filter: blur(14px);
-}
-
-.pricing-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-.pricing-table th,
-.pricing-table td {
-  padding: 14px 26px;
-  text-align: right;
-  vertical-align: middle;
-}
-
-.pricing-table th:first-child { width: 48%; text-align: left; }
-.pricing-table thead th {
-  height: 44px;
-  padding-block: 10px;
-  background: color-mix(in srgb, var(--muted) 52%, transparent);
+.showcase-heading > div > p:last-child {
+  max-width: 680px;
+  margin: 0;
   color: var(--muted-foreground);
-  font-size: 12px;
-  font-weight: 820;
+  font-size: 15px;
+  line-height: 1.7;
 }
-
-.pricing-table tbody tr { border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent); }
-.pricing-table tbody td {
-  color: var(--foreground);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 14px;
-}
-
-.pricing-table .price-note {
-  display: block;
-  margin-top: 4px;
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-
-.model-cell {
-  min-width: 0;
-  text-align: left;
-}
-.model-cell strong {
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
+.showcase-all-link,
+.featured-footer a,
+.showcase-more-row {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   color: var(--foreground);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 16px;
-  font-weight: 860;
-  overflow-wrap: anywhere;
-}
-.model-cell small {
-  display: block;
-  margin-top: 7px;
-  color: var(--muted-foreground);
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 760;
+  text-decoration: none;
 }
-.model-cell em {
-  border-radius: 4px;
-  padding: 2px 6px;
-  background: var(--foreground);
-  color: var(--background);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 820;
-}
-.copy-id {
-  display: inline-grid;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+.showcase-all-link {
+  flex: 0 0 auto;
   min-height: 40px;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
-  border-radius: 4px;
-  padding: 0;
-  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  border-bottom: 1px solid var(--border-strong);
+}
+.showcase-all-link:hover,
+.featured-footer a:hover,
+.showcase-more-row:hover { color: var(--primary); }
+.showcase-loading {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  min-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--border);
+}
+.showcase-loading span {
+  background: linear-gradient(90deg, var(--surface-raised) 25%, var(--muted) 50%, var(--surface-raised) 75%);
+  background-size: 200% 100%;
+  animation: showcase-loading 1.4s ease-in-out infinite;
+}
+@keyframes showcase-loading { to { background-position: -200% 0; } }
+.showcase-provider-tabs {
+  display: flex;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  scrollbar-width: none;
+}
+.showcase-provider-tabs::-webkit-scrollbar { display: none; }
+.showcase-provider-tabs button {
+  position: relative;
+  display: inline-flex;
+  min-width: 152px;
+  min-height: 62px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  padding: 0 22px;
+  background: transparent;
   color: var(--muted-foreground);
-  font-size: 0;
-  line-height: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 740;
   cursor: pointer;
 }
-.copy-id::before {
+.showcase-provider-tabs button::after {
+  position: absolute;
+  right: 20px;
+  bottom: -1px;
+  left: 20px;
+  height: 2px;
+  background: transparent;
   content: "";
-  width: 14px;
-  height: 14px;
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 7a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-1v-2h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v1H8V7Zm-5 4a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-7Zm3-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1H6Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 7a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-1v-2h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v1H8V7Zm-5 4a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-7Zm3-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1H6Z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
-.copy-id:hover {
-  border-color: color-mix(in srgb, var(--foreground) 28%, var(--border));
-  color: var(--foreground);
+.showcase-provider-tabs button:hover { color: var(--foreground); background: var(--muted); }
+.showcase-provider-tabs button.active { color: var(--foreground); background: var(--surface-raised); }
+.showcase-provider-tabs button.active::after { background: var(--foreground); }
+.showcase-provider-tabs button small {
+  min-width: 22px;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
 }
-.copy-id.copied {
-  border-color: color-mix(in srgb, var(--foreground) 24%, var(--border));
-  background: color-mix(in srgb, var(--muted) 78%, var(--surface-raised));
+.showcase-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr);
+  min-height: 430px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--soft-shadow);
+}
+.showcase-featured {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: clamp(30px, 4vw, 52px);
+  background: color-mix(in srgb, var(--muted) 42%, var(--surface-raised));
+}
+.featured-provider-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 780;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.featured-model-title,
+.showcase-row-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+.featured-model-title { margin-top: 38px; }
+.featured-model-title h4 {
+  min-width: 0;
+  margin: 0;
   color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(27px, 3vw, 42px);
+  font-weight: 820;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.model-label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 20px;
+  align-items: center;
+  border-radius: 4px;
+  padding: 2px 7px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+.showcase-copy-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.showcase-copy-button.compact { width: 28px; height: 28px; opacity: .55; }
+.showcase-copy-button:hover,
+.showcase-copy-button:focus-visible { border-color: var(--border-strong); color: var(--foreground); opacity: 1; }
+.featured-trait {
+  margin: 12px 0 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+.featured-status {
+  display: inline-flex;
+  width: max-content;
+  align-items: center;
+  gap: 7px;
+  margin-top: 24px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+.featured-status > span,
+.showcase-row-status {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+.featured-status small { margin-left: 5px; color: var(--muted-foreground); font-weight: 500; }
+.is-operational > span,
+.showcase-row-status.is-operational { background: #16a34a; }
+.is-degraded > span,
+.showcase-row-status.is-degraded { background: #d97706; }
+.is-failed > span,
+.showcase-row-status.is-failed { background: #dc2626; }
+.featured-monitor-history {
+  margin-top: 18px;
+}
+.featured-monitor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 760;
+}
+.featured-monitor-heading > span {
+  color: var(--foreground);
+  font-size: 11px;
+}
+.featured-monitor-history :deep([role="list"]) {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  box-shadow: none;
+}
+.featured-prices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--border);
+}
+.featured-prices > div {
+  min-width: 0;
+  padding: 20px 18px 18px 0;
+  background: color-mix(in srgb, var(--muted) 42%, var(--surface-raised));
+}
+.featured-prices > div + div { padding-left: 22px; }
+.featured-prices span,
+.showcase-row-price span {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 720;
+}
+.featured-prices strong,
+.showcase-row-price strong {
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.featured-prices strong { display: inline-block; margin-top: 7px; font-size: 23px; }
+.featured-prices small,
+.showcase-row-price small { margin-left: 5px; color: var(--muted-foreground); font-size: 11px; }
+.featured-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 18px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.showcase-model-list {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+.showcase-model-row {
+  position: relative;
+  display: grid;
+  min-height: 110px;
+  grid-template-columns: minmax(0, 1fr) auto 8px;
+  align-items: center;
+  gap: 22px;
+  border-bottom: 1px solid var(--border);
+  padding: 20px 24px;
+  transition: background-color 180ms ease;
+}
+.showcase-model-row:hover { background: var(--muted); }
+.showcase-row-main { min-width: 0; }
+.showcase-row-title a {
+  min-width: 0;
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15px;
+  font-weight: 790;
+  letter-spacing: 0;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.showcase-row-main p {
+  margin: 7px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.showcase-row-price { min-width: 96px; text-align: right; }
+.showcase-row-price strong { display: inline-block; margin-top: 5px; font-size: 14px; }
+.showcase-more-row {
+  min-height: 64px;
+  justify-content: space-between;
+  margin-top: auto;
+  padding: 0 24px;
+  background: color-mix(in srgb, var(--muted) 44%, transparent);
 }
 
 .tabs {
@@ -2520,8 +2873,9 @@ onUnmounted(() => {
   .route-demo { padding: 14px; }
   .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .section-title.align-left { text-align: center; margin: 0 auto 30px; }
-  .pricing-table th,
-  .pricing-table td { padding-inline: 18px; }
+  .showcase-stage { grid-template-columns: 1fr; }
+  .showcase-model-list { border-top: 1px solid var(--border); border-left: 0; }
+  .showcase-featured { min-height: 390px; }
 }
 
 @media (max-width: 620px) {
@@ -2573,55 +2927,33 @@ onUnmounted(() => {
   .access-status-grid div { padding: 12px; }
   .access-code { padding: 12px; }
   .access-code code { font-size: 11px; line-height: 1.6; }
-  .model-pricing-inner { gap: 28px; margin-top: 42px; }
-  .model-group-title { align-items: flex-start; flex-wrap: wrap; letter-spacing: .12em; }
-  .pricing-table-wrap { overflow: visible; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
-  .pricing-table,
-  .pricing-table tbody { display: block; }
-  .pricing-table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  .pricing-table tbody { display: grid; gap: 10px; }
-  .pricing-table tbody tr {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    overflow: hidden;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface-raised);
-    box-shadow: var(--soft-shadow);
-  }
-  .pricing-table tbody th.model-cell {
-    display: block;
-    width: auto;
-    grid-column: 1 / -1;
-    padding: 14px;
-    border-bottom: 1px solid var(--border);
-  }
-  .pricing-table tbody td {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
-    padding: 12px 8px;
-    text-align: left;
-  }
-  .pricing-table tbody td::before {
-    color: var(--muted-foreground);
-    content: attr(data-label);
-    font-family: var(--font);
-    font-size: 10px;
-    font-weight: 700;
-  }
-  .model-cell strong { font-size: 14px; }
-  .pricing-table tbody td { font-size: 12px; }
+  .model-showcase-inner { margin-top: 42px; }
+  .showcase-heading { align-items: flex-start; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+  .showcase-heading h3 { font-size: 28px; }
+  .showcase-all-link { min-height: 34px; }
+  .showcase-loading { min-height: 360px; grid-template-columns: 1fr; }
+  .showcase-loading span:not(:first-child) { display: none; }
+  .showcase-provider-tabs button { min-width: 128px; min-height: 56px; padding: 0 16px; }
+  .showcase-featured { min-height: 370px; padding: 24px 20px; }
+  .featured-provider-line { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .featured-model-title { align-items: flex-start; flex-wrap: wrap; margin-top: 26px; }
+  .featured-model-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .featured-model-title h4 { width: auto; font-size: 27px; }
+  .featured-model-title .model-label { grid-column: 1; justify-self: start; }
+  .featured-model-title .showcase-copy-button { grid-column: 2; grid-row: 1; }
+  .featured-status { flex-wrap: wrap; }
+  .featured-prices { margin-top: 30px; }
+  .featured-prices > div { padding: 16px 12px 15px 0; }
+  .featured-prices > div + div { padding-left: 14px; }
+  .featured-prices strong { font-size: 19px; }
+  .featured-footer { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .showcase-model-row { min-height: 116px; grid-template-columns: minmax(0, 1fr) 8px; gap: 8px 14px; padding: 18px 20px; }
+  .showcase-row-main { grid-column: 1; }
+  .showcase-row-status { grid-column: 2; grid-row: 1; }
+  .showcase-row-price { grid-column: 1; min-width: 0; text-align: left; }
+  .showcase-row-price span { display: inline; margin-right: 8px; }
+  .showcase-row-price strong { margin-top: 0; }
+  .showcase-more-row { min-height: 58px; padding: 0 20px; }
   .tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
   .section { padding: 64px 12px; }
   .band-light { padding-top: 10px; }

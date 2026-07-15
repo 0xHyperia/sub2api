@@ -39,6 +39,42 @@ func TestModelMarketplace_Unauthenticated401(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestModelShowcase_DisabledReturnsEmptyWithoutAuthentication(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := &AvailableChannelHandler{}
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/models/showcase", nil)
+
+	h.ListShowcase(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.JSONEq(t, `{"code":0,"message":"success","data":[]}`, w.Body.String())
+}
+
+func TestModelShowcase_FieldWhitelistOmitsGroupIdentity(t *testing.T) {
+	row := publicModelShowcasePlatform{
+		Platform:   service.PlatformOpenAI,
+		ModelCount: 1,
+		Models: []publicModelShowcaseModel{{
+			Name:           "gpt-test",
+			Platform:       service.PlatformOpenAI,
+			RateMultiplier: 0.8,
+		}},
+	}
+	raw, err := json.Marshal(row)
+	require.NoError(t, err)
+	require.NotContains(t, string(raw), "group")
+	require.NotContains(t, string(raw), "exclusive")
+	require.Contains(t, string(raw), `"rate_multiplier":0.8`)
+}
+
+func TestShowcasePlatformRankPrioritizesPrimaryProviders(t *testing.T) {
+	require.Less(t, showcasePlatformRank(service.PlatformOpenAI), showcasePlatformRank(service.PlatformAnthropic))
+	require.Less(t, showcasePlatformRank(service.PlatformAnthropic), showcasePlatformRank(service.PlatformGemini))
+	require.Less(t, showcasePlatformRank(service.PlatformGemini), showcasePlatformRank("custom"))
+}
+
 func TestMarketplaceModelIDs_CustomGroupListTakesPriority(t *testing.T) {
 	group := service.Group{
 		Platform: service.PlatformOpenAI,
