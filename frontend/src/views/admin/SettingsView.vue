@@ -6046,6 +6046,28 @@
                 :aria-label="t('admin.settings.features.modelMarketplace.enabled')"
               />
             </div>
+            <div class="flex items-center justify-between gap-4 border-t border-outline pt-5">
+              <div>
+                <label class="text-sm font-medium text-foreground-muted">
+                  {{ t('admin.settings.features.modelMarketplace.monitorEnabled') }}
+                </label>
+                <p class="mt-0.5 text-xs text-foreground-subtle">
+                  {{ t('admin.settings.features.modelMarketplace.monitorEnabledHint') }}
+                </p>
+                <router-link
+                  to="/admin/channels/model-monitor"
+                  class="mt-1.5 inline-flex items-center gap-1 text-xs text-brand hover:underline"
+                >
+                  {{ t('admin.settings.features.modelMarketplace.monitorConfigureLink') }}
+                  <span aria-hidden="true">→</span>
+                </router-link>
+              </div>
+              <Toggle
+                v-model="form.model_monitor_enabled"
+                :disabled="!form.model_marketplace_enabled"
+                :aria-label="t('admin.settings.features.modelMarketplace.monitorEnabled')"
+              />
+            </div>
           </div>
         </div>
 
@@ -8687,10 +8709,15 @@ const form = reactive<SettingsForm>({
   available_channels_enabled: false,
   // Model Marketplace feature switch
   model_marketplace_enabled: false,
+  model_monitor_enabled: false,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
   // Allow user view error requests
   allow_user_view_error_requests: false,
+});
+
+watch(() => form.model_marketplace_enabled, (enabled) => {
+  if (!enabled) form.model_monitor_enabled = false;
 });
 
 type OpenAIAdvancedSchedulerOverrideKey =
@@ -10117,6 +10144,7 @@ async function saveSettings() {
       available_channels_enabled: form.available_channels_enabled,
       // Model Marketplace feature switch
       model_marketplace_enabled: form.model_marketplace_enabled,
+      model_monitor_enabled: form.model_marketplace_enabled && form.model_monitor_enabled,
       // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,

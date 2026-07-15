@@ -303,6 +303,7 @@ type UpdateSettingsRequest struct {
 
 	// Model Marketplace feature switch (user-facing)
 	ModelMarketplaceEnabled *bool `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled     *bool `json:"model_monitor_enabled"`
 
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
@@ -1516,6 +1517,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.ModelMarketplaceEnabled
 		}(),
+		ModelMonitorEnabled: func() bool {
+			if req.ModelMonitorEnabled != nil {
+				return *req.ModelMonitorEnabled
+			}
+			return previousSettings.ModelMonitorEnabled
+		}(),
 		AffiliateEnabled: func() bool {
 			if req.AffiliateEnabled != nil {
 				return *req.AffiliateEnabled
@@ -1897,6 +1904,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
 
 		ModelMarketplaceEnabled: updatedSettings.ModelMarketplaceEnabled,
+		ModelMonitorEnabled:     updatedSettings.ModelMonitorEnabled,
 
 		AffiliateEnabled: updatedSettings.AffiliateEnabled,
 

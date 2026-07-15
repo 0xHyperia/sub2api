@@ -23,11 +23,12 @@ import (
 //  4. 字段白名单：仅返回用户需要的字段（省略 BillingModelSource / RestrictModels
 //     / 内部 ID / Status 等管理字段）。
 type AvailableChannelHandler struct {
-	channelService *service.ChannelService
-	apiKeyService  *service.APIKeyService
-	settingService *service.SettingService
-	accountRepo    service.AccountRepository
-	pricingService *service.PricingService
+	channelService      *service.ChannelService
+	apiKeyService       *service.APIKeyService
+	settingService      *service.SettingService
+	accountRepo         service.AccountRepository
+	pricingService      *service.PricingService
+	modelMonitorService *service.ModelMonitorService
 }
 
 // NewAvailableChannelHandler 创建用户侧可用渠道 handler。
@@ -37,13 +38,15 @@ func NewAvailableChannelHandler(
 	settingService *service.SettingService,
 	accountRepo service.AccountRepository,
 	pricingService *service.PricingService,
+	modelMonitorService *service.ModelMonitorService,
 ) *AvailableChannelHandler {
 	return &AvailableChannelHandler{
-		channelService: channelService,
-		apiKeyService:  apiKeyService,
-		settingService: settingService,
-		accountRepo:    accountRepo,
-		pricingService: pricingService,
+		channelService:      channelService,
+		apiKeyService:       apiKeyService,
+		settingService:      settingService,
+		accountRepo:         accountRepo,
+		pricingService:      pricingService,
+		modelMonitorService: modelMonitorService,
 	}
 }
 
@@ -114,10 +117,11 @@ type userSupportedModel struct {
 }
 
 type userMarketplaceModel struct {
-	Name     string                     `json:"name"`
-	Platform string                     `json:"platform"`
-	Pricing  *userSupportedModelPricing `json:"pricing"`
-	Groups   []userAvailableGroup       `json:"groups"`
+	Name          string                       `json:"name"`
+	Platform      string                       `json:"platform"`
+	Pricing       *userSupportedModelPricing   `json:"pricing"`
+	Groups        []userAvailableGroup         `json:"groups"`
+	MonitorStatus *service.ModelMonitorSummary `json:"monitor_status"`
 }
 
 // userChannelPlatformSection 单渠道内某个平台的子视图：用户可见的分组 + 该平台
@@ -243,6 +247,26 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 			SupportedModels: models,
 		})
 	}
+	if h.modelMonitorService != nil && h.settingService.GetModelMonitorRuntime(ctx).Enabled {
+		keys := make([]service.ModelCatalogEntry, 0)
+		for _, section := range out {
+			for _, model := range section.SupportedModels {
+				keys = append(keys, service.ModelCatalogEntry{Platform: section.Platform, Model: model.Name})
+			}
+		}
+		summaries, summaryErr := h.modelMonitorService.PublicSummaries(ctx, keys)
+		if summaryErr != nil {
+			return nil, summaryErr
+		}
+		for i := range out {
+			for j := range out[i].SupportedModels {
+				if summary, ok := summaries[service.ModelMonitorKey(out[i].Platform, out[i].SupportedModels[j].Name)]; ok {
+					copy := summary
+					out[i].SupportedModels[j].MonitorStatus = &copy
+				}
+			}
+		}
+	}
 	return out, nil
 }
 
@@ -293,7 +317,15 @@ func sortedMarketplaceGroups(groups map[int64]userAvailableGroup) []userAvailabl
 	for _, group := range groups {
 		out = append(out, group)
 	}
-	sort.SliceStable(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].RateMultiplier != out[j].RateMultiplier {
+			return out[i].RateMultiplier < out[j].RateMultiplier
+		}
+		if out[i].Name != out[j].Name {
+			return out[i].Name < out[j].Name
+		}
+		return out[i].ID < out[j].ID
+	})
 	return out
 }
 

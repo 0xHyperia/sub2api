@@ -36,6 +36,9 @@ export default {
           configureLink: 'Configure platforms, model lists, and multipliers in Group Management',
           enabled: 'Enable Model Marketplace',
           enabledHint: 'When off, the user entry is hidden, direct navigation returns to the dashboard, and the endpoint returns an empty list.',
+          monitorEnabled: 'Enable Model Monitor',
+          monitorEnabledHint: 'Probe selected models through the normal platform scheduler and show status in the marketplace. Models are enabled individually.',
+          monitorConfigureLink: 'Configure in Channel Management > Model Monitor',
         },
         riskControl: {
           title: 'Risk Control',

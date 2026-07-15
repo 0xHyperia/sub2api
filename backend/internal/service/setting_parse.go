@@ -182,6 +182,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 		// Model marketplace feature (default disabled; opt-in)
 		SettingKeyModelMarketplaceEnabled: "false",
+		SettingKeyModelMonitorEnabled:     "false",
 
 		// Affiliate (邀请返利) feature (default disabled; opt-in)
 		SettingKeyAffiliateEnabled: "false",
@@ -719,6 +720,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Model marketplace feature (default: disabled; strict true)
 	result.ModelMarketplaceEnabled = settings[SettingKeyModelMarketplaceEnabled] == "true"
+	result.ModelMonitorEnabled = settings[SettingKeyModelMonitorEnabled] == "true"
 
 	// Affiliate (邀请返利) feature (default: disabled; strict true)
 	result.AffiliateEnabled = settings[SettingKeyAffiliateEnabled] == "true"

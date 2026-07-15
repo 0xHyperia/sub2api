@@ -284,6 +284,7 @@ function localText(zh: string, en: string): string {
 const flagChannelMonitor = makeSidebarFlag(FeatureFlags.channelMonitor)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagModelMarketplace = makeSidebarFlag(FeatureFlags.modelMarketplace)
+const flagModelMonitor = makeSidebarFlag(FeatureFlags.modelMonitor)
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
@@ -416,6 +417,12 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
               label: t('nav.channelMonitor'),
               icon: 'trendingUp',
               featureFlag: flagChannelMonitor
+            },
+            {
+              path: '/admin/channels/model-monitor',
+              label: t('nav.modelMonitor'),
+              icon: 'trendingUp',
+              featureFlag: flagModelMonitor
             }
           ]
         },

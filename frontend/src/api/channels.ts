@@ -52,6 +52,23 @@ export interface UserSupportedModel {
 
 export interface UserMarketplaceModel extends UserSupportedModel {
   groups: UserAvailableGroup[]
+  monitor_status?: UserModelMonitorSummary | null
+}
+
+export interface UserModelMonitorTimelinePoint {
+  status: 'operational' | 'degraded' | 'failed' | 'error'
+  latency_ms: number | null
+  checked_at: string
+}
+
+export interface UserModelMonitorSummary {
+  status: UserModelMonitorTimelinePoint['status'] | ''
+  latency_ms: number | null
+  availability_7d: number | null
+  last_checked_at: string | null
+  timeline: UserModelMonitorTimelinePoint[]
+  display_order: number
+  label: string
 }
 
 export interface UserMarketplacePlatform {

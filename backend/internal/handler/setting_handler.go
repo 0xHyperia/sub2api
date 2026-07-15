@@ -101,6 +101,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		AvailableChannelsEnabled: settings.AvailableChannelsEnabled,
 
 		ModelMarketplaceEnabled: settings.ModelMarketplaceEnabled,
+		ModelMonitorEnabled:     settings.ModelMonitorEnabled,
 
 		AffiliateEnabled: settings.AffiliateEnabled,
 

@@ -181,6 +181,7 @@ type SystemSettings struct {
 
 	// Model Marketplace feature (user-facing card catalog)
 	ModelMarketplaceEnabled bool `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled     bool `json:"model_monitor_enabled"`
 
 	// Claude Code version check
 	MinClaudeCodeVersion string
@@ -331,6 +332,7 @@ type PublicSettings struct {
 
 	// Model Marketplace feature (user-facing card catalog)
 	ModelMarketplaceEnabled bool `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled     bool `json:"model_monitor_enabled"`
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`

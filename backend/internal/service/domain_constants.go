@@ -371,6 +371,8 @@ const (
 	// It uses the same user-scoped channel data as Available Channels but has an
 	// independent route and feature switch. Defaults to false (opt-in feature).
 	SettingKeyModelMarketplaceEnabled = "model_marketplace_enabled"
+	// SettingKeyModelMonitorEnabled controls independent platform-model probes.
+	SettingKeyModelMonitorEnabled = "model_monitor_enabled"
 
 	// =========================
 	// Overload Cooldown (529)

@@ -36,6 +36,9 @@ export default {
           configureLink: '前往 分组管理 配置平台、模型列表和倍率',
           enabled: '启用模型广场',
           enabledHint: '关闭后用户端入口隐藏，直接访问页面会返回仪表盘，接口返回空数组。',
+          monitorEnabled: '启用模型监控',
+          monitorEnabledHint: '通过平台正常调度路径探测已选模型，并在模型广场展示状态。模型需在配置页逐个启用。',
+          monitorConfigureLink: '前往 渠道管理 > 模型监控 配置',
         },
         riskControl: {
           title: '风控中心',

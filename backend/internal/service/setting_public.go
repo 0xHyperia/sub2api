@@ -223,6 +223,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorDefaultIntervalSeconds,
 		SettingKeyAvailableChannelsEnabled,
 		SettingKeyModelMarketplaceEnabled,
+		SettingKeyModelMonitorEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyAllowUserViewErrorRequests,
@@ -338,6 +339,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
 
 		ModelMarketplaceEnabled: settings[SettingKeyModelMarketplaceEnabled] == "true",
+		ModelMonitorEnabled:     settings[SettingKeyModelMonitorEnabled] == "true",
 
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
@@ -439,6 +441,18 @@ func (s *SettingService) GetModelMarketplaceRuntime(ctx context.Context) ModelMa
 	}
 }
 
+// ModelMonitorRuntime is enabled only while both the marketplace and the
+// independent model-monitor switch are active.
+type ModelMonitorRuntime struct{ Enabled bool }
+
+func (s *SettingService) GetModelMonitorRuntime(ctx context.Context) ModelMonitorRuntime {
+	vals, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeyModelMarketplaceEnabled, SettingKeyModelMonitorEnabled})
+	if err != nil {
+		return ModelMonitorRuntime{}
+	}
+	return ModelMonitorRuntime{Enabled: vals[SettingKeyModelMarketplaceEnabled] == "true" && vals[SettingKeyModelMonitorEnabled] == "true"}
+}
+
 // IsUserErrorViewAllowed reads the user-facing error-requests visibility switch
 // directly from the settings store. Fail-closed: on error returns false (opt-in default).
 func (s *SettingService) IsUserErrorViewAllowed(ctx context.Context) bool {
@@ -522,6 +536,7 @@ type PublicSettingsInjectionPayload struct {
 	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
 	AvailableChannelsEnabled             bool `json:"available_channels_enabled"`
 	ModelMarketplaceEnabled              bool `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled                  bool `json:"model_monitor_enabled"`
 	AffiliateEnabled                     bool `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool `json:"risk_control_enabled"`
 	AllowUserViewErrorRequests           bool `json:"allow_user_view_error_requests"`
@@ -590,6 +605,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
 		ModelMarketplaceEnabled:              settings.ModelMarketplaceEnabled,
+		ModelMonitorEnabled:                  settings.ModelMonitorEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,

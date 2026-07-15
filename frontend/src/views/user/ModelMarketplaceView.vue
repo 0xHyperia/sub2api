@@ -15,7 +15,7 @@
 
       <div class="grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside
-          class="h-fit border-b border-outline pb-4 lg:sticky lg:top-20 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4"
+          class="hidden h-fit lg:sticky lg:top-20 lg:block lg:border-r lg:pr-4"
           :aria-label="t('modelMarketplace.filters.title')"
         >
           <div class="flex items-center justify-between">
@@ -121,53 +121,113 @@
         <section class="min-w-0" :aria-label="t('modelMarketplace.results')">
           <div
             data-testid="marketplace-toolbar"
-            class="flex flex-col gap-3 border-b border-outline pb-3 xl:flex-row xl:items-center xl:justify-between"
+            class="border-b border-outline pb-3"
           >
-            <div class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-              <SearchInput
-                v-model="searchQuery"
-                :placeholder="t('modelMarketplace.searchPlaceholder')"
-                class="w-full min-w-0 sm:max-w-lg sm:flex-1"
-              />
-              <div class="flex shrink-0 items-center gap-2.5 text-xs text-foreground-subtle" aria-live="polite">
-                <span><strong class="font-semibold text-foreground">{{ filteredEntries.length }}</strong> {{ t('modelMarketplace.stats.models') }}</span>
-                <span class="h-3 w-px bg-outline" aria-hidden="true"></span>
-                <span><strong class="font-semibold text-foreground">{{ providers.length }}</strong> {{ t('modelMarketplace.stats.providers') }}</span>
+            <div class="space-y-2.5 lg:hidden">
+              <div class="flex min-w-0 items-center gap-2">
+                <SearchInput
+                  v-model="searchQuery"
+                  :placeholder="t('modelMarketplace.searchPlaceholder')"
+                  class="min-w-0 flex-1"
+                />
+                <button
+                  type="button"
+                  class="btn btn-secondary relative h-10 shrink-0 px-3"
+                  :aria-label="t('modelMarketplace.filters.open')"
+                  @click="openMobileFilters"
+                >
+                  <Icon name="filter" size="sm" />
+                  <span>{{ t('modelMarketplace.filters.title') }}</span>
+                  <span
+                    v-if="activeFilterCount"
+                    class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 font-mono text-[9px] font-semibold text-white"
+                  >
+                    {{ activeFilterCount }}
+                  </span>
+                </button>
+              </div>
+              <div class="flex min-w-0 items-center justify-between gap-3">
+                <span class="shrink-0 text-xs text-foreground-subtle" aria-live="polite">
+                  <strong class="font-semibold text-foreground">{{ filteredEntries.length }}</strong>
+                  {{ t('modelMarketplace.stats.models') }}
+                </span>
+                <div class="flex min-w-0 items-center gap-2">
+                  <label class="sr-only" for="marketplace-sort-mobile">{{ t('modelMarketplace.sort.label') }}</label>
+                  <select id="marketplace-sort-mobile" v-model="sortMode" class="input h-9 min-w-0 max-w-40 py-1 text-xs">
+                    <option value="name">{{ t('modelMarketplace.sort.name') }}</option>
+                    <option value="price">{{ t('modelMarketplace.sort.price') }}</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-icon h-9 w-9 shrink-0"
+                    :disabled="loading"
+                    :title="t('common.refresh')"
+                    :aria-label="t('common.refresh')"
+                    @click="loadMarketplace"
+                  >
+                    <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
+                  </button>
+                </div>
+              </div>
+              <div v-if="activeFilterChips.length" class="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5" :aria-label="t('modelMarketplace.filters.active')">
+                <button
+                  v-for="chip in activeFilterChips"
+                  :key="chip.key"
+                  type="button"
+                  class="inline-flex h-7 shrink-0 items-center gap-1 rounded-control border border-outline bg-surface-subtle px-2 text-[10px] text-foreground-muted"
+                  :aria-label="t('modelMarketplace.filters.remove', { label: chip.label })"
+                  @click="clearFilterChip(chip.key)"
+                >
+                  <span class="max-w-32 truncate">{{ chip.label }}</span>
+                  <Icon name="x" size="xs" />
+                </button>
               </div>
             </div>
-            <div class="grid grid-cols-[minmax(0,1fr)_40px] items-center gap-2 sm:flex sm:flex-nowrap">
-              <label class="col-span-2 flex min-h-10 items-center gap-2 whitespace-nowrap text-xs font-medium text-foreground-muted sm:col-auto">
-                <Toggle
-                  v-model="showEffectivePrices"
-                  :aria-label="t('modelMarketplace.effectivePrice')"
+
+            <div class="hidden min-w-0 gap-3 lg:flex xl:items-center xl:justify-between">
+              <div class="flex min-w-0 flex-1 items-center gap-3">
+                <SearchInput
+                  v-model="searchQuery"
+                  :placeholder="t('modelMarketplace.searchPlaceholder')"
+                  class="w-full min-w-0 max-w-lg flex-1"
                 />
-                <span>{{ t('modelMarketplace.effectivePrice') }}</span>
-              </label>
-              <label class="sr-only" for="marketplace-sort">{{ t('modelMarketplace.sort.label') }}</label>
-              <select id="marketplace-sort" v-model="sortMode" class="input h-10 min-w-0 text-sm sm:w-44 sm:flex-none">
-                <option value="name">{{ t('modelMarketplace.sort.name') }}</option>
-                <option value="price">{{ t('modelMarketplace.sort.price') }}</option>
-              </select>
-              <button
-                type="button"
-                class="btn btn-secondary btn-icon"
-                :disabled="loading"
-                :title="t('common.refresh')"
-                :aria-label="t('common.refresh')"
-                @click="loadMarketplace"
-              >
-                <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
-              </button>
+                <div class="flex shrink-0 items-center gap-2.5 text-xs text-foreground-subtle" aria-live="polite">
+                  <span><strong class="font-semibold text-foreground">{{ filteredEntries.length }}</strong> {{ t('modelMarketplace.stats.models') }}</span>
+                  <span class="h-3 w-px bg-outline" aria-hidden="true"></span>
+                  <span><strong class="font-semibold text-foreground">{{ providers.length }}</strong> {{ t('modelMarketplace.stats.providers') }}</span>
+                </div>
+              </div>
+              <div class="flex flex-nowrap items-center gap-2">
+                <label class="flex min-h-10 items-center gap-2 whitespace-nowrap text-xs font-medium text-foreground-muted">
+                  <Toggle v-model="showEffectivePrices" :aria-label="t('modelMarketplace.effectivePrice')" />
+                  <span>{{ t('modelMarketplace.effectivePrice') }}</span>
+                </label>
+                <label class="sr-only" for="marketplace-sort">{{ t('modelMarketplace.sort.label') }}</label>
+                <select id="marketplace-sort" v-model="sortMode" class="input h-10 w-44 flex-none text-sm">
+                  <option value="name">{{ t('modelMarketplace.sort.name') }}</option>
+                  <option value="price">{{ t('modelMarketplace.sort.price') }}</option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-icon"
+                  :disabled="loading"
+                  :title="t('common.refresh')"
+                  :aria-label="t('common.refresh')"
+                  @click="loadMarketplace"
+                >
+                  <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
+                </button>
+              </div>
             </div>
           </div>
 
-          <div v-if="loading && entries.length === 0" class="grid gap-4 pt-4 md:grid-cols-2 2xl:grid-cols-3" role="status">
-            <div v-for="index in 6" :key="index" class="card h-64 animate-pulse bg-surface-subtle"></div>
+          <div v-if="loading && entries.length === 0" class="grid gap-3 pt-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="status">
+            <div v-for="index in 8" :key="index" class="card h-56 animate-pulse bg-surface-subtle"></div>
             <span class="sr-only">{{ t('common.loading') }}</span>
           </div>
 
           <div
-            v-else-if="pagedEntries.length === 0"
+            v-else-if="filteredEntries.length === 0"
             class="flex min-h-80 flex-col items-center justify-center border-b border-outline py-12 text-center"
           >
             <span class="flex h-12 w-12 items-center justify-center rounded-panel border border-outline bg-surface-subtle text-foreground-subtle">
@@ -177,154 +237,191 @@
             <p class="mt-1 max-w-md text-sm text-foreground-subtle">{{ t('modelMarketplace.empty.description') }}</p>
           </div>
 
-          <div v-else class="grid gap-4 pt-4 md:grid-cols-2 2xl:grid-cols-3">
+          <div v-else class="grid gap-3 pt-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             <article
-              v-for="entry in pagedEntries"
+              v-for="entry in visibleEntries"
               :key="entry.key"
-              class="card flex min-h-64 min-w-0 flex-col p-4 transition-colors hover:border-outline-strong hover:shadow-card"
+              tabindex="0"
+              class="card group/card flex min-h-[216px] min-w-0 cursor-pointer flex-col p-3 transition-[transform,border-color,box-shadow] duration-150 hover:-translate-y-px hover:border-outline-strong hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus sm:min-h-[230px] sm:p-3.5"
+              :aria-label="t('modelMarketplace.details.open', { model: entry.name })"
+              @click="openDetails(entry)"
+              @keydown.enter.self.prevent="openDetails(entry)"
             >
-              <div class="flex items-start gap-3">
+              <div class="grid grid-cols-[36px_minmax(0,1fr)_28px] items-center gap-2.5">
                 <span
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-panel border"
+                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-panel border"
                   :class="platformBadgeClass(entry.platform)"
                   aria-hidden="true"
                 >
-                  <PlatformIcon :platform="entry.platform as GroupPlatform" size="lg" />
+                  <PlatformIcon :platform="entry.platform as GroupPlatform" size="md" />
                 </span>
                 <div class="min-w-0 flex-1">
-                  <div class="flex min-w-0 items-start gap-2">
-                    <h2 class="min-w-0 flex-1 break-words text-sm font-semibold leading-5 text-foreground">
+                  <div class="min-w-0">
+                    <h2 class="line-clamp-2 min-w-0 break-words text-sm font-semibold leading-5 text-foreground">
                       {{ entry.name }}
+                      <span
+                        v-if="entry.label"
+                        class="ml-1 inline-flex h-[18px] max-w-24 items-center align-middle truncate rounded-control bg-black px-2 text-[10px] font-bold leading-none text-white"
+                        :title="entry.label"
+                      >{{ entry.label }}</span>
                     </h2>
-                    <button
-                      type="button"
-                      class="btn-ghost btn-icon h-8 w-8 shrink-0"
-                      :title="t('modelMarketplace.copyModel')"
-                      :aria-label="t('modelMarketplace.copyModel')"
-                      @click="copyModel(entry.name)"
-                    >
-                      <Icon name="copy" size="sm" />
-                    </button>
                   </div>
                   <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span class="rounded-control bg-surface-subtle px-2 py-0.5 text-[10px] font-semibold uppercase text-foreground-muted">
+                    <span class="text-[10px] font-semibold uppercase text-foreground-muted">
                       {{ providerLabel(entry.platform) }}
                     </span>
-                    <span class="rounded-control bg-brand-subtle px-2 py-0.5 text-[10px] font-semibold text-brand">
-                      {{ billingModeLabel(entry.pricing?.billing_mode) }}
-                    </span>
-                    <span class="rounded-control bg-warning-subtle px-2 py-0.5 text-[10px] font-semibold text-warning-foreground">
-                      ×{{ formatRate(effectiveRate(entry)) }}
+                    <span class="h-3 w-px bg-outline"></span>
+                    <span class="text-[10px] font-medium text-foreground-subtle">
+                      {{ billingModeLabel(cardBillingCategory(entry)) }}
                     </span>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  class="btn-ghost btn-icon h-7 w-7 shrink-0 self-center"
+                  :title="t('modelMarketplace.copyModel')"
+                  :aria-label="t('modelMarketplace.copyModel')"
+                  @click.stop="copyModel(entry.name)"
+                >
+                  <Icon name="copy" size="sm" />
+                </button>
               </div>
 
-              <p class="mt-3 border-t border-outline pt-3 text-xs leading-5 text-foreground-subtle">
-                {{ t('modelMarketplace.availableInGroups', { count: entry.groups.length }) }}
-              </p>
-
-              <dl v-if="priceRows(entry).length > 0" class="mt-2 grid grid-cols-2 gap-x-4 gap-y-3 pb-3">
-                <div v-for="row in priceRows(entry)" :key="row.key" class="min-w-0">
-                  <dt class="truncate text-[11px] font-medium text-foreground-subtle">{{ row.label }}</dt>
-                  <dd class="mt-1 flex flex-col gap-0.5 break-words font-mono text-base font-semibold text-foreground">
-                    <span>{{ row.value }}</span>
-                    <span class="font-sans text-[10px] font-normal text-foreground-subtle">{{ row.unit }}</span>
-                  </dd>
+              <div v-if="modelMonitorEnabled" class="mt-3 border-t border-outline pt-2.5">
+                <div class="flex items-center justify-between gap-3 text-xs">
+                  <span class="inline-flex items-center gap-1.5 font-medium" :class="monitorTextClass(entry.monitorStatus?.status)">
+                    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ monitorStatusLabel(entry.monitorStatus?.status) }}
+                  </span>
+                  <span class="font-mono tabular-nums text-foreground-subtle">{{ monitorAvailability(entry) }}</span>
                 </div>
-              </dl>
-              <div v-else class="mt-2 flex min-h-16 items-center justify-center pb-3 text-xs text-foreground-subtle">
+                <ModelMonitorTimeline class="mt-2" :points="entry.monitorStatus?.timeline" />
+              </div>
+
+              <div v-if="entry.pricing" class="mt-3">
+                <template v-if="cardBillingCategory(entry) === 'usage'">
+                  <dl class="grid grid-cols-2 gap-4">
+                    <div v-for="row in cardPrimaryPriceRows(entry)" :key="row.key" class="min-w-0">
+                      <dt class="text-[10px] font-medium text-foreground-subtle">{{ row.label }}</dt>
+                      <dd class="mt-0.5 flex items-baseline gap-1.5">
+                        <span class="font-mono text-lg font-semibold tabular-nums text-foreground">{{ row.value }}</span>
+                        <span class="text-[10px] text-foreground-subtle">/ 1M</span>
+                        <span v-if="row.baseValue" class="font-mono text-[10px] tabular-nums text-foreground-subtle line-through">{{ row.baseValue }}</span>
+                      </dd>
+                    </div>
+                  </dl>
+                  <div v-if="cardCachePrice(entry)" class="mt-2 truncate text-[10px] text-foreground-muted">{{ cardCachePrice(entry) }}</div>
+                </template>
+                <template v-else>
+                  <div class="flex items-end justify-between gap-3">
+                    <div>
+                      <div class="text-[10px] font-medium text-foreground-subtle">{{ t('modelMarketplace.price.request') }}</div>
+                      <div class="mt-0.5 flex items-baseline gap-2">
+                        <span class="font-mono text-xl font-semibold tabular-nums text-foreground">{{ cardRequestPrice(entry).value }}</span>
+                        <span class="text-[10px] text-foreground-subtle">{{ t('modelMarketplace.price.perRequest') }}</span>
+                      </div>
+                    </div>
+                    <span v-if="cardRequestPrice(entry).baseValue" class="font-mono text-xs tabular-nums text-foreground-subtle line-through">{{ cardRequestPrice(entry).baseValue }}</span>
+                  </div>
+                </template>
+              </div>
+              <div v-else class="mt-3 flex min-h-14 items-center text-xs text-foreground-subtle">
                 {{ t('modelMarketplace.noPricing') }}
               </div>
 
-              <div class="mt-auto border-t border-outline pt-3">
-                <div class="flex flex-wrap gap-1.5">
-                  <GroupBadge
-                    v-for="group in visibleGroups(entry)"
+              <div class="mt-auto border-t border-outline pt-2.5">
+                <div class="flex min-w-0 items-center gap-1.5">
+                  <button
+                    v-for="group in cardGroups(entry)"
                     :key="group.id"
-                    :name="group.name"
-                    :platform="group.platform as GroupPlatform"
-                    :subscription-type="group.subscription_type as SubscriptionType"
-                    :rate-multiplier="group.rate_multiplier"
-                    :user-rate-multiplier="userGroupRates[group.id] ?? null"
-                    always-show-rate
-                  />
-                  <span
-                    v-if="entry.groups.length > visibleGroups(entry).length"
-                    class="inline-flex items-center rounded-control border border-outline px-2 py-0.5 text-[10px] font-medium text-foreground-subtle"
+                    type="button"
+                    class="inline-flex min-w-0 items-center gap-1 rounded-control border px-2 py-1 text-[10px] transition-colors"
+                    :class="group.id === activeEntryGroup(entry)?.id ? 'border-brand/30 bg-brand-subtle text-brand' : 'border-outline bg-surface text-foreground-muted hover:border-outline-strong hover:text-foreground'"
+                    :title="`${group.name} · ×${formatRate(group.effectiveRate)}`"
+                    @click.stop="selectEntryGroup(entry, group.id)"
                   >
-                    +{{ entry.groups.length - visibleGroups(entry).length }}
-                  </span>
-                </div>
-                <div class="mt-3 flex items-center justify-end gap-3 text-[11px] text-foreground-subtle">
-                  <span v-if="showEffectivePrices">{{ t('modelMarketplace.effectivePriceShort') }}</span>
-                  <span v-else>{{ t('modelMarketplace.basePriceShort') }}</span>
+                    <span class="max-w-24 truncate">{{ group.name }}</span>
+                    <span class="shrink-0 font-mono">×{{ formatRate(group.effectiveRate) }}</span>
+                  </button>
+                  <button
+                    v-if="entry.groups.length > cardGroups(entry).length"
+                    type="button"
+                    class="inline-flex h-6 shrink-0 items-center rounded-control border border-outline px-2 text-[10px] font-medium text-foreground-subtle hover:border-outline-strong hover:text-foreground"
+                    :aria-label="t('modelMarketplace.details.moreGroups', { count: entry.groups.length - cardGroups(entry).length })"
+                    @click.stop="openDetails(entry)"
+                  >
+                    +{{ entry.groups.length - cardGroups(entry).length }}
+                  </button>
                 </div>
               </div>
             </article>
           </div>
 
-          <nav
-            v-if="totalPages > 1"
-            class="mt-5 flex items-center justify-between border-t border-outline pt-4"
-            :aria-label="t('pagination.pageOf', { page: currentPage, total: totalPages })"
-          >
-            <p class="text-xs text-foreground-subtle">
-              {{ t('modelMarketplace.pagination', { page: currentPage, total: totalPages }) }}
-            </p>
-            <div class="flex items-center gap-1">
-              <button
-                type="button"
-                class="btn btn-secondary btn-icon"
-                :disabled="currentPage <= 1"
-                :aria-label="t('pagination.previous')"
-                @click="currentPage -= 1"
-              >
-                <Icon name="chevronLeft" size="sm" />
-              </button>
-              <button
-                type="button"
-                class="btn btn-secondary btn-icon"
-                :disabled="currentPage >= totalPages"
-                :aria-label="t('pagination.next')"
-                @click="currentPage += 1"
-              >
-                <Icon name="chevronRight" size="sm" />
-              </button>
-            </div>
-          </nav>
+          <div v-if="hasMore" ref="loadMoreSentinel" class="mt-5 flex min-h-12 items-center justify-center border-t border-outline pt-4">
+            <button type="button" class="btn btn-secondary" @click="loadMore">{{ t('modelMarketplace.loadMore') }}</button>
+          </div>
         </section>
       </div>
     </div>
+
+    <ModelMarketplaceFilterDrawer
+      :open="mobileFilterOpen"
+      :providers="providers"
+      :groups="groups"
+      :billing-options="billingOptions"
+      :entries-count="entries.length"
+      :selected-provider="selectedProvider"
+      :selected-group="selectedGroup"
+      :selected-billing="selectedBilling"
+      :show-effective-prices="showEffectivePrices"
+      :result-count="mobileFilterResultCount"
+      @close="mobileFilterOpen = false"
+      @draft-change="updateMobileFilterDraft"
+      @apply="applyMobileFilters"
+    />
+
+    <ModelMarketplaceDetailDrawer
+      :entry="detailEntry"
+      :groups="detailEntry ? sortedEntryGroups(detailEntry, userGroupRates) : []"
+      :active-group="detailEntry ? activeEntryGroup(detailEntry) : null"
+      :show-effective-prices="showEffectivePrices"
+      :monitor-enabled="modelMonitorEnabled"
+      @close="detailEntry = null"
+      @select-group="detailEntry && selectEntryGroup(detailEntry, $event)"
+    />
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import SearchInput from '@/components/common/SearchInput.vue'
 import Toggle from '@/components/common/Toggle.vue'
-import GroupBadge from '@/components/common/GroupBadge.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
+import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
+import ModelMarketplaceDetailDrawer from '@/components/user/ModelMarketplaceDetailDrawer.vue'
+import ModelMarketplaceFilterDrawer from '@/components/user/ModelMarketplaceFilterDrawer.vue'
 import userChannelsAPI from '@/api/channels'
 import userGroupsAPI from '@/api/groups'
-import type { GroupPlatform, SubscriptionType } from '@/types'
+import type { GroupPlatform } from '@/types'
 import { useAppStore } from '@/stores/app'
 import { useClipboard } from '@/composables/useClipboard'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { platformBadgeClass } from '@/utils/platformColors'
 import {
+  billingCategory,
   buildMarketplaceEntries,
   buildMarketplaceGroups,
+  compareMarketplaceDisplayOrder,
   effectiveRateForEntry,
   primaryPrice,
   scaledPrice,
+  sortedEntryGroups,
   type MarketplaceModelEntry,
 } from './modelMarketplace'
 
-const PAGE_SIZE = 18
+const BATCH_SIZE = 18
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -340,7 +437,15 @@ const selectedGroup = ref('all')
 const selectedBilling = ref('all')
 const sortMode = ref<'name' | 'price'>('name')
 const showEffectivePrices = ref(true)
-const currentPage = ref(1)
+const visibleCount = ref(BATCH_SIZE)
+const loadMoreSentinel = ref<HTMLElement | null>(null)
+const selectedEntryGroups = ref<Record<string, number>>({})
+const detailEntry = ref<MarketplaceModelEntry | null>(null)
+const mobileFilterOpen = ref(false)
+const draftProvider = ref('all')
+const draftGroup = ref('all')
+const draftBilling = ref('all')
+let loadMoreObserver: IntersectionObserver | null = null
 
 const entries = computed(() => buildMarketplaceEntries(catalog.value))
 const groups = computed(() => buildMarketplaceGroups(entries.value, userGroupRates.value))
@@ -356,7 +461,7 @@ const providers = computed(() => {
 const billingOptions = computed(() => {
   const counts = new Map<string, number>()
   for (const entry of entries.value) {
-    const mode = entry.pricing?.billing_mode || 'unpriced'
+    const mode = billingCategory(entry.pricing)
     counts.set(mode, (counts.get(mode) ?? 0) + 1)
   }
   return [
@@ -367,12 +472,40 @@ const billingOptions = computed(() => {
 
 const selectedGroupId = computed(() => selectedGroup.value === 'all' ? null : Number(selectedGroup.value))
 
+const activeFilterCount = computed(() => [selectedProvider.value, selectedGroup.value, selectedBilling.value].filter(value => value !== 'all').length)
+const activeFilterChips = computed(() => {
+  const chips: Array<{ key: 'provider' | 'group' | 'billing'; label: string }> = []
+  if (selectedProvider.value !== 'all') {
+    chips.push({ key: 'provider', label: providers.value.find(provider => provider.value === selectedProvider.value)?.label ?? selectedProvider.value })
+  }
+  if (selectedGroup.value !== 'all') {
+    chips.push({ key: 'group', label: groups.value.find(group => String(group.id) === selectedGroup.value)?.name ?? selectedGroup.value })
+  }
+  if (selectedBilling.value !== 'all') {
+    chips.push({ key: 'billing', label: billingOptions.value.find(mode => mode.value === selectedBilling.value)?.label ?? selectedBilling.value })
+  }
+  return chips
+})
+
+const mobileFilterResultCount = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  const groupId = draftGroup.value === 'all' ? null : Number(draftGroup.value)
+  return entries.value.filter((entry) => {
+    if (draftProvider.value !== 'all' && entry.platform !== draftProvider.value) return false
+    if (groupId != null && !entry.groups.some(group => group.id === groupId)) return false
+    if (draftBilling.value !== 'all' && billingCategory(entry.pricing) !== draftBilling.value) return false
+    if (!query) return true
+    return entry.name.toLowerCase().includes(query)
+      || entry.groups.some(group => group.name.toLowerCase().includes(query))
+  }).length
+})
+
 const filteredEntries = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   const result = entries.value.filter((entry) => {
     if (selectedProvider.value !== 'all' && entry.platform !== selectedProvider.value) return false
     if (selectedGroupId.value != null && !entry.groups.some((group) => group.id === selectedGroupId.value)) return false
-    const mode = entry.pricing?.billing_mode || 'unpriced'
+    const mode = billingCategory(entry.pricing)
     if (selectedBilling.value !== 'all' && mode !== selectedBilling.value) return false
     if (!query) return true
     return entry.name.toLowerCase().includes(query)
@@ -380,6 +513,8 @@ const filteredEntries = computed(() => {
   })
 
   return result.sort((a, b) => {
+    const byDisplayOrder = compareMarketplaceDisplayOrder(a, b)
+    if (byDisplayOrder !== 0) return byDisplayOrder
     if (sortMode.value === 'price') {
       const aPrice = primaryPrice(a.pricing)
       const bPrice = primaryPrice(b.pricing)
@@ -391,19 +526,16 @@ const filteredEntries = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredEntries.value.length / PAGE_SIZE)))
-const pagedEntries = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filteredEntries.value.slice(start, start + PAGE_SIZE)
-})
+const visibleEntries = computed(() => filteredEntries.value.slice(0, visibleCount.value))
+const hasMore = computed(() => visibleCount.value < filteredEntries.value.length)
 
 watch(
   [searchQuery, selectedProvider, selectedGroup, selectedBilling, sortMode],
-  () => { currentPage.value = 1 },
+  () => { visibleCount.value = BATCH_SIZE },
 )
-watch(totalPages, (pages) => {
-  if (currentPage.value > pages) currentPage.value = pages
-})
+watch(loadMoreSentinel, (node, previous) => { if (previous) loadMoreObserver?.unobserve(previous); if (node) loadMoreObserver?.observe(node) }, { flush: 'post' })
+
+const modelMonitorEnabled = computed(() => appStore.cachedPublicSettings?.model_monitor_enabled === true)
 
 function providerLabel(platform: string): string {
   const known = t(`modelMarketplace.providers.${platform}`)
@@ -417,7 +549,7 @@ function billingModeLabel(mode?: string): string {
 }
 
 function effectiveRate(entry: MarketplaceModelEntry): number {
-  return effectiveRateForEntry(entry, selectedGroupId.value, userGroupRates.value)
+  return activeEntryGroup(entry)?.effectiveRate ?? effectiveRateForEntry(entry, selectedGroupId.value, userGroupRates.value)
 }
 
 function formatRate(rate: number): string {
@@ -429,27 +561,68 @@ function displayPrice(value: number | null, scale: number, entry: MarketplaceMod
   return scaledPrice(value, scale, rate)
 }
 
-function priceRows(entry: MarketplaceModelEntry) {
-  const pricing = entry.pricing
-  if (!pricing) return []
-  if (pricing.billing_mode === 'token') {
-    return [
-      { key: 'input', label: t('modelMarketplace.price.input'), value: displayPrice(pricing.input_price, 1_000_000, entry), unit: t('modelMarketplace.price.perMillion') },
-      { key: 'output', label: t('modelMarketplace.price.output'), value: displayPrice(pricing.output_price, 1_000_000, entry), unit: t('modelMarketplace.price.perMillion') },
-      { key: 'cache-read', label: t('modelMarketplace.price.cacheRead'), value: displayPrice(pricing.cache_read_price, 1_000_000, entry), unit: t('modelMarketplace.price.perMillion') },
-      { key: 'cache-write', label: t('modelMarketplace.price.cacheWrite'), value: displayPrice(pricing.cache_write_price, 1_000_000, entry), unit: t('modelMarketplace.price.perMillion') },
-    ].filter((row) => row.value !== '-')
-  }
-  if (pricing.billing_mode === 'image') {
-    return [{ key: 'image', label: t('modelMarketplace.price.image'), value: displayPrice(pricing.per_request_price ?? pricing.image_output_price, 1, entry), unit: t('modelMarketplace.price.perRequest') }]
-  }
-  return [{ key: 'request', label: t('modelMarketplace.price.request'), value: displayPrice(pricing.per_request_price, 1, entry), unit: t('modelMarketplace.price.perRequest') }]
+function cardBillingCategory(entry: MarketplaceModelEntry) {
+  return billingCategory(entry.pricing)
 }
 
-function visibleGroups(entry: MarketplaceModelEntry) {
-  if (selectedGroupId.value != null) return entry.groups.filter((group) => group.id === selectedGroupId.value)
-  return entry.groups.slice(0, 3)
+function activeEntryGroup(entry: MarketplaceModelEntry) {
+  const sorted = sortedEntryGroups(entry, userGroupRates.value)
+  if (selectedGroupId.value != null) return sorted.find(group => group.id === selectedGroupId.value) ?? sorted[0] ?? null
+  const selected = selectedEntryGroups.value[entry.key]
+  return sorted.find(group => group.id === selected) ?? sorted[0] ?? null
 }
+
+function selectEntryGroup(entry: MarketplaceModelEntry, groupId: number) {
+  selectedEntryGroups.value = { ...selectedEntryGroups.value, [entry.key]: groupId }
+}
+
+function cardGroups(entry: MarketplaceModelEntry) {
+  const sorted = sortedEntryGroups(entry, userGroupRates.value)
+  if (selectedGroupId.value != null) return sorted.filter(group => group.id === selectedGroupId.value)
+  const active = activeEntryGroup(entry)
+  return active ? [active, ...sorted.filter(group => group.id !== active.id)].slice(0, 2) : sorted.slice(0, 2)
+}
+
+function cardPrice(value: number | null, scale: number, entry: MarketplaceModelEntry) {
+  const display = displayPrice(value, scale, entry)
+  const rate = effectiveRate(entry)
+  return {
+    value: display,
+    baseValue: showEffectivePrices.value && rate !== 1 ? scaledPrice(value, scale, 1) : '',
+  }
+}
+
+function cardPrimaryPriceRows(entry: MarketplaceModelEntry) {
+  const pricing = entry.pricing
+  if (!pricing) return []
+  return [
+    { key: 'input', label: t('modelMarketplace.price.input'), ...cardPrice(pricing.input_price, 1_000_000, entry) },
+    { key: 'output', label: t('modelMarketplace.price.output'), ...cardPrice(pricing.output_price, 1_000_000, entry) },
+  ].filter(row => row.value !== '-')
+}
+
+function cardRequestPrice(entry: MarketplaceModelEntry) {
+  const pricing = entry.pricing
+  return cardPrice(pricing?.per_request_price ?? pricing?.image_output_price ?? null, 1, entry)
+}
+
+function cardCachePrice(entry: MarketplaceModelEntry) {
+  const pricing = entry.pricing
+  if (!pricing) return ''
+  const parts = []
+  if (pricing.cache_read_price != null) parts.push(`${t('modelMarketplace.price.cacheReadShort')} ${displayPrice(pricing.cache_read_price, 1_000_000, entry)} / 1M`)
+  if (pricing.cache_write_price != null) parts.push(`${t('modelMarketplace.price.cacheWriteShort')} ${displayPrice(pricing.cache_write_price, 1_000_000, entry)} / 1M`)
+  return parts.join(' · ')
+}
+
+function openDetails(entry: MarketplaceModelEntry) {
+  detailEntry.value = entry
+}
+
+function loadMore() { visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, filteredEntries.value.length) }
+function monitorStatusLabel(status?: string) { return status ? t(`modelMarketplace.monitor.${status}`) : t('modelMarketplace.monitor.unknown') }
+function monitorTextClass(status?: string) { return status === 'operational' ? 'text-success-foreground' : status === 'degraded' ? 'text-warning-foreground' : status === 'failed' || status === 'error' ? 'text-danger-foreground' : 'text-foreground-subtle' }
+function monitorAvailability(entry: MarketplaceModelEntry) { const value = entry.monitorStatus?.availability_7d; return value == null ? t('modelMarketplace.monitor.noData') : t('modelMarketplace.monitor.availability', { value: value.toFixed(2) }) }
 
 function resetFilters() {
   searchQuery.value = ''
@@ -459,12 +632,40 @@ function resetFilters() {
   sortMode.value = 'name'
 }
 
+function openMobileFilters() {
+  draftProvider.value = selectedProvider.value
+  draftGroup.value = selectedGroup.value
+  draftBilling.value = selectedBilling.value
+  mobileFilterOpen.value = true
+}
+
+function updateMobileFilterDraft(filters: { provider: string; group: string; billing: string }) {
+  draftProvider.value = filters.provider
+  draftGroup.value = filters.group
+  draftBilling.value = filters.billing
+}
+
+function applyMobileFilters(filters: { provider: string; group: string; billing: string; showEffectivePrices: boolean }) {
+  selectedProvider.value = filters.provider
+  selectedGroup.value = filters.group
+  selectedBilling.value = filters.billing
+  showEffectivePrices.value = filters.showEffectivePrices
+  mobileFilterOpen.value = false
+}
+
+function clearFilterChip(key: 'provider' | 'group' | 'billing') {
+  if (key === 'provider') selectedProvider.value = 'all'
+  if (key === 'group') selectedGroup.value = 'all'
+  if (key === 'billing') selectedBilling.value = 'all'
+}
+
 async function copyModel(name: string) {
   await copyToClipboard(name, t('modelMarketplace.copySuccess', { name }))
 }
 
 async function loadMarketplace() {
   loading.value = true
+  visibleCount.value = BATCH_SIZE
   loadError.value = false
   try {
     const [catalogResponse, rates] = await Promise.all([
@@ -481,7 +682,12 @@ async function loadMarketplace() {
   }
 }
 
-onMounted(loadMarketplace)
+onMounted(() => {
+  loadMoreObserver = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) loadMore() }, { rootMargin: '240px' })
+  if (loadMoreSentinel.value) loadMoreObserver?.observe(loadMoreSentinel.value)
+  void loadMarketplace()
+})
+onBeforeUnmount(() => loadMoreObserver?.disconnect())
 </script>
 
 <style scoped>

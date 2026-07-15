@@ -659,6 +659,7 @@ export interface SystemSettings {
 
   // Model Marketplace feature switch
   model_marketplace_enabled: boolean;
+  model_monitor_enabled: boolean;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: boolean;
@@ -927,6 +928,7 @@ export interface UpdateSettingsRequest {
 
   // Model Marketplace feature switch
   model_marketplace_enabled?: boolean;
+  model_monitor_enabled?: boolean;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled?: boolean;

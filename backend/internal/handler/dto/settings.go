@@ -279,6 +279,7 @@ type SystemSettings struct {
 
 	// Model Marketplace feature switch (user-facing model catalog)
 	ModelMarketplaceEnabled bool `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled     bool `json:"model_monitor_enabled"`
 
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
@@ -366,6 +367,7 @@ type PublicSettings struct {
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
 	ModelMarketplaceEnabled bool `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled     bool `json:"model_monitor_enabled"`
 
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 

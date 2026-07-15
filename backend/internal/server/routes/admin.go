@@ -100,6 +100,7 @@ func RegisterAdminRoutes(
 
 		// 渠道监控
 		registerChannelMonitorRoutes(admin, h)
+		registerModelMonitorRoutes(admin, h)
 
 		// 风控中心
 		registerContentModerationRoutes(admin, h)
@@ -668,6 +669,17 @@ func registerChannelMonitorRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		templates.DELETE("/:id", h.Admin.ChannelMonitorTemplate.Delete)
 		templates.GET("/:id/monitors", h.Admin.ChannelMonitorTemplate.AssociatedMonitors)
 		templates.POST("/:id/apply", h.Admin.ChannelMonitorTemplate.Apply)
+	}
+}
+
+func registerModelMonitorRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	monitors := admin.Group("/model-monitors")
+	{
+		monitors.GET("", h.Admin.ModelMonitor.List)
+		monitors.PUT("/config", h.Admin.ModelMonitor.Upsert)
+		monitors.PUT("/groups", h.Admin.ModelMonitor.ConfigureGroups)
+		monitors.POST("/run", h.Admin.ModelMonitor.Run)
+		monitors.GET("/:id/history", h.Admin.ModelMonitor.History)
 	}
 }
 

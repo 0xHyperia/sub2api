@@ -507,6 +507,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.ModelMarketplaceEnabled != after.ModelMarketplaceEnabled {
 		changed = append(changed, "model_marketplace_enabled")
 	}
+	if before.ModelMonitorEnabled != after.ModelMonitorEnabled {
+		changed = append(changed, "model_monitor_enabled")
+	}
 	if before.AffiliateEnabled != after.AffiliateEnabled {
 		changed = append(changed, "affiliate_enabled")
 	}

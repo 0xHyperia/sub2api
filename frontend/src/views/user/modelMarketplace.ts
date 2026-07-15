@@ -2,6 +2,7 @@ import type {
   UserAvailableGroup,
   UserMarketplacePlatform,
   UserSupportedModelPricing,
+  UserModelMonitorSummary,
 } from '@/api/channels'
 
 export interface MarketplaceModelEntry {
@@ -10,10 +11,20 @@ export interface MarketplaceModelEntry {
   platform: string
   groups: UserAvailableGroup[]
   pricing: UserSupportedModelPricing | null
+  monitorStatus: UserModelMonitorSummary | null
+  displayOrder: number
+  label: string
 }
 
 export interface MarketplaceGroupOption extends UserAvailableGroup {
   effectiveRate: number
+}
+
+export type MarketplaceBillingCategory = 'usage' | 'request' | 'unpriced'
+
+export function billingCategory(pricing: UserSupportedModelPricing | null): MarketplaceBillingCategory {
+  if (!pricing) return 'unpriced'
+  return pricing.billing_mode === 'token' ? 'usage' : 'request'
 }
 
 export function buildMarketplaceEntries(platforms: UserMarketplacePlatform[]): MarketplaceModelEntry[] {
@@ -24,6 +35,9 @@ export function buildMarketplaceEntries(platforms: UserMarketplacePlatform[]): M
       platform: section.platform || model.platform,
       groups: model.groups,
       pricing: model.pricing,
+      monitorStatus: model.monitor_status ?? null,
+      displayOrder: model.monitor_status?.display_order ?? 0,
+      label: model.monitor_status?.label ?? '',
     })),
   )
 }
@@ -42,7 +56,21 @@ export function buildMarketplaceGroups(
       })
     }
   }
-  return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
+  return [...groups.values()].sort(compareMarketplaceGroups)
+}
+
+export function compareMarketplaceGroups(a: MarketplaceGroupOption, b: MarketplaceGroupOption): number {
+  if (a.effectiveRate !== b.effectiveRate) return a.effectiveRate - b.effectiveRate
+  const byName = a.name.localeCompare(b.name)
+  return byName !== 0 ? byName : a.id - b.id
+}
+
+export function compareMarketplaceDisplayOrder(a: MarketplaceModelEntry, b: MarketplaceModelEntry): number {
+  return b.displayOrder - a.displayOrder
+}
+
+export function sortedEntryGroups(entry: MarketplaceModelEntry, userGroupRates: Record<number, number>): MarketplaceGroupOption[] {
+  return entry.groups.map(group => ({ ...group, effectiveRate: userGroupRates[group.id] ?? group.rate_multiplier })).sort(compareMarketplaceGroups)
 }
 
 export function effectiveRateForEntry(
