@@ -32,7 +32,7 @@ func (r *modelMonitorRepository) List(ctx context.Context) ([]service.ModelMonit
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := make([]service.ModelMonitor, 0)
 	for rows.Next() {
 		m, scanErr := scanModelMonitor(rows)
@@ -49,7 +49,7 @@ func (r *modelMonitorRepository) ListEnabledDue(ctx context.Context, now time.Ti
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := make([]service.ModelMonitor, 0)
 	for rows.Next() {
 		m, scanErr := scanModelMonitor(rows)
@@ -95,7 +95,7 @@ func (r *modelMonitorRepository) ListGroupConfigs(ctx context.Context) (map[int6
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := make(map[int64][]int64)
 	for rows.Next() {
 		var monitorID, groupID int64
@@ -141,7 +141,7 @@ func (r *modelMonitorRepository) ListHistory(ctx context.Context, monitorID int6
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := make([]service.ModelMonitorHistory, 0)
 	for rows.Next() {
 		var h service.ModelMonitorHistory
@@ -191,7 +191,7 @@ GROUP BY m.id,m.platform,m.model,m.enabled,m.display_order,m.label,h.status,h.la
 		var checkedAt sql.NullTime
 		var availability sql.NullFloat64
 		if err := rows.Scan(&monitorID, &platform, &model, &enabled, &summary.DisplayOrder, &summary.Label, &status, &latency, &checkedAt, &availability); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		if status.Valid {
@@ -228,7 +228,7 @@ FROM model_monitor_histories WHERE monitor_id = ANY($1)) ranked WHERE row_num <=
 	if err != nil {
 		return nil, err
 	}
-	defer timelineRows.Close()
+	defer func() { _ = timelineRows.Close() }()
 	for timelineRows.Next() {
 		var monitorID int64
 		var point service.ModelMonitorTimelinePoint

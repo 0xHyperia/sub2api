@@ -290,7 +290,7 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/models',
+    path: '/model-marketplace',
     name: 'ModelMarketplace',
     component: () => import('@/views/user/ModelMarketplaceView.vue'),
     meta: {

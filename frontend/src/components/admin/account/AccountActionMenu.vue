@@ -46,6 +46,17 @@
             <Icon name="clock" size="sm" class="text-foreground-subtle" />
             {{ t('admin.scheduledTests.schedule') }}
           </button>
+          <button
+            v-if="canDuplicate"
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left"
+            @click="selectAction('duplicate')"
+          >
+            <Icon name="copy" size="sm" class="text-foreground-subtle" />
+            {{ t('admin.accounts.duplicateAccount') }}
+          </button>
 
           <!-- Shadow accounts do not hold credentials, so credential actions are unavailable. -->
           <template v-if="(account.type === 'oauth' || account.type === 'setup-token') && !isShadow">
@@ -131,6 +142,7 @@ type AccountAction =
   | 'test'
   | 'stats'
   | 'schedule'
+  | 'duplicate'
   | 'reauth'
   | 'refresh-token'
   | 'recover-state'
@@ -149,6 +161,7 @@ const emit = defineEmits<{
   (e: 'test', account: Account): void
   (e: 'stats', account: Account): void
   (e: 'schedule', account: Account): void
+  (e: 'duplicate', account: Account): void
   (e: 'reauth', account: Account): void
   (e: 'refresh-token', account: Account): void
   (e: 'recover-state', account: Account): void
@@ -190,6 +203,10 @@ const menuStyle = computed(() => {
   }
 })
 
+const canDuplicate = computed(() => {
+  if (!props.account || props.account.parent_account_id != null) return false
+  return ['apikey', 'upstream', 'bedrock', 'service_account'].includes(props.account.type)
+})
 const isRateLimited = computed(() => {
   if (props.account?.rate_limit_reset_at && new Date(props.account.rate_limit_reset_at) > new Date()) {
     return true
@@ -235,6 +252,7 @@ const selectAction = (action: AccountAction) => {
     case 'test': emit('test', account); break
     case 'stats': emit('stats', account); break
     case 'schedule': emit('schedule', account); break
+    case 'duplicate': emit('duplicate', account); break
     case 'reauth': emit('reauth', account); break
     case 'refresh-token': emit('refresh-token', account); break
     case 'recover-state': emit('recover-state', account); break

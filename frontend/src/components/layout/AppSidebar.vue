@@ -336,7 +336,7 @@ function buildSelfNavItems(): ShellNavItem[] {
     },
     { path: '/usage', label: t('nav.usage'), icon: 'chart', hideInSimpleMode: true },
     {
-      path: '/models',
+      path: '/model-marketplace',
       label: t('nav.modelMarketplace'),
       icon: 'grid',
       hideInSimpleMode: true,
