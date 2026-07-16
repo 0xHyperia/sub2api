@@ -17,15 +17,28 @@ import (
 func TestTicketRepositoryOwnershipAndLifecycle(t *testing.T) {
 	ctx := context.Background()
 	suffix := time.Now().UnixNano()
+	number := fmt.Sprintf("20990101-%06d", suffix%1000000)
 	owner, err := integrationEntClient.User.Create().SetEmail(fmt.Sprintf("ticket-owner-%d@example.com", suffix)).SetPasswordHash("hash").Save(ctx)
 	require.NoError(t, err)
 	other, err := integrationEntClient.User.Create().SetEmail(fmt.Sprintf("ticket-other-%d@example.com", suffix)).SetPasswordHash("hash").Save(ctx)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		cleanupCtx := context.Background()
+		_, err := integrationDB.ExecContext(cleanupCtx, `DELETE FROM ticket_attachments WHERE message_id IN (
+			SELECT ticket_messages.id FROM ticket_messages JOIN tickets ON tickets.id = ticket_messages.ticket_id WHERE tickets.number = $1
+		)`, number)
+		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(cleanupCtx, "DELETE FROM ticket_messages WHERE ticket_id IN (SELECT id FROM tickets WHERE number = $1)", number)
+		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(cleanupCtx, "DELETE FROM tickets WHERE number = $1", number)
+		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(cleanupCtx, "DELETE FROM users WHERE id IN ($1, $2)", owner.ID, other.ID)
+		require.NoError(t, err)
+	})
 	category, err := integrationEntClient.TicketCategory.Query().Where(ticketcategory.CodeEQ("other")).Only(ctx)
 	require.NoError(t, err)
 
 	repo := NewTicketRepository(integrationEntClient)
-	number := fmt.Sprintf("20990101-%06d", suffix%1000000)
 	ticket := &service.Ticket{Number: number, UserID: owner.ID, CategoryID: category.ID, Subject: "Integration ticket", Status: service.TicketStatusOpen, AdminUnreadCount: 1, LastActorType: service.TicketSenderUser, LastMessageAt: time.Now()}
 	message := &service.TicketMessage{SenderUserID: &owner.ID, SenderType: service.TicketSenderUser, Content: "Initial message"}
 	require.NoError(t, repo.Create(ctx, ticket, message, nil))
