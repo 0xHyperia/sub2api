@@ -10,7 +10,7 @@
 - 官方基线版本：v0.1.158
 - 官方基线提交：`26abd19a2812edba02bbef93c3e2a620141cc257`
 - 上一官方基线：v0.1.156（`12f991dde8a58e183d4bd16a87ef6fd0df714757`）
-- 同步状态：已在集成分支完成未提交合并、适配和前后端验证，尚未提交、推送、合入 `usa0/main` 或创建 v1.0.6 tag
+- 同步状态：已通过合并提交 `bcfcda109` 完成适配并快进合入 `usa0/main`；尚未推送或创建 v1.0.6 tag
 - 记录日期：2026-07-16
 
 ### 同步范围
@@ -43,6 +43,8 @@
 - 后端 `go test ./...`、`go test -tags=unit ./...` 通过，`golangci-lint run ./...` 为 0 issues。
 - 上游原 `177` 至 `181` 迁移在本 fork 首次发布前顺延为 `181` 至 `185`；USA0 已发布的 `177` 至 `180` 保持不变，最新区间无编号冲突。
 - `git diff --check`、冲突标记扫描、设置/API 严格契约测试和前端语义令牌守卫通过。
+- `docker compose -f deploy/docker-compose.dev.yml build sub2api` 成功，并以 `--no-deps` 仅替换应用容器；PostgreSQL 与 Redis 未重启。
+- 新容器启动后迁移无报错，Docker 健康检查通过，`http://localhost:8081/health` 返回 `{"status":"ok"}`。
 
 ---
 
