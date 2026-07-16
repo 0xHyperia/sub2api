@@ -1573,7 +1573,7 @@ onUnmounted(() => {
 
 .hero {
   width: 100%;
-  min-height: calc(100svh - 24px);
+  min-height: 100svh;
   position: relative;
   overflow: hidden;
   padding: clamp(88px, 10svh, 112px) 18px clamp(16px, 2.5svh, 26px);
@@ -1732,7 +1732,7 @@ onUnmounted(() => {
 
 @supports (height: 100dvh) {
   .hero {
-    min-height: calc(100dvh - 24px);
+    min-height: 100dvh;
   }
 
   .console-shell {
@@ -2956,7 +2956,7 @@ onUnmounted(() => {
     background: rgba(15, 23, 42, 0.28);
     pointer-events: auto;
   }
-  .hero { padding-top: 96px; min-height: calc(100svh - 24px); grid-template-rows: auto auto; align-content: center; row-gap: 14px; }
+  .hero { padding-top: 96px; min-height: 100svh; grid-template-rows: auto auto; align-content: center; row-gap: 14px; }
   .hero-content { transform: translateY(0); }
   .usa-home h1 { font-size: 5rem; }
   .section-watermark { font-size: 8rem; }

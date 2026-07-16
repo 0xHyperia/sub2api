@@ -87,6 +87,7 @@ type userAvailableGroup struct {
 	PeakEnd            string  `json:"peak_end"`
 	PeakRateMultiplier float64 `json:"peak_rate_multiplier"`
 	IsExclusive        bool    `json:"is_exclusive"`
+	RPMLimit           int     `json:"rpm_limit"`
 }
 
 // userSupportedModelPricing 用户可见的定价字段白名单。
@@ -124,6 +125,7 @@ type userMarketplaceModel struct {
 	Name          string                       `json:"name"`
 	Platform      string                       `json:"platform"`
 	Pricing       *userSupportedModelPricing   `json:"pricing"`
+	Capabilities  []string                     `json:"capabilities"`
 	Groups        []userAvailableGroup         `json:"groups"`
 	MonitorStatus *service.ModelMonitorSummary `json:"monitor_status"`
 }
@@ -257,10 +259,11 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 			aggregate := byPlatform[platform][name]
 			modelGroups := sortedMarketplaceGroups(aggregate.groups)
 			models = append(models, userMarketplaceModel{
-				Name:     name,
-				Platform: platform,
-				Pricing:  toUserPricing(h.pricingService.GetDisplayModelPricing(name)),
-				Groups:   modelGroups,
+				Name:         name,
+				Platform:     platform,
+				Pricing:      toUserPricing(h.pricingService.GetDisplayModelPricing(name)),
+				Capabilities: h.pricingService.GetModelCapabilities(name),
+				Groups:       modelGroups,
 			})
 		}
 		out = append(out, userMarketplacePlatform{
@@ -453,6 +456,7 @@ func toUserAvailableGroup(group service.Group) userAvailableGroup {
 		PeakEnd:            group.PeakEnd,
 		PeakRateMultiplier: group.PeakRateMultiplier,
 		IsExclusive:        group.IsExclusive,
+		RPMLimit:           group.RPMLimit,
 	}
 }
 

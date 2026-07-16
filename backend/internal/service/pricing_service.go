@@ -125,6 +125,7 @@ type LiteLLMModelPricing struct {
 	SupportsPromptCaching               bool    `json:"supports_prompt_caching"`
 	OutputCostPerImage                  float64 `json:"output_cost_per_image"`       // 图片生成模型每张图片价格
 	OutputCostPerImageToken             float64 `json:"output_cost_per_image_token"` // 图片输出 token 价格
+	Capabilities                       []string `json:"-"`
 
 	// TokenPricingAbsent 表示源数据中 input/output token 价格均缺失（仅有图片价）。
 	// 此类条目只可用于图片计费，token 计费必须回退到 fallback 或 fail-closed，
@@ -156,9 +157,52 @@ type LiteLLMRawEntry struct {
 	LiteLLMProvider                     string   `json:"litellm_provider"`
 	Mode                                string   `json:"mode"`
 	SupportsPromptCaching               bool     `json:"supports_prompt_caching"`
+	SupportsAssistantPrefill            bool     `json:"supports_assistant_prefill"`
+	SupportsAudioInput                  bool     `json:"supports_audio_input"`
+	SupportsAudioOutput                 bool     `json:"supports_audio_output"`
+	SupportsComputerUse                 bool     `json:"supports_computer_use"`
+	SupportsFunctionCalling             bool     `json:"supports_function_calling"`
+	SupportsNativeStreaming             bool     `json:"supports_native_streaming"`
+	SupportsParallelFunctionCalling     bool     `json:"supports_parallel_function_calling"`
+	SupportsPDFInput                    bool     `json:"supports_pdf_input"`
+	SupportsReasoning                   bool     `json:"supports_reasoning"`
+	SupportsResponseSchema              bool     `json:"supports_response_schema"`
+	SupportsSystemMessages              bool     `json:"supports_system_messages"`
+	SupportsToolChoice                  bool     `json:"supports_tool_choice"`
+	SupportsURLContext                  bool     `json:"supports_url_context"`
+	SupportsVideoInput                  bool     `json:"supports_video_input"`
+	SupportsVision                      bool     `json:"supports_vision"`
+	SupportsWebSearch                   bool     `json:"supports_web_search"`
+	InputCostPerImage                   *float64 `json:"input_cost_per_image"`
+	InputCostPerImageToken              *float64 `json:"input_cost_per_image_token"`
 	OutputCostPerImage                  *float64 `json:"output_cost_per_image"`
 	OutputCostPerImageToken             *float64 `json:"output_cost_per_image_token"`
+	SupportedOutputModalities           []string `json:"supported_output_modalities"`
 }
+
+const (
+	ModelCapabilityVision           = "vision"
+	ModelCapabilityImageInput       = "image_input"
+	ModelCapabilityAudioInput       = "audio_input"
+	ModelCapabilityVideoInput       = "video_input"
+	ModelCapabilityFunctionCalling  = "function_calling"
+	ModelCapabilityReasoning        = "reasoning"
+	ModelCapabilityPromptCaching    = "prompt_caching"
+	ModelCapabilityWebSearch        = "web_search"
+	ModelCapabilityPDFInput         = "pdf_input"
+	ModelCapabilityComputerUse      = "computer_use"
+	ModelCapabilityImageGeneration  = "image_generation"
+	ModelCapabilityAudioOutput      = "audio_output"
+	ModelCapabilityParallelTools    = "parallel_tools"
+	ModelCapabilityToolChoice       = "tool_choice"
+	ModelCapabilityStructuredOutput = "structured_output"
+	ModelCapabilityAssistantPrefill = "assistant_prefill"
+	ModelCapabilityStreaming        = "streaming"
+	ModelCapabilitySystemMessages   = "system_messages"
+	ModelCapabilityURLContext       = "url_context"
+	ModelCapabilityImageEmbedding   = "image_embedding"
+	ModelCapabilityServiceTier      = "service_tier"
+)
 
 // PricingService 动态价格服务
 type PricingService struct {
@@ -444,6 +488,7 @@ func (s *PricingService) parsePricingData(body []byte) (map[string]*LiteLLMModel
 			Mode:                  entry.Mode,
 			SupportsPromptCaching: entry.SupportsPromptCaching,
 			SupportsServiceTier:   entry.SupportsServiceTier,
+			Capabilities:          modelCapabilitiesFromRawEntry(entry),
 			TokenPricingAbsent:    entry.InputCostPerToken == nil && entry.OutputCostPerToken == nil,
 		}
 
@@ -502,6 +547,49 @@ func (s *PricingService) parsePricingData(body []byte) (map[string]*LiteLLMModel
 	}
 
 	return result, nil
+}
+
+func modelCapabilitiesFromRawEntry(entry LiteLLMRawEntry) []string {
+	capabilities := make([]string, 0, 12)
+	add := func(enabled bool, capability string) {
+		if enabled {
+			capabilities = append(capabilities, capability)
+		}
+	}
+	hasImageInput := entry.InputCostPerImage != nil || entry.InputCostPerImageToken != nil
+	hasImageOutput := entry.OutputCostPerImage != nil || entry.OutputCostPerImageToken != nil
+	hasAudioOutput := entry.SupportsAudioOutput || entry.Mode == "audio_speech"
+	for _, modality := range entry.SupportedOutputModalities {
+		switch strings.ToLower(strings.TrimSpace(modality)) {
+		case "image":
+			hasImageOutput = true
+		case "audio":
+			hasAudioOutput = true
+		}
+	}
+
+	add(entry.SupportsVision, ModelCapabilityVision)
+	add(hasImageInput, ModelCapabilityImageInput)
+	add(entry.SupportsAudioInput, ModelCapabilityAudioInput)
+	add(entry.SupportsVideoInput, ModelCapabilityVideoInput)
+	add(entry.SupportsFunctionCalling, ModelCapabilityFunctionCalling)
+	add(entry.SupportsReasoning, ModelCapabilityReasoning)
+	add(entry.SupportsPromptCaching, ModelCapabilityPromptCaching)
+	add(entry.SupportsWebSearch, ModelCapabilityWebSearch)
+	add(entry.SupportsPDFInput, ModelCapabilityPDFInput)
+	add(entry.SupportsComputerUse, ModelCapabilityComputerUse)
+	add(hasImageOutput || entry.Mode == "image_generation", ModelCapabilityImageGeneration)
+	add(hasAudioOutput, ModelCapabilityAudioOutput)
+	add(entry.SupportsParallelFunctionCalling, ModelCapabilityParallelTools)
+	add(entry.SupportsToolChoice, ModelCapabilityToolChoice)
+	add(entry.SupportsResponseSchema, ModelCapabilityStructuredOutput)
+	add(entry.SupportsAssistantPrefill, ModelCapabilityAssistantPrefill)
+	add(entry.SupportsNativeStreaming, ModelCapabilityStreaming)
+	add(entry.SupportsSystemMessages, ModelCapabilitySystemMessages)
+	add(entry.SupportsURLContext, ModelCapabilityURLContext)
+	add(entry.Mode == "embedding" && hasImageInput, ModelCapabilityImageEmbedding)
+	add(entry.SupportsServiceTier, ModelCapabilityServiceTier)
+	return capabilities
 }
 
 // loadPricingData 从本地文件加载价格数据
@@ -691,6 +779,18 @@ func (s *PricingService) GetDisplayModelPricing(modelName string) *ChannelModelP
 		return nil
 	}
 	return synthesizePricingFromLiteLLM(s.GetModelPricing(modelName), nil)
+}
+
+// GetModelCapabilities returns catalog capabilities in their stable UI order.
+func (s *PricingService) GetModelCapabilities(modelName string) []string {
+	if s == nil {
+		return []string{}
+	}
+	pricing := s.GetModelPricing(modelName)
+	if pricing == nil || len(pricing.Capabilities) == 0 {
+		return []string{}
+	}
+	return append([]string(nil), pricing.Capabilities...)
 }
 
 func (s *PricingService) buildModelLookupCandidates(modelLower string) []string {

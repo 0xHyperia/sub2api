@@ -222,8 +222,8 @@ GROUP BY m.id,m.platform,m.model,m.enabled,m.display_order,m.label,h.status,h.la
 	if len(monitorIDs) == 0 {
 		return out, nil
 	}
-	timelineRows, err := r.db.QueryContext(ctx, `SELECT monitor_id,status,latency_ms,checked_at FROM (
-SELECT monitor_id,status,latency_ms,checked_at,ROW_NUMBER() OVER (PARTITION BY monitor_id ORDER BY checked_at DESC) AS row_num
+	timelineRows, err := r.db.QueryContext(ctx, `SELECT monitor_id,status,latency_ms,checked_at,group_id,group_name FROM (
+SELECT monitor_id,status,latency_ms,checked_at,group_id,group_name,ROW_NUMBER() OVER (PARTITION BY monitor_id ORDER BY checked_at DESC) AS row_num
 FROM model_monitor_histories WHERE monitor_id = ANY($1)) ranked WHERE row_num <= $2 ORDER BY monitor_id,checked_at DESC`, pq.Array(monitorIDs), timelineLimit)
 	if err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ FROM model_monitor_histories WHERE monitor_id = ANY($1)) ranked WHERE row_num <=
 	for timelineRows.Next() {
 		var monitorID int64
 		var point service.ModelMonitorTimelinePoint
-		if err := timelineRows.Scan(&monitorID, &point.Status, &point.LatencyMs, &point.CheckedAt); err != nil {
+		if err := timelineRows.Scan(&monitorID, &point.Status, &point.LatencyMs, &point.CheckedAt, &point.GroupID, &point.GroupName); err != nil {
 			return nil, err
 		}
 		key, ok := monitorKeys[monitorID]

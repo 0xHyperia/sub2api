@@ -55,6 +55,8 @@ type ModelMonitorTimelinePoint struct {
 	Status    string    `json:"status"`
 	LatencyMs *int      `json:"latency_ms"`
 	CheckedAt time.Time `json:"checked_at"`
+	GroupID   *int64    `json:"group_id,omitempty"`
+	GroupName string    `json:"group_name,omitempty"`
 }
 
 type ModelCatalogEntry struct {

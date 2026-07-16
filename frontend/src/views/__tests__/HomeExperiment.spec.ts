@@ -1,7 +1,12 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import HomeExperiment from '@/views/HomeExperiment.vue'
 import { getHomeShowcase } from '@/api/home'
+
+const source = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../HomeExperiment.vue'), 'utf8')
 
 vi.mock('@/api/home', () => ({
   getHomeMetrics: vi.fn().mockResolvedValue({}),
@@ -72,6 +77,13 @@ describe('HomeExperiment', () => {
         }],
       },
     ])
+  })
+
+  it('fills the first viewport without leaving a 24px gap below the hero', () => {
+    expect(source).toContain('min-height: 100svh')
+    expect(source).toContain('min-height: 100dvh')
+    expect(source).not.toContain('calc(100svh - 24px)')
+    expect(source).not.toContain('calc(100dvh - 24px)')
   })
 
   it('uses a disclosure navigation without changing the hero document flow', async () => {

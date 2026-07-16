@@ -20,6 +20,8 @@ export interface UserAvailableGroup {
   peak_rate_multiplier: number
   /** true = 专属分组（小范围授权）；false = 公开分组。 */
   is_exclusive: boolean
+  /** 分组级每分钟请求上限；0 表示该层不限制。 */
+  rpm_limit?: number
 }
 
 export interface UserPricingInterval {
@@ -52,6 +54,7 @@ export interface UserSupportedModel {
 
 export interface UserMarketplaceModel extends UserSupportedModel {
   groups: UserAvailableGroup[]
+  capabilities?: string[]
   monitor_status?: UserModelMonitorSummary | null
 }
 
@@ -59,6 +62,8 @@ export interface UserModelMonitorTimelinePoint {
   status: 'operational' | 'degraded' | 'failed' | 'error'
   latency_ms: number | null
   checked_at: string
+  group_id?: number | null
+  group_name?: string
 }
 
 export interface UserModelMonitorSummary {

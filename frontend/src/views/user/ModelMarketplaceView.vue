@@ -70,7 +70,10 @@
             <h3 id="marketplace-capability-filter" class="text-xs font-semibold uppercase text-foreground-subtle">
               {{ t('modelMarketplace.filters.capability') }}
             </h3>
-            <div class="mt-2 grid grid-cols-2 gap-1">
+            <div
+              data-testid="marketplace-capability-list"
+              class="mt-2 max-h-52 space-y-1 overflow-y-auto pr-1"
+            >
               <button
                 v-for="capability in capabilityOptions"
                 :key="capability.value"
@@ -318,7 +321,7 @@
                   <span class="h-3 w-px shrink-0 bg-outline" aria-hidden="true"></span>
                   <span class="flex min-w-0 items-center gap-1.5" :aria-label="t('modelMarketplace.capabilities.label')">
                   <span
-                    v-for="capability in cardCapabilityBadges(entry)"
+                    v-for="capability in visibleCardCapabilityBadges(entry)"
                     :key="capability.key"
                     class="group/capability relative inline-flex h-5 w-5 shrink-0 cursor-help items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-black focus-visible:-translate-y-px focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
                     tabindex="0"
@@ -331,6 +334,30 @@
                       class="marketplace-capability-tooltip"
                       role="tooltip"
                     >{{ capability.label }}</span>
+                  </span>
+                  <span
+                    v-if="hiddenCardCapabilityBadges(entry).length"
+                    class="group/capability relative inline-flex h-5 min-w-5 shrink-0 cursor-help items-center justify-center px-0.5 text-[9px] font-semibold text-foreground-subtle outline-none transition-colors hover:text-black focus-visible:text-black focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
+                    tabindex="0"
+                    :aria-label="hiddenCapabilityLabel(entry)"
+                    :aria-describedby="`capability-${entry.key}-more`"
+                    @click.stop
+                  >
+                    +{{ hiddenCardCapabilityBadges(entry).length }}
+                    <span
+                      :id="`capability-${entry.key}-more`"
+                      class="marketplace-capability-tooltip marketplace-capability-tooltip-list"
+                      role="tooltip"
+                    >
+                      <span
+                        v-for="capability in hiddenCardCapabilityBadges(entry)"
+                        :key="capability.key"
+                        class="flex items-center gap-1.5"
+                      >
+                        <Icon :name="capability.icon" size="xs" aria-hidden="true" />
+                        <span>{{ capability.label }}</span>
+                      </span>
+                    </span>
                   </span>
                   </span>
                 </div>
@@ -493,10 +520,13 @@ import {
   buildMarketplaceEntries,
   buildMarketplaceGroups,
   compareMarketplaceDisplayOrder,
+  compareMarketplaceModelRecency,
   compareMarketplaceProviders,
   DEFAULT_USD_TO_CNY_RATE,
   effectiveRateForEntry,
   inferMarketplaceModelCapabilities,
+  MARKETPLACE_CARD_CAPABILITY_ORDER,
+  MARKETPLACE_MODEL_CAPABILITIES,
   primaryPrice,
   recentMonitorStatuses,
   realtimeRate,
@@ -507,15 +537,29 @@ import {
 } from './modelMarketplace'
 
 const BATCH_SIZE = 18
-const MARKETPLACE_CAPABILITY_ORDER: MarketplaceModelCapability[] = ['chat', 'tools', 'vision', 'image', 'reasoning', 'coding', 'fast']
+const CARD_CAPABILITY_LIMIT = 5
 const marketplaceCapabilityIcons = {
-  chat: 'chatBubble',
-  tools: 'cog',
   vision: 'eye',
-  image: 'sparkles',
+  image_input: 'image',
+  audio_input: 'microphone',
+  video_input: 'video',
+  function_calling: 'cog',
   reasoning: 'brain',
-  coding: 'terminal',
-  fast: 'bolt',
+  prompt_caching: 'database',
+  web_search: 'globe',
+  pdf_input: 'document',
+  computer_use: 'terminal',
+  image_generation: 'sparkles',
+  audio_output: 'speaker',
+  parallel_tools: 'arrowsUpDown',
+  tool_choice: 'sort',
+  structured_output: 'codeBracket',
+  assistant_prefill: 'edit',
+  streaming: 'signal',
+  system_messages: 'chatBubble',
+  url_context: 'link',
+  image_embedding: 'cube',
+  service_tier: 'badge',
 } as const
 
 const { t } = useI18n()
@@ -577,9 +621,7 @@ const capabilityOptions = computed(() => {
   }
   return [
     { value: 'all', label: t('modelMarketplace.filters.allCapabilities'), count: entries.value.length, icon: null },
-    ...MARKETPLACE_CAPABILITY_ORDER
-      .filter(capability => counts.has(capability))
-      .map(capability => ({
+    ...MARKETPLACE_MODEL_CAPABILITIES.map(capability => ({
         value: capability,
         label: t(`modelMarketplace.capabilities.${capability}`),
         count: counts.get(capability) ?? 0,
@@ -638,6 +680,8 @@ const filteredEntries = computed(() => {
   return result.sort((a, b) => {
     const byProvider = compareMarketplaceProviders(a.platform, b.platform)
     if (byProvider !== 0) return byProvider
+    const byRecency = compareMarketplaceModelRecency(a.name, b.name)
+    if (byRecency !== 0) return byRecency
     const byDisplayOrder = compareMarketplaceDisplayOrder(a, b)
     if (byDisplayOrder !== 0) return byDisplayOrder
     if (sortMode.value === 'price') {
@@ -703,11 +747,24 @@ function cardBillingCategory(entry: MarketplaceModelEntry) {
 }
 
 function cardCapabilityBadges(entry: MarketplaceModelEntry) {
-  return inferMarketplaceModelCapabilities(entry).map(capability => ({
+  const capabilities = new Set(inferMarketplaceModelCapabilities(entry))
+  return MARKETPLACE_CARD_CAPABILITY_ORDER.filter(capability => capabilities.has(capability)).map(capability => ({
     key: capability,
     icon: marketplaceCapabilityIcons[capability],
     label: t(`modelMarketplace.capabilities.${capability}`),
   }))
+}
+
+function visibleCardCapabilityBadges(entry: MarketplaceModelEntry) {
+  return cardCapabilityBadges(entry).slice(0, CARD_CAPABILITY_LIMIT)
+}
+
+function hiddenCardCapabilityBadges(entry: MarketplaceModelEntry) {
+  return cardCapabilityBadges(entry).slice(CARD_CAPABILITY_LIMIT)
+}
+
+function hiddenCapabilityLabel(entry: MarketplaceModelEntry) {
+  return hiddenCardCapabilityBadges(entry).map(capability => capability.label).join(', ')
 }
 
 function activeEntryGroup(entry: MarketplaceModelEntry) {
@@ -975,12 +1032,35 @@ onBeforeUnmount(() => loadMoreObserver?.disconnect())
   transform: translateX(-50%);
 }
 
+.marketplace-capability-tooltip-list {
+  left: auto;
+  right: -6px;
+  display: grid;
+  min-width: max-content;
+  gap: 6px;
+  padding: 8px 9px;
+  line-height: 1.2;
+  transform: translateY(4px);
+}
+
+.marketplace-capability-tooltip-list::after {
+  right: 10px;
+  left: auto;
+  transform: none;
+}
+
 .group\/capability:hover .marketplace-capability-tooltip,
 .group\/capability:focus .marketplace-capability-tooltip,
 .group\/capability:focus-within .marketplace-capability-tooltip {
   visibility: visible;
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+.group\/capability:hover .marketplace-capability-tooltip-list,
+.group\/capability:focus .marketplace-capability-tooltip-list,
+.group\/capability:focus-within .marketplace-capability-tooltip-list {
+  transform: translateY(0);
 }
 
 .marketplace-card-groups {

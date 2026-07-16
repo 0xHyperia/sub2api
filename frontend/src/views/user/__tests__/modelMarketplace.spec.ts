@@ -5,6 +5,7 @@ import {
   buildMarketplaceGroups,
   billingCategory,
   compareMarketplaceDisplayOrder,
+  compareMarketplaceModelRecency,
   compareMarketplaceProviders,
   effectiveRateForEntry,
   inferMarketplaceModelCapabilities,
@@ -97,6 +98,25 @@ describe('model marketplace data', () => {
     ])
   })
 
+  it('sorts each model family from newest generation to oldest', () => {
+    expect(['gpt-5.2', 'gpt-5.6-sol', 'gpt-5.4-mini', 'gpt-5.5'].sort(compareMarketplaceModelRecency)).toEqual([
+      'gpt-5.6-sol',
+      'gpt-5.5',
+      'gpt-5.4-mini',
+      'gpt-5.2',
+    ])
+    expect(['claude-haiku-4-5-20251001', 'claude-sonnet-5', 'claude-opus-4-8'].sort(compareMarketplaceModelRecency)).toEqual([
+      'claude-sonnet-5',
+      'claude-opus-4-8',
+      'claude-haiku-4-5-20251001',
+    ])
+    expect(['gemini-2.5-pro', 'gemini-3.5-flash', 'gemini-3.1-pro-preview'].sort(compareMarketplaceModelRecency)).toEqual([
+      'gemini-3.5-flash',
+      'gemini-3.1-pro-preview',
+      'gemini-2.5-pro',
+    ])
+  })
+
   it('uses user-specific rates and the lowest accessible rate by default', () => {
     const entries = buildMarketplaceEntries([{ ...platforms[0], supported_models: [{ ...platforms[0].supported_models[0], groups: platforms[0].groups }] }])
     const rates = { 1: 1.1 }
@@ -126,23 +146,29 @@ describe('model marketplace data', () => {
     expect(billingCategory(null)).toBe('unpriced')
   })
 
-  it('derives conservative capability markers from model metadata', () => {
+  it('prefers declared catalog capabilities in the stable display order', () => {
+    const pricing = platforms[0].supported_models[0].pricing
+    expect(inferMarketplaceModelCapabilities({
+      name: 'catalog-model',
+      platform: 'openai',
+      pricing,
+      capabilities: ['service_tier', 'vision', 'function_calling', 'prompt_caching'],
+    })).toEqual(['vision', 'function_calling', 'prompt_caching', 'service_tier'])
+  })
+
+  it('derives conservative capability markers when catalog metadata is unavailable', () => {
     const pricing = platforms[0].supported_models[0].pricing
     expect(inferMarketplaceModelCapabilities({ name: 'gpt-5-codex-mini', platform: 'openai', pricing })).toEqual([
-      'chat',
-      'tools',
       'vision',
-      'coding',
-      'fast',
+      'function_calling',
     ])
     expect(inferMarketplaceModelCapabilities({
       name: 'gpt-image-2',
       platform: 'openai',
       pricing: pricing ? { ...pricing, billing_mode: 'image' } : null,
-    })).toEqual(['image'])
+    })).toEqual(['image_generation'])
     expect(inferMarketplaceModelCapabilities({ name: 'deepseek-r1', platform: 'deepseek', pricing })).toEqual([
-      'chat',
-      'tools',
+      'function_calling',
       'reasoning',
     ])
   })

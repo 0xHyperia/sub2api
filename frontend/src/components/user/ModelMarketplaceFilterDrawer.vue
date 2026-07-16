@@ -189,8 +189,31 @@ interface FilterOption {
   count: number
 }
 
+type CapabilityIconName =
+  | 'eye'
+  | 'image'
+  | 'microphone'
+  | 'video'
+  | 'cog'
+  | 'brain'
+  | 'database'
+  | 'globe'
+  | 'document'
+  | 'terminal'
+  | 'sparkles'
+  | 'speaker'
+  | 'arrowsUpDown'
+  | 'sort'
+  | 'codeBracket'
+  | 'edit'
+  | 'signal'
+  | 'chatBubble'
+  | 'link'
+  | 'cube'
+  | 'badge'
+
 interface CapabilityFilterOption extends FilterOption {
-  icon: 'chatBubble' | 'cog' | 'eye' | 'sparkles' | 'brain' | 'terminal' | 'bolt' | null
+  icon: CapabilityIconName | null
 }
 
 const props = defineProps<{

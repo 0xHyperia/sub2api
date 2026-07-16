@@ -46,6 +46,63 @@ func TestParsePricingData_ParsesPriorityAndServiceTierFields(t *testing.T) {
 	require.True(t, pricing.SupportsServiceTier)
 }
 
+func TestParsePricingData_MapsMarketplaceCapabilities(t *testing.T) {
+	svc := &PricingService{}
+	body := []byte(`{
+		"multimodal-model": {
+			"input_cost_per_token": 0.000001,
+			"output_cost_per_token": 0.000002,
+			"input_cost_per_image": 0.001,
+			"output_cost_per_image": 0.01,
+			"supports_vision": true,
+			"supports_audio_input": true,
+			"supports_video_input": true,
+			"supports_function_calling": true,
+			"supports_reasoning": true,
+			"supports_prompt_caching": true,
+			"supports_web_search": true,
+			"supports_pdf_input": true,
+			"supports_computer_use": true,
+			"supports_audio_output": true,
+			"supports_parallel_function_calling": true,
+			"supports_tool_choice": true,
+			"supports_response_schema": true,
+			"supports_assistant_prefill": true,
+			"supports_native_streaming": true,
+			"supports_system_messages": true,
+			"supports_url_context": true,
+			"supports_service_tier": true,
+			"mode": "chat"
+		}
+	}`)
+
+	data, err := svc.parsePricingData(body)
+	require.NoError(t, err)
+	svc.pricingData = data
+	require.Equal(t, []string{
+		ModelCapabilityVision,
+		ModelCapabilityImageInput,
+		ModelCapabilityAudioInput,
+		ModelCapabilityVideoInput,
+		ModelCapabilityFunctionCalling,
+		ModelCapabilityReasoning,
+		ModelCapabilityPromptCaching,
+		ModelCapabilityWebSearch,
+		ModelCapabilityPDFInput,
+		ModelCapabilityComputerUse,
+		ModelCapabilityImageGeneration,
+		ModelCapabilityAudioOutput,
+		ModelCapabilityParallelTools,
+		ModelCapabilityToolChoice,
+		ModelCapabilityStructuredOutput,
+		ModelCapabilityAssistantPrefill,
+		ModelCapabilityStreaming,
+		ModelCapabilitySystemMessages,
+		ModelCapabilityURLContext,
+		ModelCapabilityServiceTier,
+	}, svc.GetModelCapabilities("multimodal-model"))
+}
+
 func TestBillingService_GPT56CacheWritePricingUsesOfficialMultiplier(t *testing.T) {
 	tests := []struct {
 		model             string
