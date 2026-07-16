@@ -19,6 +19,8 @@ describe('ModelMarketplaceDetailDrawer workspace', () => {
     expect(source).toContain("activeTab === 'overview'")
     expect(source).toContain("activeTab === 'performance'")
     expect(source).toContain('ModelMarketplacePerformanceCharts')
+    expect(source).toContain('import ModelMonitorTimeline')
+    expect(source).toContain('<ModelMonitorTimeline class="mt-1.5" :points="entry.monitorStatus?.timeline" />')
     expect(source).toContain('translateX(100%)')
   })
 

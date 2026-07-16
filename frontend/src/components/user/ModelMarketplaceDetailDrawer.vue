@@ -98,6 +98,18 @@
                 </div>
               </dl>
 
+              <section v-if="monitorEnabled" class="mt-4">
+                <div class="flex items-center justify-between gap-4 text-[10px] text-foreground-subtle">
+                  <h3 class="font-medium">{{ t('modelMarketplace.details.history') }}</h3>
+                  <span>{{ lastCheckedAt }}</span>
+                </div>
+                <ModelMonitorTimeline class="mt-1.5" :points="entry.monitorStatus?.timeline" />
+                <div class="mt-1.5 flex items-center justify-between text-[9px] text-foreground-subtle">
+                  <span>{{ t('modelMarketplace.details.older') }}</span>
+                  <span>{{ t('modelMarketplace.details.newest') }}</span>
+                </div>
+              </section>
+
               <div v-if="activeTab === 'overview'" class="mt-6 space-y-7">
                 <section class="rounded-panel border border-outline p-4 sm:p-5">
                   <h3 class="text-sm font-semibold text-foreground">{{ t('modelMarketplace.details.pricing') }}</h3>
@@ -363,6 +375,7 @@ import type { GroupPlatform } from '@/types'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import ModelMarketplacePerformanceCharts from '@/components/user/ModelMarketplacePerformanceCharts.vue'
+import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
 import { platformIconClass } from '@/utils/platformColors'
 import { useAppStore } from '@/stores/app'
 import { useClipboard } from '@/composables/useClipboard'
@@ -385,7 +398,7 @@ const emit = defineEmits<{
   selectGroup: [groupId: number]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 const { copyToClipboard } = useClipboard()
 const closeButton = ref<HTMLButtonElement | null>(null)
@@ -417,6 +430,16 @@ const monitorPoints = computed(() => props.entry?.monitorStatus?.timeline ?? [])
 const latencyValues = computed(() => monitorPoints.value.flatMap(point => point.latency_ms == null ? [] : [point.latency_ms]))
 const averageLatency = computed(() => latencyValues.value.length ? formatLatency(latencyValues.value.reduce((sum, value) => sum + value, 0) / latencyValues.value.length) : '—')
 const latestLatency = computed(() => props.entry?.monitorStatus?.latency_ms == null ? '—' : formatLatency(props.entry.monitorStatus.latency_ms))
+const lastCheckedAt = computed(() => {
+  const value = props.entry?.monitorStatus?.last_checked_at
+  if (!value) return t('modelMarketplace.monitor.noData')
+  return new Intl.DateTimeFormat(locale.value, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
+})
 const monitorAvailability = computed(() => {
   const value = props.entry?.monitorStatus?.availability_7d
   return value == null ? '—' : `${value.toFixed(2)}%`
