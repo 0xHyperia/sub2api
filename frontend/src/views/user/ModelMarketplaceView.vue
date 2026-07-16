@@ -58,10 +58,33 @@
                 @click="selectedProvider = provider.value"
               >
                 <span class="flex min-w-0 items-center gap-2">
-                  <PlatformIcon :platform="provider.value as GroupPlatform" size="sm" />
+                  <PlatformIcon :platform="provider.value as GroupPlatform" size="sm" :class="platformIconClass(provider.value)" />
                   <span class="truncate">{{ provider.label }}</span>
                 </span>
                 <span class="marketplace-filter-count">{{ provider.count }}</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="marketplace-filter-section" :aria-labelledby="'marketplace-capability-filter'">
+            <h3 id="marketplace-capability-filter" class="text-xs font-semibold uppercase text-foreground-subtle">
+              {{ t('modelMarketplace.filters.capability') }}
+            </h3>
+            <div class="mt-2 grid grid-cols-2 gap-1">
+              <button
+                v-for="capability in capabilityOptions"
+                :key="capability.value"
+                type="button"
+                class="marketplace-filter-option"
+                :class="selectedCapability === capability.value ? 'marketplace-filter-option-active' : ''"
+                :aria-pressed="selectedCapability === capability.value"
+                @click="selectedCapability = capability.value"
+              >
+                <span class="flex min-w-0 items-center gap-1.5">
+                  <Icon v-if="capability.icon" :name="capability.icon" size="xs" class="shrink-0" />
+                  <span class="truncate">{{ capability.label }}</span>
+                </span>
+                <span class="marketplace-filter-count">{{ capability.count }}</span>
               </button>
             </div>
           </section>
@@ -222,7 +245,7 @@
           </div>
 
           <div v-if="loading && entries.length === 0" class="grid gap-3 pt-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="status">
-            <div v-for="index in 8" :key="index" class="card h-[230px] animate-pulse bg-surface-subtle"></div>
+            <div v-for="index in 8" :key="index" class="card h-[152px] animate-pulse bg-surface-subtle"></div>
             <span class="sr-only">{{ t('common.loading') }}</span>
           </div>
 
@@ -243,122 +266,143 @@
               :key="entry.key"
               data-testid="marketplace-model-card"
               tabindex="0"
-              class="card group/card flex min-h-[230px] min-w-0 cursor-pointer flex-col p-3.5 transition-[border-color,box-shadow] duration-150 hover:border-outline-strong hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              class="card group/card flex min-h-[152px] min-w-0 cursor-pointer flex-col p-3 transition-[border-color,box-shadow] duration-150 hover:border-outline-strong hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               :aria-label="t('modelMarketplace.details.open', { model: entry.name })"
               @click="openDetails(entry)"
               @keydown.enter.self.prevent="openDetails(entry)"
             >
-              <div class="grid grid-cols-[36px_minmax(0,1fr)_28px] items-center gap-2.5">
-                <span
-                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-panel border"
-                  :class="platformBadgeClass(entry.platform)"
-                  aria-hidden="true"
-                >
-                  <PlatformIcon :platform="entry.platform as GroupPlatform" size="md" />
+              <div class="grid grid-cols-[24px_minmax(0,1fr)_52px] items-center gap-2">
+                <span class="flex h-6 w-6 shrink-0 items-center justify-center text-foreground" aria-hidden="true">
+                  <PlatformIcon :platform="entry.platform as GroupPlatform" size="lg" :class="platformIconClass(entry.platform)" />
                 </span>
                 <div class="min-w-0 flex-1">
-                  <div class="min-w-0">
-                    <h2 class="line-clamp-2 min-w-0 break-words text-sm font-semibold leading-5 text-foreground">
+                  <div class="flex min-w-0 items-center gap-1.5">
+                    <h2 class="truncate text-sm font-semibold leading-5 text-foreground">
                       {{ entry.name }}
-                      <span
-                        v-if="entry.label"
-                        class="ml-1 inline-flex h-[18px] max-w-24 items-center align-middle truncate rounded-control bg-black px-2 text-[10px] font-bold leading-none text-white"
-                        :title="entry.label"
-                      >{{ entry.label }}</span>
                     </h2>
-                  </div>
-                  <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span class="text-[10px] font-semibold uppercase text-foreground-muted">
-                      {{ providerLabel(entry.platform) }}
-                    </span>
-                    <span class="h-3 w-px bg-outline"></span>
-                    <span class="text-[10px] font-medium text-foreground-subtle">
-                      {{ billingModeLabel(cardBillingCategory(entry)) }}
-                    </span>
-                    <template v-if="modelMonitorEnabled">
-                      <span class="h-3 w-px bg-outline"></span>
-                      <span class="inline-flex min-w-0 items-center gap-1 text-[9px] font-medium" :class="monitorTextClass(entry.monitorStatus?.status)">
-                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>
-                        <span class="truncate">{{ monitorStatusLabel(entry.monitorStatus?.status) }}</span>
-                      </span>
-                    </template>
+                    <span
+                      v-if="entry.label"
+                      class="inline-flex h-4 max-w-20 shrink-0 items-center truncate rounded-control bg-black px-1.5 text-[9px] font-bold leading-none text-white"
+                      :title="entry.label"
+                    >{{ entry.label }}</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  class="btn-ghost btn-icon h-7 w-7 shrink-0 self-center"
-                  :title="t('modelMarketplace.copyModel')"
-                  :aria-label="t('modelMarketplace.copyModel')"
-                  @click.stop="copyModel(entry.name)"
-                >
-                  <Icon name="copy" size="sm" />
-                </button>
+                <div class="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    class="btn-ghost btn-icon h-6 w-6 shrink-0"
+                    :title="t('modelMarketplace.copyModel')"
+                    :aria-label="t('modelMarketplace.copyModel')"
+                    @click.stop="copyModel(entry.name)"
+                  >
+                    <Icon name="copy" size="xs" />
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-ghost btn-icon h-6 w-6 shrink-0"
+                    :title="t('modelMarketplace.details.open', { model: entry.name })"
+                    :aria-label="t('modelMarketplace.details.open', { model: entry.name })"
+                    @click.stop="openDetails(entry)"
+                  >
+                    <Icon name="eye" size="xs" />
+                  </button>
+                </div>
               </div>
 
-              <div v-if="modelMonitorEnabled && hasMonitorTimeline(entry)" class="mt-3 border-t border-outline pt-2.5">
-                <div class="flex items-center justify-between gap-3 text-xs">
-                  <span class="inline-flex items-center gap-1.5 font-medium" :class="monitorTextClass(entry.monitorStatus?.status)">
-                    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ monitorStatusLabel(entry.monitorStatus?.status) }}
+              <div class="mt-1.5 flex min-h-5 items-center justify-between gap-2">
+                <div class="flex min-w-0 items-center gap-2 text-foreground-subtle">
+                  <span class="max-w-20 truncate text-[9px] font-medium uppercase" :title="providerLabel(entry.platform)">
+                    {{ providerLabel(entry.platform) }}
                   </span>
-                  <span class="font-mono tabular-nums text-foreground-subtle">{{ monitorAvailability(entry) }}</span>
+                  <span class="shrink-0 text-[9px]">{{ billingModeLabel(entry.pricing?.billing_mode) }}</span>
+                  <span class="h-3 w-px shrink-0 bg-outline" aria-hidden="true"></span>
+                  <span class="flex min-w-0 items-center gap-1.5" :aria-label="t('modelMarketplace.capabilities.label')">
+                  <span
+                    v-for="capability in cardCapabilityBadges(entry)"
+                    :key="capability.key"
+                    class="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center transition-colors group-hover/card:text-foreground"
+                    :title="capability.label"
+                    :aria-label="capability.label"
+                  >
+                    <Icon :name="capability.icon" size="xs" aria-hidden="true" />
+                  </span>
+                  </span>
                 </div>
-                <ModelMonitorTimeline class="mt-2" :points="entry.monitorStatus?.timeline" />
+                <div
+                  v-if="modelMonitorEnabled"
+                  class="inline-flex shrink-0 items-end gap-2"
+                  :title="monitorCompactLabel(entry)"
+                  :aria-label="monitorCompactLabel(entry)"
+                >
+                  <span v-if="monitorLatency(entry)" class="font-mono text-[9px] tabular-nums text-foreground-subtle">
+                    {{ monitorLatency(entry) }}
+                  </span>
+                  <span class="flex h-3 items-end gap-[3px]" aria-hidden="true">
+                    <span
+                      v-for="(status, index) in monitorSignalPoints(entry)"
+                      :key="index"
+                      class="marketplace-status-bar w-1 rounded-full"
+                      :class="monitorSignalClass(status)"
+                    ></span>
+                  </span>
+                </div>
               </div>
 
-              <div v-if="entry.pricing" class="mt-3 min-h-20 border-t border-outline pt-3">
+              <div v-if="entry.pricing" class="mt-1 flex min-h-6 items-center">
                 <template v-if="cardBillingCategory(entry) === 'usage'">
-                  <dl class="grid grid-cols-2 divide-x divide-outline">
-                    <div v-for="row in cardPrimaryPriceRows(entry)" :key="row.key" class="min-w-0 px-3 first:pl-0 last:pr-0">
-                      <dt class="text-[10px] font-medium text-foreground-subtle">{{ row.label }}</dt>
-                      <dd class="mt-0.5 flex items-baseline gap-1.5">
-                        <span class="font-mono text-lg font-semibold tabular-nums text-foreground">{{ row.value }}</span>
-                        <span class="text-[10px] text-foreground-subtle">/ 1M</span>
-                        <span v-if="row.baseValue" class="font-mono text-[10px] tabular-nums text-foreground-subtle line-through">{{ row.baseValue }}</span>
+                  <dl class="flex min-w-0 items-baseline divide-x divide-outline overflow-hidden">
+                    <div v-for="row in cardPrimaryPriceRows(entry)" :key="row.key" class="flex min-w-0 items-baseline gap-1.5 px-2 first:pl-0 last:pr-0">
+                      <dt class="shrink-0 text-[9px] font-medium text-foreground-subtle">{{ row.label }}</dt>
+                      <dd class="flex min-w-0 items-baseline gap-1">
+                        <span class="font-mono text-sm font-semibold tabular-nums text-foreground">{{ row.value }}</span>
+                        <span v-if="row.baseValue" class="truncate font-mono text-[9px] tabular-nums text-foreground-subtle line-through">{{ row.baseValue }}</span>
                       </dd>
                     </div>
+                    <span class="shrink-0 pl-2 text-[9px] text-foreground-subtle">/ 1M</span>
                   </dl>
-                  <div v-if="cardCachePrice(entry)" class="mt-2 truncate text-[10px] text-foreground-muted">{{ cardCachePrice(entry) }}</div>
                 </template>
                 <template v-else>
-                  <div class="flex items-end justify-between gap-3">
-                    <div>
-                      <div class="text-[10px] font-medium text-foreground-subtle">{{ t('modelMarketplace.price.request') }}</div>
-                      <div class="mt-0.5 flex items-baseline gap-2">
-                        <span class="font-mono text-xl font-semibold tabular-nums text-foreground">{{ cardRequestPrice(entry).value }}</span>
-                        <span class="text-[10px] text-foreground-subtle">{{ t('modelMarketplace.price.perRequest') }}</span>
-                      </div>
-                    </div>
-                    <span v-if="cardRequestPrice(entry).baseValue" class="font-mono text-xs tabular-nums text-foreground-subtle line-through">{{ cardRequestPrice(entry).baseValue }}</span>
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-[9px] font-medium text-foreground-subtle">{{ t('modelMarketplace.price.request') }}</span>
+                    <span class="font-mono text-sm font-semibold tabular-nums text-foreground">{{ cardRequestPrice(entry).value }}</span>
+                    <span v-if="cardRequestPrice(entry).baseValue" class="font-mono text-[9px] tabular-nums text-foreground-subtle line-through">{{ cardRequestPrice(entry).baseValue }}</span>
+                    <span class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.price.perRequest') }}</span>
                   </div>
                 </template>
               </div>
-              <div v-else class="mt-3 flex min-h-20 items-center border-t border-outline pt-3 text-xs text-foreground-subtle">
+              <div v-else class="mt-1 flex min-h-6 items-center text-[10px] text-foreground-subtle">
                 {{ t('modelMarketplace.noPricing') }}
               </div>
 
-              <div class="mt-auto border-t border-outline pt-2.5">
-                <div class="grid min-h-11 grid-cols-[minmax(0,1fr)_96px] divide-x divide-outline">
-                  <div class="min-w-0 pr-3">
-                    <div class="text-[9px] font-medium text-foreground-subtle">{{ t('modelMarketplace.details.billingGroup') }}</div>
-                    <div class="mt-1 flex min-w-0 items-center gap-1.5">
-                      <span class="truncate text-xs font-medium text-foreground">{{ activeEntryGroup(entry)?.name ?? '-' }}</span>
-                      <span class="shrink-0 font-mono text-[10px] tabular-nums text-foreground-muted">&times;{{ formatRate(effectiveRate(entry)) }}</span>
-                    </div>
-                  </div>
-                  <div
-                    class="group/rate relative cursor-help pl-3 text-right outline-none"
-                    tabindex="0"
-                    :aria-label="t('modelMarketplace.realtimeRateHint', { cny: formatRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
+              <div class="mt-auto flex min-h-8 items-center gap-2 border-t border-outline pt-2">
+                <div class="marketplace-card-groups flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
+                  <button
+                    v-for="group in cardGroups(entry)"
+                    :key="group.id"
+                    type="button"
+                    class="inline-flex h-6 shrink-0 items-center gap-1 rounded-control border px-2 text-[9px] transition-colors"
+                    :class="group.id === activeEntryGroup(entry)?.id ? 'border-brand/30 bg-brand-subtle text-brand' : 'border-outline bg-surface text-foreground-muted hover:border-outline-strong hover:text-foreground'"
+                    :title="`${group.name} · ×${formatRate(group.effectiveRate)}`"
+                    @click.stop="selectEntryGroup(entry, group.id)"
                   >
-                    <div class="text-[9px] font-medium text-foreground-subtle">{{ t('modelMarketplace.realtimeRate') }}</div>
-                    <div class="mt-0.5 inline-flex items-center gap-1 font-mono text-sm font-semibold tabular-nums text-foreground">
-                      {{ formatRate(cardRealtimeRate(entry)) }}&times;
-                      <Icon name="infoCircle" size="xs" class="text-foreground-subtle" />
-                    </div>
-                    <div class="marketplace-rate-tooltip" role="tooltip">
+                    <span class="max-w-40 truncate">{{ group.name }}</span>
+                  </button>
+                  <span v-if="entry.groups.length === 0" class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.billingGroup') }} -</span>
+                </div>
+                <div
+                  class="group/rate relative flex shrink-0 cursor-help items-center gap-1.5 outline-none"
+                  tabindex="0"
+                  :aria-label="t('modelMarketplace.realtimeRateHint', { cny: formatRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
+                >
+                  <span class="text-[9px] font-medium text-orange-600 dark:text-orange-400">{{ t('modelMarketplace.realtimeRate') }}</span>
+                  <span class="inline-flex items-center gap-1 font-mono text-xs font-semibold tabular-nums text-orange-600 dark:text-orange-400">
+                    {{ formatRate(cardRealtimeRate(entry)) }}&times;
+                    <Icon name="infoCircle" size="xs" />
+                  </span>
+                  <div class="marketplace-rate-tooltip" role="tooltip">
                       <div class="flex items-center justify-between gap-4 border-b border-outline pb-2">
                         <span class="text-xs font-semibold text-foreground">{{ t('modelMarketplace.realtimeRate') }}</span>
-                        <span class="font-mono text-sm font-semibold tabular-nums text-foreground">{{ formatRate(cardRealtimeRate(entry)) }}&times;</span>
+                        <span class="font-mono text-sm font-semibold tabular-nums text-orange-600 dark:text-orange-400">{{ formatRate(cardRealtimeRate(entry)) }}&times;</span>
                       </div>
                       <dl class="mt-2 space-y-1.5 text-[10px]">
                         <div class="flex items-center justify-between gap-4">
@@ -377,31 +421,7 @@
                       <div class="mt-2 border-t border-dashed border-outline pt-2 text-left font-mono text-[10px] tabular-nums text-foreground-muted">
                         {{ formatRate(effectiveRate(entry)) }} / {{ formatRate(balanceRechargeMultiplier) }} / {{ formatRate(officialUsdToCnyRate) }} = {{ formatRate(cardRealtimeRate(entry)) }}&times;
                       </div>
-                    </div>
                   </div>
-                </div>
-                <div v-if="entry.groups.length > 1" class="mt-2 flex min-w-0 items-center gap-1.5 border-t border-dashed border-outline pt-2">
-                  <button
-                    v-for="group in cardGroups(entry)"
-                    :key="group.id"
-                    type="button"
-                    class="inline-flex min-w-0 items-center gap-1 rounded-control border px-2 py-1 text-[10px] transition-colors"
-                    :class="group.id === activeEntryGroup(entry)?.id ? 'border-brand/30 bg-brand-subtle text-brand' : 'border-outline bg-surface text-foreground-muted hover:border-outline-strong hover:text-foreground'"
-                    :title="`${group.name} · ×${formatRate(group.effectiveRate)}`"
-                    @click.stop="selectEntryGroup(entry, group.id)"
-                  >
-                    <span class="max-w-24 truncate">{{ group.name }}</span>
-                    <span class="shrink-0 font-mono">×{{ formatRate(group.effectiveRate) }}</span>
-                  </button>
-                  <button
-                    v-if="entry.groups.length > cardGroups(entry).length"
-                    type="button"
-                    class="inline-flex h-6 shrink-0 items-center rounded-control border border-outline px-2 text-[10px] font-medium text-foreground-subtle hover:border-outline-strong hover:text-foreground"
-                    :aria-label="t('modelMarketplace.details.moreGroups', { count: entry.groups.length - cardGroups(entry).length })"
-                    @click.stop="openDetails(entry)"
-                  >
-                    +{{ entry.groups.length - cardGroups(entry).length }}
-                  </button>
                 </div>
               </div>
             </article>
@@ -419,10 +439,12 @@
       :providers="providers"
       :groups="groups"
       :billing-options="billingOptions"
+      :capability-options="capabilityOptions"
       :entries-count="entries.length"
       :selected-provider="selectedProvider"
       :selected-group="selectedGroup"
       :selected-billing="selectedBilling"
+      :selected-capability="selectedCapability"
       :show-effective-prices="showEffectivePrices"
       :result-count="mobileFilterResultCount"
       @close="mobileFilterOpen = false"
@@ -450,7 +472,6 @@ import SearchInput from '@/components/common/SearchInput.vue'
 import Toggle from '@/components/common/Toggle.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
-import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
 import ModelMarketplaceDetailDrawer from '@/components/user/ModelMarketplaceDetailDrawer.vue'
 import ModelMarketplaceFilterDrawer from '@/components/user/ModelMarketplaceFilterDrawer.vue'
 import userChannelsAPI from '@/api/channels'
@@ -460,7 +481,7 @@ import { useAppStore } from '@/stores/app'
 import { usePaymentStore } from '@/stores/payment'
 import { useClipboard } from '@/composables/useClipboard'
 import { extractApiErrorMessage } from '@/utils/apiError'
-import { platformBadgeClass } from '@/utils/platformColors'
+import { platformIconClass } from '@/utils/platformColors'
 import {
   billingCategory,
   buildMarketplaceEntries,
@@ -468,14 +489,27 @@ import {
   compareMarketplaceDisplayOrder,
   DEFAULT_USD_TO_CNY_RATE,
   effectiveRateForEntry,
+  inferMarketplaceModelCapabilities,
   primaryPrice,
+  recentMonitorStatuses,
   realtimeRate,
   scaledPrice,
   sortedEntryGroups,
   type MarketplaceModelEntry,
+  type MarketplaceModelCapability,
 } from './modelMarketplace'
 
 const BATCH_SIZE = 18
+const MARKETPLACE_CAPABILITY_ORDER: MarketplaceModelCapability[] = ['chat', 'tools', 'vision', 'image', 'reasoning', 'coding', 'fast']
+const marketplaceCapabilityIcons = {
+  chat: 'chatBubble',
+  tools: 'cog',
+  vision: 'eye',
+  image: 'sparkles',
+  reasoning: 'brain',
+  coding: 'terminal',
+  fast: 'bolt',
+} as const
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -490,6 +524,7 @@ const searchQuery = ref('')
 const selectedProvider = ref('all')
 const selectedGroup = ref('all')
 const selectedBilling = ref('all')
+const selectedCapability = ref('all')
 const sortMode = ref<'name' | 'price'>('name')
 const showEffectivePrices = ref(true)
 const visibleCount = ref(BATCH_SIZE)
@@ -500,6 +535,7 @@ const mobileFilterOpen = ref(false)
 const draftProvider = ref('all')
 const draftGroup = ref('all')
 const draftBilling = ref('all')
+const draftCapability = ref('all')
 let loadMoreObserver: IntersectionObserver | null = null
 
 const entries = computed(() => buildMarketplaceEntries(catalog.value))
@@ -525,11 +561,31 @@ const billingOptions = computed(() => {
   ]
 })
 
+const capabilityOptions = computed(() => {
+  const counts = new Map<MarketplaceModelCapability, number>()
+  for (const entry of entries.value) {
+    for (const capability of inferMarketplaceModelCapabilities(entry)) {
+      counts.set(capability, (counts.get(capability) ?? 0) + 1)
+    }
+  }
+  return [
+    { value: 'all', label: t('modelMarketplace.filters.allCapabilities'), count: entries.value.length, icon: null },
+    ...MARKETPLACE_CAPABILITY_ORDER
+      .filter(capability => counts.has(capability))
+      .map(capability => ({
+        value: capability,
+        label: t(`modelMarketplace.capabilities.${capability}`),
+        count: counts.get(capability) ?? 0,
+        icon: marketplaceCapabilityIcons[capability],
+      })),
+  ]
+})
+
 const selectedGroupId = computed(() => selectedGroup.value === 'all' ? null : Number(selectedGroup.value))
 
-const activeFilterCount = computed(() => [selectedProvider.value, selectedGroup.value, selectedBilling.value].filter(value => value !== 'all').length)
+const activeFilterCount = computed(() => [selectedProvider.value, selectedGroup.value, selectedBilling.value, selectedCapability.value].filter(value => value !== 'all').length)
 const activeFilterChips = computed(() => {
-  const chips: Array<{ key: 'provider' | 'group' | 'billing'; label: string }> = []
+  const chips: Array<{ key: 'provider' | 'group' | 'billing' | 'capability'; label: string }> = []
   if (selectedProvider.value !== 'all') {
     chips.push({ key: 'provider', label: providers.value.find(provider => provider.value === selectedProvider.value)?.label ?? selectedProvider.value })
   }
@@ -538,6 +594,9 @@ const activeFilterChips = computed(() => {
   }
   if (selectedBilling.value !== 'all') {
     chips.push({ key: 'billing', label: billingOptions.value.find(mode => mode.value === selectedBilling.value)?.label ?? selectedBilling.value })
+  }
+  if (selectedCapability.value !== 'all') {
+    chips.push({ key: 'capability', label: capabilityOptions.value.find(capability => capability.value === selectedCapability.value)?.label ?? selectedCapability.value })
   }
   return chips
 })
@@ -549,6 +608,7 @@ const mobileFilterResultCount = computed(() => {
     if (draftProvider.value !== 'all' && entry.platform !== draftProvider.value) return false
     if (groupId != null && !entry.groups.some(group => group.id === groupId)) return false
     if (draftBilling.value !== 'all' && billingCategory(entry.pricing) !== draftBilling.value) return false
+    if (draftCapability.value !== 'all' && !inferMarketplaceModelCapabilities(entry).includes(draftCapability.value as MarketplaceModelCapability)) return false
     if (!query) return true
     return entry.name.toLowerCase().includes(query)
       || entry.groups.some(group => group.name.toLowerCase().includes(query))
@@ -562,6 +622,7 @@ const filteredEntries = computed(() => {
     if (selectedGroupId.value != null && !entry.groups.some((group) => group.id === selectedGroupId.value)) return false
     const mode = billingCategory(entry.pricing)
     if (selectedBilling.value !== 'all' && mode !== selectedBilling.value) return false
+    if (selectedCapability.value !== 'all' && !inferMarketplaceModelCapabilities(entry).includes(selectedCapability.value as MarketplaceModelCapability)) return false
     if (!query) return true
     return entry.name.toLowerCase().includes(query)
       || entry.groups.some((group) => group.name.toLowerCase().includes(query))
@@ -585,7 +646,7 @@ const visibleEntries = computed(() => filteredEntries.value.slice(0, visibleCoun
 const hasMore = computed(() => visibleCount.value < filteredEntries.value.length)
 
 watch(
-  [searchQuery, selectedProvider, selectedGroup, selectedBilling, sortMode],
+  [searchQuery, selectedProvider, selectedGroup, selectedBilling, selectedCapability, sortMode],
   () => { visibleCount.value = BATCH_SIZE },
 )
 watch(loadMoreSentinel, (node, previous) => { if (previous) loadMoreObserver?.unobserve(previous); if (node) loadMoreObserver?.observe(node) }, { flush: 'post' })
@@ -632,6 +693,14 @@ function cardBillingCategory(entry: MarketplaceModelEntry) {
   return billingCategory(entry.pricing)
 }
 
+function cardCapabilityBadges(entry: MarketplaceModelEntry) {
+  return inferMarketplaceModelCapabilities(entry).map(capability => ({
+    key: capability,
+    icon: marketplaceCapabilityIcons[capability],
+    label: t(`modelMarketplace.capabilities.${capability}`),
+  }))
+}
+
 function activeEntryGroup(entry: MarketplaceModelEntry) {
   const sorted = sortedEntryGroups(entry, userGroupRates.value)
   if (selectedGroupId.value != null) return sorted.find(group => group.id === selectedGroupId.value) ?? sorted[0] ?? null
@@ -647,7 +716,7 @@ function cardGroups(entry: MarketplaceModelEntry) {
   const sorted = sortedEntryGroups(entry, userGroupRates.value)
   if (selectedGroupId.value != null) return sorted.filter(group => group.id === selectedGroupId.value)
   const active = activeEntryGroup(entry)
-  return active ? [active, ...sorted.filter(group => group.id !== active.id)].slice(0, 2) : sorted.slice(0, 2)
+  return active ? [active, ...sorted.filter(group => group.id !== active.id)] : sorted
 }
 
 function cardPrice(value: number | null, scale: number, entry: MarketplaceModelEntry) {
@@ -673,30 +742,34 @@ function cardRequestPrice(entry: MarketplaceModelEntry) {
   return cardPrice(pricing?.per_request_price ?? pricing?.image_output_price ?? null, 1, entry)
 }
 
-function cardCachePrice(entry: MarketplaceModelEntry) {
-  const pricing = entry.pricing
-  if (!pricing) return ''
-  const parts = []
-  if (pricing.cache_read_price != null) parts.push(`${t('modelMarketplace.price.cacheReadShort')} ${displayPrice(pricing.cache_read_price, 1_000_000, entry)} / 1M`)
-  if (pricing.cache_write_price != null) parts.push(`${t('modelMarketplace.price.cacheWriteShort')} ${displayPrice(pricing.cache_write_price, 1_000_000, entry)} / 1M`)
-  return parts.join(' · ')
-}
-
 function openDetails(entry: MarketplaceModelEntry) {
   detailEntry.value = entry
 }
 
 function loadMore() { visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, filteredEntries.value.length) }
 function monitorStatusLabel(status?: string) { return status ? t(`modelMarketplace.monitor.${status}`) : t('modelMarketplace.monitor.unknown') }
-function monitorTextClass(status?: string) { return status === 'operational' ? 'text-success-foreground' : status === 'degraded' ? 'text-warning-foreground' : status === 'failed' || status === 'error' ? 'text-danger-foreground' : 'text-foreground-subtle' }
-function monitorAvailability(entry: MarketplaceModelEntry) { const value = entry.monitorStatus?.availability_7d; return value == null ? t('modelMarketplace.monitor.noData') : t('modelMarketplace.monitor.availability', { value: value.toFixed(2) }) }
-function hasMonitorTimeline(entry: MarketplaceModelEntry) { return (entry.monitorStatus?.timeline?.length ?? 0) > 0 }
+function monitorLatency(entry: MarketplaceModelEntry) { const value = entry.monitorStatus?.latency_ms; return value == null ? '' : `${value} ms` }
+function monitorSignalPoints(entry: MarketplaceModelEntry) { return recentMonitorStatuses(entry.monitorStatus?.timeline, 3, entry.monitorStatus?.status ?? '') }
+function monitorSignalClass(status?: string) {
+  if (status === 'operational') return 'bg-success'
+  if (status === 'degraded') return 'bg-warning'
+  if (status === 'failed' || status === 'error') return 'bg-danger'
+  return 'bg-outline'
+}
+function monitorCompactLabel(entry: MarketplaceModelEntry) {
+  const summary = entry.monitorStatus
+  const parts = [monitorStatusLabel(summary?.status)]
+  if (summary?.latency_ms != null) parts.push(`${t('modelMarketplace.monitor.latency')}: ${summary.latency_ms} ms`)
+  if (summary?.availability_7d != null) parts.push(t('modelMarketplace.monitor.availability', { value: summary.availability_7d.toFixed(2) }))
+  return parts.join(', ')
+}
 
 function resetFilters() {
   searchQuery.value = ''
   selectedProvider.value = 'all'
   selectedGroup.value = 'all'
   selectedBilling.value = 'all'
+  selectedCapability.value = 'all'
   sortMode.value = 'name'
 }
 
@@ -704,27 +777,31 @@ function openMobileFilters() {
   draftProvider.value = selectedProvider.value
   draftGroup.value = selectedGroup.value
   draftBilling.value = selectedBilling.value
+  draftCapability.value = selectedCapability.value
   mobileFilterOpen.value = true
 }
 
-function updateMobileFilterDraft(filters: { provider: string; group: string; billing: string }) {
+function updateMobileFilterDraft(filters: { provider: string; group: string; billing: string; capability: string }) {
   draftProvider.value = filters.provider
   draftGroup.value = filters.group
   draftBilling.value = filters.billing
+  draftCapability.value = filters.capability
 }
 
-function applyMobileFilters(filters: { provider: string; group: string; billing: string; showEffectivePrices: boolean }) {
+function applyMobileFilters(filters: { provider: string; group: string; billing: string; capability: string; showEffectivePrices: boolean }) {
   selectedProvider.value = filters.provider
   selectedGroup.value = filters.group
   selectedBilling.value = filters.billing
+  selectedCapability.value = filters.capability
   showEffectivePrices.value = filters.showEffectivePrices
   mobileFilterOpen.value = false
 }
 
-function clearFilterChip(key: 'provider' | 'group' | 'billing') {
+function clearFilterChip(key: 'provider' | 'group' | 'billing' | 'capability') {
   if (key === 'provider') selectedProvider.value = 'all'
   if (key === 'group') selectedGroup.value = 'all'
   if (key === 'billing') selectedBilling.value = 'all'
+  if (key === 'capability') selectedCapability.value = 'all'
 }
 
 async function copyModel(name: string) {
@@ -857,6 +934,26 @@ onBeforeUnmount(() => loadMoreObserver?.disconnect())
   opacity: 0;
   transform: translateY(4px);
   transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+}
+
+.marketplace-card-groups {
+  scrollbar-width: none;
+}
+
+.marketplace-card-groups::-webkit-scrollbar {
+  display: none;
+}
+
+.marketplace-status-bar:nth-child(1) {
+  height: 8px;
+}
+
+.marketplace-status-bar:nth-child(2) {
+  height: 10px;
+}
+
+.marketplace-status-bar:nth-child(3) {
+  height: 12px;
 }
 
 .marketplace-rate-tooltip::after {

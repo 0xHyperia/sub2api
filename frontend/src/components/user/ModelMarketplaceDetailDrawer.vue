@@ -10,9 +10,9 @@
         @click.self="emit('close')"
       >
         <aside ref="drawerPanel" tabindex="-1" class="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col border-l border-outline bg-surface-raised shadow-floating">
-          <header class="grid min-h-[72px] grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-3 border-b border-outline px-5 py-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-panel border" :class="platformBadgeClass(entry.platform)">
-              <PlatformIcon :platform="entry.platform as GroupPlatform" size="md" />
+          <header class="grid min-h-[72px] grid-cols-[28px_minmax(0,1fr)_40px] items-center gap-3 border-b border-outline px-5 py-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center text-foreground">
+              <PlatformIcon :platform="entry.platform as GroupPlatform" size="lg" :class="platformIconClass(entry.platform)" />
             </span>
             <div class="min-w-0 flex-1">
               <h2 :id="titleId" class="min-w-0 break-words text-base font-semibold text-foreground">
@@ -157,7 +157,7 @@ import type { GroupPlatform } from '@/types'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
-import { platformBadgeClass } from '@/utils/platformColors'
+import { platformIconClass } from '@/utils/platformColors'
 import { billingCategory, scaledPrice, type MarketplaceGroupOption, type MarketplaceModelEntry } from '@/views/user/modelMarketplace'
 
 const props = defineProps<{

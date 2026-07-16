@@ -54,4 +54,12 @@ describe('ModelMonitorTimeline', () => {
     })
     expect(wrapper.findAll('[aria-hidden="true"]')).toHaveLength(30)
   })
+
+  it('supports the borderless compact card variant', () => {
+    const wrapper = mount(ModelMonitorTimeline, { props: { compact: true, points: [] } })
+    const track = wrapper.get('[role="list"]')
+    expect(track.classes()).toContain('h-4')
+    expect(track.classes()).not.toContain('border')
+    expect(track.classes()).not.toContain('bg-surface')
+  })
 })

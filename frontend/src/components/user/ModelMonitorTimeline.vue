@@ -1,7 +1,10 @@
 <template>
   <div class="relative min-w-0">
     <div
-      class="group/timeline flex h-7 items-end gap-[3px] rounded-control border border-outline bg-surface px-1.5 py-1.5 shadow-inner"
+      class="group/timeline flex items-end"
+      :class="compact
+        ? 'h-4 gap-[3px]'
+        : 'h-7 gap-[3px] rounded-control border border-outline bg-surface px-1.5 py-1.5 shadow-inner'"
       role="list"
       :aria-label="t('modelMarketplace.monitor.timeline')"
     >
@@ -61,9 +64,11 @@ import type { UserModelMonitorTimelinePoint } from '@/api/channels'
 const props = withDefaults(defineProps<{
   points?: UserModelMonitorTimelinePoint[] | null
   limit?: number
+  compact?: boolean
 }>(), {
   points: () => [],
   limit: 30,
+  compact: false,
 })
 
 const { t, locale } = useI18n()

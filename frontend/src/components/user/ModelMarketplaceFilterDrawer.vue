@@ -61,10 +61,33 @@
                   @click="draftProvider = provider.value"
                 >
                   <span class="flex min-w-0 items-center gap-1.5">
-                    <PlatformIcon :platform="provider.value as GroupPlatform" size="sm" />
+                    <PlatformIcon :platform="provider.value as GroupPlatform" size="sm" :class="platformIconClass(provider.value)" />
                     <span class="truncate">{{ provider.label }}</span>
                   </span>
                   <span class="marketplace-sheet-count">{{ provider.count }}</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="border-b border-outline py-4" :aria-labelledby="`${titleId}-capability`">
+              <h3 :id="`${titleId}-capability`" class="text-xs font-semibold text-foreground">
+                {{ t('modelMarketplace.filters.capability') }}
+              </h3>
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  v-for="capability in capabilityOptions"
+                  :key="capability.value"
+                  type="button"
+                  class="marketplace-sheet-option"
+                  :class="draftCapability === capability.value ? 'marketplace-sheet-option-active' : ''"
+                  :aria-pressed="draftCapability === capability.value"
+                  @click="draftCapability = capability.value"
+                >
+                  <span class="flex min-w-0 items-center gap-1.5">
+                    <Icon v-if="capability.icon" :name="capability.icon" size="xs" />
+                    <span class="truncate">{{ capability.label }}</span>
+                  </span>
+                  <span class="marketplace-sheet-count">{{ capability.count }}</span>
                 </button>
               </div>
             </section>
@@ -158,6 +181,7 @@ import type { MarketplaceGroupOption } from '@/views/user/modelMarketplace'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Toggle from '@/components/common/Toggle.vue'
+import { platformIconClass } from '@/utils/platformColors'
 
 interface FilterOption {
   value: string
@@ -165,23 +189,29 @@ interface FilterOption {
   count: number
 }
 
+interface CapabilityFilterOption extends FilterOption {
+  icon: 'chatBubble' | 'cog' | 'eye' | 'sparkles' | 'brain' | 'terminal' | 'bolt' | null
+}
+
 const props = defineProps<{
   open: boolean
   providers: FilterOption[]
   groups: MarketplaceGroupOption[]
   billingOptions: FilterOption[]
+  capabilityOptions: CapabilityFilterOption[]
   entriesCount: number
   selectedProvider: string
   selectedGroup: string
   selectedBilling: string
+  selectedCapability: string
   showEffectivePrices: boolean
   resultCount: number
 }>()
 
 const emit = defineEmits<{
   close: []
-  apply: [filters: { provider: string; group: string; billing: string; showEffectivePrices: boolean }]
-  'draft-change': [filters: { provider: string; group: string; billing: string }]
+  apply: [filters: { provider: string; group: string; billing: string; capability: string; showEffectivePrices: boolean }]
+  'draft-change': [filters: { provider: string; group: string; billing: string; capability: string }]
 }>()
 
 const { t } = useI18n()
@@ -190,12 +220,13 @@ const sheetPanel = ref<HTMLElement | null>(null)
 const draftProvider = ref('all')
 const draftGroup = ref('all')
 const draftBilling = ref('all')
+const draftCapability = ref('all')
 const draftShowEffectivePrices = ref(true)
 const titleId = `model-marketplace-filters-${Math.random().toString(36).slice(2)}`
 let previousFocus: HTMLElement | null = null
 let previousBodyOverflow = ''
 
-const selectedCount = computed(() => [draftProvider.value, draftGroup.value, draftBilling.value].filter(value => value !== 'all').length)
+const selectedCount = computed(() => [draftProvider.value, draftGroup.value, draftBilling.value, draftCapability.value].filter(value => value !== 'all').length)
 
 function formatRate(value: number) { return Number(value.toFixed(4)).toString() }
 
@@ -203,6 +234,7 @@ function resetDraft() {
   draftProvider.value = 'all'
   draftGroup.value = 'all'
   draftBilling.value = 'all'
+  draftCapability.value = 'all'
   draftShowEffectivePrices.value = true
 }
 
@@ -211,6 +243,7 @@ function applyDraft() {
     provider: draftProvider.value,
     group: draftGroup.value,
     billing: draftBilling.value,
+    capability: draftCapability.value,
     showEffectivePrices: draftShowEffectivePrices.value,
   })
 }
@@ -237,8 +270,8 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-watch([draftProvider, draftGroup, draftBilling], () => {
-  emit('draft-change', { provider: draftProvider.value, group: draftGroup.value, billing: draftBilling.value })
+watch([draftProvider, draftGroup, draftBilling, draftCapability], () => {
+  emit('draft-change', { provider: draftProvider.value, group: draftGroup.value, billing: draftBilling.value, capability: draftCapability.value })
 })
 
 watch(() => props.open, async (open) => {
@@ -246,6 +279,7 @@ watch(() => props.open, async (open) => {
     draftProvider.value = props.selectedProvider
     draftGroup.value = props.selectedGroup
     draftBilling.value = props.selectedBilling
+    draftCapability.value = props.selectedCapability
     draftShowEffectivePrices.value = props.showEffectivePrices
     previousFocus = document.activeElement as HTMLElement
     previousBodyOverflow = document.body.style.overflow

@@ -6,6 +6,8 @@ import {
   billingCategory,
   compareMarketplaceDisplayOrder,
   effectiveRateForEntry,
+  inferMarketplaceModelCapabilities,
+  recentMonitorStatuses,
   realtimeRate,
   scaledPrice,
   sortedEntryGroups,
@@ -111,5 +113,38 @@ describe('model marketplace data', () => {
     expect(billingCategory(tokenPricing ? { ...tokenPricing, billing_mode: 'image' } : null)).toBe('request')
     expect(billingCategory(tokenPricing ? { ...tokenPricing, billing_mode: 'per_request' } : null)).toBe('request')
     expect(billingCategory(null)).toBe('unpriced')
+  })
+
+  it('derives conservative capability markers from model metadata', () => {
+    const pricing = platforms[0].supported_models[0].pricing
+    expect(inferMarketplaceModelCapabilities({ name: 'gpt-5-codex-mini', platform: 'openai', pricing })).toEqual([
+      'chat',
+      'tools',
+      'vision',
+      'coding',
+      'fast',
+    ])
+    expect(inferMarketplaceModelCapabilities({
+      name: 'gpt-image-2',
+      platform: 'openai',
+      pricing: pricing ? { ...pricing, billing_mode: 'image' } : null,
+    })).toEqual(['image'])
+    expect(inferMarketplaceModelCapabilities({ name: 'deepseek-r1', platform: 'deepseek', pricing })).toEqual([
+      'chat',
+      'tools',
+      'reasoning',
+    ])
+  })
+
+  it('builds a three-point compact monitor signal from the latest checks', () => {
+    const points = [
+      { status: 'failed' as const, latency_ms: 300, checked_at: '2026-07-16T03:00:00Z' },
+      { status: 'degraded' as const, latency_ms: 200, checked_at: '2026-07-16T02:00:00Z' },
+      { status: 'operational' as const, latency_ms: 100, checked_at: '2026-07-16T01:00:00Z' },
+      { status: 'operational' as const, latency_ms: 90, checked_at: '2026-07-16T00:00:00Z' },
+    ]
+    expect(recentMonitorStatuses(points)).toEqual(['operational', 'degraded', 'failed'])
+    expect(recentMonitorStatuses(points.slice(0, 1))).toEqual(['', '', 'failed'])
+    expect(recentMonitorStatuses([], 3, 'operational')).toEqual(['', '', 'operational'])
   })
 })

@@ -194,34 +194,39 @@
               :aria-labelledby="`showcase-tab-${activeShowcasePlatform.platform}`"
             >
               <article class="showcase-featured">
-                <div class="featured-provider-line">
-                  <span>{{ showcaseProviderLabel(activeShowcasePlatform.platform) }}</span>
-                  <span>{{ activeShowcasePlatform.model_count }} 个模型可供选择</span>
+                <div class="featured-overview">
+                  <div class="featured-provider-line">
+                    <span>FEATURED MODEL</span>
+                    <span>{{ showcaseProviderLabel(activeShowcasePlatform.platform) }} / {{ activeShowcasePlatform.model_count }} MODELS</span>
+                  </div>
+                  <div class="featured-model-title">
+                    <h4>{{ featuredShowcaseModel.name }}</h4>
+                    <button
+                      class="showcase-copy-button"
+                      type="button"
+                      :aria-label="`复制模型名称 ${featuredShowcaseModel.name}`"
+                      title="复制模型名称"
+                      @click="copyShowcaseModel(featuredShowcaseModel.name)"
+                    >
+                      <Icon name="copy" size="sm" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <p class="featured-trait">{{ showcaseModelTrait(featuredShowcaseModel) }}</p>
+                  <div class="featured-meta-line">
+                    <div class="featured-status" :class="showcaseStatusClass(featuredShowcaseModel.monitor_status?.status)">
+                      <span aria-hidden="true"></span>
+                      {{ showcaseStatusLabel(featuredShowcaseModel.monitor_status?.status) }}
+                      <small v-if="featuredShowcaseModel.monitor_status?.availability_7d != null">
+                        7D {{ featuredShowcaseModel.monitor_status.availability_7d.toFixed(2) }}%
+                      </small>
+                    </div>
+                    <span v-if="featuredShowcaseModel.monitor_status?.label" class="model-label">
+                      {{ featuredShowcaseModel.monitor_status.label }}
+                    </span>
+                    <span class="featured-rate">RATE {{ formatShowcaseRate(featuredShowcaseModel.rate_multiplier) }}×</span>
+                  </div>
                 </div>
-                <div class="featured-model-title">
-                  <h4>{{ featuredShowcaseModel.name }}</h4>
-                  <span v-if="featuredShowcaseModel.monitor_status?.label" class="model-label">
-                    {{ featuredShowcaseModel.monitor_status.label }}
-                  </span>
-                  <button
-                    class="showcase-copy-button"
-                    type="button"
-                    :aria-label="`复制模型名称 ${featuredShowcaseModel.name}`"
-                    title="复制模型名称"
-                    @click="copyShowcaseModel(featuredShowcaseModel.name)"
-                  >
-                    <Icon name="copy" size="sm" aria-hidden="true" />
-                  </button>
-                </div>
-                <p class="featured-trait">{{ showcaseModelTrait(featuredShowcaseModel) }}</p>
-                <div class="featured-status" :class="showcaseStatusClass(featuredShowcaseModel.monitor_status?.status)">
-                  <span aria-hidden="true"></span>
-                  {{ showcaseStatusLabel(featuredShowcaseModel.monitor_status?.status) }}
-                  <small v-if="featuredShowcaseModel.monitor_status?.availability_7d != null">
-                    近 7 天 {{ featuredShowcaseModel.monitor_status.availability_7d.toFixed(2) }}%
-                  </small>
-                </div>
-                <div class="featured-monitor-history">
+                <div v-if="hasShowcaseTimeline(featuredShowcaseModel)" class="featured-monitor-history">
                   <div class="featured-monitor-heading">
                     <span>最近监测</span>
                     <small>{{ showcaseHistoryLabel(featuredShowcaseModel) }}</small>
@@ -231,25 +236,36 @@
                     :limit="30"
                   />
                 </div>
-                <div class="featured-prices">
-                  <div v-for="price in showcasePriceRows(featuredShowcaseModel)" :key="price.key">
-                    <span>{{ price.label }}</span>
-                    <strong>{{ price.value }}</strong>
-                    <small>{{ price.unit }}</small>
+                <div class="featured-billing">
+                  <div class="featured-billing-heading">
+                    <span>参考计费</span>
+                    <small>已计入公开倍率</small>
                   </div>
-                  <div v-if="showcasePriceRows(featuredShowcaseModel).length === 0" class="price-unavailable">
-                    <span>计费信息</span>
-                    <strong>查看定价</strong>
+                  <div class="featured-prices">
+                    <div v-for="price in showcasePriceRows(featuredShowcaseModel)" :key="price.key">
+                      <span>{{ price.label }}</span>
+                      <strong>{{ price.value }}</strong>
+                      <small>{{ price.unit }}</small>
+                    </div>
+                    <div v-if="showcasePriceRows(featuredShowcaseModel).length === 0" class="price-unavailable">
+                      <span>计费信息</span>
+                      <strong>查看定价</strong>
+                    </div>
                   </div>
                 </div>
                 <div class="featured-footer">
-                  <span>公开参考倍率 {{ formatShowcaseRate(featuredShowcaseModel.rate_multiplier) }}x</span>
+                  <span>价格仅作公开目录参考</span>
                   <RouterLink to="/model-marketplace">查看模型详情 <Icon name="arrowRight" size="sm" aria-hidden="true" /></RouterLink>
                 </div>
               </article>
 
               <div class="showcase-model-list" aria-label="更多代表模型">
-                <article v-for="model in secondaryShowcaseModels" :key="model.name" class="showcase-model-row">
+                <div class="showcase-list-heading">
+                  <span>同厂商模型</span>
+                  <small>MODEL / STATUS / PRICE</small>
+                </div>
+                <article v-for="(model, index) in secondaryShowcaseModels" :key="model.name" class="showcase-model-row">
+                  <span class="showcase-row-index">{{ String(index + 2).padStart(2, '0') }}</span>
                   <div class="showcase-row-main">
                     <div class="showcase-row-title">
                       <RouterLink to="/model-marketplace">{{ model.name }}</RouterLink>
@@ -266,12 +282,17 @@
                     </div>
                     <p>{{ showcaseModelTrait(model) }}</p>
                   </div>
-                  <div class="showcase-row-price">
-                    <span>{{ showcasePrimaryPrice(model).label }}</span>
-                    <strong>{{ showcasePrimaryPrice(model).value }}</strong>
-                    <small>{{ showcasePrimaryPrice(model).unit }}</small>
+                  <div class="showcase-row-meta">
+                    <div class="showcase-row-availability" :class="showcaseStatusClass(model.monitor_status?.status)">
+                      <span class="showcase-row-status" aria-hidden="true"></span>
+                      {{ showcaseStatusLabel(model.monitor_status?.status) }}
+                    </div>
+                    <div class="showcase-row-price">
+                      <span>{{ showcasePrimaryPrice(model).label }}</span>
+                      <strong>{{ showcasePrimaryPrice(model).value }}</strong>
+                      <small>{{ showcasePrimaryPrice(model).unit }}</small>
+                    </div>
                   </div>
-                  <span class="showcase-row-status" :class="showcaseStatusClass(model.monitor_status?.status)" :title="showcaseStatusLabel(model.monitor_status?.status)"></span>
                 </article>
                 <RouterLink v-if="remainingShowcaseCount > 0" class="showcase-more-row" to="/model-marketplace">
                   还有 {{ remainingShowcaseCount }} 个 {{ showcaseProviderLabel(activeShowcasePlatform.platform) }} 模型
@@ -1057,6 +1078,10 @@ function showcaseStatusClass(status?: string): string {
 function showcaseHistoryLabel(model: HomeShowcaseModel): string {
   const count = model.monitor_status?.timeline?.length ?? 0
   return count > 0 ? `最近 ${Math.min(count, 30)} 次` : '暂无监测历史'
+}
+
+function hasShowcaseTimeline(model: HomeShowcaseModel): boolean {
+  return (model.monitor_status?.timeline?.length ?? 0) > 0
 }
 
 async function copyShowcaseModel(name: string) {
@@ -2359,21 +2384,21 @@ onUnmounted(() => {
   border: 1px solid var(--border);
   border-bottom: 0;
   border-radius: 8px 8px 0 0;
-  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  background: var(--surface-raised);
   scrollbar-width: none;
 }
 .showcase-provider-tabs::-webkit-scrollbar { display: none; }
 .showcase-provider-tabs button {
   position: relative;
   display: inline-flex;
-  min-width: 152px;
-  min-height: 62px;
+  min-width: 138px;
+  min-height: 52px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 9px;
   border: 0;
   border-right: 1px solid var(--border);
-  padding: 0 22px;
+  padding: 0 16px;
   background: transparent;
   color: var(--muted-foreground);
   font: inherit;
@@ -2383,28 +2408,30 @@ onUnmounted(() => {
 }
 .showcase-provider-tabs button::after {
   position: absolute;
-  right: 20px;
+  right: 0;
   bottom: -1px;
-  left: 20px;
+  left: 0;
   height: 2px;
   background: transparent;
   content: "";
 }
 .showcase-provider-tabs button:hover { color: var(--foreground); background: var(--muted); }
-.showcase-provider-tabs button.active { color: var(--foreground); background: var(--surface-raised); }
+.showcase-provider-tabs button.active { color: var(--foreground); background: var(--muted); }
 .showcase-provider-tabs button.active::after { background: var(--foreground); }
 .showcase-provider-tabs button small {
   min-width: 22px;
+  margin-left: auto;
   color: var(--muted-foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
+  text-align: right;
 }
 .showcase-stage {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr);
-  min-height: 430px;
+  grid-template-columns: minmax(0, 1.06fr) minmax(390px, .94fr);
   overflow: hidden;
   border: 1px solid var(--border);
+  border-top: 0;
   border-radius: 0 0 8px 8px;
   background: var(--surface-raised);
   box-shadow: var(--soft-shadow);
@@ -2413,17 +2440,18 @@ onUnmounted(() => {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  padding: clamp(30px, 4vw, 52px);
-  background: color-mix(in srgb, var(--muted) 42%, var(--surface-raised));
+  padding: clamp(26px, 3vw, 36px);
+  background: var(--surface-raised);
 }
 .featured-provider-line {
   display: flex;
   justify-content: space-between;
   gap: 20px;
   color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
   font-weight: 780;
-  letter-spacing: .08em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 .featured-model-title,
@@ -2433,13 +2461,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 9px;
 }
-.featured-model-title { margin-top: 38px; }
+.featured-model-title { margin-top: 26px; }
 .featured-model-title h4 {
   min-width: 0;
   margin: 0;
   color: var(--foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: clamp(27px, 3vw, 42px);
+  font-size: clamp(28px, 3vw, 38px);
   font-weight: 820;
   letter-spacing: 0;
   overflow-wrap: anywhere;
@@ -2474,16 +2502,23 @@ onUnmounted(() => {
 .showcase-copy-button:hover,
 .showcase-copy-button:focus-visible { border-color: var(--border-strong); color: var(--foreground); opacity: 1; }
 .featured-trait {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   color: var(--muted-foreground);
   font-size: 14px;
+}
+.featured-meta-line {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 22px;
 }
 .featured-status {
   display: inline-flex;
   width: max-content;
   align-items: center;
   gap: 7px;
-  margin-top: 24px;
   color: var(--muted-foreground);
   font-size: 12px;
   font-weight: 700;
@@ -2498,13 +2533,26 @@ onUnmounted(() => {
 }
 .featured-status small { margin-left: 5px; color: var(--muted-foreground); font-weight: 500; }
 .is-operational > span,
-.showcase-row-status.is-operational { background: #16a34a; }
+.showcase-row-availability.is-operational .showcase-row-status { background: #16a34a; }
 .is-degraded > span,
-.showcase-row-status.is-degraded { background: #d97706; }
+.showcase-row-availability.is-degraded .showcase-row-status { background: #d97706; }
 .is-failed > span,
-.showcase-row-status.is-failed { background: #dc2626; }
+.showcase-row-availability.is-failed .showcase-row-status { background: #dc2626; }
+.featured-rate {
+  min-height: 24px;
+  margin-left: auto;
+  border-left: 1px solid var(--border);
+  padding-left: 14px;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 24px;
+}
 .featured-monitor-history {
-  margin-top: 18px;
+  margin-top: 22px;
+  border-top: 1px solid var(--border);
+  padding-top: 17px;
 }
 .featured-monitor-heading {
   display: flex;
@@ -2522,24 +2570,37 @@ onUnmounted(() => {
 }
 .featured-monitor-history :deep([role="list"]) {
   border-color: var(--border);
-  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  background: var(--surface-raised);
   box-shadow: none;
+}
+.featured-billing { margin-top: 24px; }
+.featured-billing-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 760;
+}
+.featured-billing-heading small {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 540;
 }
 .featured-prices {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  margin-top: auto;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 .featured-prices > div {
   min-width: 0;
-  padding: 20px 18px 18px 0;
-  background: color-mix(in srgb, var(--muted) 42%, var(--surface-raised));
+  padding: 16px 18px;
+  background: transparent;
 }
-.featured-prices > div + div { padding-left: 22px; }
+.featured-prices > div + div { border-left: 1px solid var(--border); }
 .featured-prices span,
 .showcase-row-price span {
   display: block;
@@ -2554,7 +2615,7 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
 }
-.featured-prices strong { display: inline-block; margin-top: 7px; font-size: 23px; }
+.featured-prices strong { display: inline-block; margin-top: 6px; font-size: 21px; }
 .featured-prices small,
 .showcase-row-price small { margin-left: 5px; color: var(--muted-foreground); font-size: 11px; }
 .featured-footer {
@@ -2562,7 +2623,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-top: 18px;
+  margin-top: 16px;
   color: var(--muted-foreground);
   font-size: 11px;
 }
@@ -2571,19 +2632,46 @@ onUnmounted(() => {
   min-width: 0;
   flex-direction: column;
   border-left: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 24%, var(--surface-raised));
+}
+.showcase-list-heading {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 780;
+}
+.showcase-list-heading small {
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 560;
+  letter-spacing: 0;
 }
 .showcase-model-row {
   position: relative;
   display: grid;
-  min-height: 110px;
-  grid-template-columns: minmax(0, 1fr) auto 8px;
+  min-height: 112px;
+  grid-template-columns: 28px minmax(0, 1fr) minmax(118px, auto);
   align-items: center;
-  gap: 22px;
+  gap: 16px;
   border-bottom: 1px solid var(--border);
-  padding: 20px 24px;
+  padding: 18px 24px;
   transition: background-color 180ms ease;
 }
-.showcase-model-row:hover { background: var(--muted); }
+.showcase-model-row:hover { background: var(--surface-raised); }
+.showcase-row-index {
+  align-self: start;
+  padding-top: 5px;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+}
 .showcase-row-main { min-width: 0; }
 .showcase-row-title a {
   min-width: 0;
@@ -2600,6 +2688,21 @@ onUnmounted(() => {
   color: var(--muted-foreground);
   font-size: 12px;
 }
+.showcase-row-meta {
+  display: flex;
+  min-width: 118px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.showcase-row-availability {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 650;
+}
 .showcase-row-price { min-width: 96px; text-align: right; }
 .showcase-row-price strong { display: inline-block; margin-top: 5px; font-size: 14px; }
 .showcase-more-row {
@@ -2607,7 +2710,7 @@ onUnmounted(() => {
   justify-content: space-between;
   margin-top: auto;
   padding: 0 24px;
-  background: color-mix(in srgb, var(--muted) 44%, transparent);
+  background: transparent;
 }
 
 .tabs {
@@ -2875,7 +2978,6 @@ onUnmounted(() => {
   .section-title.align-left { text-align: center; margin: 0 auto 30px; }
   .showcase-stage { grid-template-columns: 1fr; }
   .showcase-model-list { border-top: 1px solid var(--border); border-left: 0; }
-  .showcase-featured { min-height: 390px; }
 }
 
 @media (max-width: 620px) {
@@ -2933,27 +3035,29 @@ onUnmounted(() => {
   .showcase-all-link { min-height: 34px; }
   .showcase-loading { min-height: 360px; grid-template-columns: 1fr; }
   .showcase-loading span:not(:first-child) { display: none; }
-  .showcase-provider-tabs button { min-width: 128px; min-height: 56px; padding: 0 16px; }
-  .showcase-featured { min-height: 370px; padding: 24px 20px; }
+  .showcase-provider-tabs button { min-width: 124px; min-height: 50px; padding: 0 14px; }
+  .showcase-featured { padding: 22px 18px; }
   .featured-provider-line { align-items: flex-start; flex-direction: column; gap: 5px; }
-  .featured-model-title { align-items: flex-start; flex-wrap: wrap; margin-top: 26px; }
-  .featured-model-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .featured-provider-line span:last-child { font-size: 10px; }
+  .featured-model-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: flex-start; margin-top: 22px; }
   .featured-model-title h4 { width: auto; font-size: 27px; }
-  .featured-model-title .model-label { grid-column: 1; justify-self: start; }
   .featured-model-title .showcase-copy-button { grid-column: 2; grid-row: 1; }
+  .featured-meta-line { align-items: flex-start; }
   .featured-status { flex-wrap: wrap; }
-  .featured-prices { margin-top: 30px; }
-  .featured-prices > div { padding: 16px 12px 15px 0; }
-  .featured-prices > div + div { padding-left: 14px; }
+  .featured-rate { width: 100%; margin-left: 0; border-left: 0; padding-left: 0; }
+  .featured-billing { margin-top: 22px; }
+  .featured-prices > div { padding: 14px 12px; }
   .featured-prices strong { font-size: 19px; }
   .featured-footer { align-items: flex-start; flex-direction: column; gap: 10px; }
-  .showcase-model-row { min-height: 116px; grid-template-columns: minmax(0, 1fr) 8px; gap: 8px 14px; padding: 18px 20px; }
-  .showcase-row-main { grid-column: 1; }
-  .showcase-row-status { grid-column: 2; grid-row: 1; }
-  .showcase-row-price { grid-column: 1; min-width: 0; text-align: left; }
+  .showcase-list-heading { min-height: 46px; padding: 0 18px; }
+  .showcase-model-row { min-height: 128px; grid-template-columns: 24px minmax(0, 1fr); gap: 8px 12px; padding: 17px 18px; }
+  .showcase-row-index { grid-column: 1; grid-row: 1 / span 2; }
+  .showcase-row-main { grid-column: 2; }
+  .showcase-row-meta { grid-column: 2; align-items: flex-start; flex-direction: row; justify-content: space-between; gap: 12px; }
+  .showcase-row-price { min-width: 0; text-align: right; }
   .showcase-row-price span { display: inline; margin-right: 8px; }
   .showcase-row-price strong { margin-top: 0; }
-  .showcase-more-row { min-height: 58px; padding: 0 20px; }
+  .showcase-more-row { min-height: 58px; padding: 0 18px; }
   .tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
   .section { padding: 64px 12px; }
   .band-light { padding-top: 10px; }

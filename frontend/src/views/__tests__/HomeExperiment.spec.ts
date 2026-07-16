@@ -136,11 +136,16 @@ describe('HomeExperiment', () => {
     expect(wrapper.get('.featured-status').text()).toContain('状态正常')
     expect(wrapper.get('.featured-monitor-heading').text()).toContain('最近 2 次')
     expect(wrapper.findAll('.featured-monitor-history [role="listitem"]')).toHaveLength(2)
+    expect(wrapper.get('.featured-billing-heading').text()).toContain('已计入公开倍率')
+    expect(wrapper.get('.showcase-list-heading').text()).toContain('同厂商模型')
+    expect(wrapper.get('.showcase-model-row').text()).toContain('02')
+    expect(wrapper.get('.showcase-row-availability').text()).toContain('状态待检测')
 
     const providerTabs = wrapper.findAll('.showcase-provider-tabs [role="tab"]')
     expect(providerTabs).toHaveLength(2)
     await providerTabs[1].trigger('click')
     expect(wrapper.get('.featured-model-title').text()).toContain('claude-featured')
+    expect(wrapper.find('.featured-monitor-history').exists()).toBe(false)
     wrapper.unmount()
   })
 

@@ -1,6 +1,7 @@
 import type {
   UserAvailableGroup,
   UserMarketplacePlatform,
+  UserModelMonitorTimelinePoint,
   UserSupportedModelPricing,
   UserModelMonitorSummary,
 } from '@/api/channels'
@@ -21,12 +22,52 @@ export interface MarketplaceGroupOption extends UserAvailableGroup {
 }
 
 export type MarketplaceBillingCategory = 'usage' | 'request' | 'unpriced'
+export type MarketplaceModelCapability = 'chat' | 'tools' | 'vision' | 'image' | 'reasoning' | 'coding' | 'fast'
+export type MarketplaceMonitorSignalStatus = UserModelMonitorTimelinePoint['status'] | ''
 
 export const DEFAULT_USD_TO_CNY_RATE = 7.2
 
 export function billingCategory(pricing: UserSupportedModelPricing | null): MarketplaceBillingCategory {
   if (!pricing) return 'unpriced'
   return pricing.billing_mode === 'token' ? 'usage' : 'request'
+}
+
+export function inferMarketplaceModelCapabilities(
+  entry: Pick<MarketplaceModelEntry, 'name' | 'platform' | 'pricing'>,
+): MarketplaceModelCapability[] {
+  const name = entry.name.toLowerCase()
+  const platform = entry.platform.toLowerCase()
+  const imageModel = entry.pricing?.billing_mode === 'image' || /(image|imagine|dall-e|flux|midjourney|video)/.test(name)
+  const capabilities: MarketplaceModelCapability[] = [imageModel ? 'image' : 'chat']
+
+  if (!imageModel && /^(openai|anthropic|gemini|vertex|bedrock|azure|deepseek|dashscope)$/.test(platform)) {
+    capabilities.push('tools')
+  }
+  if (/(vision|multimodal|omni|gpt-4o|gpt-5|gemini|qwen.*vl|claude-(3|4|sonnet|opus))/.test(name)) {
+    capabilities.push('vision')
+  }
+  if (/(reason|thinking|deepseek-r1|(^|[-_.])o[134]([-_.]|$)|opus|pro|max)/.test(name)) {
+    capabilities.push('reasoning')
+  }
+  if (/(code|codex|coder|devstral)/.test(name)) capabilities.push('coding')
+  if (/(flash|mini|haiku|lite|turbo)/.test(name)) capabilities.push('fast')
+
+  return [...new Set(capabilities)]
+}
+
+export function recentMonitorStatuses(
+  points: UserModelMonitorTimelinePoint[] | null | undefined,
+  limit = 3,
+  fallbackStatus: MarketplaceMonitorSignalStatus = '',
+): MarketplaceMonitorSignalStatus[] {
+  const safeLimit = Math.max(0, Math.floor(limit))
+  const recent = [...(points ?? [])]
+    .slice(0, safeLimit)
+    .reverse()
+    .map(point => point.status)
+  if (recent.length === 0 && safeLimit > 0 && fallbackStatus) recent.push(fallbackStatus)
+  const empty = Array<MarketplaceMonitorSignalStatus>(Math.max(0, safeLimit - recent.length)).fill('')
+  return [...empty, ...recent]
 }
 
 export function buildMarketplaceEntries(platforms: UserMarketplacePlatform[]): MarketplaceModelEntry[] {
