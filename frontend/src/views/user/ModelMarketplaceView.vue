@@ -290,7 +290,7 @@
                 <div class="flex items-center justify-end gap-1">
                   <button
                     type="button"
-                    class="btn-ghost btn-icon h-6 w-6 shrink-0"
+                    class="inline-flex h-6 w-6 shrink-0 items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-black focus-visible:-translate-y-px focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
                     :title="t('modelMarketplace.copyModel')"
                     :aria-label="t('modelMarketplace.copyModel')"
                     @click.stop="copyModel(entry.name)"
@@ -299,7 +299,7 @@
                   </button>
                   <button
                     type="button"
-                    class="btn-ghost btn-icon h-6 w-6 shrink-0"
+                    class="inline-flex h-6 w-6 shrink-0 items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-black focus-visible:-translate-y-px focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
                     :title="t('modelMarketplace.details.open', { model: entry.name })"
                     :aria-label="t('modelMarketplace.details.open', { model: entry.name })"
                     @click.stop="openDetails(entry)"
@@ -320,11 +320,17 @@
                   <span
                     v-for="capability in cardCapabilityBadges(entry)"
                     :key="capability.key"
-                    class="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center transition-colors group-hover/card:text-foreground"
-                    :title="capability.label"
+                    class="group/capability relative inline-flex h-5 w-5 shrink-0 cursor-help items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-black focus-visible:-translate-y-px focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
+                    tabindex="0"
                     :aria-label="capability.label"
+                    :aria-describedby="`capability-${entry.key}-${capability.key}`"
                   >
                     <Icon :name="capability.icon" size="xs" aria-hidden="true" />
+                    <span
+                      :id="`capability-${entry.key}-${capability.key}`"
+                      class="marketplace-capability-tooltip"
+                      role="tooltip"
+                    >{{ capability.label }}</span>
                   </span>
                   </span>
                 </div>
@@ -381,7 +387,7 @@
                     :key="group.id"
                     type="button"
                     class="inline-flex h-6 shrink-0 items-center gap-1 rounded-control border px-2 text-[9px] transition-colors"
-                    :class="group.id === activeEntryGroup(entry)?.id ? 'border-brand/30 bg-brand-subtle text-brand' : 'border-outline bg-surface text-foreground-muted hover:border-outline-strong hover:text-foreground'"
+                    :class="group.id === activeEntryGroup(entry)?.id ? 'border-black bg-black text-white' : 'border-outline bg-surface text-foreground-muted hover:border-outline-strong hover:text-foreground'"
                     :title="`${group.name} · ×${formatRate(group.effectiveRate)}`"
                     @click.stop="selectEntryGroup(entry, group.id)"
                   >
@@ -487,6 +493,7 @@ import {
   buildMarketplaceEntries,
   buildMarketplaceGroups,
   compareMarketplaceDisplayOrder,
+  compareMarketplaceProviders,
   DEFAULT_USD_TO_CNY_RATE,
   effectiveRateForEntry,
   inferMarketplaceModelCapabilities,
@@ -546,7 +553,7 @@ const providers = computed(() => {
   for (const entry of entries.value) counts.set(entry.platform, (counts.get(entry.platform) ?? 0) + 1)
   return [...counts.entries()]
     .map(([value, count]) => ({ value, count, label: providerLabel(value) }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .sort((a, b) => compareMarketplaceProviders(a.value, b.value) || a.label.localeCompare(b.label))
 })
 
 const billingOptions = computed(() => {
@@ -629,6 +636,8 @@ const filteredEntries = computed(() => {
   })
 
   return result.sort((a, b) => {
+    const byProvider = compareMarketplaceProviders(a.platform, b.platform)
+    if (byProvider !== 0) return byProvider
     const byDisplayOrder = compareMarketplaceDisplayOrder(a, b)
     if (byDisplayOrder !== 0) return byDisplayOrder
     if (sortMode.value === 'price') {
@@ -715,8 +724,7 @@ function selectEntryGroup(entry: MarketplaceModelEntry, groupId: number) {
 function cardGroups(entry: MarketplaceModelEntry) {
   const sorted = sortedEntryGroups(entry, userGroupRates.value)
   if (selectedGroupId.value != null) return sorted.filter(group => group.id === selectedGroupId.value)
-  const active = activeEntryGroup(entry)
-  return active ? [active, ...sorted.filter(group => group.id !== active.id)] : sorted
+  return sorted
 }
 
 function cardPrice(value: number | null, scale: number, entry: MarketplaceModelEntry) {
@@ -934,6 +942,45 @@ onBeforeUnmount(() => loadMoreObserver?.disconnect())
   opacity: 0;
   transform: translateY(4px);
   transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+}
+
+.marketplace-capability-tooltip {
+  position: absolute;
+  z-index: 30;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  visibility: hidden;
+  border-radius: var(--radius-xs);
+  background: #000;
+  box-shadow: var(--shadow-floating);
+  padding: 4px 7px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+}
+
+.marketplace-capability-tooltip::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  border: 4px solid transparent;
+  border-top-color: #000;
+  content: '';
+  transform: translateX(-50%);
+}
+
+.group\/capability:hover .marketplace-capability-tooltip,
+.group\/capability:focus .marketplace-capability-tooltip,
+.group\/capability:focus-within .marketplace-capability-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .marketplace-card-groups {

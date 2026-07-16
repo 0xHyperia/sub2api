@@ -5,6 +5,7 @@ import {
   buildMarketplaceGroups,
   billingCategory,
   compareMarketplaceDisplayOrder,
+  compareMarketplaceProviders,
   effectiveRateForEntry,
   inferMarketplaceModelCapabilities,
   recentMonitorStatuses,
@@ -84,6 +85,16 @@ describe('model marketplace data', () => {
     const regular = { ...featured, key: 'openai::regular', name: 'regular', displayOrder: 0, label: '' }
     expect(featured).toMatchObject({ displayOrder: 100, label: 'New' })
     expect([regular, featured].sort(compareMarketplaceDisplayOrder).map(entry => entry.name)).toEqual(['gpt-test', 'regular'])
+  })
+
+  it('prioritizes OpenAI, Anthropic, and Gemini providers in that order', () => {
+    expect(['vertex', 'gemini', 'anthropic', 'openai', 'azure'].sort(compareMarketplaceProviders)).toEqual([
+      'openai',
+      'anthropic',
+      'gemini',
+      'azure',
+      'vertex',
+    ])
   })
 
   it('uses user-specific rates and the lowest accessible rate by default', () => {

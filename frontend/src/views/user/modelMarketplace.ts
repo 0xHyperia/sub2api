@@ -26,6 +26,7 @@ export type MarketplaceModelCapability = 'chat' | 'tools' | 'vision' | 'image' |
 export type MarketplaceMonitorSignalStatus = UserModelMonitorTimelinePoint['status'] | ''
 
 export const DEFAULT_USD_TO_CNY_RATE = 7.2
+const MARKETPLACE_PROVIDER_PRIORITY = ['openai', 'anthropic', 'gemini'] as const
 
 export function billingCategory(pricing: UserSupportedModelPricing | null): MarketplaceBillingCategory {
   if (!pricing) return 'unpriced'
@@ -110,6 +111,14 @@ export function compareMarketplaceGroups(a: MarketplaceGroupOption, b: Marketpla
 
 export function compareMarketplaceDisplayOrder(a: MarketplaceModelEntry, b: MarketplaceModelEntry): number {
   return b.displayOrder - a.displayOrder
+}
+
+export function compareMarketplaceProviders(a: string, b: string): number {
+  const aPriority = MARKETPLACE_PROVIDER_PRIORITY.indexOf(a.toLowerCase() as typeof MARKETPLACE_PROVIDER_PRIORITY[number])
+  const bPriority = MARKETPLACE_PROVIDER_PRIORITY.indexOf(b.toLowerCase() as typeof MARKETPLACE_PROVIDER_PRIORITY[number])
+  const normalizedAPriority = aPriority === -1 ? MARKETPLACE_PROVIDER_PRIORITY.length : aPriority
+  const normalizedBPriority = bPriority === -1 ? MARKETPLACE_PROVIDER_PRIORITY.length : bPriority
+  return normalizedAPriority - normalizedBPriority || a.localeCompare(b)
 }
 
 export function sortedEntryGroups(entry: MarketplaceModelEntry, userGroupRates: Record<number, number>): MarketplaceGroupOption[] {
