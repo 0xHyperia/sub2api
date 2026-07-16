@@ -42,26 +42,6 @@
               <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(paidOrder.pay_amount, paidOrder.currency) }}</dd>
             </div>
           </dl>
-          <div v-if="displayedCardCodes.length" class="w-full rounded-panel border border-outline bg-surface-subtle p-4">
-            <div class="mb-2 flex items-center justify-between gap-3">
-              <div>
-                <span class="text-sm font-medium text-foreground">{{ cardCodesTitle }}</span>
-                <p v-if="cardCodesHint" class="mt-0.5 text-xs text-foreground-subtle">{{ cardCodesHint }}</p>
-              </div>
-              <button class="btn btn-secondary btn-sm" type="button" @click="copyCardCodes">
-                {{ t('common.copy') }}
-              </button>
-            </div>
-            <div class="space-y-2">
-              <code
-                v-for="code in displayedCardCodes"
-                :key="code"
-                class="block break-all rounded-control border border-outline bg-surface px-3 py-2 text-sm text-foreground"
-              >
-                {{ code }}
-              </code>
-            </div>
-          </div>
           <button type="button" class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
         </div>
       </div>
@@ -212,9 +192,7 @@ const VERIFY_RETRY_MAX_ATTEMPTS = 6
 
 const isAlipay = computed(() => isBuiltInAlipayMethod(props.paymentType))
 const isWxpay = computed(() => isBuiltInWxpayMethod(props.paymentType))
-const shouldVerifyPendingOrder = computed(() => {
-  return isWxpay.value || props.orderType === 'card' || props.paymentType === 'ldxp'
-})
+const shouldVerifyPendingOrder = computed(() => isWxpay.value)
 
 const qrBorderClass = computed(() => {
   if (isAlipay.value) return 'border-[#00AEEF] border-[#00AEEF]/70 bg-info-subtle'
@@ -246,29 +224,6 @@ const scanHint = computed(() => {
   return ''
 })
 
-const cardCodesTitle = computed(() => {
-  if (props.orderType === 'card' && paidOrder.value?.card_auto_redeem) {
-    return t('payment.card.redeemedCodes')
-  }
-  return t('payment.card.codes')
-})
-
-const cardCodesHint = computed(() => {
-  if (props.orderType !== 'card') return ''
-  if (paidOrder.value?.card_auto_redeem) {
-    return t('payment.card.redeemedCodesHint')
-  }
-  return t('payment.card.codesHint')
-})
-
-const displayedCardCodes = computed(() => {
-  if (!paidOrder.value) return []
-  if (paidOrder.value.card_auto_redeem && paidOrder.value.redeemed_card_codes?.length) {
-    return paidOrder.value.redeemed_card_codes
-  }
-  return paidOrder.value.card_codes || []
-})
-
 const countdownDisplay = computed(() => {
   const m = Math.floor(remainingSeconds.value / 60)
   const s = remainingSeconds.value % 60
@@ -296,13 +251,6 @@ function setOutcome(next: PaymentOutcome) {
   if (outcome.value === next) return
   outcome.value = next
   emit('settled', next)
-}
-
-async function copyCardCodes() {
-  const codes = displayedCardCodes.value
-  if (!codes.length || typeof navigator === 'undefined' || !navigator.clipboard) return
-  await navigator.clipboard.writeText(codes.join('\n'))
-  appStore.showSuccess(t('common.copied'))
 }
 
 async function renderQR() {

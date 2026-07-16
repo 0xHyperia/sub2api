@@ -127,20 +127,18 @@ type SystemSettings struct {
 	GoogleOAuthRedirectURL            string `json:"google_oauth_redirect_url"`
 	GoogleOAuthFrontendRedirectURL    string `json:"google_oauth_frontend_redirect_url"`
 
-	SiteName                    string           `json:"site_name"`
-	SiteLogo                    string           `json:"site_logo"`
-	SiteSubtitle                string           `json:"site_subtitle"`
-	APIBaseURL                  string           `json:"api_base_url"`
-	ContactInfo                 string           `json:"contact_info"`
-	DocURL                      string           `json:"doc_url"`
-	HomeContent                 string           `json:"home_content"`
-	HideCcsImportButton         bool             `json:"hide_ccs_import_button"`
-	PurchaseSubscriptionEnabled bool             `json:"purchase_subscription_enabled"`
-	PurchaseSubscriptionURL     string           `json:"purchase_subscription_url"`
-	TableDefaultPageSize        int              `json:"table_default_page_size"`
-	TablePageSizeOptions        []int            `json:"table_page_size_options"`
-	CustomMenuItems             []CustomMenuItem `json:"custom_menu_items"`
-	CustomEndpoints             []CustomEndpoint `json:"custom_endpoints"`
+	SiteName             string           `json:"site_name"`
+	SiteLogo             string           `json:"site_logo"`
+	SiteSubtitle         string           `json:"site_subtitle"`
+	APIBaseURL           string           `json:"api_base_url"`
+	ContactInfo          string           `json:"contact_info"`
+	DocURL               string           `json:"doc_url"`
+	HomeContent          string           `json:"home_content"`
+	HideCcsImportButton  bool             `json:"hide_ccs_import_button"`
+	TableDefaultPageSize int              `json:"table_default_page_size"`
+	TablePageSizeOptions []int            `json:"table_page_size_options"`
+	CustomMenuItems      []CustomMenuItem `json:"custom_menu_items"`
+	CustomEndpoints      []CustomEndpoint `json:"custom_endpoints"`
 
 	DefaultConcurrency           int                          `json:"default_concurrency"`
 	DefaultBalance               float64                      `json:"default_balance"`
@@ -235,7 +233,6 @@ type SystemSettings struct {
 	// Payment configuration
 	PaymentEnabled                   bool     `json:"payment_enabled"`
 	PaymentInstantEnabled            bool     `json:"payment_instant_enabled"`
-	PaymentCardEnabled               bool     `json:"payment_card_enabled"`
 	PaymentMinAmount                 float64  `json:"payment_min_amount"`
 	PaymentMaxAmount                 float64  `json:"payment_max_amount"`
 	PaymentDailyLimit                float64  `json:"payment_daily_limit"`
@@ -330,8 +327,6 @@ type PublicSettings struct {
 	DocURL                           string                   `json:"doc_url"`
 	HomeContent                      string                   `json:"home_content"`
 	HideCcsImportButton              bool                     `json:"hide_ccs_import_button"`
-	PurchaseSubscriptionEnabled      bool                     `json:"purchase_subscription_enabled"`
-	PurchaseSubscriptionURL          string                   `json:"purchase_subscription_url"`
 	TableDefaultPageSize             int                      `json:"table_default_page_size"`
 	TablePageSizeOptions             []int                    `json:"table_page_size_options"`
 	CustomMenuItems                  []CustomMenuItem         `json:"custom_menu_items"`
@@ -350,7 +345,6 @@ type PublicSettings struct {
 	BackendModeEnabled               bool                     `json:"backend_mode_enabled"`
 	PaymentEnabled                   bool                     `json:"payment_enabled"`
 	PaymentInstantEnabled            bool                     `json:"payment_instant_enabled"`
-	PaymentCardEnabled               bool                     `json:"payment_card_enabled"`
 	Version                          string                   `json:"version"`
 	// 服务器全局时区（IANA 名称与当前 UTC 偏移，如 "Asia/Shanghai" / "+08:00"）。
 	// 高峰时段等按服务器本地时间判定的窗口，前端展示时据此标注，避免用户按浏览器本地时间误读。

@@ -914,9 +914,9 @@ router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresPaymentOrders && appStore.publicSettingsLoaded) {
     const settings = appStore.cachedPublicSettings
     const paymentOrdersEnabled = settings?.payment_enabled === true &&
-      (settings.payment_instant_enabled !== false || settings.payment_card_enabled === true)
+      settings.payment_instant_enabled !== false
     if (!paymentOrdersEnabled) {
-      next('/purchase?tab=iframe')
+      next('/dashboard')
       return
     }
   }

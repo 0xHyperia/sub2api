@@ -299,11 +299,6 @@ func buildPaymentOrderProviderSnapshot(sel *payment.InstanceSelection, req Creat
 			snapshot["merchant_id"] = merchantID
 		}
 	}
-	if providerKey == payment.TypeLdxp {
-		if goodsKey := strings.TrimSpace(sel.Config["goodsKey"]); goodsKey != "" {
-			snapshot["merchant_id"] = goodsKey
-		}
-	}
 	if providerKey == payment.TypeStripe {
 		snapshot["currency"] = paymentProviderConfigCurrency(providerKey, sel.Config)
 	}
@@ -828,14 +823,6 @@ func (s *PaymentService) GetOrder(ctx context.Context, orderID, userID int64) (*
 	}
 	if o.UserID != userID {
 		return nil, infraerrors.Forbidden("FORBIDDEN", "no permission for this order")
-	}
-	if o.Status == OrderStatusPending && o.OrderType == payment.OrderTypeCard && o.PaymentType == payment.TypeLdxp {
-		if s.reconcilePaid(ctx, o) == checkPaidResultAlreadyPaid {
-			reloaded, reloadErr := s.entClient.PaymentOrder.Get(ctx, orderID)
-			if reloadErr == nil {
-				return reloaded, nil
-			}
-		}
 	}
 	return o, nil
 }

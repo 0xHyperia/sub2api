@@ -374,12 +374,6 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.BackendModeEnabled != after.BackendModeEnabled {
 		changed = append(changed, "backend_mode_enabled")
 	}
-	if before.PurchaseSubscriptionEnabled != after.PurchaseSubscriptionEnabled {
-		changed = append(changed, "purchase_subscription_enabled")
-	}
-	if before.PurchaseSubscriptionURL != after.PurchaseSubscriptionURL {
-		changed = append(changed, "purchase_subscription_url")
-	}
 	if before.TableDefaultPageSize != after.TableDefaultPageSize {
 		changed = append(changed, "table_default_page_size")
 	}

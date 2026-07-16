@@ -18,7 +18,6 @@ const (
 	TypeLink         PaymentType = "link"
 	TypeEasyPay      PaymentType = "easypay"
 	TypeAirwallex    PaymentType = "airwallex"
-	TypeLdxp         PaymentType = "ldxp"
 )
 
 // Order status constants shared across payment and service layers.
@@ -42,7 +41,6 @@ const (
 const (
 	OrderTypeBalance      = "balance"
 	OrderTypeSubscription = "subscription"
-	OrderTypeCard         = "card"
 )
 
 // Entity statuses shared across users, groups, etc.

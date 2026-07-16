@@ -61,22 +61,6 @@ export interface RefundResult {
   subscription_days_deducted?: number
 }
 
-export interface UpdateCardGoodsOverrideRequest {
-  provider_instance_id: string
-  goods_key: string
-  title: string
-  description: string
-  badge: string
-  tags: string[]
-}
-
-export interface CardGoodsOverride {
-  title?: string
-  description?: string
-  badge?: string
-  tags?: string[]
-}
-
 export const adminPaymentAPI = {
   // ==================== Config ====================
 
@@ -205,10 +189,6 @@ export const adminPaymentAPI = {
   /** Delete a provider instance */
   deleteProvider(id: number) {
     return apiClient.delete(`/admin/payment/providers/${id}`)
-  },
-
-  updateCardGoodsOverride(data: UpdateCardGoodsOverrideRequest) {
-    return apiClient.put<CardGoodsOverride>('/admin/payment/card/goods-overrides', data)
   }
 }
 

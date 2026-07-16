@@ -292,13 +292,10 @@ const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 const flagBatchImageAccess = () => canUseBatchImage.value
 const flagPurchase = () =>
   appStore.cachedPublicSettings?.payment_enabled === true &&
-  (appStore.cachedPublicSettings?.payment_instant_enabled !== false ||
-    appStore.cachedPublicSettings?.payment_card_enabled === true ||
-    appStore.cachedPublicSettings?.purchase_subscription_enabled === true)
+  appStore.cachedPublicSettings?.payment_instant_enabled !== false
 const flagPaymentOrders = () =>
   appStore.cachedPublicSettings?.payment_enabled === true &&
-  (appStore.cachedPublicSettings?.payment_instant_enabled !== false ||
-    appStore.cachedPublicSettings?.payment_card_enabled === true)
+  appStore.cachedPublicSettings?.payment_instant_enabled !== false
 
 const customMenuItemsForUser = computed(() => {
   const items = appStore.cachedPublicSettings?.custom_menu_items ?? []

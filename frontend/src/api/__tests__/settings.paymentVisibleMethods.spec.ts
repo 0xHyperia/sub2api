@@ -10,7 +10,6 @@ describe('admin settings payment visible method helpers', () => {
     expect(normalizePaymentVisibleMethodSource('alipay', 'official')).toBe('official_alipay')
     expect(normalizePaymentVisibleMethodSource('alipay', 'alipay_direct')).toBe('official_alipay')
     expect(normalizePaymentVisibleMethodSource('alipay', 'easypay')).toBe('easypay_alipay')
-    expect(normalizePaymentVisibleMethodSource('alipay', 'ldxp')).toBe('ldxp_alipay')
 
     expect(normalizePaymentVisibleMethodSource('wxpay', 'official')).toBe('official_wxpay')
     expect(normalizePaymentVisibleMethodSource('wxpay', 'wechat')).toBe('official_wxpay')
@@ -40,11 +39,6 @@ describe('admin settings payment visible method helpers', () => {
         value: 'easypay_alipay',
         labelZh: '易支付支付宝',
         labelEn: 'EasyPay Alipay',
-      },
-      {
-        value: 'ldxp_alipay',
-        labelZh: '链动小铺支付宝',
-        labelEn: 'Ldxp Alipay',
       },
     ])
 
