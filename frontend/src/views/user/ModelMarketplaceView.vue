@@ -413,12 +413,17 @@
                     v-for="group in cardGroups(entry)"
                     :key="group.id"
                     type="button"
-                    class="inline-flex h-6 shrink-0 items-center gap-1 rounded-control border px-2 text-[9px] transition-colors"
-                    :class="group.id === activeEntryGroup(entry)?.id ? 'border-black bg-black text-white' : 'border-outline bg-surface text-foreground-muted hover:border-outline-strong hover:text-foreground'"
+                    class="inline-flex h-6 shrink-0 items-center gap-1 rounded-control border px-1.5 text-[9px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    :class="group.id === activeEntryGroup(entry)?.id ? 'border-outline bg-brand-subtle font-semibold text-brand' : 'border-outline bg-surface text-foreground-muted hover:bg-surface-subtle hover:text-foreground'"
                     :title="`${group.name} · ×${formatRate(group.effectiveRate)}`"
+                    :aria-pressed="group.id === activeEntryGroup(entry)?.id"
                     @click.stop="selectEntryGroup(entry, group.id)"
                   >
-                    <span class="max-w-40 truncate">{{ group.name }}</span>
+                    <span class="max-w-32 truncate">{{ group.name }}</span>
+                    <span
+                      class="shrink-0 rounded-control bg-surface-subtle px-1 font-mono text-[8px] tabular-nums text-foreground-subtle"
+                      :class="group.id === activeEntryGroup(entry)?.id ? 'bg-surface text-brand' : ''"
+                    >{{ formatRate(group.effectiveRate) }}x</span>
                   </button>
                   <span v-if="entry.groups.length === 0" class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.billingGroup') }} -</span>
                 </div>

@@ -893,9 +893,9 @@ export default {
     billing: {
       usage: '按量计费',
       request: '按次数计费',
-      token: '按 Token',
+      token: '按量计费',
       per_request: '按次',
-      image: '按图像',
+      image: '按次计费',
       unpriced: '未定价',
     },
     capabilities: {
