@@ -16,7 +16,6 @@ import (
 const (
 	SettingPaymentEnabled        = "payment_enabled"
 	SettingPaymentInstantEnabled = "PAYMENT_INSTANT_ENABLED"
-	SettingPaymentCardEnabled    = "PAYMENT_CARD_ENABLED"
 	SettingMinRechargeAmount     = "MIN_RECHARGE_AMOUNT"
 	SettingMaxRechargeAmount     = "MAX_RECHARGE_AMOUNT"
 	SettingDailyRechargeLimit    = "DAILY_RECHARGE_LIMIT"
@@ -52,7 +51,6 @@ const (
 type PaymentConfig struct {
 	Enabled                   bool     `json:"enabled"`
 	InstantEnabled            bool     `json:"instant_enabled"`
-	CardEnabled               bool     `json:"card_enabled"`
 	MinAmount                 float64  `json:"min_amount"`
 	MaxAmount                 float64  `json:"max_amount"`
 	DailyLimit                float64  `json:"daily_limit"`
@@ -86,7 +84,6 @@ type PaymentConfig struct {
 type UpdatePaymentConfigRequest struct {
 	Enabled                   *bool    `json:"enabled"`
 	InstantEnabled            *bool    `json:"instant_enabled"`
-	CardEnabled               *bool    `json:"card_enabled"`
 	MinAmount                 *float64 `json:"min_amount"`
 	MaxAmount                 *float64 `json:"max_amount"`
 	DailyLimit                *float64 `json:"daily_limit"`
@@ -168,6 +165,7 @@ type CreatePlanRequest struct {
 	Description   string   `json:"description"`
 	Price         float64  `json:"price"`
 	OriginalPrice *float64 `json:"original_price"`
+	Currency      string   `json:"currency"`
 	ValidityDays  int      `json:"validity_days"`
 	ValidityUnit  string   `json:"validity_unit"`
 	Features      string   `json:"features"`
@@ -182,6 +180,7 @@ type UpdatePlanRequest struct {
 	Description   *string  `json:"description"`
 	Price         *float64 `json:"price"`
 	OriginalPrice *float64 `json:"original_price"`
+	Currency      *string  `json:"currency"`
 	ValidityDays  *int     `json:"validity_days"`
 	ValidityUnit  *string  `json:"validity_unit"`
 	Features      *string  `json:"features"`
@@ -215,7 +214,7 @@ func (s *PaymentConfigService) IsPaymentEnabled(ctx context.Context) bool {
 // GetPaymentConfig returns the full payment configuration.
 func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentConfig, error) {
 	keys := []string{
-		SettingPaymentEnabled, SettingPaymentInstantEnabled, SettingPaymentCardEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
+		SettingPaymentEnabled, SettingPaymentInstantEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
 		SettingDailyRechargeLimit, SettingOrderTimeoutMinutes, SettingMaxPendingOrders,
 		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingSubscriptionUSDToCNYRate, SettingRechargeFeeRate, SettingLoadBalanceStrategy,
 		SettingProductNamePrefix, SettingProductNameSuffix,
@@ -240,7 +239,6 @@ func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *Payme
 	cfg := &PaymentConfig{
 		Enabled:                   vals[SettingPaymentEnabled] == "true",
 		InstantEnabled:            pcParseBoolDefault(vals[SettingPaymentInstantEnabled], true),
-		CardEnabled:               pcParseBoolDefault(vals[SettingPaymentCardEnabled], false),
 		MinAmount:                 pcParseFloat(vals[SettingMinRechargeAmount], 1),
 		MaxAmount:                 pcParseFloat(vals[SettingMaxRechargeAmount], 0),
 		DailyLimit:                pcParseFloat(vals[SettingDailyRechargeLimit], 0),
@@ -329,7 +327,6 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 	m := map[string]string{
 		SettingPaymentEnabled:                    formatBoolOrEmpty(req.Enabled),
 		SettingPaymentInstantEnabled:             formatBoolOrEmpty(req.InstantEnabled),
-		SettingPaymentCardEnabled:                formatBoolOrEmpty(req.CardEnabled),
 		SettingMinRechargeAmount:                 formatPositiveFloat(req.MinAmount),
 		SettingMaxRechargeAmount:                 formatPositiveFloat(req.MaxAmount),
 		SettingDailyRechargeLimit:                formatPositiveFloat(req.DailyLimit),
@@ -477,12 +474,6 @@ func buildVisibleMethodSourceAvailability(instances []*dbent.PaymentProviderInst
 					available[VisibleMethodSourceEasyPayAlipay] = true
 				case payment.TypeWxpay:
 					available[VisibleMethodSourceEasyPayWechat] = true
-				}
-			}
-		case payment.TypeLdxp:
-			for _, supportedType := range splitTypes(inst.SupportedTypes) {
-				if NormalizeVisibleMethod(supportedType) == payment.TypeAlipay {
-					available[VisibleMethodSourceLdxpAlipay] = true
 				}
 			}
 		}

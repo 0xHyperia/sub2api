@@ -208,6 +208,7 @@ func TestSynthesizePricingFromLiteLLM_TokenMode(t *testing.T) {
 		OutputCostPerToken:          1.5e-5,
 		CacheCreationInputTokenCost: 3.75e-6,
 		CacheReadInputTokenCost:     3e-7,
+		InputCostPerImageToken:      8e-6,
 	}
 	got := synthesizePricingFromLiteLLM(lp, nil)
 	require.NotNil(t, got)
@@ -215,18 +216,23 @@ func TestSynthesizePricingFromLiteLLM_TokenMode(t *testing.T) {
 	require.NotNil(t, got.InputPrice)
 	require.InDelta(t, 3e-6, *got.InputPrice, 1e-12)
 	require.NotNil(t, got.CacheReadPrice)
+	require.NotNil(t, got.ImageInputPrice)
+	require.InDelta(t, 8e-6, *got.ImageInputPrice, 1e-12)
 }
 
 func TestSynthesizePricingFromLiteLLM_ImageGenerationMode(t *testing.T) {
 	// LiteLLM mode=image_generation 且渠道未声明模式时，按 image 合成。
 	lp := &LiteLLMModelPricing{
 		Mode:                    "image_generation",
+		InputCostPerImageToken:  8e-6,
 		OutputCostPerImageToken: 4e-5,
 	}
 	got := synthesizePricingFromLiteLLM(lp, nil)
 	require.NotNil(t, got)
 	require.Equal(t, BillingModeImage, got.BillingMode)
 	require.Nil(t, got.PerRequestPrice)
+	require.NotNil(t, got.ImageInputPrice)
+	require.InDelta(t, 8e-6, *got.ImageInputPrice, 1e-12)
 	require.NotNil(t, got.ImageOutputPrice)
 }
 

@@ -292,13 +292,10 @@ const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 const flagBatchImageAccess = () => canUseBatchImage.value
 const flagPurchase = () =>
   appStore.cachedPublicSettings?.payment_enabled === true &&
-  (appStore.cachedPublicSettings?.payment_instant_enabled !== false ||
-    appStore.cachedPublicSettings?.payment_card_enabled === true ||
-    appStore.cachedPublicSettings?.purchase_subscription_enabled === true)
+  appStore.cachedPublicSettings?.payment_instant_enabled !== false
 const flagPaymentOrders = () =>
   appStore.cachedPublicSettings?.payment_enabled === true &&
-  (appStore.cachedPublicSettings?.payment_instant_enabled !== false ||
-    appStore.cachedPublicSettings?.payment_card_enabled === true)
+  appStore.cachedPublicSettings?.payment_instant_enabled !== false
 
 const customMenuItemsForUser = computed(() => {
   const items = appStore.cachedPublicSettings?.custom_menu_items ?? []
@@ -379,6 +376,7 @@ function buildSelfNavItems(): ShellNavItem[] {
       featureFlag: flagAffiliate
     },
     { path: '/profile', label: t('nav.profile'), icon: 'user' },
+    { path: '/support', label: localText('工单支持', 'Support tickets'), icon: 'clipboard' },
     ...customMenuItemsForUser.value.map((item): ShellNavItem => ({
       path: `/custom/${item.id}`,
       label: item.label,
@@ -436,6 +434,7 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
       items: [
         { path: '/admin/ops', label: t('nav.ops'), icon: 'terminal', featureFlag: flagOpsMonitoring },
         { path: '/admin/usage', label: t('nav.usage'), icon: 'chart' },
+        { path: '/admin/audit-logs', label: t('nav.auditLogs'), icon: 'shield', hideInSimpleMode: true },
         {
           path: '/admin/risk-control',
           label: t('nav.riskControl'),
@@ -488,7 +487,10 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
     {
       id: 'communication',
       label: localText('沟通', 'Communication'),
-      items: [{ path: '/admin/announcements', label: t('nav.announcements'), icon: 'bell' }]
+      items: [
+        { path: '/admin/tickets', label: localText('工单队列', 'Ticket queue'), icon: 'clipboard' },
+        { path: '/admin/announcements', label: t('nav.announcements'), icon: 'bell' }
+      ]
     },
     {
       id: 'system',

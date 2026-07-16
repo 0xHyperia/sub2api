@@ -188,46 +188,6 @@ describe('PaymentStatusPanel', () => {
     expect(wrapper.emitted('success')).toHaveLength(1)
   })
 
-  it('actively verifies pending card orders', async () => {
-    pollOrderStatus.mockResolvedValue({
-      ...orderFactory('PENDING'),
-      payment_type: 'ldxp',
-      order_type: 'card',
-    })
-    verifyOrder.mockResolvedValue({
-      data: {
-        ...orderFactory('COMPLETED'),
-        payment_type: 'ldxp',
-        order_type: 'card',
-      },
-    })
-
-    const wrapper = mount(PaymentStatusPanel, {
-      props: {
-        orderId: 42,
-        qrCode: '',
-        payUrl: 'https://pay.ldxp.cn/pay/42',
-        expiresAt: '2099-01-01T12:30:00Z',
-        paymentType: 'ldxp',
-        orderType: 'card',
-      },
-      global: {
-        stubs: {
-          Icon: true,
-        },
-      },
-    })
-
-    await flushPromises()
-    await vi.advanceTimersByTimeAsync(3000)
-    await flushPromises()
-
-    expect(pollOrderStatus).toHaveBeenCalledWith(42)
-    expect(verifyOrder).toHaveBeenCalledWith('sub2_20260420abcd1234')
-    expect(wrapper.text()).toContain('payment.result.success')
-    expect(wrapper.emitted('success')).toHaveLength(1)
-  })
-
   it('shows a recoverable status warning after three polling failures', async () => {
     pollOrderStatus.mockRejectedValue(new Error('temporarily unavailable'))
 

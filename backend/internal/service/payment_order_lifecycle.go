@@ -12,7 +12,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
-	paymentprovider "github.com/Wei-Shaw/sub2api/internal/payment/provider"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/servertiming"
 )
@@ -212,26 +211,6 @@ func (s *PaymentService) queryProviderOrder(ctx context.Context, order *dbent.Pa
 	finishProviderCall := servertiming.ObserveDependency(ctx, "payment")
 	defer finishProviderCall()
 
-	if ldxp, ok := prov.(*paymentprovider.Ldxp); ok && order != nil && order.OrderType == payment.OrderTypeCard {
-		info, err := ldxp.GetOrderInfoWithCards(ctx, queryRef, ldxpOrderQueryPassword(order))
-		if err != nil {
-			return nil, err
-		}
-		status := payment.ProviderStatusPending
-		if info.Status == 1 || info.Sendout == 1 {
-			status = payment.ProviderStatusPaid
-		}
-		tradeNo := strings.TrimSpace(info.TradeNo)
-		if tradeNo == "" {
-			tradeNo = queryRef
-		}
-		return &payment.QueryOrderResponse{
-			TradeNo:  tradeNo,
-			Status:   status,
-			Amount:   info.TotalAmount,
-			Metadata: ldxp.MerchantIdentityMetadata(),
-		}, nil
-	}
 	return prov.QueryOrder(ctx, queryRef)
 }
 
@@ -274,13 +253,6 @@ func paymentOrderQueryReference(order *dbent.PaymentOrder, prov payment.Provider
 	switch payment.GetBasePaymentType(providerKey) {
 	case payment.TypeAlipay, payment.TypeEasyPay, payment.TypeWxpay:
 		return strings.TrimSpace(order.OutTradeNo)
-	case payment.TypeLdxp:
-		if order.OrderType == payment.OrderTypeCard {
-			if tradeNo := strings.TrimSpace(order.PaymentTradeNo); tradeNo != "" {
-				return tradeNo
-			}
-			return strings.TrimSpace(order.OutTradeNo)
-		}
 	}
 	if tradeNo := strings.TrimSpace(order.PaymentTradeNo); tradeNo != "" {
 		return tradeNo

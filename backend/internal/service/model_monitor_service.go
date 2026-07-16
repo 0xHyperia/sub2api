@@ -367,7 +367,7 @@ func (s *ModelMonitorService) monitorGroups(ctx context.Context, monitor *ModelM
 func (s *ModelMonitorService) selectAccount(ctx context.Context, platform, model string, groupID int64, excluded map[int64]struct{}) (*Account, error) {
 	switch platform {
 	case PlatformOpenAI, PlatformGrok:
-		return s.openAIGateway.selectAccountForModelWithExclusions(ctx, &groupID, platform, "", model, excluded, false, 0, "")
+		return s.openAIGateway.selectAccountForModelWithExclusions(ctx, &groupID, platform, "", model, excluded, false, 0, "", false)
 	case PlatformGemini, PlatformAntigravity:
 		ctx = context.WithValue(ctx, ctxkey.ForcePlatform, platform)
 		return s.gateway.SelectAccountForModelWithExclusions(ctx, &groupID, "", model, excluded)

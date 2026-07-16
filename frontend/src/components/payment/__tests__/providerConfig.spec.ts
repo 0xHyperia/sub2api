@@ -59,22 +59,6 @@ describe('PROVIDER_CONFIG_FIELDS.stripe', () => {
   })
 })
 
-describe('PROVIDER_CONFIG_FIELDS.ldxp', () => {
-  it('exposes Alipay and the fields required by the backend provider', () => {
-    expect(PROVIDER_SUPPORTED_TYPES.ldxp).toEqual(['alipay'])
-    expect(findField('ldxp', 'apiBase')?.defaultValue).toBe('https://pay.ldxp.cn')
-    expect(findField('ldxp', 'shopUrl')?.optional).toBeFalsy()
-    expect(findField('ldxp', 'shopUrl')?.hintKey).toBe('admin.settings.payment.field_ldxpShopUrlHint')
-    expect(findField('ldxp', 'goodsKey')).toBeUndefined()
-    expect(findField('ldxp', 'channelId')).toBeUndefined()
-    expect(findField('ldxp', 'queryPassword')?.optional).toBe(true)
-    expect(findField('ldxp', 'queryPassword')?.hintKey).toBe('admin.settings.payment.field_ldxpQueryPasswordHint')
-    expect(findField('ldxp', 'contactFallback')?.optional).toBe(true)
-    expect(findField('ldxp', 'referer')?.optional).toBe(true)
-    expect(findField('ldxp', 'visitorId')?.optional).toBe(true)
-  })
-})
-
 describe('EasyPay custom methods config', () => {
   it('parses customMethods from the JSON string stored in provider config', () => {
     expect(parseEasyPayCustomMethods(

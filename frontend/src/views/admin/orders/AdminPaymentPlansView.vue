@@ -41,6 +41,7 @@
           <template #cell-price="{ value, row }">
             <div class="text-sm tabular-nums">
               <span class="font-semibold text-foreground">${{ (value ?? 0).toFixed(2) }}</span>
+              <span v-if="row.currency" class="ml-1 text-xs text-foreground-subtle">{{ row.currency }}</span>
               <span v-if="row.original_price" class="ml-1 text-xs text-foreground-subtle line-through">${{ row.original_price.toFixed(2) }}</span>
             </div>
           </template>

@@ -99,8 +99,8 @@ curl -X POST "${BASE}/api/v1/admin/users/123/balance" \
   }'
 ```
 
-### 4) 购买页 / 自定义页面 URL Query 透传（iframe / 新窗口一致）
-当 Sub2API 打开 `purchase_subscription_url` 或用户侧自定义页面 iframe URL 时，会统一追加：
+### 4) 自定义页面 URL Query 透传（iframe / 新窗口一致）
+当 Sub2API 打开用户侧自定义页面 iframe URL 时，会统一追加：
 - `user_id`
 - `token`
 - `theme`（`light` / `dark`）
@@ -219,8 +219,8 @@ curl -X POST "${BASE}/api/v1/admin/users/123/balance" \
   }'
 ```
 
-### 4) Purchase / Custom Page URL query forwarding (iframe and new tab)
-When Sub2API opens `purchase_subscription_url` or a user-facing custom page iframe URL, it appends:
+### 4) Custom Page URL query forwarding (iframe and new tab)
+When Sub2API opens a user-facing custom page iframe URL, it appends:
 - `user_id`
 - `token`
 - `theme` (`light` / `dark`)

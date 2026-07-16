@@ -264,24 +264,6 @@
               </div>
             </template>
           </div>
-          <div
-            v-else-if="activeTab === 'card'"
-            id="purchase-panel-card"
-            role="tabpanel"
-            :aria-labelledby="tabs.length > 1 ? 'purchase-tab-card' : undefined"
-            :aria-label="tabs.length === 1 ? t('payment.tabCard') : undefined"
-          >
-            <CardPaymentView embedded />
-          </div>
-          <div
-            v-else-if="activeTab === 'iframe'"
-            id="purchase-panel-iframe"
-            role="tabpanel"
-            :aria-labelledby="tabs.length > 1 ? 'purchase-tab-iframe' : undefined"
-            :aria-label="tabs.length === 1 ? t('payment.tabIframe') : undefined"
-          >
-            <CardShopEmbedView />
-          </div>
           <div v-else class="card">
             <EmptyState :title="t('payment.notAvailable')" />
           </div>
@@ -348,8 +330,6 @@ import {
 import { platformAccentBarClass, platformBadgeLightClass, platformBadgeClass, platformTextClass, platformLabel } from '@/utils/platformColors'
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import PaymentStatusPanel from '@/components/payment/PaymentStatusPanel.vue'
-import CardPaymentView from '@/views/user/CardPaymentView.vue'
-import CardShopEmbedView from '@/views/user/CardShopEmbedView.vue'
 import { DEFAULT_PAYMENT_CURRENCY, formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import type { PaymentMethodOption } from '@/components/payment/PaymentMethodSelector.vue'
 import { buildPaymentErrorToastMessage, describePaymentScenarioError } from './paymentUx'
@@ -385,7 +365,7 @@ const checkoutLoadFailed = ref(false)
 const submitting = ref(false)
 const errorMessage = ref('')
 const errorHintMessage = ref('')
-type PurchaseTab = 'recharge' | 'subscription' | 'card' | 'iframe'
+type PurchaseTab = 'recharge' | 'subscription'
 
 const activeTab = ref<PurchaseTab>('recharge')
 const amount = ref<number | null>(null)
@@ -564,7 +544,7 @@ function onPaymentSettled() {
 // All checkout data from single API call
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
-  plans: [], instant_enabled: true, card_enabled: false, balance_disabled: false, balance_recharge_multiplier: 1, subscription_usd_to_cny_rate: 0, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
+  plans: [], instant_enabled: true, balance_disabled: false, balance_recharge_multiplier: 1, subscription_usd_to_cny_rate: 0, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
 })
 
 const tabs = computed(() => {
@@ -572,12 +552,6 @@ const tabs = computed(() => {
   if (checkout.value.instant_enabled !== false) {
     if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
     result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
-  }
-  if (checkout.value.card_enabled === true) {
-    result.push({ key: 'card', label: t('payment.tabCard') })
-  }
-  if (appStore.cachedPublicSettings?.purchase_subscription_enabled === true) {
-    result.push({ key: 'iframe', label: t('payment.tabIframe') })
   }
   return result
 })
@@ -608,14 +582,12 @@ const showInstantHelp = computed(() =>
   (checkout.value.help_text || checkout.value.help_image_url)
     && paymentPhase.value === 'select'
     && !selectedPlan.value
-    && activeTab.value !== 'card'
 )
 
 const pageContainerClass = computed(() => {
-  const wideCardSelect = paymentPhase.value === 'select' && (activeTab.value === 'card' || activeTab.value === 'iframe') && !selectedPlan.value
   return [
     'mx-auto w-full space-y-5',
-    wideCardSelect ? 'max-w-[1500px]' : 'max-w-4xl',
+    'max-w-4xl',
   ]
 })
 
@@ -1269,10 +1241,6 @@ onMounted(async () => {
           showRenewalModal.value = true
         }
       }
-    } else if (route.query.tab === 'card') {
-      ensureVisiblePurchaseTab('card')
-    } else if (route.query.tab === 'iframe') {
-      ensureVisiblePurchaseTab('iframe')
     }
   } catch (err: unknown) {
     checkoutLoadFailed.value = true

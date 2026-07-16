@@ -453,7 +453,6 @@ func TestNormalizeVisibleMethodSource(t *testing.T) {
 	}{
 		{name: "alipay official alias", method: payment.TypeAlipay, input: "alipay", want: VisibleMethodSourceOfficialAlipay},
 		{name: "alipay easypay alias", method: payment.TypeAlipay, input: "easypay", want: VisibleMethodSourceEasyPayAlipay},
-		{name: "alipay ldxp alias", method: payment.TypeAlipay, input: "ldxp", want: VisibleMethodSourceLdxpAlipay},
 		{name: "wxpay official alias", method: payment.TypeWxpay, input: "wxpay", want: VisibleMethodSourceOfficialWechat},
 		{name: "wxpay easypay alias", method: payment.TypeWxpay, input: "easypay", want: VisibleMethodSourceEasyPayWechat},
 		{name: "unsupported source", method: payment.TypeWxpay, input: "stripe", want: ""},
@@ -481,7 +480,6 @@ func TestVisibleMethodProviderKeyForSource(t *testing.T) {
 	}{
 		{name: "official alipay", method: payment.TypeAlipay, source: VisibleMethodSourceOfficialAlipay, want: payment.TypeAlipay, ok: true},
 		{name: "easypay alipay", method: payment.TypeAlipay, source: VisibleMethodSourceEasyPayAlipay, want: payment.TypeEasyPay, ok: true},
-		{name: "ldxp alipay", method: payment.TypeAlipay, source: VisibleMethodSourceLdxpAlipay, want: payment.TypeLdxp, ok: true},
 		{name: "official wechat", method: payment.TypeWxpay, source: VisibleMethodSourceOfficialWechat, want: payment.TypeWxpay, ok: true},
 		{name: "easypay wechat", method: payment.TypeWxpay, source: VisibleMethodSourceEasyPayWechat, want: payment.TypeEasyPay, ok: true},
 		{name: "mismatched method and source", method: payment.TypeAlipay, source: VisibleMethodSourceOfficialWechat, want: "", ok: false},

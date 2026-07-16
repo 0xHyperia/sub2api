@@ -5,41 +5,46 @@
 ## USA0 v1.0.6（候选）
 
 - 候选发布版本：v1.0.6
-- 集成分支：`codex/merge-upstream-v0.1.156`
+- 集成分支：`codex/merge-upstream-v0.1.158`
 - 计划发布分支：`usa0/main`
-- 官方基线版本：v0.1.156
-- 官方基线提交：`12f991dde8a58e183d4bd16a87ef6fd0df714757`
-- 同步状态：已合入集成分支并完成前后端验证，尚未推送或创建 v1.0.6 tag
-- 记录日期：2026-07-15
+- 官方基线版本：v0.1.158
+- 官方基线提交：`26abd19a2812edba02bbef93c3e2a620141cc257`
+- 上一官方基线：v0.1.156（`12f991dde8a58e183d4bd16a87ef6fd0df714757`）
+- 同步状态：已通过合并提交 `bcfcda109` 完成适配并快进合入 `usa0/main`；尚未推送或创建 v1.0.6 tag
+- 记录日期：2026-07-16
 
 ### 同步范围
 
-- 从官方 v0.1.146 基线同步至 v0.1.156；本轮从 v0.1.155 至 v0.1.156 纳入 132 个上游提交。
-- 合入 Grok 渠道监控、Web SSO 导入与免费账号配额展示改进。
-- 合入管理员用量排行榜、系统日志 Host 过滤和可选 Server Timing 指标。
-- 合入 OpenAI/Codex 模型、Responses、WebSocket、图像生成及长上下文计费修复。
-- 合入 Codex Agent Identity、账号一键复制、可选 ID 列及用户 Web API Server Timing。
-- 合入 OpenAI/Grok 故障转移、流式事件边界、首次输出超时和调度缓存生命周期修复。
-- 合入支付履约租约与轮询防重入修复，卡密履约使用同一租约保护。
+- 从官方 v0.1.156 同步至 v0.1.158，共纳入 102 个上游提交。
+- 合入操作审计日志、会话 IP/UA 绑定、敏感操作 step-up 2FA 及对应管理页面。
+- 合入异步图片生成任务、对象存储结果持久化、图片输入 token/费用拆分和渠道级图片输入定价。
+- 合入上游 Sub2API 计费倍率探测、按倍率调度、API Key 计费倍率自省和账号展示。
+- 合入 Grok 自定义/区域上游端点、请求头编辑与 key 建号模板，并纳入 OAuth 路由、媒体请求和模型清单修复。
+- 合入管理员批量修改用户限额、分组一键复制和渠道监控一键复制。
+- 合入 OpenAI/Codex Responses、WebSocket、图片桥接、请求体超限故障转移、瞬态冷却和字段重试修复。
 
 ### 保留的 USA0 二开内容
 
 - 保留新版首页、登录页和后台组件视觉体系及响应式布局。
 - 增加按用户实际倍率排序、无限滚动的模型广场，并提供独立于渠道监控的模型可用性监控、后台配置和模型卡片状态时间线。
 - 模型广场页面迁移至 `/model-marketplace`，为上游标准 OpenAI/Codex `/models` API 保留独立路由。
-- 账号复制、Codex 认证模式及新增表格列继续使用 USA0 的无障碍交互和新版设计令牌。
+- 保留 App JWT/ZeroBox 授权，并与上游审计日志和 step-up 中间件共同接入认证、用户、管理员及支付路由。
+- 新增审计、账号编辑、批量限额和复制能力继续使用 USA0 的表格选择、无障碍交互、响应式容器和语义设计令牌。
 - 模型广场接口加入 Server Timing 用户接口白名单，前后端白名单保持一致。
 - 保留 ZeroBox 应用授权、OAuth 路由和用户授权管理能力。
-- 保留链动小铺兑换卡购买、卡密交付与自动兑换流程。
 - 保留支付订单功能开关、路由门控和支付状态失败恢复界面。
 - 保留自定义首页内容的 URL/HTML 净化、iframe 沙箱与加载失败恢复。
+- 模型监控调用适配上游低倍率优先调度参数，并显式保持中性探测策略。
 
 ### 验证结果
 
-- Ent 与 Wire 生成成功，USA0 `AppAuthorization` 与上游新增 Schema 同时保留。
-- 前端完整测试、ESLint、TypeScript 类型检查和生产构建通过。
-- 后端 `go test ./...` 通过，`golangci-lint` 检查结果为 0 issues。
-- 上游 v0.1.156 未新增迁移；USA0 保留 `177` 至 `179` 的二开迁移，不存在编号冲突。
+- `go generate ./ent` 与 `go generate ./cmd/server` 成功，USA0 `AppAuthorization` 与上游新增 Schema/服务同时保留。
+- 前端 `pnpm run lint:check`、`pnpm run typecheck`、`pnpm run test:run` 和 `pnpm run build` 通过；lint 为 0 errors、1 条既有 warning。
+- 后端 `go test ./...`、`go test -tags=unit ./...` 通过，`golangci-lint run ./...` 为 0 issues。
+- 上游原 `177` 至 `181` 迁移在本 fork 首次发布前顺延为 `181` 至 `185`；USA0 已发布的 `177` 至 `180` 保持不变，最新区间无编号冲突。
+- `git diff --check`、冲突标记扫描、设置/API 严格契约测试和前端语义令牌守卫通过。
+- `docker compose -f deploy/docker-compose.dev.yml build sub2api` 成功，并以 `--no-deps` 仅替换应用容器；PostgreSQL 与 Redis 未重启。
+- 新容器启动后迁移无报错，Docker 健康检查通过，`http://localhost:8081/health` 返回 `{"status":"ok"}`。
 
 ---
 
@@ -55,7 +60,6 @@
 
 ### 主要二开内容
 
-- 增加链动小铺兑换卡购买与自动兑换流程。
 - 重构支付设置，区分即时支付与发卡支付。
 - 重构首页为 USA0 新设计。
 - 保留官方 main 作为上游同步基线，二开功能在 `usa0/main` 维护。

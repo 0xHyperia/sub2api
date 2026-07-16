@@ -293,7 +293,7 @@
                 <div class="flex items-center justify-end gap-1">
                   <button
                     type="button"
-                    class="inline-flex h-6 w-6 shrink-0 items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-black focus-visible:-translate-y-px focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
+                    class="inline-flex h-6 w-6 shrink-0 items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-foreground focus-visible:-translate-y-px focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     :title="t('modelMarketplace.copyModel')"
                     :aria-label="t('modelMarketplace.copyModel')"
                     @click.stop="copyModel(entry.name)"
@@ -302,7 +302,7 @@
                   </button>
                   <button
                     type="button"
-                    class="inline-flex h-6 w-6 shrink-0 items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-black focus-visible:-translate-y-px focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
+                    class="inline-flex h-6 w-6 shrink-0 items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-foreground focus-visible:-translate-y-px focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     :title="t('modelMarketplace.details.open', { model: entry.name })"
                     :aria-label="t('modelMarketplace.details.open', { model: entry.name })"
                     @click.stop="openDetails(entry)"
@@ -323,7 +323,7 @@
                   <span
                     v-for="capability in visibleCardCapabilityBadges(entry)"
                     :key="capability.key"
-                    class="group/capability relative inline-flex h-5 w-5 shrink-0 cursor-help items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-black focus-visible:-translate-y-px focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
+                    class="group/capability relative inline-flex h-5 w-5 shrink-0 cursor-help items-center justify-center text-foreground-subtle transition-[color,transform] duration-150 hover:-translate-y-px hover:text-foreground focus-visible:-translate-y-px focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     tabindex="0"
                     :aria-label="capability.label"
                     :aria-describedby="`capability-${entry.key}-${capability.key}`"
@@ -337,7 +337,7 @@
                   </span>
                   <span
                     v-if="hiddenCardCapabilityBadges(entry).length"
-                    class="group/capability relative inline-flex h-5 min-w-5 shrink-0 cursor-help items-center justify-center px-0.5 text-[9px] font-semibold text-foreground-subtle outline-none transition-colors hover:text-black focus-visible:text-black focus-visible:ring-2 focus-visible:ring-focus dark:hover:text-white dark:focus-visible:text-white"
+                    class="group/capability relative inline-flex h-5 min-w-5 shrink-0 cursor-help items-center justify-center px-0.5 text-[9px] font-semibold text-foreground-subtle outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-focus"
                     tabindex="0"
                     :aria-label="hiddenCapabilityLabel(entry)"
                     :aria-describedby="`capability-${entry.key}-more`"
@@ -427,15 +427,15 @@
                   tabindex="0"
                   :aria-label="t('modelMarketplace.realtimeRateHint', { cny: formatRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
                 >
-                  <span class="text-[9px] font-medium text-orange-600 dark:text-orange-400">{{ t('modelMarketplace.realtimeRate') }}</span>
-                  <span class="inline-flex items-center gap-1 font-mono text-xs font-semibold tabular-nums text-orange-600 dark:text-orange-400">
+                  <span class="text-[9px] font-medium text-warning-foreground">{{ t('modelMarketplace.realtimeRate') }}</span>
+                  <span class="inline-flex items-center gap-1 font-mono text-xs font-semibold tabular-nums text-warning-foreground">
                     {{ formatRate(cardRealtimeRate(entry)) }}&times;
                     <Icon name="infoCircle" size="xs" />
                   </span>
                   <div class="marketplace-rate-tooltip" role="tooltip">
                       <div class="flex items-center justify-between gap-4 border-b border-outline pb-2">
                         <span class="text-xs font-semibold text-foreground">{{ t('modelMarketplace.realtimeRate') }}</span>
-                        <span class="font-mono text-sm font-semibold tabular-nums text-orange-600 dark:text-orange-400">{{ formatRate(cardRealtimeRate(entry)) }}&times;</span>
+                        <span class="font-mono text-sm font-semibold tabular-nums text-warning-foreground">{{ formatRate(cardRealtimeRate(entry)) }}&times;</span>
                       </div>
                       <dl class="mt-2 space-y-1.5 text-[10px]">
                         <div class="flex items-center justify-between gap-4">

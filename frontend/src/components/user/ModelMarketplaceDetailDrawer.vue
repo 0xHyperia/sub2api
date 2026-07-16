@@ -281,7 +281,7 @@
                       :key="protocol"
                       type="button"
                       class="h-8 shrink-0 rounded-control px-3 text-xs transition-colors"
-                      :class="activeProtocol === protocol ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-foreground-muted hover:bg-surface-subtle hover:text-foreground'"
+                      :class="activeProtocol === protocol ? 'bg-foreground text-surface' : 'text-foreground-muted hover:bg-surface-subtle hover:text-foreground'"
                       @click="activeProtocol = protocol"
                     >{{ protocol }}</button>
                   </div>
@@ -455,7 +455,7 @@ const availabilityTextClass = computed(() => {
 const pricingRows = computed(() => {
   const pricing = props.entry?.pricing
   if (!pricing) return []
-  const rows = pricing.billing_mode === 'token'
+  const primaryRows = pricing.billing_mode === 'token'
     ? [
         ['input', t('modelMarketplace.price.input'), pricing.input_price, 1_000_000],
         ['output', t('modelMarketplace.price.output'), pricing.output_price, 1_000_000],
@@ -463,11 +463,15 @@ const pricingRows = computed(() => {
         ['cache-write', t('modelMarketplace.price.cacheWrite'), pricing.cache_write_price, 1_000_000],
       ] as const
     : [['request', t('modelMarketplace.price.request'), pricing.per_request_price ?? pricing.image_output_price, 1]] as const
+  const rows = [
+    ...primaryRows,
+    ['image-input', t('modelMarketplace.price.imageInput'), pricing.image_input_price, 1_000_000] as const,
+  ]
   return rows.filter(([, , value]) => value != null).map(([key, label, value, scale]) => ({ key, label, rawValue: value, scale }))
 })
 const basePricingRows = computed(() => pricingRows.value.map(row => ({ ...row, value: scaledPrice(row.rawValue, row.scale, 1) })))
 const primaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'input' || row.key === 'output' || row.key === 'request'))
-const secondaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'cache-read' || row.key === 'cache-write'))
+const secondaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'cache-read' || row.key === 'cache-write' || row.key === 'image-input'))
 const groupPricingRows = computed(() => props.groups.map(group => ({
   ...group,
   prices: pricingRows.value.map(row => ({ key: row.key, value: scaledPrice(row.rawValue, row.scale, group.effectiveRate) })),

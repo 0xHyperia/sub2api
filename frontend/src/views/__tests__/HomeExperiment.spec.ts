@@ -39,6 +39,7 @@ describe('HomeExperiment', () => {
               output_price: 0.000015,
               cache_write_price: null,
               cache_read_price: null,
+              image_input_price: null,
               image_output_price: null,
               per_request_price: null,
               intervals: [],

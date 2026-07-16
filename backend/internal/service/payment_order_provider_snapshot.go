@@ -76,31 +76,6 @@ func psSnapshotIntValue(value any) int {
 	return 0
 }
 
-func ldxpOrderQueryPassword(order *dbent.PaymentOrder) string {
-	if order == nil || len(order.ProviderSnapshot) == 0 {
-		return ""
-	}
-	return psSnapshotStringValue(order.ProviderSnapshot["query_password"])
-}
-
-func ldxpOrderAutoRedeem(order *dbent.PaymentOrder) bool {
-	if order == nil || len(order.ProviderSnapshot) == 0 {
-		return true
-	}
-	value, ok := order.ProviderSnapshot["auto_redeem"]
-	if !ok {
-		return true
-	}
-	switch typed := value.(type) {
-	case bool:
-		return typed
-	case string:
-		return strings.TrimSpace(typed) != "false"
-	default:
-		return true
-	}
-}
-
 func (s *PaymentService) resolveSnapshotOrderProviderInstance(ctx context.Context, order *dbent.PaymentOrder, snapshot *paymentOrderProviderSnapshot) (*dbent.PaymentProviderInstance, error) {
 	if s == nil || s.entClient == nil || order == nil || snapshot == nil {
 		return nil, nil
@@ -211,16 +186,6 @@ func validateProviderSnapshotMetadata(order *dbent.PaymentOrder, providerKey str
 			}
 			if !strings.EqualFold(expected, actual) {
 				return fmt.Errorf("easypay pid mismatch: expected %s, got %s", expected, actual)
-			}
-		}
-	case payment.TypeLdxp:
-		if expected := strings.TrimSpace(snapshot.MerchantID); expected != "" {
-			actual := strings.TrimSpace(metadata["goods_key"])
-			if actual == "" {
-				return fmt.Errorf("ldxp goods_key missing")
-			}
-			if !strings.EqualFold(expected, actual) {
-				return fmt.Errorf("ldxp goods_key mismatch: expected %s, got %s", expected, actual)
 			}
 		}
 	case payment.TypeStripe:

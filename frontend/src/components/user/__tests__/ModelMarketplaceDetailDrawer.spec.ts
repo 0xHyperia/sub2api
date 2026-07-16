@@ -26,6 +26,8 @@ describe('ModelMarketplaceDetailDrawer workspace', () => {
 
   it('provides pricing, API examples, parameters, and real RPM limits', () => {
     expect(source).toContain('groupPricingRows')
+    expect(source).toContain("pricing.image_input_price")
+    expect(source).toContain("modelMarketplace.price.imageInput")
     expect(source).toContain('groupPerformanceRows')
     expect(source).toContain("type CodeLanguage = 'curl' | 'python' | 'typescript' | 'javascript'")
     expect(source).toContain("activeProtocol.value === 'anthropic'")

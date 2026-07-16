@@ -21,10 +21,11 @@
           <div class="flex items-baseline gap-1">
             <span class="text-xs text-foreground-subtle">$</span>
             <span :class="['text-xl font-semibold tabular-nums', textClass]">{{ plan.price }}</span>
+            <span v-if="plan.currency" class="text-xs font-medium text-foreground-subtle">{{ plan.currency }}</span>
           </div>
           <span class="text-xs text-foreground-subtle">/ {{ validitySuffix }}</span>
           <div v-if="plan.original_price" class="mt-1 flex items-center gap-1.5">
-            <span class="text-xs text-foreground-subtle line-through">${{ plan.original_price }}</span>
+            <span class="text-xs text-foreground-subtle line-through">${{ plan.original_price }}<template v-if="plan.currency"> {{ plan.currency }}</template></span>
             <span :class="['badge', discountClass]">{{ discountText }}</span>
           </div>
         </div>

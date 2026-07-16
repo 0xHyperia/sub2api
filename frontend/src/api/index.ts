@@ -20,6 +20,7 @@ export { userChannelsAPI } from './channels'
 export * as batchImageAPI from './batchImage'
 export { totpAPI } from './totp'
 export { default as announcementsAPI } from './announcements'
+export { ticketsAPI } from './tickets'
 export { channelMonitorUserAPI } from './channelMonitor'
 export { appAuthAPI } from './appAuth'
 
