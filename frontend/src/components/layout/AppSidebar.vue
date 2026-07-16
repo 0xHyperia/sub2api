@@ -376,6 +376,7 @@ function buildSelfNavItems(): ShellNavItem[] {
       featureFlag: flagAffiliate
     },
     { path: '/profile', label: t('nav.profile'), icon: 'user' },
+    { path: '/support', label: localText('工单支持', 'Support tickets'), icon: 'clipboard' },
     ...customMenuItemsForUser.value.map((item): ShellNavItem => ({
       path: `/custom/${item.id}`,
       label: item.label,
@@ -486,7 +487,10 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
     {
       id: 'communication',
       label: localText('沟通', 'Communication'),
-      items: [{ path: '/admin/announcements', label: t('nav.announcements'), icon: 'bell' }]
+      items: [
+        { path: '/admin/tickets', label: localText('工单队列', 'Ticket queue'), icon: 'clipboard' },
+        { path: '/admin/announcements', label: t('nav.announcements'), icon: 'bell' }
+      ]
     },
     {
       id: 'system',

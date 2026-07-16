@@ -36,6 +36,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/ticket"
+	"github.com/Wei-Shaw/sub2api/ent/ticketattachment"
+	"github.com/Wei-Shaw/sub2api/ent/ticketcategory"
+	"github.com/Wei-Shaw/sub2api/ent/ticketmessage"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
@@ -1909,6 +1913,130 @@ func init() {
 	tlsfingerprintprofileDescEnableGrease := tlsfingerprintprofileFields[2].Descriptor()
 	// tlsfingerprintprofile.DefaultEnableGrease holds the default value on creation for the enable_grease field.
 	tlsfingerprintprofile.DefaultEnableGrease = tlsfingerprintprofileDescEnableGrease.Default.(bool)
+	ticketFields := schema.Ticket{}.Fields()
+	_ = ticketFields
+	// ticketDescNumber is the schema descriptor for number field.
+	ticketDescNumber := ticketFields[0].Descriptor()
+	// ticket.NumberValidator is a validator for the "number" field. It is called by the builders before save.
+	ticket.NumberValidator = ticketDescNumber.Validators[0].(func(string) error)
+	// ticketDescSubject is the schema descriptor for subject field.
+	ticketDescSubject := ticketFields[3].Descriptor()
+	// ticket.SubjectValidator is a validator for the "subject" field. It is called by the builders before save.
+	ticket.SubjectValidator = ticketDescSubject.Validators[0].(func(string) error)
+	// ticketDescStatus is the schema descriptor for status field.
+	ticketDescStatus := ticketFields[4].Descriptor()
+	// ticket.DefaultStatus holds the default value on creation for the status field.
+	ticket.DefaultStatus = ticketDescStatus.Default.(string)
+	// ticket.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	ticket.StatusValidator = ticketDescStatus.Validators[0].(func(string) error)
+	// ticketDescUserUnreadCount is the schema descriptor for user_unread_count field.
+	ticketDescUserUnreadCount := ticketFields[5].Descriptor()
+	// ticket.DefaultUserUnreadCount holds the default value on creation for the user_unread_count field.
+	ticket.DefaultUserUnreadCount = ticketDescUserUnreadCount.Default.(int)
+	// ticketDescAdminUnreadCount is the schema descriptor for admin_unread_count field.
+	ticketDescAdminUnreadCount := ticketFields[6].Descriptor()
+	// ticket.DefaultAdminUnreadCount holds the default value on creation for the admin_unread_count field.
+	ticket.DefaultAdminUnreadCount = ticketDescAdminUnreadCount.Default.(int)
+	// ticketDescLastActorType is the schema descriptor for last_actor_type field.
+	ticketDescLastActorType := ticketFields[7].Descriptor()
+	// ticket.DefaultLastActorType holds the default value on creation for the last_actor_type field.
+	ticket.DefaultLastActorType = ticketDescLastActorType.Default.(string)
+	// ticket.LastActorTypeValidator is a validator for the "last_actor_type" field. It is called by the builders before save.
+	ticket.LastActorTypeValidator = ticketDescLastActorType.Validators[0].(func(string) error)
+	// ticketDescLastMessageAt is the schema descriptor for last_message_at field.
+	ticketDescLastMessageAt := ticketFields[8].Descriptor()
+	// ticket.DefaultLastMessageAt holds the default value on creation for the last_message_at field.
+	ticket.DefaultLastMessageAt = ticketDescLastMessageAt.Default.(func() time.Time)
+	// ticketDescClosedByRole is the schema descriptor for closed_by_role field.
+	ticketDescClosedByRole := ticketFields[11].Descriptor()
+	// ticket.ClosedByRoleValidator is a validator for the "closed_by_role" field. It is called by the builders before save.
+	ticket.ClosedByRoleValidator = ticketDescClosedByRole.Validators[0].(func(string) error)
+	// ticketDescCreatedAt is the schema descriptor for created_at field.
+	ticketDescCreatedAt := ticketFields[12].Descriptor()
+	// ticket.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ticket.DefaultCreatedAt = ticketDescCreatedAt.Default.(func() time.Time)
+	// ticketDescUpdatedAt is the schema descriptor for updated_at field.
+	ticketDescUpdatedAt := ticketFields[13].Descriptor()
+	// ticket.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	ticket.DefaultUpdatedAt = ticketDescUpdatedAt.Default.(func() time.Time)
+	// ticket.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	ticket.UpdateDefaultUpdatedAt = ticketDescUpdatedAt.UpdateDefault.(func() time.Time)
+	ticketattachmentFields := schema.TicketAttachment{}.Fields()
+	_ = ticketattachmentFields
+	// ticketattachmentDescObjectKey is the schema descriptor for object_key field.
+	ticketattachmentDescObjectKey := ticketattachmentFields[1].Descriptor()
+	// ticketattachment.ObjectKeyValidator is a validator for the "object_key" field. It is called by the builders before save.
+	ticketattachment.ObjectKeyValidator = ticketattachmentDescObjectKey.Validators[0].(func(string) error)
+	// ticketattachmentDescOriginalName is the schema descriptor for original_name field.
+	ticketattachmentDescOriginalName := ticketattachmentFields[2].Descriptor()
+	// ticketattachment.OriginalNameValidator is a validator for the "original_name" field. It is called by the builders before save.
+	ticketattachment.OriginalNameValidator = ticketattachmentDescOriginalName.Validators[0].(func(string) error)
+	// ticketattachmentDescContentType is the schema descriptor for content_type field.
+	ticketattachmentDescContentType := ticketattachmentFields[3].Descriptor()
+	// ticketattachment.ContentTypeValidator is a validator for the "content_type" field. It is called by the builders before save.
+	ticketattachment.ContentTypeValidator = ticketattachmentDescContentType.Validators[0].(func(string) error)
+	// ticketattachmentDescSha256 is the schema descriptor for sha256 field.
+	ticketattachmentDescSha256 := ticketattachmentFields[5].Descriptor()
+	// ticketattachment.Sha256Validator is a validator for the "sha256" field. It is called by the builders before save.
+	ticketattachment.Sha256Validator = ticketattachmentDescSha256.Validators[0].(func(string) error)
+	// ticketattachmentDescCreatedAt is the schema descriptor for created_at field.
+	ticketattachmentDescCreatedAt := ticketattachmentFields[6].Descriptor()
+	// ticketattachment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ticketattachment.DefaultCreatedAt = ticketattachmentDescCreatedAt.Default.(func() time.Time)
+	ticketcategoryFields := schema.TicketCategory{}.Fields()
+	_ = ticketcategoryFields
+	// ticketcategoryDescCode is the schema descriptor for code field.
+	ticketcategoryDescCode := ticketcategoryFields[0].Descriptor()
+	// ticketcategory.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	ticketcategory.CodeValidator = ticketcategoryDescCode.Validators[0].(func(string) error)
+	// ticketcategoryDescNameZh is the schema descriptor for name_zh field.
+	ticketcategoryDescNameZh := ticketcategoryFields[1].Descriptor()
+	// ticketcategory.NameZhValidator is a validator for the "name_zh" field. It is called by the builders before save.
+	ticketcategory.NameZhValidator = ticketcategoryDescNameZh.Validators[0].(func(string) error)
+	// ticketcategoryDescNameEn is the schema descriptor for name_en field.
+	ticketcategoryDescNameEn := ticketcategoryFields[2].Descriptor()
+	// ticketcategory.DefaultNameEn holds the default value on creation for the name_en field.
+	ticketcategory.DefaultNameEn = ticketcategoryDescNameEn.Default.(string)
+	// ticketcategory.NameEnValidator is a validator for the "name_en" field. It is called by the builders before save.
+	ticketcategory.NameEnValidator = ticketcategoryDescNameEn.Validators[0].(func(string) error)
+	// ticketcategoryDescActive is the schema descriptor for active field.
+	ticketcategoryDescActive := ticketcategoryFields[3].Descriptor()
+	// ticketcategory.DefaultActive holds the default value on creation for the active field.
+	ticketcategory.DefaultActive = ticketcategoryDescActive.Default.(bool)
+	// ticketcategoryDescSortOrder is the schema descriptor for sort_order field.
+	ticketcategoryDescSortOrder := ticketcategoryFields[4].Descriptor()
+	// ticketcategory.DefaultSortOrder holds the default value on creation for the sort_order field.
+	ticketcategory.DefaultSortOrder = ticketcategoryDescSortOrder.Default.(int)
+	// ticketcategoryDescCreatedAt is the schema descriptor for created_at field.
+	ticketcategoryDescCreatedAt := ticketcategoryFields[5].Descriptor()
+	// ticketcategory.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ticketcategory.DefaultCreatedAt = ticketcategoryDescCreatedAt.Default.(func() time.Time)
+	// ticketcategoryDescUpdatedAt is the schema descriptor for updated_at field.
+	ticketcategoryDescUpdatedAt := ticketcategoryFields[6].Descriptor()
+	// ticketcategory.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	ticketcategory.DefaultUpdatedAt = ticketcategoryDescUpdatedAt.Default.(func() time.Time)
+	// ticketcategory.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	ticketcategory.UpdateDefaultUpdatedAt = ticketcategoryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	ticketmessageFields := schema.TicketMessage{}.Fields()
+	_ = ticketmessageFields
+	// ticketmessageDescSenderType is the schema descriptor for sender_type field.
+	ticketmessageDescSenderType := ticketmessageFields[2].Descriptor()
+	// ticketmessage.SenderTypeValidator is a validator for the "sender_type" field. It is called by the builders before save.
+	ticketmessage.SenderTypeValidator = ticketmessageDescSenderType.Validators[0].(func(string) error)
+	// ticketmessageDescEventType is the schema descriptor for event_type field.
+	ticketmessageDescEventType := ticketmessageFields[3].Descriptor()
+	// ticketmessage.DefaultEventType holds the default value on creation for the event_type field.
+	ticketmessage.DefaultEventType = ticketmessageDescEventType.Default.(string)
+	// ticketmessage.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	ticketmessage.EventTypeValidator = ticketmessageDescEventType.Validators[0].(func(string) error)
+	// ticketmessageDescContent is the schema descriptor for content field.
+	ticketmessageDescContent := ticketmessageFields[4].Descriptor()
+	// ticketmessage.DefaultContent holds the default value on creation for the content field.
+	ticketmessage.DefaultContent = ticketmessageDescContent.Default.(string)
+	// ticketmessageDescCreatedAt is the schema descriptor for created_at field.
+	ticketmessageDescCreatedAt := ticketmessageFields[5].Descriptor()
+	// ticketmessage.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ticketmessage.DefaultCreatedAt = ticketmessageDescCreatedAt.Default.(func() time.Time)
 	usagecleanuptaskMixin := schema.UsageCleanupTask{}.Mixin()
 	usagecleanuptaskMixinFields0 := usagecleanuptaskMixin[0].Fields()
 	_ = usagecleanuptaskMixinFields0

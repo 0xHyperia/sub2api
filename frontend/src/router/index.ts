@@ -315,6 +315,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/support',
+    name: 'SupportTickets',
+    component: () => import('@/views/user/SupportTicketsView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: false, title: 'Support tickets' }
+  },
+  {
+    path: '/support/:number',
+    name: 'SupportTicketDetail',
+    component: () => import('@/views/user/SupportTicketDetailView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: false, title: 'Support ticket' }
+  },
+  {
     path: '/subscriptions',
     name: 'Subscriptions',
     component: () => import('@/views/user/SubscriptionsView.vue'),
@@ -586,6 +598,18 @@ const routes: RouteRecordRaw[] = [
       titleKey: 'admin.announcements.title',
       descriptionKey: 'admin.announcements.description'
     }
+  },
+  {
+    path: '/admin/tickets',
+    name: 'AdminTickets',
+    component: () => import('@/views/admin/TicketsView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Ticket queue' }
+  },
+  {
+    path: '/admin/tickets/:number',
+    name: 'AdminTicketDetail',
+    component: () => import('@/views/admin/TicketDetailView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Ticket' }
   },
   {
     path: '/admin/proxies',

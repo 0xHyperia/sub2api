@@ -22,6 +22,13 @@ export interface FetchOptions {
   signal?: AbortSignal
 }
 
+export type TicketStatus = 'open' | 'answered' | 'closed'
+export interface TicketCategory { id:number; code:string; name_zh:string; name_en:string; active:boolean; sort_order:number; created_at:string; updated_at:string }
+export interface TicketAttachment { id:number; message_id:number; original_name:string; content_type:string; size_bytes:number; sha256:string; created_at:string }
+export interface TicketMessage { id:number; ticket_id:number; sender_user_id?:number; sender_type:'user'|'admin'|'system'; event_type:string; content:string; attachments:TicketAttachment[]; created_at:string }
+export interface Ticket { id:number; number:string; user_id:number; user_email?:string; user_name?:string; category_id:number; category:TicketCategory; subject:string; status:TicketStatus; user_unread_count:number; admin_unread_count:number; last_actor_type:string; last_message_at:string; closed_at?:string; closed_by_user_id?:number; closed_by_role?:string; messages?:TicketMessage[]; created_at:string; updated_at:string }
+export interface TicketAttachmentCapabilities { attachments_available:boolean; max_file_bytes:number; max_files_per_message:number; max_total_bytes:number; allowed_extensions:string[] }
+
 // ==================== Notification Types ====================
 
 /** Notification email entry with enable/disable and verification state.

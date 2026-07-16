@@ -129,6 +129,13 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 
 	// user_allowed_groups: created_at should be timestamptz
 	requireColumn(t, tx, "user_allowed_groups", "created_at", "timestamp with time zone", 0, false)
+
+	// support ticket system
+	requireColumn(t, tx, "ticket_categories", "name_zh", "character varying", 100, false)
+	requireColumn(t, tx, "tickets", "admin_unread_count", "integer", 0, false)
+	requireColumn(t, tx, "ticket_messages", "content", "text", 0, false)
+	requireColumn(t, tx, "ticket_attachments", "object_key", "character varying", 1024, false)
+	requireIndex(t, tx, "tickets", "idx_tickets_admin_unread")
 }
 
 func TestMigrationsRunner_AuthIdentityAndPaymentSchemaStayAligned(t *testing.T) {

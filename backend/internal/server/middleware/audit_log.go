@@ -82,6 +82,9 @@ var auditActionOverrides = map[string]string{
 // 这类 body 的凭证内嵌在普通字符串值里，键级脱敏无法覆盖，整体不入库。
 var auditBodyOmittedRoutes = map[string]struct{}{
 	"POST /api/v1/admin/accounts/import/codex-session": {},
+	"POST /api/v1/tickets":                             {},
+	"POST /api/v1/tickets/:number/messages":            {},
+	"POST /api/v1/admin/tickets/:number/messages":      {},
 }
 
 // NewAuditLogMiddleware 创建审计中间件。

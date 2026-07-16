@@ -114,6 +114,25 @@ func RegisterUserRoutes(
 			announcements.POST("/:id/read", h.Announcement.MarkRead)
 		}
 
+		// Support tickets and private attachments.
+		ticketCategories := authenticated.Group("/ticket-categories")
+		{
+			ticketCategories.GET("", h.Ticket.ListCategories)
+		}
+		tickets := authenticated.Group("/tickets")
+		{
+			tickets.GET("", h.Ticket.List)
+			tickets.POST("", h.Ticket.Create)
+			tickets.GET("/capabilities", h.Ticket.Capabilities)
+			tickets.GET("/unread", h.Ticket.Unread)
+			tickets.GET("/:number", h.Ticket.Get)
+			tickets.POST("/:number/messages", h.Ticket.Reply)
+			tickets.POST("/:number/read", h.Ticket.MarkRead)
+			tickets.POST("/:number/close", h.Ticket.Close)
+			tickets.POST("/:number/reopen", h.Ticket.Reopen)
+		}
+		authenticated.GET("/ticket-attachments/:id", h.Ticket.DownloadAttachment)
+
 		// 卡密兑换
 		redeem := authenticated.Group("/redeem")
 		{

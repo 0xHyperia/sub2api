@@ -645,6 +645,22 @@
   .table-wrapper thead.sticky {
     box-shadow: 0 1px 0 rgb(var(--color-border));
   }
+
+  .status-badge {
+    @apply inline-flex rounded-full px-2 py-1 text-xs font-semibold;
+  }
+
+  .status-badge-warning {
+    @apply bg-warning-subtle text-warning-foreground;
+  }
+
+  .status-badge-success {
+    @apply bg-success-subtle text-success-foreground;
+  }
+
+  .status-badge-neutral {
+    @apply bg-surface-subtle text-foreground-muted;
+  }
 }
 
 @layer utilities {

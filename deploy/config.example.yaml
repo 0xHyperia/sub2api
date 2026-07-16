@@ -1216,3 +1216,19 @@ image_storage:
   presign_expiry_hours: 24
   # 当上游返回的是图片 url 时，下载该图片再转存的字节上限（默认 32MB）
   max_download_bytes: 33554432
+
+# Private object storage for support-ticket attachments. When disabled or
+# incomplete, support tickets remain available without attachments.
+ticket_storage:
+  enabled: false
+  endpoint: ""
+  region: "auto"
+  bucket: ""
+  access_key_id: ""
+  secret_access_key: ""
+  prefix: "tickets/"
+  force_path_style: false
+  presign_expiry_minutes: 5
+  max_file_bytes: 10485760
+  max_files_per_message: 5
+  max_total_bytes: 26214400

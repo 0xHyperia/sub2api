@@ -1547,6 +1547,159 @@ var (
 		Columns:    TLSFingerprintProfilesColumns,
 		PrimaryKey: []*schema.Column{TLSFingerprintProfilesColumns[0]},
 	}
+	// TicketsColumns holds the columns for the "tickets" table.
+	TicketsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "number", Type: field.TypeString, Unique: true, Size: 32},
+		{Name: "subject", Type: field.TypeString, Size: 200},
+		{Name: "status", Type: field.TypeString, Size: 20, Default: "open"},
+		{Name: "user_unread_count", Type: field.TypeInt, Default: 0},
+		{Name: "admin_unread_count", Type: field.TypeInt, Default: 0},
+		{Name: "last_actor_type", Type: field.TypeString, Size: 20, Default: "user"},
+		{Name: "last_message_at", Type: field.TypeTime},
+		{Name: "closed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "closed_by_user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "closed_by_role", Type: field.TypeString, Nullable: true, Size: 20},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "category_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// TicketsTable holds the schema information for the "tickets" table.
+	TicketsTable = &schema.Table{
+		Name:       "tickets",
+		Columns:    TicketsColumns,
+		PrimaryKey: []*schema.Column{TicketsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "tickets_ticket_categories_tickets",
+				Columns:    []*schema.Column{TicketsColumns[13]},
+				RefColumns: []*schema.Column{TicketCategoriesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "tickets_users_tickets",
+				Columns:    []*schema.Column{TicketsColumns[14]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "ticket_user_id_last_message_at",
+				Unique:  false,
+				Columns: []*schema.Column{TicketsColumns[14], TicketsColumns[7]},
+			},
+			{
+				Name:    "ticket_status_last_message_at",
+				Unique:  false,
+				Columns: []*schema.Column{TicketsColumns[3], TicketsColumns[7]},
+			},
+			{
+				Name:    "ticket_category_id_last_message_at",
+				Unique:  false,
+				Columns: []*schema.Column{TicketsColumns[13], TicketsColumns[7]},
+			},
+			{
+				Name:    "ticket_admin_unread_count_last_message_at",
+				Unique:  false,
+				Columns: []*schema.Column{TicketsColumns[5], TicketsColumns[7]},
+			},
+		},
+	}
+	// TicketAttachmentsColumns holds the columns for the "ticket_attachments" table.
+	TicketAttachmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "object_key", Type: field.TypeString, Unique: true, Size: 1024},
+		{Name: "original_name", Type: field.TypeString, Size: 255},
+		{Name: "content_type", Type: field.TypeString, Size: 100},
+		{Name: "size_bytes", Type: field.TypeInt64},
+		{Name: "sha256", Type: field.TypeString, Size: 64},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "message_id", Type: field.TypeInt64},
+	}
+	// TicketAttachmentsTable holds the schema information for the "ticket_attachments" table.
+	TicketAttachmentsTable = &schema.Table{
+		Name:       "ticket_attachments",
+		Columns:    TicketAttachmentsColumns,
+		PrimaryKey: []*schema.Column{TicketAttachmentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ticket_attachments_ticket_messages_attachments",
+				Columns:    []*schema.Column{TicketAttachmentsColumns[7]},
+				RefColumns: []*schema.Column{TicketMessagesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "ticketattachment_message_id",
+				Unique:  false,
+				Columns: []*schema.Column{TicketAttachmentsColumns[7]},
+			},
+		},
+	}
+	// TicketCategoriesColumns holds the columns for the "ticket_categories" table.
+	TicketCategoriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "code", Type: field.TypeString, Unique: true, Size: 64},
+		{Name: "name_zh", Type: field.TypeString, Size: 100},
+		{Name: "name_en", Type: field.TypeString, Size: 100, Default: ""},
+		{Name: "active", Type: field.TypeBool, Default: true},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// TicketCategoriesTable holds the schema information for the "ticket_categories" table.
+	TicketCategoriesTable = &schema.Table{
+		Name:       "ticket_categories",
+		Columns:    TicketCategoriesColumns,
+		PrimaryKey: []*schema.Column{TicketCategoriesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "ticketcategory_active_sort_order",
+				Unique:  false,
+				Columns: []*schema.Column{TicketCategoriesColumns[4], TicketCategoriesColumns[5]},
+			},
+		},
+	}
+	// TicketMessagesColumns holds the columns for the "ticket_messages" table.
+	TicketMessagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "sender_type", Type: field.TypeString, Size: 20},
+		{Name: "event_type", Type: field.TypeString, Size: 32, Default: ""},
+		{Name: "content", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "ticket_id", Type: field.TypeInt64},
+		{Name: "sender_user_id", Type: field.TypeInt64, Nullable: true},
+	}
+	// TicketMessagesTable holds the schema information for the "ticket_messages" table.
+	TicketMessagesTable = &schema.Table{
+		Name:       "ticket_messages",
+		Columns:    TicketMessagesColumns,
+		PrimaryKey: []*schema.Column{TicketMessagesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ticket_messages_tickets_messages",
+				Columns:    []*schema.Column{TicketMessagesColumns[5]},
+				RefColumns: []*schema.Column{TicketsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "ticket_messages_users_ticket_messages",
+				Columns:    []*schema.Column{TicketMessagesColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "ticketmessage_ticket_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{TicketMessagesColumns[5], TicketMessagesColumns[4]},
+			},
+		},
+	}
 	// UsageCleanupTasksColumns holds the columns for the "usage_cleanup_tasks" table.
 	UsageCleanupTasksColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -2068,6 +2221,10 @@ var (
 		SettingsTable,
 		SubscriptionPlansTable,
 		TLSFingerprintProfilesTable,
+		TicketsTable,
+		TicketAttachmentsTable,
+		TicketCategoriesTable,
+		TicketMessagesTable,
 		UsageCleanupTasksTable,
 		UsageLogsTable,
 		UsersTable,
@@ -2194,6 +2351,23 @@ func init() {
 	}
 	TLSFingerprintProfilesTable.Annotation = &entsql.Annotation{
 		Table: "tls_fingerprint_profiles",
+	}
+	TicketsTable.ForeignKeys[0].RefTable = TicketCategoriesTable
+	TicketsTable.ForeignKeys[1].RefTable = UsersTable
+	TicketsTable.Annotation = &entsql.Annotation{
+		Table: "tickets",
+	}
+	TicketAttachmentsTable.ForeignKeys[0].RefTable = TicketMessagesTable
+	TicketAttachmentsTable.Annotation = &entsql.Annotation{
+		Table: "ticket_attachments",
+	}
+	TicketCategoriesTable.Annotation = &entsql.Annotation{
+		Table: "ticket_categories",
+	}
+	TicketMessagesTable.ForeignKeys[0].RefTable = TicketsTable
+	TicketMessagesTable.ForeignKeys[1].RefTable = UsersTable
+	TicketMessagesTable.Annotation = &entsql.Annotation{
+		Table: "ticket_messages",
 	}
 	UsageCleanupTasksTable.Annotation = &entsql.Annotation{
 		Table: "usage_cleanup_tasks",

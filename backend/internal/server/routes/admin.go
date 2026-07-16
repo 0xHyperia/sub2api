@@ -41,6 +41,7 @@ func RegisterAdminRoutes(
 
 		// 公告管理
 		registerAnnouncementRoutes(admin, h)
+		registerTicketRoutes(admin, h)
 
 		// OpenAI OAuth
 		registerOpenAIOAuthRoutes(admin, h)
@@ -114,6 +115,26 @@ func RegisterAdminRoutes(
 
 		// 操作审计日志
 		registerAuditLogRoutes(admin, h, stepUpAuth)
+	}
+}
+
+func registerTicketRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	tickets := admin.Group("/tickets")
+	{
+		tickets.GET("", h.Admin.Ticket.List)
+		tickets.GET("/unread", h.Admin.Ticket.Unread)
+		tickets.GET("/:number", h.Admin.Ticket.Get)
+		tickets.POST("/:number/messages", h.Admin.Ticket.Reply)
+		tickets.POST("/:number/read", h.Admin.Ticket.MarkRead)
+		tickets.POST("/:number/close", h.Admin.Ticket.Close)
+		tickets.POST("/:number/reopen", h.Admin.Ticket.Reopen)
+	}
+	categories := admin.Group("/ticket-categories")
+	{
+		categories.GET("", h.Admin.Ticket.ListCategories)
+		categories.POST("", h.Admin.Ticket.CreateCategory)
+		categories.PUT("/reorder", h.Admin.Ticket.ReorderCategories)
+		categories.PUT("/:id", h.Admin.Ticket.UpdateCategory)
 	}
 }
 

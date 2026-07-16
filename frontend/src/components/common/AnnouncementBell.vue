@@ -4,9 +4,9 @@
       type="button"
       class="relative inline-flex h-10 w-10 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground"
       :class="{ 'text-foreground': unreadCount > 0 }"
-      :aria-label="t('announcements.title')"
+      :aria-label="localText('通知', 'Notifications')"
       :aria-expanded="isModalOpen"
-      :title="t('announcements.title')"
+      :title="localText('通知', 'Notifications')"
       @click="openModal"
     >
       <Icon name="bell" size="md" />
@@ -24,7 +24,7 @@
 
     <BaseDialog
       :show="isModalOpen"
-      :title="t('announcements.title')"
+      :title="localText('通知', 'Notifications')"
       width="normal"
       :z-index="100"
       @close="closeModal"
@@ -50,7 +50,14 @@
           <Icon name="refresh" size="lg" class="animate-spin text-foreground-subtle" />
         </div>
 
-        <ul v-else-if="announcements.length > 0" class="max-h-[58vh] divide-y divide-outline overflow-y-auto">
+        <ul v-else-if="ticketItems.length > 0 || announcements.length > 0" class="max-h-[58vh] divide-y divide-outline overflow-y-auto">
+          <li v-for="ticket in ticketItems" :key="`ticket-${ticket.id}`">
+            <button type="button" class="group flex min-h-[68px] w-full items-center gap-3 px-1 py-3 text-left transition-colors hover:bg-surface-subtle" @click="openTicket(ticket.number)">
+              <span class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control border border-outline bg-info-subtle text-info-foreground"><Icon name="clipboard" size="sm" /></span>
+              <span class="min-w-0 flex-1"><span class="block truncate text-sm font-semibold text-foreground">{{ ticket.subject }}</span><span class="mt-1 block text-xs text-foreground-subtle">{{ ticket.number }} · {{ formatRelativeTime(ticket.last_message_at) }}</span></span>
+              <Icon name="chevronRight" size="sm" class="text-foreground-subtle" />
+            </button>
+          </li>
           <li v-for="item in announcements" :key="item.id">
             <button
               type="button"
@@ -146,21 +153,29 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useAppStore } from '@/stores/app'
 import { useAnnouncementStore } from '@/stores/announcements'
+import { useTicketNotificationStore } from '@/stores/ticketNotifications'
+import { useAuthStore } from '@/stores/auth'
+import { ticketsAPI } from '@/api/tickets'
+import { adminTicketsAPI } from '@/api/admin/tickets'
 import { formatRelativeTime, formatRelativeWithDateTime } from '@/utils/format'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import type { UserAnnouncement } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const router = useRouter()
 const appStore = useAppStore()
 const announcementStore = useAnnouncementStore()
+const ticketStore = useTicketNotificationStore()
+const authStore = useAuthStore()
 
 marked.setOptions({
   breaks: true,
@@ -168,7 +183,9 @@ marked.setOptions({
 })
 
 const { announcements, loading } = storeToRefs(announcementStore)
-const unreadCount = computed(() => announcementStore.unreadCount)
+const unreadCount = computed(() => announcementStore.unreadCount + ticketStore.unreadCount)
+const ticketItems = computed(() => ticketStore.items)
+const localText = (zh: string, en: string) => locale.value.startsWith('zh') ? zh : en
 const isModalOpen = ref(false)
 const detailModalOpen = ref(false)
 const selectedAnnouncement = ref<UserAnnouncement | null>(null)
@@ -213,11 +230,20 @@ async function markAsReadAndClose(id: number) {
 
 async function markAllAsRead() {
   try {
-    await announcementStore.markAllAsRead()
+    await Promise.all([
+      announcementStore.markAllAsRead(),
+      ...ticketItems.value.map((ticket) => authStore.isAdmin ? adminTicketsAPI.markRead(ticket.number) : ticketsAPI.markRead(ticket.number))
+    ])
+    await ticketStore.refresh()
     appStore.showSuccess(t('announcements.allMarkedAsRead'))
   } catch (error: unknown) {
     appStore.showError(extractApiErrorMessage(error, t('common.unknownError')))
   }
+}
+
+async function openTicket(number: string) {
+  closeModal()
+  await router.push(authStore.isAdmin ? `/admin/tickets/${number}` : `/support/${number}`)
 }
 </script>
 

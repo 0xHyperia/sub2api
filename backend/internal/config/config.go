@@ -97,6 +97,7 @@ type Config struct {
 	Idempotency             IdempotencyConfig             `mapstructure:"idempotency"`
 	BatchImage              BatchImageConfig              `mapstructure:"batch_image"`
 	ImageStorage            ImageStorageConfig            `mapstructure:"image_storage"`
+	TicketStorage           TicketStorageConfig           `mapstructure:"ticket_storage"`
 }
 
 type LogConfig struct {
@@ -245,6 +246,29 @@ type ImageStorageConfig struct {
 	PresignExpiry   int    `mapstructure:"presign_expiry_hours"` // public_base_url 为空时的 presigned 过期时长(小时)
 	MaxDownloadByte int64  `mapstructure:"max_download_bytes"`   // 下载上游 url 图片的字节上限
 }
+
+// TicketStorageConfig configures the private S3-compatible store used by ticket attachments.
+// Ticket text remains available when this store is disabled or incomplete.
+type TicketStorageConfig struct {
+	Enabled              bool   `mapstructure:"enabled"`
+	Endpoint             string `mapstructure:"endpoint"`
+	Region               string `mapstructure:"region"`
+	Bucket               string `mapstructure:"bucket"`
+	AccessKeyID          string `mapstructure:"access_key_id"`
+	SecretAccessKey      string `mapstructure:"secret_access_key"`
+	Prefix               string `mapstructure:"prefix"`
+	ForcePathStyle       bool   `mapstructure:"force_path_style"`
+	PresignExpiryMinutes int    `mapstructure:"presign_expiry_minutes"`
+	MaxFileBytes         int64  `mapstructure:"max_file_bytes"`
+	MaxFilesPerMessage   int    `mapstructure:"max_files_per_message"`
+	MaxTotalBytes        int64  `mapstructure:"max_total_bytes"`
+}
+
+func (c *TicketStorageConfig) IsConfigured() bool {
+	return c.Bucket != "" && c.AccessKeyID != "" && c.SecretAccessKey != ""
+}
+
+func (c *TicketStorageConfig) Active() bool { return c.Enabled && c.IsConfigured() }
 
 // IsConfigured 检查对象存储必要字段是否已配置
 func (c *ImageStorageConfig) IsConfigured() bool {
@@ -1939,6 +1963,16 @@ func setDefaults() {
 	viper.SetDefault("image_storage.force_path_style", false)
 	viper.SetDefault("image_storage.presign_expiry_hours", 24)
 	viper.SetDefault("image_storage.max_download_bytes", 33554432)
+
+	// Private ticket attachment storage. Text tickets do not depend on this feature.
+	viper.SetDefault("ticket_storage.enabled", false)
+	viper.SetDefault("ticket_storage.region", "auto")
+	viper.SetDefault("ticket_storage.prefix", "tickets/")
+	viper.SetDefault("ticket_storage.force_path_style", false)
+	viper.SetDefault("ticket_storage.presign_expiry_minutes", 5)
+	viper.SetDefault("ticket_storage.max_file_bytes", int64(10*1024*1024))
+	viper.SetDefault("ticket_storage.max_files_per_message", 5)
+	viper.SetDefault("ticket_storage.max_total_bytes", int64(25*1024*1024))
 
 	// Ops (vNext)
 	viper.SetDefault("ops.enabled", true)
