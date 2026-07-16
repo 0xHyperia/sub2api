@@ -433,6 +433,7 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
       items: [
         { path: '/admin/ops', label: t('nav.ops'), icon: 'terminal', featureFlag: flagOpsMonitoring },
         { path: '/admin/usage', label: t('nav.usage'), icon: 'chart' },
+        { path: '/admin/audit-logs', label: t('nav.auditLogs'), icon: 'shield', hideInSimpleMode: true },
         {
           path: '/admin/risk-control',
           label: t('nav.riskControl'),
