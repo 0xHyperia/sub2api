@@ -254,13 +254,17 @@ describe('PaymentView subscription confirmation amounts', () => {
   it('keeps the invite rewards panel mounted while switching purchase tabs', async () => {
     const wrapper = await mountSubscriptionConfirm()
     const panel = wrapper.find('[data-testid="affiliate-reward-panel"]')
+    const sideTools = wrapper.get('[data-testid="purchase-side-tools"]')
 
     expect(panel.exists()).toBe(true)
+    expect(sideTools.element.children[0]).toBe(panel.element)
+    expect(sideTools.element.children[1]?.getAttribute('data-testid')).toBe('purchase-redeem-card')
     await wrapper.find('#purchase-tab-recharge').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="affiliate-reward-panel"]').element).toBe(panel.element)
     expect(wrapper.find('#purchase-panel-recharge').exists()).toBe(true)
+    expect(wrapper.find('#purchase-panel-recharge [data-testid="purchase-redeem-card"]').exists()).toBe(false)
   })
 
   it('keeps subscription confirmation in a full-width action footer', async () => {
@@ -268,6 +272,8 @@ describe('PaymentView subscription confirmation amounts', () => {
     const action = wrapper.get('[data-testid="subscription-confirm-action"]')
 
     expect(action.classes()).toContain('btn-lg')
+    expect(action.classes()).toContain('payment-confirm-button')
+    expect(action.classes()).not.toContain('btn-wxpay')
     expect(action.classes()).toContain('sm:min-w-[240px]')
     expect(action.element.parentElement?.className).toContain('sm:justify-between')
     expect(wrapper.get('[data-testid="subscription-plan-grid"]').classes()).toContain('plan-grid')

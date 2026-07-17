@@ -183,13 +183,13 @@
                         <button
                           type="button"
                           data-testid="recharge-confirm-action"
-                          :class="['btn btn-lg w-full md:min-w-[240px] md:justify-self-end', paymentButtonClass]"
+                          class="payment-confirm-button btn btn-lg w-full md:min-w-[240px] md:justify-self-end"
                           :disabled="!canSubmit || submitting"
                           :aria-busy="submitting"
                           @click="handleSubmitRecharge"
                         >
                           <span v-if="submitting" class="flex items-center justify-center gap-2">
-                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
                             {{ t('common.processing') }}
                           </span>
                           <span v-else>{{ t('payment.createOrder') }} {{ formatSelectedPaymentAmount(totalAmount) }}</span>
@@ -278,13 +278,13 @@
                         <button
                           type="button"
                           data-testid="subscription-confirm-action"
-                          :class="['btn btn-lg w-full sm:w-auto sm:min-w-[240px]', paymentButtonClass]"
+                          class="payment-confirm-button btn btn-lg w-full sm:w-auto sm:min-w-[240px]"
                           :disabled="!canSubmitSubscription || submitting"
                           :aria-busy="submitting"
                           @click="confirmSubscribe"
                         >
                           <span v-if="submitting" class="flex items-center justify-center gap-2">
-                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
                             {{ t('common.processing') }}
                           </span>
                           <span v-else>{{ t('payment.createOrder') }} {{ formatSelectedPaymentAmount(subTotalAmount) }}</span>
@@ -294,16 +294,17 @@
                   </template>
                 </section>
 
-                <div class="border-t border-outline p-4 sm:p-5">
-                  <RedeemCodeForm />
-                </div>
               </article>
 
-              <AffiliateRewardPanel
-                v-if="affiliateEnabled"
-                data-testid="affiliate-reward-panel"
-                :class="affiliatePanelClass"
-              />
+              <div data-testid="purchase-side-tools" :class="['space-y-5', sideToolsClass]">
+                <AffiliateRewardPanel
+                  v-if="affiliateEnabled"
+                  data-testid="affiliate-reward-panel"
+                />
+                <section data-testid="purchase-redeem-card" class="card min-w-0 p-4 sm:p-5" :aria-label="t('redeem.redeemCodeLabel')">
+                  <RedeemCodeForm />
+                </section>
+              </div>
             </div>
 
             <section v-if="showInstantHelp" class="grid gap-4 lg:grid-cols-2">
@@ -367,7 +368,7 @@ import AmountInput from '@/components/payment/AmountInput.vue'
 import AffiliateRewardPanel from '@/components/payment/AffiliateRewardPanel.vue'
 import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector.vue'
 import RedeemCodeForm from '@/components/payment/RedeemCodeForm.vue'
-import { METHOD_ORDER, getPaymentPopupFeatures, isBuiltInAlipayMethod, isBuiltInWxpayMethod } from '@/components/payment/providerConfig'
+import { METHOD_ORDER, getPaymentPopupFeatures } from '@/components/payment/providerConfig'
 import {
   PAYMENT_RECOVERY_STORAGE_KEY,
   buildCreateOrderPayload,
@@ -418,12 +419,11 @@ const paymentPhase = ref<'select' | 'paying'>('select')
 
 const affiliateEnabled = computed(() => appStore.cachedPublicSettings?.affiliate_enabled === true)
 const workspaceGridClass = computed(() => {
-  if (!affiliateEnabled.value) return 'grid-cols-1'
   return activeTab.value === 'subscription'
     ? 'grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_minmax(380px,440px)]'
     : 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(380px,460px)]'
 })
-const affiliatePanelClass = computed(() => activeTab.value === 'subscription'
+const sideToolsClass = computed(() => activeTab.value === 'subscription'
   ? 'w-full max-w-[720px] 2xl:sticky 2xl:top-24 2xl:max-w-none'
   : 'xl:sticky xl:top-24'
 )
@@ -855,17 +855,6 @@ watch(() => [validAmount.value, selectedMethod.value] as const, ([amt, method]) 
   if (amt <= 0 || amountFitsMethod(amt, method)) return
   const available = enabledMethods.value.find((m) => amountFitsMethod(amt, m))
   if (available) selectedMethod.value = available
-})
-
-// Payment button class: follows selected payment method color
-const paymentButtonClass = computed(() => {
-  const m = selectedMethod.value
-  if (!m) return 'btn-primary'
-  if (isBuiltInAlipayMethod(m)) return 'btn-alipay'
-  if (isBuiltInWxpayMethod(m)) return 'btn-wxpay'
-  if (m === 'stripe') return 'btn-stripe'
-  if (m === 'airwallex') return 'btn-airwallex'
-  return 'btn-primary'
 })
 
 // Subscription confirm: platform accent colors (clean card, no gradient)
@@ -1322,6 +1311,78 @@ onMounted(async () => {
 
 .purchase-tab-active:hover {
   color: #fff;
+}
+
+.payment-confirm-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: #174a72;
+  background: #dceefe;
+  border-color: rgb(80 174 255 / 0.45);
+  box-shadow: 0 4px 14px rgb(23 74 114 / 0.12);
+}
+
+.payment-confirm-button::before {
+  position: absolute;
+  z-index: 0;
+  inset: -70%;
+  content: '';
+  background:
+    radial-gradient(ellipse at center, rgb(80 174 255 / 0.62), transparent 52%),
+    radial-gradient(ellipse at center, rgb(255 180 106 / 0.4), transparent 50%),
+    radial-gradient(ellipse at center, rgb(255 255 255 / 0.82), transparent 48%);
+  background-position: 0% 28%, 100% 72%, 52% 0%;
+  background-repeat: no-repeat;
+  background-size: 62% 72%, 58% 68%, 54% 62%;
+  animation: payment-confirm-flow 10s linear infinite;
+  pointer-events: none;
+}
+
+.payment-confirm-button::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: '';
+  background: rgb(255 255 255 / 0.2);
+  border: 1px solid rgb(255 255 255 / 0.64);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.payment-confirm-button > * {
+  position: relative;
+  z-index: 2;
+}
+
+.payment-confirm-button:hover:not(:disabled) {
+  color: #0f3d62;
+  background: #d2eafe;
+  border-color: rgb(80 174 255 / 0.72);
+}
+
+@keyframes payment-confirm-flow {
+  0% {
+    background-position: 0% 28%, 100% 72%, 52% 0%;
+  }
+
+  33% {
+    background-position: 72% 12%, 18% 90%, 100% 58%;
+  }
+
+  66% {
+    background-position: 100% 76%, 54% 0%, 0% 42%;
+  }
+
+  100% {
+    background-position: 0% 28%, 100% 72%, 52% 0%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payment-confirm-button::before {
+    animation: none;
+  }
 }
 
 .plan-grid {

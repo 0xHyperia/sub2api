@@ -17,7 +17,6 @@
           {{ plan.description }}
         </p>
       </div>
-      <div :class="['h-10 w-1 shrink-0 rounded-full', accentClass]" aria-hidden="true" />
     </div>
 
     <div class="mt-3 flex flex-wrap items-end gap-x-2.5 gap-y-1">
@@ -97,7 +96,6 @@ import { useAppStore } from '@/stores/app'
 import Icon from '@/components/icons/Icon.vue'
 import { hasPeakRate as groupHasPeakRate, formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'
 import {
-  platformAccentBarClass,
   platformBadgeLightClass,
   platformTextClass,
   platformIconClass,
@@ -114,7 +112,6 @@ const isRenewal = computed(() =>
   props.activeSubscriptions?.some(s => s.group_id === props.plan.group_id && s.status === 'active') ?? false
 )
 
-const accentClass = computed(() => platformAccentBarClass(platform.value))
 const badgeLightClass = computed(() => platformBadgeLightClass(platform.value))
 const textClass = computed(() => platformTextClass(platform.value))
 const iconClass = computed(() => platformIconClass(platform.value))

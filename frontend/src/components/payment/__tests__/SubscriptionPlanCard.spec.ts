@@ -53,6 +53,7 @@ describe("SubscriptionPlanCard", () => {
     expect(wrapper.get("article").classes()).toContain("p-4");
     expect(wrapper.get("article").classes()).not.toContain("sm:p-5");
     expect(wrapper.get("button").classes()).toContain("btn-sm");
+    expect(wrapper.find(".h-10.w-1").exists()).toBe(false);
   });
 
   it("does not show Antigravity model scopes for OpenAI plans", () => {
