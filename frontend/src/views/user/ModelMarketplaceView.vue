@@ -408,25 +408,11 @@
               </div>
 
               <div class="mt-auto flex min-h-8 items-center gap-2 border-t border-outline pt-2">
-                <div class="marketplace-card-groups flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
-                  <button
-                    v-for="group in cardGroups(entry)"
-                    :key="group.id"
-                    type="button"
-                    class="inline-flex h-6 shrink-0 items-center gap-1 rounded-control border px-1.5 text-[9px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                    :class="group.id === activeEntryGroup(entry)?.id ? 'border-outline bg-brand-subtle font-semibold text-brand' : 'border-outline bg-surface text-foreground-muted hover:bg-surface-subtle hover:text-foreground'"
-                    :title="`${group.name} · ×${formatRate(group.effectiveRate)}`"
-                    :aria-pressed="group.id === activeEntryGroup(entry)?.id"
-                    @click.stop="selectEntryGroup(entry, group.id)"
-                  >
-                    <span class="max-w-32 truncate">{{ group.name }}</span>
-                    <span
-                      class="shrink-0 rounded-control bg-surface-subtle px-1 font-mono text-[8px] tabular-nums text-foreground-subtle"
-                      :class="group.id === activeEntryGroup(entry)?.id ? 'bg-surface text-brand' : ''"
-                    >{{ formatRate(group.effectiveRate) }}x</span>
-                  </button>
-                  <span v-if="entry.groups.length === 0" class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.billingGroup') }} -</span>
-                </div>
+                <ModelMarketplaceCardGroups
+                  :groups="cardGroups(entry)"
+                  :active-group-id="activeEntryGroup(entry)?.id"
+                  @select="selectEntryGroup(entry, $event)"
+                />
                 <div
                   class="group/rate relative flex shrink-0 cursor-help items-center gap-1.5 outline-none"
                   tabindex="0"
@@ -510,6 +496,7 @@ import SearchInput from '@/components/common/SearchInput.vue'
 import Toggle from '@/components/common/Toggle.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
+import ModelMarketplaceCardGroups from '@/components/user/ModelMarketplaceCardGroups.vue'
 import ModelMarketplaceDetailDrawer from '@/components/user/ModelMarketplaceDetailDrawer.vue'
 import ModelMarketplaceFilterDrawer from '@/components/user/ModelMarketplaceFilterDrawer.vue'
 import userChannelsAPI from '@/api/channels'

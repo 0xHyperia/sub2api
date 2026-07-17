@@ -13,6 +13,7 @@ import {
   realtimeRate,
   scaledPrice,
   sortedEntryGroups,
+  visibleMarketplaceGroupCount,
 } from '../modelMarketplace'
 
 const platforms: UserMarketplacePlatform[] = [{
@@ -137,6 +138,13 @@ describe('model marketplace data', () => {
     expect(realtimeRate(0.1, 1, 7.2)).toBeCloseTo(0.0138889)
     expect(realtimeRate(0.15, 1.5, 7.2)).toBeCloseTo(0.0138889)
     expect(realtimeRate(0.1, 0, 0)).toBeCloseTo(0.0138889)
+  })
+
+  it('reserves room for the overflow control before deciding which group chips fit', () => {
+    expect(visibleMarketplaceGroupCount([50, 50, 50], 161, 30)).toBe(2)
+    expect(visibleMarketplaceGroupCount([50, 50, 50], 130, 30)).toBe(1)
+    expect(visibleMarketplaceGroupCount([50, 50, 50], 80, 30)).toBe(0)
+    expect(visibleMarketplaceGroupCount([50, 50], 106, 30)).toBe(2)
   })
 
   it('maps technical billing modes to the two marketplace categories', () => {

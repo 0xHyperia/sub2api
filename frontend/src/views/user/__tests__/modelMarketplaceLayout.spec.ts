@@ -8,6 +8,10 @@ const source = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), '../ModelMarketplaceView.vue'),
   'utf8'
 )
+const cardGroupsSource = readFileSync(
+  resolve(dirname(fileURLToPath(import.meta.url)), '../../../components/user/ModelMarketplaceCardGroups.vue'),
+  'utf8'
+)
 
 describe('model marketplace toolbar layout', () => {
   it('keeps desktop controls on one compact row without a full-width sort field', () => {
@@ -92,18 +96,20 @@ describe('model marketplace toolbar layout', () => {
     expect(source).not.toContain('hasMonitorTimeline(entry)')
     expect(source).toContain('divide-x divide-outline')
     expect(source).toContain('cardGroups(entry)')
-    expect(source).toContain('marketplace-card-groups')
-    expect(source).toContain("'border-outline bg-brand-subtle font-semibold text-brand'")
-    expect(source).toContain("'bg-surface text-brand'")
-    expect(source).not.toContain("'border-black bg-black text-white'")
-    expect(source).toContain(':aria-pressed="group.id === activeEntryGroup(entry)?.id"')
-    expect(source).toContain('{{ formatRate(group.effectiveRate) }}x</span>')
-    expect(source).not.toContain('[active, ...sorted.filter')
-    expect(source).toContain('overflow-x-auto')
-    expect(source).toContain('max-w-32 truncate')
+    expect(source).toContain('<ModelMarketplaceCardGroups')
+    expect(source).toContain(':active-group-id="activeEntryGroup(entry)?.id"')
+    expect(source).toContain('@select="selectEntryGroup(entry, $event)"')
+    expect(cardGroupsSource).toContain('marketplace-card-groups')
+    expect(cardGroupsSource).toContain('ResizeObserver')
+    expect(cardGroupsSource).toContain('visibleMarketplaceGroupCount')
+    expect(cardGroupsSource).toContain('hiddenGroups.length')
+    expect(cardGroupsSource).toContain("t('modelMarketplace.details.moreGroups'")
+    expect(cardGroupsSource).toContain("'border-outline bg-brand-subtle font-semibold text-brand'")
+    expect(cardGroupsSource).toContain("'bg-surface text-brand'")
+    expect(cardGroupsSource).toContain(':aria-pressed="group.id === activeGroupId"')
+    expect(cardGroupsSource).toContain('{{ formatRate(group.effectiveRate) }}x</span>')
     expect(source).toContain('class="card h-[152px] animate-pulse')
     expect(source).not.toContain('.slice(0, 2)')
-    expect(source).not.toContain("t('modelMarketplace.details.moreGroups'")
     expect(source).toContain('marketplace-rate-tooltip')
     expect(source).toContain('group/rate')
     expect(source).toContain('<ModelMarketplaceDetailDrawer')

@@ -49,6 +49,28 @@ export const MARKETPLACE_MODEL_CAPABILITIES = [
 
 export type MarketplaceModelCapability = typeof MARKETPLACE_MODEL_CAPABILITIES[number]
 
+export function visibleMarketplaceGroupCount(
+  groupWidths: number[],
+  availableWidth: number,
+  overflowWidth: number,
+  gap = 6,
+): number {
+  if (groupWidths.length === 0 || availableWidth <= 0) return 0
+
+  const allGroupsWidth = groupWidths.reduce((total, width) => total + width, 0) + gap * (groupWidths.length - 1)
+  if (allGroupsWidth <= availableWidth) return groupWidths.length
+
+  let usedWidth = 0
+  let visibleCount = 0
+  for (const width of groupWidths) {
+    const nextWidth = usedWidth + width + (visibleCount > 0 ? gap : 0)
+    if (nextWidth + gap + overflowWidth > availableWidth) break
+    usedWidth = nextWidth
+    visibleCount += 1
+  }
+  return visibleCount
+}
+
 export const MARKETPLACE_CARD_CAPABILITY_ORDER: MarketplaceModelCapability[] = [
   'vision',
   'image_input',
