@@ -17,6 +17,7 @@ const i18n = createI18n({
         planCard: {
           quota: "Quota",
           rate: "Rate",
+          selected: "Selected",
           unlimited: "Unlimited",
         },
         subscribeNow: "Subscribe now",
@@ -25,9 +26,10 @@ const i18n = createI18n({
   },
 });
 
-const mountPlanCard = (groupPlatform: string) =>
+const mountPlanCard = (groupPlatform: string, selected = false) =>
   mount(SubscriptionPlanCard, {
     props: {
+      selected,
       plan: {
         id: 1,
         group_id: 10,
@@ -54,6 +56,14 @@ describe("SubscriptionPlanCard", () => {
     expect(wrapper.get("article").classes()).not.toContain("sm:p-5");
     expect(wrapper.get("button").classes()).toContain("btn-sm");
     expect(wrapper.find(".h-10.w-1").exists()).toBe(false);
+  });
+
+  it("shows a persistent selected state with radio-like button feedback", () => {
+    const wrapper = mountPlanCard("openai", true);
+
+    expect(wrapper.get("article").classes()).toContain("border-info/50");
+    expect(wrapper.get("button").attributes("aria-pressed")).toBe("true");
+    expect(wrapper.text()).toContain("payment.planCard.selected");
   });
 
   it("does not show Antigravity model scopes for OpenAI plans", () => {

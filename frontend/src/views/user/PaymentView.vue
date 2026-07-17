@@ -38,28 +38,28 @@
             <div class="min-w-0 border-b border-outline p-4 sm:p-5 xl:border-b-0 xl:border-r">
               <dt class="text-sm text-foreground-subtle">{{ t('purchaseWorkspace.todaySpent') }}</dt>
               <dd class="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-                <span v-if="accountStatsLoading">--</span>
+                <span v-if="accountStatsLoading || accountStatsLoadFailed">--</span>
                 <span v-else>{{ '$' }}{{ (accountStats?.today_actual_cost || 0).toFixed(2) }}</span>
               </dd>
             </div>
             <div class="min-w-0 border-b border-outline p-4 sm:border-b-0 sm:border-r sm:p-5">
               <dt class="text-sm text-foreground-subtle">{{ t('purchaseWorkspace.totalSpent') }}</dt>
               <dd class="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-                <span v-if="accountStatsLoading">--</span>
+                <span v-if="accountStatsLoading || accountStatsLoadFailed">--</span>
                 <span v-else>{{ '$' }}{{ (accountStats?.total_actual_cost || 0).toFixed(2) }}</span>
               </dd>
             </div>
             <div class="min-w-0 p-4 sm:p-5">
               <dt class="text-sm text-foreground-subtle">{{ t('purchaseWorkspace.totalRequests') }}</dt>
               <dd class="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-                <span v-if="accountStatsLoading">--</span>
+                <span v-if="accountStatsLoading || accountStatsLoadFailed">--</span>
                 <span v-else>{{ formatCount(accountStats?.total_requests || 0) }}</span>
               </dd>
-              <p v-if="accountStatsLoadFailed" class="mt-1 text-xs text-warning-foreground">
-                {{ t('purchaseWorkspace.statsUnavailable') }}
-              </p>
             </div>
           </dl>
+          <p v-if="accountStatsLoadFailed" class="text-xs text-warning-foreground" role="status">
+            {{ t('purchaseWorkspace.statsUnavailable') }}
+          </p>
         </header>
 
         <div
@@ -154,6 +154,15 @@
                           :selected="selectedMethod"
                           @select="selectedMethod = $event"
                         />
+                        <p
+                          v-if="methodSwitchNotice"
+                          class="mt-3 flex items-start gap-2 rounded-control border border-info/20 bg-info-subtle px-3 py-2 text-xs leading-5 text-info-foreground"
+                          role="status"
+                          aria-live="polite"
+                        >
+                          <Icon name="infoCircle" size="sm" class="mt-0.5 shrink-0" aria-hidden="true" />
+                          <span>{{ methodSwitchNotice }}</span>
+                        </p>
                       </div>
 
                       <div class="mt-5 grid gap-5 border-t border-outline pt-5 md:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] md:items-end">
@@ -228,11 +237,21 @@
                         v-for="plan in checkout.plans"
                         :key="plan.id"
                         :plan="plan"
+                        :selected="selectedPlan?.id === plan.id"
                         @select="selectPlan"
                       />
                     </div>
 
-                    <div v-if="selectedPlan" class="mt-5 border-t border-outline pt-5">
+                    <div
+                      v-if="selectedPlan"
+                      id="subscription-confirmation"
+                      ref="subscriptionConfirmationRef"
+                      data-testid="subscription-confirmation"
+                      class="mt-5 scroll-mt-24 border-t border-outline pt-5 outline-none"
+                      tabindex="-1"
+                      role="status"
+                      aria-live="polite"
+                    >
                       <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.72fr)]">
                         <div class="min-w-0">
                           <div class="flex min-w-0 items-start justify-between gap-3">
@@ -347,7 +366,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -413,6 +432,8 @@ const activeTab = ref<PurchaseTab>('recharge')
 const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
+const subscriptionConfirmationRef = ref<HTMLElement | null>(null)
+const methodSwitchNotice = ref('')
 const previewImage = ref('')
 
 const paymentPhase = ref<'select' | 'paying'>('select')
@@ -850,11 +871,19 @@ const canSubmitSubscription = computed(() =>
     && selectedLimit.value?.available !== false
 )
 
-// Auto-switch to first available method when current selection can't handle the amount
-watch(() => [validAmount.value, selectedMethod.value] as const, ([amt, method]) => {
-  if (amt <= 0 || amountFitsMethod(amt, method)) return
+watch(validAmount, (amt) => {
+  methodSwitchNotice.value = ''
+  if (amt <= 0 || amountFitsMethod(amt, selectedMethod.value)) return
+
+  const previousMethod = selectedMethod.value
   const available = enabledMethods.value.find((m) => amountFitsMethod(amt, m))
-  if (available) selectedMethod.value = available
+  if (!available) return
+
+  selectedMethod.value = available
+  methodSwitchNotice.value = t('payment.methodAutoSwitched', {
+    from: paymentMethodDisplayName(previousMethod),
+    to: paymentMethodDisplayName(available),
+  })
 })
 
 // Subscription confirm: platform accent colors (clean card, no gradient)
@@ -877,9 +906,21 @@ const planValiditySuffix = computed(() => {
   return `${selectedPlan.value.validity_days}${t('payment.days')}`
 })
 
-function selectPlan(plan: SubscriptionPlan) {
+function paymentMethodDisplayName(type: string): string {
+  return visibleMethods.value[type]?.display_name || t(`payment.methods.${type}`, type)
+}
+
+async function selectPlan(plan: SubscriptionPlan) {
   selectedPlan.value = plan
   errorMessage.value = ''
+  await nextTick()
+
+  const target = subscriptionConfirmationRef.value
+  if (!target) return
+  const reduceMotion = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  target.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+  target.focus({ preventScroll: true })
 }
 
 function selectPlanFromModal(plan: SubscriptionPlan) {

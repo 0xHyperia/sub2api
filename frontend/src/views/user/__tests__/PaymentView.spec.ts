@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import PaymentView from '../PaymentView.vue'
+import AmountInput from '@/components/payment/AmountInput.vue'
+import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector.vue'
+import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import { PAYMENT_RECOVERY_STORAGE_KEY } from '@/components/payment/paymentFlow'
 import { formatPaymentAmount } from '@/components/payment/currency'
 import type { CheckoutInfoResponse, MethodLimit, SubscriptionPlan } from '@/types/payment'
@@ -213,13 +216,13 @@ function oauthOrderFixture() {
   }
 }
 
-async function mountSubscriptionConfirm(options: Parameters<typeof checkoutInfoWithPlansFixture>[0] = {}) {
+async function mountPaymentView(
+  checkoutResponse: ReturnType<typeof checkoutInfoFixture>,
+  query: Record<string, unknown>,
+) {
   vi.useRealTimers()
   routeState.path = '/purchase'
-  routeState.query = {
-    tab: 'subscription',
-    group: '3',
-  }
+  routeState.query = query
   routerReplace.mockReset().mockResolvedValue(undefined)
   routerPush.mockReset().mockResolvedValue(undefined)
   routerResolve.mockClear()
@@ -229,7 +232,7 @@ async function mountSubscriptionConfirm(options: Parameters<typeof checkoutInfoW
   showError.mockReset()
   showInfo.mockReset()
   showWarning.mockReset()
-  getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoWithPlansFixture(options))
+  getCheckoutInfo.mockReset().mockResolvedValue(checkoutResponse)
   bridgeInvoke.mockReset()
   window.localStorage.clear()
   ;(window as Window & { WeixinJSBridge?: { invoke: typeof bridgeInvoke } }).WeixinJSBridge = undefined
@@ -248,6 +251,13 @@ async function mountSubscriptionConfirm(options: Parameters<typeof checkoutInfoW
   await flushPromises()
   await flushPromises()
   return wrapper
+}
+
+async function mountSubscriptionConfirm(options: Parameters<typeof checkoutInfoWithPlansFixture>[0] = {}) {
+  return mountPaymentView(checkoutInfoWithPlansFixture(options), {
+    tab: 'subscription',
+    group: '3',
+  })
 }
 
 describe('PaymentView subscription confirmation amounts', () => {
@@ -277,6 +287,33 @@ describe('PaymentView subscription confirmation amounts', () => {
     expect(action.classes()).toContain('sm:min-w-[240px]')
     expect(action.element.parentElement?.className).toContain('sm:justify-between')
     expect(wrapper.get('[data-testid="subscription-plan-grid"]').classes()).toContain('plan-grid')
+    expect(wrapper.getComponent(SubscriptionPlanCard).props('selected')).toBe(true)
+    expect(wrapper.get('[data-testid="subscription-confirmation"]').attributes('aria-live')).toBe('polite')
+  })
+
+  it('announces when the amount requires a different payment method', async () => {
+    const alipayMethod: MethodLimit = {
+      daily_limit: 0,
+      daily_used: 0,
+      daily_remaining: 0,
+      single_min: 0,
+      single_max: 20,
+      fee_rate: 0,
+      available: true,
+    }
+    const wxpayMethod: MethodLimit = {
+      ...alipayMethod,
+      single_max: 0,
+    }
+    const wrapper = await mountPaymentView(checkoutInfoFixture({
+      methods: { alipay: alipayMethod, wxpay: wxpayMethod },
+    }), {})
+
+    wrapper.getComponent(AmountInput).vm.$emit('update:modelValue', 50)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('payment.methodAutoSwitched')
+    expect(wrapper.getComponent(PaymentMethodSelector).props('selected')).toBe('wxpay')
   })
 
   it('shows converted CNY pay amount using the subscription rate, not the balance multiplier', async () => {
@@ -317,6 +354,7 @@ describe('PaymentView subscription confirmation amounts', () => {
 
     expect(wrapper.text()).toContain(formatPaymentAmount(18, 'CNY'))
     expect(wrapper.text()).toContain('purchaseWorkspace.statsUnavailable')
+    expect(wrapper.text().match(/--/g)).toHaveLength(3)
     expect(wrapper.findAll('button').some(button => button.text().includes('payment.createOrder'))).toBe(true)
     consoleError.mockRestore()
   })

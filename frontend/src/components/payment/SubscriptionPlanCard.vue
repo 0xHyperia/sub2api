@@ -1,6 +1,11 @@
 <template>
   <article
-    class="group flex min-w-0 flex-col rounded-panel border border-outline bg-surface p-4 shadow-card transition-colors hover:border-outline-strong"
+    :class="[
+      'group flex min-w-0 flex-col rounded-panel border p-4 shadow-card transition-colors',
+      selected
+        ? 'border-info/50 bg-info-subtle ring-2 ring-info/10'
+        : 'border-outline bg-surface hover:border-outline-strong',
+    ]"
   >
     <div class="flex min-w-0 items-start justify-between gap-3">
       <div class="min-w-0">
@@ -11,6 +16,10 @@
           </span>
           <span v-if="isRenewal" class="badge badge-success shrink-0">
             {{ t('payment.renewNow') }}
+          </span>
+          <span v-if="selected" class="badge badge-primary shrink-0">
+            <Icon name="check" size="xs" aria-hidden="true" />
+            {{ t('payment.planCard.selected') }}
           </span>
         </div>
         <p v-if="plan.description" class="plan-description mt-1.5 break-words text-sm leading-5 text-foreground-subtle">
@@ -79,10 +88,11 @@
 
     <button
       type="button"
-      class="btn btn-primary btn-sm w-full"
+      :class="['btn btn-sm w-full', selected ? 'btn-secondary' : 'btn-primary']"
+      :aria-pressed="selected"
       @click="emit('select', plan)"
     >
-      {{ isRenewal ? t('payment.renewNow') : t('payment.subscribeNow') }}
+      {{ selected ? t('payment.planCard.selected') : isRenewal ? t('payment.renewNow') : t('payment.subscribeNow') }}
     </button>
   </article>
 </template>
@@ -103,7 +113,13 @@ import {
   platformLabel,
 } from '@/utils/platformColors'
 
-const props = defineProps<{ plan: SubscriptionPlan; activeSubscriptions?: UserSubscription[] }>()
+const props = withDefaults(defineProps<{
+  plan: SubscriptionPlan
+  activeSubscriptions?: UserSubscription[]
+  selected?: boolean
+}>(), {
+  selected: false,
+})
 const emit = defineEmits<{ select: [plan: SubscriptionPlan] }>()
 const { t } = useI18n()
 
