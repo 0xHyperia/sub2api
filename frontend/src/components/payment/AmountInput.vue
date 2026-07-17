@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-4">
-    <div>
+    <div v-if="customEnabled">
       <label for="custom-payment-amount" class="mb-2 block text-sm font-medium text-foreground">
         {{ t('payment.customAmount') }}
       </label>
       <div class="relative">
         <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-foreground-subtle" aria-hidden="true">
-          $
+          {{ currencySymbol }}
         </span>
         <input
           id="custom-payment-amount"
@@ -20,25 +20,30 @@
       </div>
     </div>
 
-    <fieldset class="space-y-3">
+    <fieldset v-if="filteredAmounts.length" class="space-y-3">
       <legend class="text-sm font-medium text-foreground">
         {{ t('payment.quickAmounts') }}
       </legend>
       <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 2xl:grid-cols-4">
         <button
-          v-for="amt in filteredAmounts"
-          :key="amt"
+          v-for="item in filteredAmounts"
+          :key="item.amount"
           type="button"
-          :aria-pressed="modelValue === amt"
+          :aria-pressed="modelValue === item.amount"
           :class="[
             'quick-amount-tile flex min-h-[48px] items-center justify-center rounded-control border px-2.5 py-2 text-center transition-colors',
-            modelValue === amt
+            modelValue === item.amount
               ? 'border-focus bg-info-subtle text-info-foreground shadow-card'
               : 'border-outline bg-surface text-foreground hover:border-outline-strong hover:bg-surface-subtle',
           ]"
-          @click="selectAmount(amt)"
+          @click="selectAmount(item.amount)"
         >
-          <span class="text-sm font-semibold tabular-nums">${{ amt }}</span>
+          <span class="flex min-w-0 flex-col items-center justify-center gap-0.5">
+            <span class="text-sm font-semibold tabular-nums">{{ formatAmount(item.amount) }}</span>
+            <span v-if="item.bonus > 0" class="text-[11px] font-medium leading-4 text-success-foreground">
+              {{ t('payment.quickAmountBonus', { bonus: item.bonus.toFixed(2) }) }}
+            </span>
+          </span>
         </button>
       </div>
     </fieldset>
@@ -48,16 +53,21 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { QuickRechargeAmount } from '@/types/payment'
 
 const props = withDefaults(defineProps<{
-  amounts?: number[]
+  amounts?: QuickRechargeAmount[]
   modelValue: number | null
   min?: number
   max?: number
+  customEnabled?: boolean
+  currency?: string
 }>(), {
-  amounts: () => [10, 20, 50, 100, 200, 500, 1000, 2000, 5000],
+  amounts: () => [10, 20, 50, 100, 200, 500, 1000, 2000, 5000].map(amount => ({ amount, bonus: 0 })),
   min: 0,
   max: 0,
+  customEnabled: true,
+  currency: 'CNY',
 })
 
 const emit = defineEmits<{
@@ -69,8 +79,34 @@ const { t } = useI18n()
 const customText = ref('')
 
 const filteredAmounts = computed(() =>
-  props.amounts.filter((a) => (props.min <= 0 || a >= props.min) && (props.max <= 0 || a <= props.max))
+  props.amounts.filter((item) => (props.min <= 0 || item.amount >= props.min) && (props.max <= 0 || item.amount <= props.max))
 )
+
+const currencySymbol = computed(() => {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: props.currency,
+      currencyDisplay: 'narrowSymbol',
+    }).formatToParts(0).find(part => part.type === 'currency')?.value || props.currency
+  } catch {
+    return props.currency
+  }
+})
+
+function formatAmount(value: number): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: props.currency,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value)
+  } catch {
+    return `${currencySymbol.value}${value}`
+  }
+}
 
 const placeholderText = computed(() => {
   if (props.min > 0 && props.max > 0) return `${props.min} - ${props.max}`

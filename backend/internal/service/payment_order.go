@@ -58,11 +58,13 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	}
 	orderAmount := req.Amount
 	limitAmount := req.Amount
+	rechargeBonus := 0.0
 	if plan != nil {
 		orderAmount = plan.Price
 		limitAmount = plan.Price
 	} else if req.OrderType == payment.OrderTypeBalance {
-		orderAmount = calculateCreditedBalance(req.Amount, cfg.BalanceRechargeMultiplier)
+		rechargeBonus, _ = quickRechargeBonus(req.Amount, cfg.QuickRechargeAmounts)
+		orderAmount = calculateCreditedBalanceWithBonus(req.Amount, cfg.BalanceRechargeMultiplier, rechargeBonus)
 	}
 	feeRate := cfg.RechargeFeeRate
 	methodCurrency := payment.DefaultPaymentCurrency
@@ -103,7 +105,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if oauthResp != nil {
 		return oauthResp, nil
 	}
-	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, feeRate, payAmount, sel)
+	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, rechargeBonus, feeRate, payAmount, sel)
 	if err != nil {
 		return nil, err
 	}
@@ -126,6 +128,9 @@ func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrder
 	}
 	if math.IsNaN(req.Amount) || math.IsInf(req.Amount, 0) || req.Amount <= 0 {
 		return nil, infraerrors.BadRequest("INVALID_AMOUNT", "amount must be a positive number")
+	}
+	if _, matched := quickRechargeBonus(req.Amount, cfg.QuickRechargeAmounts); !cfg.CustomRechargeEnabled && !matched {
+		return nil, infraerrors.BadRequest("RECHARGE_AMOUNT_NOT_ALLOWED", "custom recharge amount is disabled")
 	}
 	if (cfg.MinAmount > 0 && req.Amount < cfg.MinAmount) || (cfg.MaxAmount > 0 && req.Amount > cfg.MaxAmount) {
 		return nil, infraerrors.BadRequest("INVALID_AMOUNT", "amount out of range").
@@ -152,7 +157,7 @@ func (s *PaymentService) validateSubOrder(ctx context.Context, req CreateOrderRe
 	return plan, nil
 }
 
-func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, feeRate, payAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
+func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, rechargeBonus, feeRate, payAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
@@ -174,6 +179,12 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		return nil, err
 	}
 	providerSnapshot := buildPaymentOrderProviderSnapshot(sel, req)
+	if rechargeBonus > 0 {
+		if providerSnapshot == nil {
+			providerSnapshot = map[string]any{"schema_version": 2}
+		}
+		providerSnapshot["recharge_bonus"] = rechargeBonus
+	}
 	selectedInstanceID := ""
 	selectedProviderKey := ""
 	if sel != nil {

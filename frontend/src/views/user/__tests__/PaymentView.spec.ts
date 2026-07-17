@@ -122,6 +122,8 @@ function checkoutInfoFixture(overrides: Partial<CheckoutInfoResponse> = {}) {
     plans: [],
     balance_disabled: false,
     balance_recharge_multiplier: 1,
+    quick_recharge_amounts: [10, 20, 50, 100].map(amount => ({ amount, bonus: 0 })),
+    custom_recharge_amount_enabled: true,
     subscription_usd_to_cny_rate: 0,
     recharge_fee_rate: 0,
     help_text: '',

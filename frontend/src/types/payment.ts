@@ -35,6 +35,8 @@ export interface PaymentConfig {
   order_timeout_minutes: number
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  quick_recharge_amounts: QuickRechargeAmount[]
+  custom_recharge_amount_enabled: boolean
   subscription_usd_to_cny_rate: number
   enabled_payment_types: PaymentType[]
   help_image_url: string
@@ -70,6 +72,8 @@ export interface CheckoutInfoResponse {
   instant_enabled?: boolean
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  quick_recharge_amounts: QuickRechargeAmount[]
+  custom_recharge_amount_enabled: boolean
   /** Subscription CNY conversion rate (1 USD = X CNY); 0 = disabled, plan price is charged as-is */
   subscription_usd_to_cny_rate: number
   recharge_fee_rate: number
@@ -78,6 +82,11 @@ export interface CheckoutInfoResponse {
   stripe_publishable_key: string
   /** When true, Alipay payments on mobile always show the QR code instead of redirecting */
   alipay_force_qrcode?: boolean
+}
+
+export interface QuickRechargeAmount {
+  amount: number
+  bonus: number
 }
 
 // ==================== Orders ====================

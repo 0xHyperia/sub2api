@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -25,6 +26,8 @@ const (
 	SettingLoadBalanceStrategy   = "LOAD_BALANCE_STRATEGY"
 	SettingBalancePayDisabled    = "BALANCE_PAYMENT_DISABLED"
 	SettingBalanceRechargeMult   = "BALANCE_RECHARGE_MULTIPLIER"
+	SettingQuickRechargeAmounts  = "QUICK_RECHARGE_AMOUNTS"
+	SettingCustomRechargeEnabled = "CUSTOM_RECHARGE_AMOUNT_ENABLED"
 	// SettingSubscriptionUSDToCNYRate 是订阅 CNY 换算汇率（1 USD = X CNY）。
 	// 0/未配置 = 关闭换算（订阅按 price 数值直付），显式配置后 CNY 通道订阅按 price × rate 收款。
 	SettingSubscriptionUSDToCNYRate = "SUBSCRIPTION_USD_TO_CNY_RATE"
@@ -45,20 +48,34 @@ const (
 const (
 	defaultOrderTimeoutMin  = 30
 	defaultMaxPendingOrders = 3
+	maxQuickRechargeAmounts = 24
 )
+
+var defaultQuickRechargeAmounts = []QuickRechargeAmount{
+	{Amount: 10}, {Amount: 20}, {Amount: 50}, {Amount: 100}, {Amount: 200},
+	{Amount: 500}, {Amount: 1000}, {Amount: 2000}, {Amount: 5000},
+}
+
+// QuickRechargeAmount defines a preset payment amount and its additional USD balance.
+type QuickRechargeAmount struct {
+	Amount float64 `json:"amount"`
+	Bonus  float64 `json:"bonus"`
+}
 
 // PaymentConfig holds the payment system configuration.
 type PaymentConfig struct {
-	Enabled                   bool     `json:"enabled"`
-	InstantEnabled            bool     `json:"instant_enabled"`
-	MinAmount                 float64  `json:"min_amount"`
-	MaxAmount                 float64  `json:"max_amount"`
-	DailyLimit                float64  `json:"daily_limit"`
-	OrderTimeoutMin           int      `json:"order_timeout_minutes"`
-	MaxPendingOrders          int      `json:"max_pending_orders"`
-	EnabledTypes              []string `json:"enabled_payment_types"`
-	BalanceDisabled           bool     `json:"balance_disabled"`
-	BalanceRechargeMultiplier float64  `json:"balance_recharge_multiplier"`
+	Enabled                   bool                  `json:"enabled"`
+	InstantEnabled            bool                  `json:"instant_enabled"`
+	MinAmount                 float64               `json:"min_amount"`
+	MaxAmount                 float64               `json:"max_amount"`
+	DailyLimit                float64               `json:"daily_limit"`
+	OrderTimeoutMin           int                   `json:"order_timeout_minutes"`
+	MaxPendingOrders          int                   `json:"max_pending_orders"`
+	EnabledTypes              []string              `json:"enabled_payment_types"`
+	BalanceDisabled           bool                  `json:"balance_disabled"`
+	BalanceRechargeMultiplier float64               `json:"balance_recharge_multiplier"`
+	QuickRechargeAmounts      []QuickRechargeAmount `json:"quick_recharge_amounts"`
+	CustomRechargeEnabled     bool                  `json:"custom_recharge_amount_enabled"`
 	// SubscriptionUSDToCNYRate 为 0 时订阅换算关闭（兼容存量行为）。
 	SubscriptionUSDToCNYRate float64 `json:"subscription_usd_to_cny_rate"`
 	RechargeFeeRate          float64 `json:"recharge_fee_rate"`
@@ -82,23 +99,25 @@ type PaymentConfig struct {
 
 // UpdatePaymentConfigRequest contains fields to update payment configuration.
 type UpdatePaymentConfigRequest struct {
-	Enabled                   *bool    `json:"enabled"`
-	InstantEnabled            *bool    `json:"instant_enabled"`
-	MinAmount                 *float64 `json:"min_amount"`
-	MaxAmount                 *float64 `json:"max_amount"`
-	DailyLimit                *float64 `json:"daily_limit"`
-	OrderTimeoutMin           *int     `json:"order_timeout_minutes"`
-	MaxPendingOrders          *int     `json:"max_pending_orders"`
-	EnabledTypes              []string `json:"enabled_payment_types"`
-	BalanceDisabled           *bool    `json:"balance_disabled"`
-	BalanceRechargeMultiplier *float64 `json:"balance_recharge_multiplier"`
-	SubscriptionUSDToCNYRate  *float64 `json:"subscription_usd_to_cny_rate"`
-	RechargeFeeRate           *float64 `json:"recharge_fee_rate"`
-	LoadBalanceStrategy       *string  `json:"load_balance_strategy"`
-	ProductNamePrefix         *string  `json:"product_name_prefix"`
-	ProductNameSuffix         *string  `json:"product_name_suffix"`
-	HelpImageURL              *string  `json:"help_image_url"`
-	HelpText                  *string  `json:"help_text"`
+	Enabled                   *bool                  `json:"enabled"`
+	InstantEnabled            *bool                  `json:"instant_enabled"`
+	MinAmount                 *float64               `json:"min_amount"`
+	MaxAmount                 *float64               `json:"max_amount"`
+	DailyLimit                *float64               `json:"daily_limit"`
+	OrderTimeoutMin           *int                   `json:"order_timeout_minutes"`
+	MaxPendingOrders          *int                   `json:"max_pending_orders"`
+	EnabledTypes              []string               `json:"enabled_payment_types"`
+	BalanceDisabled           *bool                  `json:"balance_disabled"`
+	BalanceRechargeMultiplier *float64               `json:"balance_recharge_multiplier"`
+	QuickRechargeAmounts      *[]QuickRechargeAmount `json:"quick_recharge_amounts"`
+	CustomRechargeEnabled     *bool                  `json:"custom_recharge_amount_enabled"`
+	SubscriptionUSDToCNYRate  *float64               `json:"subscription_usd_to_cny_rate"`
+	RechargeFeeRate           *float64               `json:"recharge_fee_rate"`
+	LoadBalanceStrategy       *string                `json:"load_balance_strategy"`
+	ProductNamePrefix         *string                `json:"product_name_prefix"`
+	ProductNameSuffix         *string                `json:"product_name_suffix"`
+	HelpImageURL              *string                `json:"help_image_url"`
+	HelpText                  *string                `json:"help_text"`
 
 	// Cancel rate limit settings
 	CancelRateLimitEnabled *bool   `json:"cancel_rate_limit_enabled"`
@@ -216,7 +235,7 @@ func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentCo
 	keys := []string{
 		SettingPaymentEnabled, SettingPaymentInstantEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
 		SettingDailyRechargeLimit, SettingOrderTimeoutMinutes, SettingMaxPendingOrders,
-		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingSubscriptionUSDToCNYRate, SettingRechargeFeeRate, SettingLoadBalanceStrategy,
+		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingQuickRechargeAmounts, SettingCustomRechargeEnabled, SettingSubscriptionUSDToCNYRate, SettingRechargeFeeRate, SettingLoadBalanceStrategy,
 		SettingProductNamePrefix, SettingProductNameSuffix,
 		SettingHelpImageURL, SettingHelpText,
 		SettingCancelRateLimitOn, SettingCancelRateLimitMax,
@@ -246,6 +265,8 @@ func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *Payme
 		MaxPendingOrders:          pcParseInt(vals[SettingMaxPendingOrders], defaultMaxPendingOrders),
 		BalanceDisabled:           vals[SettingBalancePayDisabled] == "true",
 		BalanceRechargeMultiplier: normalizeBalanceRechargeMultiplier(pcParseFloat(vals[SettingBalanceRechargeMult], defaultBalanceRechargeMultiplier)),
+		QuickRechargeAmounts:      parseQuickRechargeAmounts(vals[SettingQuickRechargeAmounts]),
+		CustomRechargeEnabled:     pcParseBoolDefault(vals[SettingCustomRechargeEnabled], true),
 		SubscriptionUSDToCNYRate:  normalizeSubscriptionUSDToCNYRate(pcParseFloat(vals[SettingSubscriptionUSDToCNYRate], 0)),
 		RechargeFeeRate:           pcParseFloat(vals[SettingRechargeFeeRate], 0),
 		LoadBalanceStrategy:       vals[SettingLoadBalanceStrategy],
@@ -324,6 +345,27 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 			return infraerrors.BadRequest("INVALID_RECHARGE_FEE_RATE", "recharge fee rate allows at most 2 decimal places")
 		}
 	}
+	quickAmountsForValidation := req.QuickRechargeAmounts
+	customEnabledForValidation := req.CustomRechargeEnabled
+	if (quickAmountsForValidation != nil && customEnabledForValidation == nil) ||
+		(quickAmountsForValidation == nil && customEnabledForValidation != nil && !*customEnabledForValidation) {
+		current, err := s.GetPaymentConfig(ctx)
+		if err != nil {
+			return fmt.Errorf("get current payment config for quick amount validation: %w", err)
+		}
+		if quickAmountsForValidation == nil {
+			quickAmountsForValidation = &current.QuickRechargeAmounts
+		}
+		if customEnabledForValidation == nil {
+			customEnabled := current.CustomRechargeEnabled
+			customEnabledForValidation = &customEnabled
+		}
+	}
+	if quickAmountsForValidation != nil {
+		if err := validateQuickRechargeAmounts(*quickAmountsForValidation, customEnabledForValidation); err != nil {
+			return err
+		}
+	}
 	m := map[string]string{
 		SettingPaymentEnabled:                    formatBoolOrEmpty(req.Enabled),
 		SettingPaymentInstantEnabled:             formatBoolOrEmpty(req.InstantEnabled),
@@ -352,12 +394,67 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 		SettingPaymentVisibleMethodAlipayEnabled: formatBoolOrEmpty(req.VisibleMethodAlipayEnabled),
 		SettingPaymentVisibleMethodWxpayEnabled:  formatBoolOrEmpty(req.VisibleMethodWxpayEnabled),
 	}
+	if req.QuickRechargeAmounts != nil {
+		encoded, err := json.Marshal(*req.QuickRechargeAmounts)
+		if err != nil {
+			return fmt.Errorf("encode quick recharge amounts: %w", err)
+		}
+		m[SettingQuickRechargeAmounts] = string(encoded)
+	}
+	if req.CustomRechargeEnabled != nil {
+		m[SettingCustomRechargeEnabled] = strconv.FormatBool(*req.CustomRechargeEnabled)
+	}
 	if req.EnabledTypes != nil {
 		m[SettingEnabledPaymentTypes] = strings.Join(req.EnabledTypes, ",")
 	} else {
 		m[SettingEnabledPaymentTypes] = ""
 	}
 	return s.settingRepo.SetMultiple(ctx, m)
+}
+
+func parseQuickRechargeAmounts(raw string) []QuickRechargeAmount {
+	if strings.TrimSpace(raw) == "" {
+		return append([]QuickRechargeAmount(nil), defaultQuickRechargeAmounts...)
+	}
+	var amounts []QuickRechargeAmount
+	if err := json.Unmarshal([]byte(raw), &amounts); err != nil {
+		return append([]QuickRechargeAmount(nil), defaultQuickRechargeAmounts...)
+	}
+	if err := validateQuickRechargeAmounts(amounts, nil); err != nil {
+		return append([]QuickRechargeAmount(nil), defaultQuickRechargeAmounts...)
+	}
+	if amounts == nil {
+		return []QuickRechargeAmount{}
+	}
+	return amounts
+}
+
+func validateQuickRechargeAmounts(amounts []QuickRechargeAmount, customEnabled *bool) error {
+	if len(amounts) > maxQuickRechargeAmounts {
+		return infraerrors.BadRequest("INVALID_QUICK_RECHARGE_AMOUNTS", fmt.Sprintf("quick recharge amounts cannot exceed %d items", maxQuickRechargeAmounts))
+	}
+	if customEnabled != nil && !*customEnabled && len(amounts) == 0 {
+		return infraerrors.BadRequest("INVALID_QUICK_RECHARGE_AMOUNTS", "at least one quick recharge amount is required when custom recharge is disabled")
+	}
+	seen := make(map[int64]struct{}, len(amounts))
+	for _, item := range amounts {
+		if !validMoneyAmount(item.Amount, false) || !validMoneyAmount(item.Bonus, true) {
+			return infraerrors.BadRequest("INVALID_QUICK_RECHARGE_AMOUNTS", "quick recharge amount and bonus must be valid values with at most 2 decimal places")
+		}
+		cents := int64(math.Round(item.Amount * 100))
+		if _, exists := seen[cents]; exists {
+			return infraerrors.BadRequest("INVALID_QUICK_RECHARGE_AMOUNTS", "quick recharge amounts must be unique")
+		}
+		seen[cents] = struct{}{}
+	}
+	return nil
+}
+
+func validMoneyAmount(value float64, allowZero bool) bool {
+	if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || (!allowZero && value == 0) || value > 1_000_000_000 {
+		return false
+	}
+	return math.Abs(value*100-math.Round(value*100)) <= 1e-7
 }
 
 func formatBoolOrEmpty(v *bool) string {

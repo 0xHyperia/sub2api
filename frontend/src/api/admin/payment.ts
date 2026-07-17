@@ -9,7 +9,8 @@ import type {
   PaymentOrder,
   PaymentChannel,
   SubscriptionPlan,
-  ProviderInstance
+  ProviderInstance,
+  QuickRechargeAmount,
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
 
@@ -24,6 +25,8 @@ export interface AdminPaymentConfig {
   enabled_payment_types: string[]
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  quick_recharge_amounts: QuickRechargeAmount[]
+  custom_recharge_amount_enabled: boolean
   subscription_usd_to_cny_rate: number
   recharge_fee_rate: number
   load_balance_strategy: string
@@ -44,6 +47,8 @@ export interface UpdatePaymentConfigRequest {
   enabled_payment_types?: string[]
   balance_disabled?: boolean
   balance_recharge_multiplier?: number
+  quick_recharge_amounts?: QuickRechargeAmount[]
+  custom_recharge_amount_enabled?: boolean
   subscription_usd_to_cny_rate?: number
   recharge_fee_rate?: number
   load_balance_strategy?: string

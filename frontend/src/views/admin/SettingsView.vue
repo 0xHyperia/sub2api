@@ -7046,6 +7046,74 @@
                     </p>
                   </div>
                 </div>
+                <section class="space-y-3 border-t border-outline pt-4" aria-labelledby="quick-recharge-heading">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 id="quick-recharge-heading" class="text-sm font-semibold text-foreground">
+                        {{ t("admin.settings.payment.quickRechargeAmounts") }}
+                      </h3>
+                      <p class="mt-1 text-xs leading-5 text-foreground-subtle">
+                        {{ t("admin.settings.payment.quickRechargeAmountsHint") }}
+                      </p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                      <span class="text-sm text-foreground-muted">{{ t("admin.settings.payment.customRechargeAmount") }}</span>
+                      <Toggle
+                        v-model="form.payment_custom_recharge_amount_enabled"
+                        :aria-label="t('admin.settings.payment.customRechargeAmount')"
+                      />
+                    </div>
+                  </div>
+
+                  <div v-if="form.payment_quick_recharge_amounts.length" class="overflow-hidden rounded-panel border border-outline">
+                    <div class="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_40px] gap-3 bg-surface-subtle px-3 py-2 text-xs font-medium text-foreground-subtle sm:grid">
+                      <span>{{ t("admin.settings.payment.quickRechargePayAmount") }}</span>
+                      <span>{{ t("admin.settings.payment.quickRechargeBonus") }}</span>
+                      <span class="sr-only">{{ t("common.actions") }}</span>
+                    </div>
+                    <div
+                      v-for="(item, index) in form.payment_quick_recharge_amounts"
+                      :key="index"
+                      class="grid grid-cols-[minmax(0,1fr)_40px] gap-3 border-t border-outline p-3 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_40px]"
+                    >
+                      <label class="col-span-2 min-w-0 sm:col-span-1">
+                        <span class="mb-1 block text-xs text-foreground-subtle sm:hidden">{{ t("admin.settings.payment.quickRechargePayAmount") }}</span>
+                        <div class="relative">
+                          <input v-model.number="item.amount" type="number" min="0.01" step="0.01" class="input pr-14" required />
+                          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle">CNY</span>
+                        </div>
+                      </label>
+                      <label class="min-w-0">
+                        <span class="mb-1 block text-xs text-foreground-subtle sm:hidden">{{ t("admin.settings.payment.quickRechargeBonus") }}</span>
+                        <div class="relative">
+                          <input v-model.number="item.bonus" type="number" min="0" step="0.01" class="input pr-14" required />
+                          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle">USD</span>
+                        </div>
+                      </label>
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-icon self-end text-danger-foreground sm:self-center"
+                        :aria-label="t('admin.settings.payment.removeQuickRechargeAmount')"
+                        :title="t('admin.settings.payment.removeQuickRechargeAmount')"
+                        @click="removeQuickRechargeAmount(index)"
+                      >
+                        <Icon name="trash" size="sm" />
+                      </button>
+                    </div>
+                  </div>
+                  <p v-else class="rounded-control border border-dashed border-outline px-3 py-4 text-center text-sm text-foreground-subtle">
+                    {{ t("admin.settings.payment.noQuickRechargeAmounts") }}
+                  </p>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    :disabled="form.payment_quick_recharge_amounts.length >= 24"
+                    @click="addQuickRechargeAmount"
+                  >
+                    <Icon name="plus" size="sm" />
+                    {{ t("admin.settings.payment.addQuickRechargeAmount") }}
+                  </button>
+                </section>
                 <!-- Row 3: Pending orders + load balance + cancel rate limit (all in one row) -->
                 <div class="flex flex-wrap items-end gap-4">
                   <div class="w-full sm:w-28">
@@ -7848,7 +7916,7 @@ import type {
   NotifyEmailEntry,
   Proxy,
 } from "@/types";
-import type { ProviderInstance } from "@/types/payment";
+import type { ProviderInstance, QuickRechargeAmount } from "@/types/payment";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import Icon from "@/components/icons/Icon.vue";
 import Select from "@/components/common/Select.vue";
@@ -8633,6 +8701,18 @@ const form = reactive<SettingsForm>({
   payment_order_timeout_minutes: 30,
   payment_balance_disabled: false,
   payment_balance_recharge_multiplier: 1,
+  payment_quick_recharge_amounts: [
+    { amount: 10, bonus: 0 },
+    { amount: 20, bonus: 0 },
+    { amount: 50, bonus: 0 },
+    { amount: 100, bonus: 0 },
+    { amount: 200, bonus: 0 },
+    { amount: 500, bonus: 0 },
+    { amount: 1000, bonus: 0 },
+    { amount: 2000, bonus: 0 },
+    { amount: 5000, bonus: 0 },
+  ] as QuickRechargeAmount[],
+  payment_custom_recharge_amount_enabled: true,
   payment_subscription_usd_to_cny_rate: 0,
   payment_recharge_fee_rate: 0,
   payment_enabled_types: [],
@@ -9638,6 +9718,15 @@ function removeCodexWhitelistRow(i: number): void {
   codexWhitelistRows.value.splice(i, 1);
 }
 
+function addQuickRechargeAmount(): void {
+  if (form.payment_quick_recharge_amounts.length >= 24) return;
+  form.payment_quick_recharge_amounts.push({ amount: 0, bonus: 0 });
+}
+
+function removeQuickRechargeAmount(index: number): void {
+  form.payment_quick_recharge_amounts.splice(index, 1);
+}
+
 async function loadSettings() {
   loading.value = true;
   loadFailed.value = false;
@@ -10209,6 +10298,14 @@ async function saveSettings() {
       payment_balance_disabled: form.payment_balance_disabled,
       payment_balance_recharge_multiplier:
         Number(form.payment_balance_recharge_multiplier) || 1,
+      payment_quick_recharge_amounts: form.payment_quick_recharge_amounts.map(
+        (item) => ({
+          amount: Number(item.amount) || 0,
+          bonus: Number(item.bonus) || 0,
+        }),
+      ),
+      payment_custom_recharge_amount_enabled:
+        form.payment_custom_recharge_amount_enabled,
       payment_subscription_usd_to_cny_rate:
         Number(form.payment_subscription_usd_to_cny_rate) || 0,
       payment_recharge_fee_rate: Number(form.payment_recharge_fee_rate) || 0,

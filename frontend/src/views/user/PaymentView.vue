@@ -135,15 +135,19 @@
                   <template v-else>
                     <header>
                       <h2 class="text-base font-semibold text-foreground">{{ t('payment.amountLabel') }}</h2>
-                      <p class="mt-1 text-sm text-foreground-subtle">{{ t('payment.customAmount') }}</p>
+                      <p class="mt-1 text-sm text-foreground-subtle">
+                        {{ checkout.custom_recharge_amount_enabled ? t('payment.customAmount') : t('payment.selectQuickAmount') }}
+                      </p>
                     </header>
 
                     <div class="mt-4 min-w-0">
                       <AmountInput
                         v-model="amount"
-                        :amounts="[10, 20, 50, 100, 200, 500, 1000, 2000, 5000]"
+                        :amounts="checkout.quick_recharge_amounts"
                         :min="globalMinAmount"
                         :max="globalMaxAmount"
+                        :custom-enabled="checkout.custom_recharge_amount_enabled"
+                        :currency="selectedCurrency"
                       />
                       <p v-if="amountError" class="mt-3 text-sm text-warning-foreground" role="alert">{{ amountError }}</p>
 
@@ -176,7 +180,11 @@
                               <dt class="text-foreground-subtle">{{ t('payment.fee') }} ({{ feeRate }}%)</dt>
                               <dd class="font-medium tabular-nums text-foreground">{{ formatSelectedPaymentAmount(feeAmount) }}</dd>
                             </div>
-                            <div v-if="balanceRechargeMultiplier !== 1" class="flex items-center justify-between gap-4">
+                            <div v-if="selectedRechargeBonus > 0" class="flex items-center justify-between gap-4">
+                              <dt class="text-success-foreground">{{ t('payment.bonusBalance') }}</dt>
+                              <dd class="font-medium tabular-nums text-success-foreground">+${{ selectedRechargeBonus.toFixed(2) }}</dd>
+                            </div>
+                            <div v-if="balanceRechargeMultiplier !== 1 || selectedRechargeBonus > 0" class="flex items-center justify-between gap-4">
                               <dt class="text-foreground-subtle">{{ t('payment.creditedBalance') }}</dt>
                               <dd class="font-medium tabular-nums text-foreground">{{ '$' }}{{ creditedAmount.toFixed(2) }}</dd>
                             </div>
@@ -634,9 +642,15 @@ function onPaymentSettled() {
 }
 
 // All checkout data from single API call
+const defaultQuickRechargeAmounts = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+  .map(amount => ({ amount, bonus: 0 }))
+
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
-  plans: [], instant_enabled: true, balance_disabled: false, balance_recharge_multiplier: 1, subscription_usd_to_cny_rate: 0, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
+  plans: [], instant_enabled: true, balance_disabled: false, balance_recharge_multiplier: 1,
+  quick_recharge_amounts: defaultQuickRechargeAmounts,
+  custom_recharge_amount_enabled: true,
+  subscription_usd_to_cny_rate: 0, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
 })
 
 const tabs = computed(() => {
@@ -700,7 +714,15 @@ const subscriptionUsdToCnyRate = computed(() => {
   const rate = checkout.value.subscription_usd_to_cny_rate
   return Number.isFinite(rate) && rate > 0 ? rate : 0
 })
-const creditedAmount = computed(() => Math.round((validAmount.value * balanceRechargeMultiplier.value) * 100) / 100)
+const selectedRechargeBonus = computed(() => {
+  const cents = Math.round(validAmount.value * 100)
+  return checkout.value.quick_recharge_amounts.find(item => Math.round(item.amount * 100) === cents)?.bonus ?? 0
+})
+const creditedAmount = computed(() => Math.round((validAmount.value * balanceRechargeMultiplier.value + selectedRechargeBonus.value) * 100) / 100)
+const rechargeAmountAllowed = computed(() =>
+  checkout.value.custom_recharge_amount_enabled
+    || checkout.value.quick_recharge_amounts.some(item => Math.round(item.amount * 100) === Math.round(validAmount.value * 100))
+)
 
 const planGridClass = computed(() => {
   if (checkout.value.plans.length === 1) {
@@ -809,6 +831,7 @@ const totalAmount = computed(() =>
 
 const amountError = computed(() => {
   if (validAmount.value <= 0) return ''
+  if (!rechargeAmountAllowed.value) return t('payment.rechargeAmountNotAllowed')
   // No method can handle this amount
   if (!enabledMethods.value.some((m) => amountFitsMethod(validAmount.value, m))) {
     return t('payment.amountNoMethod')
@@ -824,6 +847,7 @@ const amountError = computed(() => {
 
 const canSubmit = computed(() =>
   validAmount.value > 0
+    && rechargeAmountAllowed.value
     && amountFitsMethod(validAmount.value, selectedMethod.value)
     && selectedLimit.value?.available !== false
 )
@@ -1282,7 +1306,13 @@ onMounted(async () => {
   try {
     checkoutLoadFailed.value = false
     const res = await paymentAPI.getCheckoutInfo()
-    checkout.value = res.data
+    checkout.value = {
+      ...res.data,
+      quick_recharge_amounts: Array.isArray(res.data.quick_recharge_amounts)
+        ? res.data.quick_recharge_amounts
+        : defaultQuickRechargeAmounts,
+      custom_recharge_amount_enabled: res.data.custom_recharge_amount_enabled !== false,
+    }
     ensureVisiblePurchaseTab()
     if (enabledMethods.value.length) {
       const order: readonly string[] = METHOD_ORDER
