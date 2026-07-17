@@ -47,6 +47,14 @@ const mountPlanCard = (groupPlatform: string) =>
   });
 
 describe("SubscriptionPlanCard", () => {
+  it("uses the compact plan card layout", () => {
+    const wrapper = mountPlanCard("openai");
+
+    expect(wrapper.get("article").classes()).toContain("p-4");
+    expect(wrapper.get("article").classes()).not.toContain("sm:p-5");
+    expect(wrapper.get("button").classes()).toContain("btn-sm");
+  });
+
   it("does not show Antigravity model scopes for OpenAI plans", () => {
     const text = mountPlanCard("openai").text();
 

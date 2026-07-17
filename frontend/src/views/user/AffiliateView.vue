@@ -145,31 +145,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
-import userAPI from '@/api/user'
-import type { UserAffiliateDetail } from '@/types'
-import { useAppStore } from '@/stores/app'
-import { useAuthStore } from '@/stores/auth'
-import { useClipboard } from '@/composables/useClipboard'
 import { formatCurrency, formatDateTime } from '@/utils/format'
-import { extractApiErrorMessage } from '@/utils/apiError'
 import type { Column } from '@/components/common/types'
+import { useAffiliateRewards } from '@/composables/useAffiliateRewards'
 
 const { t } = useI18n()
-const appStore = useAppStore()
-const authStore = useAuthStore()
-const { copyToClipboard } = useClipboard()
-
-const loading = ref(true)
-const loadFailed = ref(false)
-const transferring = ref(false)
-const detail = ref<UserAffiliateDetail | null>(null)
+const {
+  loading,
+  loadFailed,
+  transferring,
+  detail,
+  inviteLink,
+  formattedRebateRate,
+  loadAffiliateDetail,
+  copyCode,
+  copyInviteLink,
+  transferQuota,
+} = useAffiliateRewards()
 
 const inviteeColumns = computed((): Column[] => [
   { key: 'email', label: t('affiliate.invitees.columns.email') },
@@ -178,66 +177,8 @@ const inviteeColumns = computed((): Column[] => [
   { key: 'created_at', label: t('affiliate.invitees.columns.joinedAt') },
 ])
 
-const inviteLink = computed(() => {
-  if (!detail.value) return ''
-  if (typeof window === 'undefined') return `/register?aff=${encodeURIComponent(detail.value.aff_code)}`
-  return `${window.location.origin}/register?aff=${encodeURIComponent(detail.value.aff_code)}`
-})
-
-// Rebate rate is a percentage in the range [0, 100]; backend already clamps it.
-// We trim trailing zeros (e.g. 20.00 → "20", 12.50 → "12.5") for a cleaner UI.
-const formattedRebateRate = computed(() => {
-  const v = detail.value?.effective_rebate_rate_percent ?? 0
-  const rounded = Math.round(v * 100) / 100
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toString()
-})
-
 function formatCount(value: number): string {
   return value.toLocaleString()
-}
-
-async function loadAffiliateDetail(silent = false): Promise<void> {
-  if (!silent) {
-    loading.value = true
-    loadFailed.value = false
-  }
-  try {
-    detail.value = await userAPI.getAffiliateDetail()
-  } catch (error) {
-    loadFailed.value = detail.value === null
-    appStore.showError(extractApiErrorMessage(error, t('affiliate.loadFailed')))
-  } finally {
-    if (!silent) {
-      loading.value = false
-    }
-  }
-}
-
-async function copyCode(): Promise<void> {
-  if (!detail.value?.aff_code) return
-  await copyToClipboard(detail.value.aff_code, t('affiliate.codeCopied'))
-}
-
-async function copyInviteLink(): Promise<void> {
-  if (!inviteLink.value) return
-  await copyToClipboard(inviteLink.value, t('affiliate.linkCopied'))
-}
-
-async function transferQuota(): Promise<void> {
-  if (!detail.value || detail.value.aff_quota <= 0 || transferring.value) return
-  transferring.value = true
-  try {
-    const resp = await userAPI.transferAffiliateQuota()
-    appStore.showSuccess(t('affiliate.transfer.success', { amount: formatCurrency(resp.transferred_quota) }))
-    await Promise.all([
-      loadAffiliateDetail(true),
-      authStore.refreshUser().catch(() => undefined),
-    ])
-  } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('affiliate.transferFailed')))
-  } finally {
-    transferring.value = false
-  }
 }
 
 onMounted(() => {

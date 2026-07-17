@@ -1,10 +1,10 @@
 <template>
-  <fieldset>
-    <legend class="mb-2 text-sm font-medium text-foreground">
+  <fieldset class="space-y-2.5">
+    <legend class="text-sm font-medium text-foreground">
       {{ t('payment.paymentMethod') }}
     </legend>
     <div
-      class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+      :class="compact ? 'grid grid-cols-1 gap-2 min-[420px]:grid-cols-2' : 'grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3'"
       role="radiogroup"
       :aria-label="t('payment.paymentMethod')"
     >
@@ -17,27 +17,37 @@
         :aria-checked="selected === method.type"
         :tabindex="method.available && (selected === method.type || (!selectedMethodAvailable && index === firstAvailableIndex)) ? 0 : -1"
         :class="[
-          'relative flex min-h-[56px] min-w-0 items-center rounded-control border px-3 py-2 text-left transition-colors',
+          'relative flex min-w-0 items-center gap-2.5 rounded-control border px-3 py-2 text-left transition-colors',
+          compact ? 'min-h-[52px]' : 'min-h-[72px] py-3',
           !method.available
-            ? 'cursor-not-allowed border-outline bg-surface-subtle opacity-50'
+            ? 'cursor-not-allowed border-outline bg-surface-subtle opacity-60'
             : selected === method.type
               ? methodSelectedClass(method.type)
-              : 'border-outline-strong bg-surface text-foreground-muted hover:border-focus hover:text-foreground',
+              : 'border-outline bg-surface text-foreground hover:border-outline-strong hover:bg-surface-subtle',
         ]"
         @click="method.available && emit('select', method.type)"
         @keydown="handleRadioKeydown($event, index)"
       >
-        <span class="flex min-w-0 items-center gap-2.5">
-          <img :src="methodIcon(method.type)" alt="" class="h-7 w-7 shrink-0 object-contain" aria-hidden="true" />
-          <span class="flex min-w-0 flex-col items-start gap-1 leading-none">
-            <span class="break-words text-sm font-semibold leading-5">{{ methodLabel(method) }}</span>
-            <span
-              v-if="method.fee_rate > 0"
-              class="text-xs text-foreground-subtle"
-            >
-              {{ t('payment.fee') }} {{ method.fee_rate }}%
-            </span>
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center">
+          <img :src="methodIcon(method.type)" alt="" class="h-7 w-7 object-contain" aria-hidden="true" />
+        </span>
+        <span class="flex min-w-0 flex-1 flex-col justify-center">
+          <span class="break-words text-sm font-semibold leading-5 text-foreground">{{ methodLabel(method) }}</span>
+          <span v-if="method.fee_rate > 0" class="mt-0.5 text-xs leading-4 text-foreground-subtle">
+            {{ t('payment.fee') }} {{ method.fee_rate }}%
           </span>
+        </span>
+        <span
+          data-testid="method-selection-indicator"
+          :class="[
+            'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border',
+            selected === method.type
+              ? 'border-info bg-info-subtle text-info-foreground'
+              : 'border-outline-strong bg-surface text-transparent',
+          ]"
+          aria-hidden="true"
+        >
+          <span class="h-2 w-2 rounded-full bg-current"></span>
         </span>
       </button>
     </div>
@@ -64,6 +74,7 @@ export interface PaymentMethodOption {
 const props = defineProps<{
   methods: PaymentMethodOption[]
   selected: string
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -135,10 +146,10 @@ function methodLabel(method: PaymentMethodOption): string {
 }
 
 function methodSelectedClass(type: string): string {
-  if (isBuiltInAlipayMethod(type)) return 'border-[#02A9F1] bg-info-subtle text-foreground'
-  if (isBuiltInWxpayMethod(type)) return 'border-[#09BB07] bg-success-subtle text-foreground'
-  if (type === 'stripe') return 'border-[#676BE5] bg-surface-subtle text-foreground'
-  if (type === 'airwallex') return 'border-[#FF6B3D] bg-warning-subtle text-foreground'
-  return 'border-brand bg-info-subtle text-foreground'
+  if (isBuiltInAlipayMethod(type)) return 'border-info/30 bg-info-subtle text-foreground shadow-card'
+  if (isBuiltInWxpayMethod(type)) return 'border-success/30 bg-success-subtle text-foreground shadow-card'
+  if (type === 'stripe') return 'border-brand/30 bg-info-subtle text-foreground shadow-card'
+  if (type === 'airwallex') return 'border-warning/30 bg-warning-subtle text-foreground shadow-card'
+  return 'border-brand/30 bg-info-subtle text-foreground shadow-card'
 }
 </script>

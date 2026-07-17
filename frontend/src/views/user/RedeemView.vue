@@ -30,105 +30,8 @@
 
       <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
         <div class="min-w-0 space-y-4">
-          <section class="card p-4 sm:p-5" aria-labelledby="redeem-form-title">
-            <h2 id="redeem-form-title" class="text-base font-semibold text-foreground">
-              {{ t('redeem.redeemCodeLabel') }}
-            </h2>
-            <form class="mt-4 space-y-4" @submit.prevent="handleRedeem">
-              <div>
-                <label for="code" class="sr-only">{{ t('redeem.redeemCodeLabel') }}</label>
-                <div class="relative">
-                  <Icon
-                    name="gift"
-                    size="md"
-                    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
-                    aria-hidden="true"
-                  />
-                  <input
-                    id="code"
-                    v-model="redeemCode"
-                    type="text"
-                    required
-                    autocomplete="off"
-                    autocapitalize="none"
-                    spellcheck="false"
-                    :placeholder="t('redeem.redeemCodePlaceholder')"
-                    :disabled="submitting"
-                    aria-describedby="redeem-code-hint"
-                    :aria-invalid="!!errorMessage"
-                    class="input pl-10"
-                  />
-                </div>
-                <p id="redeem-code-hint" class="input-hint">
-                  {{ t('redeem.redeemCodeHint') }}
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                :disabled="!redeemCode.trim() || submitting"
-                :aria-busy="submitting"
-                class="btn btn-primary w-full"
-              >
-                <LoadingSpinner v-if="submitting" size="sm" color="white" />
-                <Icon v-else name="checkCircle" size="sm" aria-hidden="true" />
-                <span>{{ submitting ? t('redeem.redeeming') : t('redeem.redeemButton') }}</span>
-              </button>
-            </form>
-          </section>
-
-          <div
-            v-if="redeemResult"
-            class="rounded-panel border border-success/20 bg-success-subtle p-4"
-            role="status"
-            aria-live="polite"
-          >
-            <div class="flex items-start gap-3">
-              <Icon name="checkCircle" size="md" class="mt-0.5 shrink-0 text-success-foreground" aria-hidden="true" />
-              <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-success-foreground">{{ t('redeem.redeemSuccess') }}</h2>
-                <div class="mt-1 space-y-1 break-words text-sm leading-6 text-success-foreground/90">
-                  <p>{{ redeemResult.message }}</p>
-                  <p v-if="redeemResult.type === 'balance'" class="font-medium">
-                    {{ t('redeem.added') }}: ${{ redeemResult.value.toFixed(2) }}
-                  </p>
-                  <p v-else-if="redeemResult.type === 'concurrency'" class="font-medium">
-                    {{ t('redeem.added') }}: {{ redeemResult.value }} {{ t('redeem.concurrentRequests') }}
-                  </p>
-                  <p v-else-if="redeemResult.type === 'subscription'" class="font-medium">
-                    {{ t('redeem.subscriptionAssigned') }}
-                    <span v-if="redeemResult.group_name"> - {{ redeemResult.group_name }}</span>
-                    <span v-if="redeemResult.validity_days">
-                      ({{ t('redeem.subscriptionDays', { days: redeemResult.validity_days }) }})
-                    </span>
-                  </p>
-                  <p v-if="redeemResult.new_balance !== undefined">
-                    {{ t('redeem.newBalance') }}:
-                    <span class="font-semibold tabular-nums">${{ redeemResult.new_balance.toFixed(2) }}</span>
-                  </p>
-                  <p v-if="redeemResult.new_concurrency !== undefined">
-                    {{ t('redeem.newConcurrency') }}:
-                    <span class="font-semibold tabular-nums">
-                      {{ redeemResult.new_concurrency }} {{ t('redeem.requests') }}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-if="errorMessage"
-            class="rounded-panel border border-danger/20 bg-danger-subtle p-4"
-            role="alert"
-          >
-            <div class="flex items-start gap-3">
-              <Icon name="exclamationCircle" size="md" class="mt-0.5 shrink-0 text-danger-foreground" aria-hidden="true" />
-              <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-danger-foreground">{{ t('redeem.redeemFailed') }}</h2>
-                <p class="mt-1 break-words text-sm leading-6 text-danger-foreground/90">{{ errorMessage }}</p>
-              </div>
-            </div>
+          <div class="card p-4 sm:p-5">
+            <RedeemCodeForm :show-description="true" @redeemed="fetchHistory" />
           </div>
         </div>
 
@@ -240,34 +143,18 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
-import { useAppStore } from '@/stores/app'
-import { useSubscriptionStore } from '@/stores/subscriptions'
 import { redeemAPI, authAPI, type RedeemHistoryItem } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
+import RedeemCodeForm from '@/components/payment/RedeemCodeForm.vue'
 import { formatDateTime } from '@/utils/format'
-import { extractApiErrorMessage } from '@/utils/apiError'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
-const appStore = useAppStore()
-const subscriptionStore = useSubscriptionStore()
 
 const user = computed(() => authStore.user)
-const redeemCode = ref('')
-const submitting = ref(false)
-const redeemResult = ref<{
-  message: string
-  type: string
-  value: number
-  new_balance?: number
-  new_concurrency?: number
-  group_name?: string
-  validity_days?: number
-} | null>(null)
-const errorMessage = ref('')
 const history = ref<RedeemHistoryItem[]>([])
 const loadingHistory = ref(false)
 const historyError = ref(false)
@@ -331,41 +218,6 @@ async function fetchHistory(): Promise<void> {
     console.error('Failed to fetch history:', error)
   } finally {
     loadingHistory.value = false
-  }
-}
-
-async function handleRedeem(): Promise<void> {
-  if (!redeemCode.value.trim()) {
-    appStore.showError(t('redeem.pleaseEnterCode'))
-    return
-  }
-
-  submitting.value = true
-  errorMessage.value = ''
-  redeemResult.value = null
-
-  try {
-    const result = await redeemAPI.redeem(redeemCode.value.trim())
-    redeemResult.value = result
-    await authStore.refreshUser()
-
-    if (result.type === 'subscription') {
-      try {
-        await subscriptionStore.fetchActiveSubscriptions(true)
-      } catch (error) {
-        console.error('Failed to refresh subscriptions after redeem:', error)
-        appStore.showWarning(t('redeem.subscriptionRefreshFailed'))
-      }
-    }
-
-    redeemCode.value = ''
-    await fetchHistory()
-    appStore.showSuccess(t('redeem.codeRedeemSuccess'))
-  } catch (error: unknown) {
-    errorMessage.value = extractApiErrorMessage(error, t('redeem.failedToRedeem'))
-    appStore.showError(t('redeem.redeemFailed'))
-  } finally {
-    submitting.value = false
   }
 }
 

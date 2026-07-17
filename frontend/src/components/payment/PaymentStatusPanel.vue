@@ -1,125 +1,146 @@
 <template>
-  <div class="space-y-4">
+  <div class="payment-status-panel mx-auto w-full max-w-2xl space-y-4">
     <div
       v-if="pollUnavailable && !outcome"
-      class="rounded-panel border border-warning/30 bg-warning-subtle p-3 text-warning-foreground"
+      class="rounded-panel border border-warning/30 bg-warning-subtle p-4 text-warning-foreground"
       role="status"
     >
-      <p class="text-sm">{{ t('payment.qr.statusUnavailable') }}</p>
-      <button
-        type="button"
-        class="btn btn-secondary btn-sm mt-3"
-        :disabled="retryingStatus"
-        @click="retryStatus"
-      >
-        <Icon name="refresh" size="sm" :class="{ 'animate-spin': retryingStatus }" />
-        {{ t('common.retry') }}
-      </button>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm">{{ t('payment.qr.statusUnavailable') }}</p>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm shrink-0"
+          :disabled="retryingStatus"
+          @click="retryStatus"
+        >
+          <Icon name="refresh" size="sm" :class="{ 'animate-spin': retryingStatus }" />
+          {{ t('common.retry') }}
+        </button>
+      </div>
     </div>
 
     <template v-if="outcome === 'success'">
-      <div class="card p-4 sm:p-5" role="status" aria-live="polite">
-        <div class="flex flex-col items-center space-y-4 py-3">
-          <div class="flex h-14 w-14 items-center justify-center rounded-full bg-success-subtle">
+      <div class="card overflow-hidden" role="status" aria-live="polite">
+        <div class="flex flex-col items-center gap-4 px-5 py-8 text-center sm:px-8">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-success-subtle">
             <Icon name="check" size="lg" class="text-success-foreground" aria-hidden="true" />
           </div>
-          <p class="text-lg font-semibold text-foreground">{{ props.orderType === 'subscription' ? t('payment.result.subscriptionSuccess') : t('payment.result.success') }}</p>
-          <dl v-if="paidOrder" class="w-full border-y border-outline px-1 text-sm">
-            <div class="flex justify-between gap-4 py-2">
+          <div>
+            <p class="text-xl font-semibold text-foreground">{{ props.orderType === 'subscription' ? t('payment.result.subscriptionSuccess') : t('payment.result.success') }}</p>
+            <p class="mt-1 text-sm text-foreground-subtle">{{ t('payment.result.processingHint') }}</p>
+          </div>
+          <dl v-if="paidOrder" class="w-full max-w-lg divide-y divide-outline border-y border-outline text-left text-sm">
+            <div class="flex justify-between gap-4 py-3">
               <dt class="text-foreground-subtle">{{ t('payment.orders.orderId') }}</dt>
               <dd class="font-medium text-foreground">#{{ paidOrder.id }}</dd>
             </div>
-            <div v-if="paidOrder.out_trade_no" class="flex min-w-0 justify-between gap-4 border-t border-outline py-2">
+            <div v-if="paidOrder.out_trade_no" class="flex min-w-0 justify-between gap-4 py-3">
               <dt class="text-foreground-subtle">{{ t('payment.orders.orderNo') }}</dt>
               <dd class="min-w-0 break-all text-right font-medium text-foreground">{{ paidOrder.out_trade_no }}</dd>
             </div>
-            <div class="flex justify-between gap-4 border-t border-outline py-2">
+            <div class="flex justify-between gap-4 py-3">
               <dt class="text-foreground-subtle">{{ t('payment.orders.amount') }}</dt>
               <dd class="font-medium tabular-nums text-foreground">{{ creditedAmountSymbol }}{{ paidOrder.amount.toFixed(2) }}</dd>
             </div>
-            <div class="flex justify-between gap-4 border-t border-outline py-2">
+            <div class="flex justify-between gap-4 py-3">
               <dt class="text-foreground-subtle">{{ t('payment.orders.payAmount') }}</dt>
               <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(paidOrder.pay_amount, paidOrder.currency) }}</dd>
             </div>
           </dl>
-          <button type="button" class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
+          <button type="button" class="btn btn-primary min-w-32" @click="handleDone">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </template>
 
-    <!-- Cancelled -->
     <template v-else-if="outcome === 'cancelled'">
-      <div class="card p-4 sm:p-5" role="status" aria-live="polite">
-        <div class="flex flex-col items-center space-y-4 py-4">
+      <div class="card overflow-hidden" role="status" aria-live="polite">
+        <div class="flex flex-col items-center gap-4 px-5 py-10 text-center sm:px-8">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-surface-subtle">
             <Icon name="x" size="lg" class="text-foreground-subtle" aria-hidden="true" />
           </div>
-          <p class="text-lg font-semibold text-foreground">{{ t('payment.qr.cancelled') }}</p>
-          <p class="text-center text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.cancelledDesc') }}</p>
-          <button type="button" class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
+          <div>
+            <p class="text-xl font-semibold text-foreground">{{ t('payment.qr.cancelled') }}</p>
+            <p class="mt-1 text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.cancelledDesc') }}</p>
+          </div>
+          <button type="button" class="btn btn-primary min-w-32" @click="handleDone">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </template>
 
-    <!-- Expired / Failed -->
     <template v-else-if="outcome === 'expired'">
-      <div class="card p-4 sm:p-5" role="status" aria-live="polite">
-        <div class="flex flex-col items-center space-y-4 py-4">
+      <div class="card overflow-hidden" role="status" aria-live="polite">
+        <div class="flex flex-col items-center gap-4 px-5 py-10 text-center sm:px-8">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-warning-subtle">
             <Icon name="clock" size="lg" class="text-warning-foreground" aria-hidden="true" />
           </div>
-          <p class="text-lg font-semibold text-foreground">{{ t('payment.qr.expired') }}</p>
-          <p class="text-center text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.expiredDesc') }}</p>
-          <button type="button" class="btn btn-primary" @click="handleDone">{{ t('common.confirm') }}</button>
+          <div>
+            <p class="text-xl font-semibold text-foreground">{{ t('payment.qr.expired') }}</p>
+            <p class="mt-1 text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.expiredDesc') }}</p>
+          </div>
+          <button type="button" class="btn btn-primary min-w-32" @click="handleDone">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </template>
 
     <template v-else-if="qrUrl">
-      <div class="card p-4 sm:p-5">
-        <div class="flex flex-col items-center space-y-4">
-          <p class="text-lg font-semibold text-foreground">{{ scanTitle }}</p>
-          <div :class="['relative rounded-panel border bg-white p-4', qrBorderClass]">
-            <canvas ref="qrCanvas" class="mx-auto" role="img" :aria-label="scanTitle"></canvas>
-            <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span :class="['rounded-full p-2 shadow ring-2 ring-white', qrLogoBgClass]">
-                <img :src="qrLogoIcon" alt="" class="h-5 w-5 brightness-0 invert" />
-              </span>
+      <div class="card overflow-hidden">
+        <div class="grid gap-6 p-5 sm:p-8 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)] lg:items-center">
+          <div class="flex flex-col items-center gap-4">
+            <div :class="['relative rounded-panel border bg-surface-subtle p-4', qrBorderClass]">
+              <canvas ref="qrCanvas" class="mx-auto" role="img" :aria-label="scanTitle"></canvas>
+              <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span :class="['rounded-full p-2 shadow ring-2 ring-surface', qrLogoBgClass]">
+                  <img :src="qrLogoIcon" alt="" class="h-5 w-5 brightness-0 invert" />
+                </span>
+              </div>
+            </div>
+            <p class="text-center text-sm font-medium text-foreground">{{ scanTitle }}</p>
+          </div>
+          <div class="space-y-5">
+            <div>
+              <p class="text-base font-semibold text-foreground">{{ t('payment.qr.waitingPayment') }}</p>
+              <p v-if="scanHint" class="mt-1 text-sm leading-6 text-foreground-subtle">{{ scanHint }}</p>
+            </div>
+            <div class="rounded-panel border border-outline bg-surface-subtle p-4">
+              <p class="text-xs text-foreground-subtle">{{ t('payment.qr.expiresIn') }}</p>
+              <p class="mt-1 text-3xl font-semibold tabular-nums text-foreground" role="timer">{{ countdownDisplay }}</p>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row">
+              <button v-if="payUrl" type="button" class="btn btn-secondary text-sm flex-1" @click="reopenPopup">
+                {{ t('payment.qr.openPayWindow') }}
+              </button>
+              <button type="button" class="btn btn-secondary flex-1" :disabled="cancelling" @click="handleCancel">
+                {{ cancelling ? t('common.processing') : t('payment.qr.cancelOrder') }}
+              </button>
             </div>
           </div>
-          <p v-if="scanHint" class="text-center text-sm leading-6 text-foreground-subtle">{{ scanHint }}</p>
-          <button v-if="payUrl" type="button" class="btn btn-secondary text-sm" @click="reopenPopup">
-            {{ t('payment.qr.openPayWindow') }}
-          </button>
         </div>
       </div>
-      <div class="card p-4 text-center">
-        <p class="text-sm text-foreground-subtle">{{ t('payment.qr.expiresIn') }}</p>
-        <p class="mt-1 text-2xl font-semibold tabular-nums text-foreground" role="timer">{{ countdownDisplay }}</p>
-        <p class="mt-1 text-xs text-foreground-subtle">{{ t('payment.qr.waitingPayment') }}</p>
-      </div>
-      <button type="button" class="btn btn-secondary w-full" :disabled="cancelling" @click="handleCancel">
-        {{ cancelling ? t('common.processing') : t('payment.qr.cancelOrder') }}
-      </button>
     </template>
 
     <template v-else>
-      <div class="card p-4 sm:p-5">
-        <div class="flex flex-col items-center space-y-4 py-4">
+      <div class="card overflow-hidden">
+        <div class="flex flex-col items-center gap-5 px-5 py-10 text-center sm:px-8">
           <LoadingSpinner />
-          <p class="text-center text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.payInNewWindowHint') }}</p>
-          <button v-if="payUrl" type="button" class="btn btn-secondary" @click="reopenPopup">
-            {{ t('payment.qr.openPayWindow') }}
-          </button>
+          <div>
+            <p class="text-base font-semibold text-foreground">{{ t('payment.qr.payInNewWindow') }}</p>
+            <p class="mt-1 text-sm leading-6 text-foreground-subtle">{{ t('payment.qr.payInNewWindowHint') }}</p>
+          </div>
+          <div class="flex w-full max-w-md flex-col gap-2 sm:flex-row">
+            <button v-if="payUrl" type="button" class="btn btn-secondary flex-1" @click="reopenPopup">
+              {{ t('payment.qr.openPayWindow') }}
+            </button>
+            <button type="button" class="btn btn-secondary flex-1" :disabled="cancelling" @click="handleCancel">
+              {{ cancelling ? t('common.processing') : t('payment.qr.cancelOrder') }}
+            </button>
+          </div>
+          <div class="w-full max-w-md rounded-panel border border-outline bg-surface-subtle p-4 text-left">
+            <p class="text-xs text-foreground-subtle">{{ t('payment.qr.expiresIn') }}</p>
+            <p class="mt-1 text-2xl font-semibold tabular-nums text-foreground" role="timer">{{ countdownDisplay }}</p>
+            <p class="mt-1 text-xs text-foreground-subtle">{{ t('payment.qr.waitingPayment') }}</p>
+          </div>
         </div>
       </div>
-      <div class="card p-4 text-center">
-        <p class="mt-1 text-2xl font-semibold tabular-nums text-foreground" role="timer">{{ countdownDisplay }}</p>
-        <p class="mt-1 text-xs text-foreground-subtle">{{ t('payment.qr.waitingPayment') }}</p>
-      </div>
-      <button type="button" class="btn btn-secondary w-full" :disabled="cancelling" @click="handleCancel">
-        {{ cancelling ? t('common.processing') : t('payment.qr.cancelOrder') }}
-      </button>
     </template>
   </div>
 </template>
@@ -179,7 +200,6 @@ const localeCode = computed(() => {
   return undefined
 })
 
-// Terminal outcome: null = still active, 'success' | 'cancelled' | 'expired'
 const outcome = ref<PaymentOutcome | null>(null)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -195,14 +215,14 @@ const isWxpay = computed(() => isBuiltInWxpayMethod(props.paymentType))
 const shouldVerifyPendingOrder = computed(() => isWxpay.value)
 
 const qrBorderClass = computed(() => {
-  if (isAlipay.value) return 'border-[#00AEEF] border-[#00AEEF]/70 bg-info-subtle'
-  if (isWxpay.value) return 'border-[#2BB741] border-[#2BB741]/70 bg-success-subtle'
+  if (isAlipay.value) return 'border-info/30 bg-info-subtle'
+  if (isWxpay.value) return 'border-success/30 bg-success-subtle'
   return 'border-outline-strong bg-surface'
 })
 
 const qrLogoBgClass = computed(() => {
-  if (isAlipay.value) return 'bg-[#00AEEF]'
-  if (isWxpay.value) return 'bg-[#2BB741]'
+  if (isAlipay.value) return 'bg-info'
+  if (isWxpay.value) return 'bg-success'
   return 'bg-outline-strong'
 })
 
@@ -358,7 +378,6 @@ function cleanup() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
 }
 
-// Initialize on mount
 qrUrl.value = props.qrCode
 verifyAttempts = 0
 lastVerifyAt = 0

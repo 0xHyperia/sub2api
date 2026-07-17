@@ -69,6 +69,21 @@ export default {
     notConfiguredDesc: '管理员已开启入口，但尚未配置充值/订阅链接，请联系管理员。'
   },
 
+  purchaseWorkspace: {
+    accountTitle: '账户充值',
+    accountDescription: '多种充值方式，安全便捷',
+    orders: '账单',
+    accountStats: '账户统计',
+    todaySpent: '今日消耗',
+    totalSpent: '历史消耗',
+    totalRequests: '请求次数',
+    statsUnavailable: '部分用量统计暂时无法加载',
+    affiliateTitle: '邀请奖励',
+    rewardStats: '收益统计',
+    rewardRules: '奖励说明',
+    details: '明细'
+  },
+
   // Custom Page (iframe embed)
   customPage: {
     title: '自定义页面',

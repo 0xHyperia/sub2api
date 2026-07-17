@@ -71,6 +71,21 @@ export default {
       'The administrator enabled the entry but has not configured a recharge/subscription URL. Please contact admin.'
   },
 
+  purchaseWorkspace: {
+    accountTitle: 'Account Top-up',
+    accountDescription: 'Secure and convenient payment options',
+    orders: 'Orders',
+    accountStats: 'Account Statistics',
+    todaySpent: 'Spent Today',
+    totalSpent: 'Historical Spend',
+    totalRequests: 'Requests',
+    statsUnavailable: 'Some usage statistics are temporarily unavailable',
+    affiliateTitle: 'Invite Rewards',
+    rewardStats: 'Reward Statistics',
+    rewardRules: 'Reward Details',
+    details: 'Details'
+  },
+
   // Custom Page (iframe embed)
   customPage: {
     title: 'Custom Page',

@@ -1,34 +1,11 @@
 <template>
   <div class="space-y-4">
-    <fieldset>
-      <legend class="mb-2 text-sm font-medium text-foreground">
-        {{ t('payment.quickAmounts') }}
-      </legend>
-      <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
-        <button
-          v-for="amt in filteredAmounts"
-          :key="amt"
-          type="button"
-          :aria-pressed="modelValue === amt"
-          :class="[
-            'min-h-control rounded-control border px-2 py-2 text-center text-sm font-medium tabular-nums transition-colors',
-            modelValue === amt
-              ? 'border-focus bg-info-subtle text-info-foreground'
-              : 'border-outline-strong bg-surface text-foreground-muted hover:border-focus hover:text-foreground',
-          ]"
-          @click="selectAmount(amt)"
-        >
-          {{ amt }}
-        </button>
-      </div>
-    </fieldset>
-
     <div>
       <label for="custom-payment-amount" class="mb-2 block text-sm font-medium text-foreground">
         {{ t('payment.customAmount') }}
       </label>
       <div class="relative">
-        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" aria-hidden="true">
+        <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-foreground-subtle" aria-hidden="true">
           $
         </span>
         <input
@@ -37,11 +14,34 @@
           inputmode="decimal"
           :value="customText"
           :placeholder="placeholderText"
-          class="input w-full pl-8"
+          class="input min-h-[52px] w-full pl-10 pr-4 text-lg font-semibold tabular-nums"
           @input="handleInput"
         />
       </div>
     </div>
+
+    <fieldset class="space-y-3">
+      <legend class="text-sm font-medium text-foreground">
+        {{ t('payment.quickAmounts') }}
+      </legend>
+      <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 2xl:grid-cols-4">
+        <button
+          v-for="amt in filteredAmounts"
+          :key="amt"
+          type="button"
+          :aria-pressed="modelValue === amt"
+          :class="[
+            'quick-amount-tile flex min-h-[48px] items-center justify-center rounded-control border px-2.5 py-2 text-center transition-colors',
+            modelValue === amt
+              ? 'border-focus bg-info-subtle text-info-foreground shadow-card'
+              : 'border-outline bg-surface text-foreground hover:border-outline-strong hover:bg-surface-subtle',
+          ]"
+          @click="selectAmount(amt)"
+        >
+          <span class="text-sm font-semibold tabular-nums">${{ amt }}</span>
+        </button>
+      </div>
+    </fieldset>
   </div>
 </template>
 
@@ -68,15 +68,14 @@ const { t } = useI18n()
 
 const customText = ref('')
 
-// 0 = no limit
 const filteredAmounts = computed(() =>
   props.amounts.filter((a) => (props.min <= 0 || a >= props.min) && (props.max <= 0 || a <= props.max))
 )
 
 const placeholderText = computed(() => {
   if (props.min > 0 && props.max > 0) return `${props.min} - ${props.max}`
-  if (props.min > 0) return `≥ ${props.min}`
-  if (props.max > 0) return `≤ ${props.max}`
+  if (props.min > 0) return `>= ${props.min}`
+  if (props.max > 0) return `<= ${props.max}`
   return t('payment.enterAmount')
 })
 

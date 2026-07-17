@@ -20,6 +20,11 @@ const showError = vi.hoisted(() => vi.fn())
 const showInfo = vi.hoisted(() => vi.fn())
 const showWarning = vi.hoisted(() => vi.fn())
 const getCheckoutInfo = vi.hoisted(() => vi.fn())
+const getDashboardStats = vi.hoisted(() => vi.fn().mockResolvedValue({
+  today_actual_cost: 1.27,
+  total_actual_cost: 5.92,
+  total_requests: 8589,
+}))
 const bridgeInvoke = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-router', async () => {
@@ -70,6 +75,9 @@ vi.mock('@/stores/subscriptions', () => ({
 
 vi.mock('@/stores', () => ({
   useAppStore: () => ({
+    cachedPublicSettings: {
+      affiliate_enabled: true,
+    },
     showError,
     showInfo,
     showWarning,
@@ -79,6 +87,12 @@ vi.mock('@/stores', () => ({
 vi.mock('@/api/payment', () => ({
   paymentAPI: {
     getCheckoutInfo,
+  },
+}))
+
+vi.mock('@/api/usage', () => ({
+  default: {
+    getDashboardStats,
   },
 }))
 
@@ -237,6 +251,28 @@ async function mountSubscriptionConfirm(options: Parameters<typeof checkoutInfoW
 }
 
 describe('PaymentView subscription confirmation amounts', () => {
+  it('keeps the invite rewards panel mounted while switching purchase tabs', async () => {
+    const wrapper = await mountSubscriptionConfirm()
+    const panel = wrapper.find('[data-testid="affiliate-reward-panel"]')
+
+    expect(panel.exists()).toBe(true)
+    await wrapper.find('#purchase-tab-recharge').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="affiliate-reward-panel"]').element).toBe(panel.element)
+    expect(wrapper.find('#purchase-panel-recharge').exists()).toBe(true)
+  })
+
+  it('keeps subscription confirmation in a full-width action footer', async () => {
+    const wrapper = await mountSubscriptionConfirm()
+    const action = wrapper.get('[data-testid="subscription-confirm-action"]')
+
+    expect(action.classes()).toContain('btn-lg')
+    expect(action.classes()).toContain('sm:min-w-[240px]')
+    expect(action.element.parentElement?.className).toContain('sm:justify-between')
+    expect(wrapper.get('[data-testid="subscription-plan-grid"]').classes()).toContain('plan-grid')
+  })
+
   it('shows converted CNY pay amount using the subscription rate, not the balance multiplier', async () => {
     const wrapper = await mountSubscriptionConfirm({
       checkout: {
@@ -262,6 +298,21 @@ describe('PaymentView subscription confirmation amounts', () => {
     // 换算必须使用订阅汇率（×7.15），而不是余额倍率（÷0.14 = 71.36）
     expect(text).not.toContain(formatPaymentAmount(71.36, 'CNY'))
     expect(wrapper.findAll('button').some(button => button.text().includes(convertedPrice))).toBe(true)
+    expect(text).toContain('$1.27')
+    expect(text).toContain('$5.92')
+    expect(text).toContain('8,589')
+  })
+
+  it('keeps subscription checkout usable when account statistics fail', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    getDashboardStats.mockRejectedValueOnce(new Error('stats unavailable'))
+
+    const wrapper = await mountSubscriptionConfirm({ plan: { price: 18 } })
+
+    expect(wrapper.text()).toContain(formatPaymentAmount(18, 'CNY'))
+    expect(wrapper.text()).toContain('purchaseWorkspace.statsUnavailable')
+    expect(wrapper.findAll('button').some(button => button.text().includes('payment.createOrder'))).toBe(true)
+    consoleError.mockRestore()
   })
 
   it('keeps plan price when the subscription rate is not configured or payment currency is not CNY', async () => {

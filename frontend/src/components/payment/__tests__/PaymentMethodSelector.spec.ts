@@ -31,7 +31,7 @@ describe('PaymentMethodSelector', () => {
     })
 
     const button = wrapper.get('button')
-    expect(button.classes()).toContain('border-brand')
+    expect(button.classes()).toContain('border-brand/30')
     expect(button.classes()).not.toContain('border-[#02A9F1]')
   })
 
@@ -54,5 +54,39 @@ describe('PaymentMethodSelector', () => {
     await radios[0].trigger('keydown', { key: 'ArrowRight' })
 
     expect(wrapper.emitted('select')).toEqual([['stripe']])
+  })
+
+  it('does not repeat the payment method label inside zero-fee options', () => {
+    const wrapper = mount(PaymentMethodSelector, {
+      props: {
+        selected: 'alipay',
+        methods: [
+          { type: 'alipay', fee_rate: 0, available: true },
+          { type: 'wxpay', fee_rate: 0, available: true },
+        ],
+      },
+    })
+
+    expect(wrapper.text()).not.toContain('payment.paymentMethodpayment.paymentMethod')
+    expect(wrapper.findAll('button')).toHaveLength(2)
+    expect(wrapper.findAll('button span.text-foreground-subtle')).toHaveLength(0)
+  })
+
+  it('keeps compact payment options short and reserves a stable selection indicator', () => {
+    const wrapper = mount(PaymentMethodSelector, {
+      props: {
+        compact: true,
+        selected: 'alipay',
+        methods: [
+          { type: 'alipay', fee_rate: 0, available: true },
+          { type: 'wxpay', fee_rate: 0, available: true },
+        ],
+      },
+    })
+
+    const radios = wrapper.findAll('[role="radio"]')
+    expect(radios).toHaveLength(2)
+    expect(radios.every(radio => radio.classes().includes('min-h-[52px]'))).toBe(true)
+    expect(wrapper.findAll('[data-testid="method-selection-indicator"]')).toHaveLength(2)
   })
 })
