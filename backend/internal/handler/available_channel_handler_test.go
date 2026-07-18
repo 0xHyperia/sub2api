@@ -85,13 +85,13 @@ func TestMarketplaceModelIDs_CustomGroupListTakesPriority(t *testing.T) {
 	}
 	accounts := []service.Account{{
 		Platform:    service.PlatformOpenAI,
-		Credentials: map[string]any{"model_mapping": map[string]any{"gpt-mapped": "gpt-upstream"}},
+		Credentials: map[string]any{"model_mapping": map[string]any{"gpt-custom": "gpt-upstream", "gpt-other": "gpt-other"}},
 	}}
 
 	require.Equal(t, []string{"gpt-custom", "gpt-other"}, marketplaceModelIDs(group, accounts))
 }
 
-func TestMarketplaceModelIDs_DefaultCatalogIncludesAccountMappings(t *testing.T) {
+func TestMarketplaceModelIDs_UsesOnlyExplicitAccountMappings(t *testing.T) {
 	group := service.Group{Platform: service.PlatformOpenAI}
 	accounts := []service.Account{{
 		Platform:    service.PlatformOpenAI,
@@ -99,8 +99,7 @@ func TestMarketplaceModelIDs_DefaultCatalogIncludesAccountMappings(t *testing.T)
 	}}
 
 	models := marketplaceModelIDs(group, accounts)
-	require.Contains(t, models, "gpt-marketplace-only")
-	require.Greater(t, len(models), 1, "the built-in platform catalog should also be present")
+	require.Equal(t, []string{"gpt-marketplace-only"}, models)
 }
 
 func TestFilterUserVisibleGroups_IntersectionOnly(t *testing.T) {

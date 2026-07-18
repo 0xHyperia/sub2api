@@ -419,30 +419,7 @@ func showcasePlatformRank(platform string) int {
 }
 
 func marketplaceModelIDs(group service.Group, accounts []service.Account) []string {
-	models := group.ModelsListConfig.Models
-	if !group.ModelsListConfig.Enabled || len(models) == 0 {
-		models = service.DefaultModelsListCandidateIDs(group.Platform)
-		for i := range accounts {
-			for model := range accounts[i].GetModelMapping() {
-				models = append(models, model)
-			}
-		}
-	}
-	seen := make(map[string]struct{}, len(models))
-	out := make([]string, 0, len(models))
-	for _, model := range models {
-		model = strings.TrimSpace(model)
-		if model == "" || strings.Contains(model, "*") {
-			continue
-		}
-		if _, ok := seen[model]; ok {
-			continue
-		}
-		seen[model] = struct{}{}
-		out = append(out, model)
-	}
-	sort.Strings(out)
-	return out
+	return service.ModelCatalogModels(group, accounts)
 }
 
 func toUserAvailableGroup(group service.Group) userAvailableGroup {

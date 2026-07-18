@@ -43,7 +43,7 @@ func (s *ModelMonitorService) DiscoverCatalog(ctx context.Context) ([]ModelCatal
 		if len(accounts) == 0 {
 			continue
 		}
-		for _, model := range modelMonitorCatalogModels(group, accounts) {
+		for _, model := range ModelCatalogModels(group, accounts) {
 			key := ModelMonitorKey(platform, model)
 			entry := seen[key]
 			entry.Platform = platform
@@ -76,12 +76,31 @@ func (s *ModelMonitorService) DiscoverCatalog(ctx context.Context) ([]ModelCatal
 	return out, nil
 }
 
-func modelMonitorCatalogModels(group Group, accounts []Account) []string {
-	models := append([]string(nil), group.ModelsListConfig.Models...)
-	if !group.ModelsListConfig.Enabled || len(models) == 0 {
-		models = DefaultModelsListCandidateIDs(group.Platform)
-		for i := range accounts {
-			for model := range accounts[i].GetModelMapping() {
+// ModelCatalogModels returns the concrete models explicitly allowed by
+// schedulable accounts in a group. A configured group model list is an
+// additional upper bound, not an independent source of model availability.
+func ModelCatalogModels(group Group, accounts []Account) []string {
+	explicitMappings := make([]map[string]string, 0, len(accounts))
+	for i := range accounts {
+		mapping := stringMappingFromRaw(accounts[i].Credentials["model_mapping"])
+		if len(mapping) > 0 {
+			explicitMappings = append(explicitMappings, mapping)
+		}
+	}
+
+	models := make([]string, 0)
+	if group.ModelsListConfig.Enabled && len(group.ModelsListConfig.Models) > 0 {
+		for _, model := range group.ModelsListConfig.Models {
+			for _, mapping := range explicitMappings {
+				if mappingSupportsRequestedModel(mapping, strings.TrimSpace(model)) {
+					models = append(models, model)
+					break
+				}
+			}
+		}
+	} else {
+		for _, mapping := range explicitMappings {
+			for model := range mapping {
 				models = append(models, model)
 			}
 		}
@@ -116,8 +135,7 @@ func (s *ModelMonitorService) ListRows(ctx context.Context) ([]ModelMonitorRow, 
 	if err != nil {
 		return nil, err
 	}
-	keys := make([]ModelCatalogEntry, 0, len(catalog)+len(configs))
-	keys = append(keys, catalog...)
+	keys := append([]ModelCatalogEntry(nil), catalog...)
 	catalogSet := make(map[string]bool, len(catalog))
 	for _, entry := range catalog {
 		catalogSet[ModelMonitorKey(entry.Platform, entry.Model)] = true
@@ -126,9 +144,6 @@ func (s *ModelMonitorService) ListRows(ctx context.Context) ([]ModelMonitorRow, 
 	for _, cfg := range configs {
 		key := ModelMonitorKey(cfg.Platform, cfg.Model)
 		configByKey[key] = cfg
-		if !catalogSet[key] {
-			keys = append(keys, ModelCatalogEntry{Platform: cfg.Platform, Model: cfg.Model})
-		}
 	}
 	summaries, err := s.repo.Summaries(ctx, keys, ModelMonitorTimelinePoints)
 	if err != nil {
