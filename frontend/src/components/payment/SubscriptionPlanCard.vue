@@ -17,10 +17,6 @@
           <span v-if="isRenewal" class="badge badge-success shrink-0">
             {{ t('payment.renewNow') }}
           </span>
-          <span v-if="selected" class="badge badge-primary shrink-0">
-            <Icon name="check" size="xs" aria-hidden="true" />
-            {{ t('payment.planCard.selected') }}
-          </span>
         </div>
         <p v-if="plan.description" class="plan-description mt-1.5 break-words text-sm leading-5 text-foreground-subtle">
           {{ plan.description }}
@@ -29,14 +25,10 @@
     </div>
 
     <div class="mt-3 flex flex-wrap items-end gap-x-2.5 gap-y-1">
-      <div class="flex items-baseline gap-1">
-        <span class="text-sm text-foreground-subtle">$</span>
-        <span :class="['text-2xl font-semibold tabular-nums', textClass]">{{ plan.price }}</span>
-        <span v-if="plan.currency" class="text-xs font-medium text-foreground-subtle">{{ plan.currency }}</span>
-      </div>
+      <span :class="['text-2xl font-semibold tabular-nums', textClass]">{{ formatPlanAmount(plan.price) }}</span>
       <span class="text-sm text-foreground-subtle">/ {{ validitySuffix }}</span>
       <span v-if="plan.original_price" class="text-sm text-foreground-subtle line-through">
-        \${{ plan.original_price }}<template v-if="plan.currency"> {{ plan.currency }}</template>
+        {{ formatPlanAmount(plan.original_price) }}
       </span>
       <span v-if="discountText" :class="['badge', discountClass]">{{ discountText }}</span>
     </div>
@@ -52,15 +44,15 @@
       </div>
       <div v-if="plan.daily_limit_usd != null" class="flex items-center justify-between gap-3">
         <dt class="text-xs text-foreground-subtle">{{ t('payment.planCard.dailyLimit') }}</dt>
-        <dd class="font-semibold tabular-nums text-foreground">\${{ plan.daily_limit_usd }}</dd>
+        <dd class="font-semibold tabular-nums text-foreground">{{ formatUSDQuota(plan.daily_limit_usd) }}</dd>
       </div>
       <div v-if="plan.weekly_limit_usd != null" class="flex items-center justify-between gap-3">
         <dt class="text-xs text-foreground-subtle">{{ t('payment.planCard.weeklyLimit') }}</dt>
-        <dd class="font-semibold tabular-nums text-foreground">\${{ plan.weekly_limit_usd }}</dd>
+        <dd class="font-semibold tabular-nums text-foreground">{{ formatUSDQuota(plan.weekly_limit_usd) }}</dd>
       </div>
       <div v-if="plan.monthly_limit_usd != null" class="flex items-center justify-between gap-3">
         <dt class="text-xs text-foreground-subtle">{{ t('payment.planCard.monthlyLimit') }}</dt>
-        <dd class="font-semibold tabular-nums text-foreground">\${{ plan.monthly_limit_usd }}</dd>
+        <dd class="font-semibold tabular-nums text-foreground">{{ formatUSDQuota(plan.monthly_limit_usd) }}</dd>
       </div>
       <div v-if="plan.daily_limit_usd == null && plan.weekly_limit_usd == null && plan.monthly_limit_usd == null" class="flex items-center justify-between gap-3">
         <dt class="text-xs text-foreground-subtle">{{ t('payment.planCard.quota') }}</dt>
@@ -92,7 +84,7 @@
       :aria-pressed="selected"
       @click="emit('select', plan)"
     >
-      {{ selected ? t('payment.planCard.selected') : isRenewal ? t('payment.renewNow') : t('payment.subscribeNow') }}
+      {{ selected ? t('payment.continueCheckout') : isRenewal ? t('payment.renewNow') : t('payment.subscribeNow') }}
     </button>
   </article>
 </template>
@@ -104,6 +96,7 @@ import type { SubscriptionPlan } from '@/types/payment'
 import type { UserSubscription } from '@/types'
 import { useAppStore } from '@/stores/app'
 import Icon from '@/components/icons/Icon.vue'
+import { formatPaymentAmount } from '@/components/payment/currency'
 import { hasPeakRate as groupHasPeakRate, formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'
 import {
   platformBadgeLightClass,
@@ -142,8 +135,16 @@ const discountText = computed(() => {
 
 const rateDisplay = computed(() => {
   const rate = props.plan.rate_multiplier ?? 1
-  return 'x' + Number(rate.toPrecision(10))
+  return Number(rate.toPrecision(10)) + 'x'
 })
+
+function formatPlanAmount(value: number): string {
+  return formatPaymentAmount(value, props.plan.currency || 'USD')
+}
+
+function formatUSDQuota(value: number): string {
+  return formatPaymentAmount(value, 'USD')
+}
 
 const appStore = useAppStore()
 

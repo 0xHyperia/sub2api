@@ -21,6 +21,7 @@ const i18n = createI18n({
           unlimited: "Unlimited",
         },
         subscribeNow: "Subscribe now",
+        continueCheckout: "Continue",
       },
     },
   },
@@ -58,12 +59,22 @@ describe("SubscriptionPlanCard", () => {
     expect(wrapper.find(".h-10.w-1").exists()).toBe(false);
   });
 
-  it("shows a persistent selected state with radio-like button feedback", () => {
+  it("keeps the selected card highlighted and offers a checkout action", () => {
     const wrapper = mountPlanCard("openai", true);
 
     expect(wrapper.get("article").classes()).toContain("border-info/50");
     expect(wrapper.get("button").attributes("aria-pressed")).toBe("true");
-    expect(wrapper.text()).toContain("payment.planCard.selected");
+    expect(wrapper.get("button").text()).toBe("payment.continueCheckout");
+    expect(wrapper.text()).not.toContain("payment.planCard.selected");
+  });
+
+  it("formats plan prices, rates, and quotas without raw escape characters", () => {
+    const wrapper = mountPlanCard("openai");
+
+    expect(wrapper.text()).toContain("$10.00");
+    expect(wrapper.text()).toContain("1x");
+    expect(wrapper.text()).not.toContain("x1");
+    expect(wrapper.text()).not.toContain("\\$");
   });
 
   it("does not show Antigravity model scopes for OpenAI plans", () => {

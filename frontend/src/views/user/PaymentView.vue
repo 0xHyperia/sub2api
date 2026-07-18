@@ -220,101 +220,144 @@
                   :aria-labelledby="tabs.length > 1 ? 'purchase-tab-subscription' : undefined"
                   :aria-label="tabs.length === 1 ? t('payment.tabSubscribe') : undefined"
                 >
-                  <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h2 class="text-base font-semibold text-foreground">{{ t('payment.selectPlan') }}</h2>
-                      <p class="mt-1 text-sm text-foreground-subtle">{{ t('payment.tabSubscribe') }}</p>
-                    </div>
-                    <RouterLink to="/subscriptions" class="btn btn-secondary btn-sm shrink-0">
-                      <span>{{ t('userSubscriptions.title') }}</span>
-                      <Icon name="arrowRight" size="sm" aria-hidden="true" />
-                    </RouterLink>
-                  </header>
+                  <Transition name="subscription-stage" mode="out-in">
+                    <div v-if="subscriptionStage === 'plans'" key="subscription-plans" data-testid="subscription-plan-catalog">
+                      <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <h2 class="text-base font-semibold text-foreground">{{ t('payment.selectPlan') }}</h2>
+                        <RouterLink to="/subscriptions" class="btn btn-secondary btn-sm shrink-0">
+                          <span>{{ t('userSubscriptions.title') }}</span>
+                          <Icon name="arrowRight" size="sm" aria-hidden="true" />
+                        </RouterLink>
+                      </header>
 
-                  <div v-if="checkout.plans.length === 0" class="mt-4">
-                    <EmptyState :title="t('payment.noPlans')" />
-                  </div>
+                      <div v-if="checkout.plans.length === 0" class="mt-4">
+                        <EmptyState :title="t('payment.noPlans')" />
+                      </div>
 
-                  <template v-else>
-                    <div data-testid="subscription-plan-grid" :class="['plan-grid mt-4', planGridClass]">
-                      <SubscriptionPlanCard
-                        v-for="plan in checkout.plans"
-                        :key="plan.id"
-                        :plan="plan"
-                        :selected="selectedPlan?.id === plan.id"
-                        @select="selectPlan"
-                      />
+                      <div v-else data-testid="subscription-plan-grid" :class="['plan-grid mt-4', planGridClass]">
+                        <SubscriptionPlanCard
+                          v-for="plan in checkout.plans"
+                          :key="plan.id"
+                          :plan="plan"
+                          :selected="selectedPlan?.id === plan.id"
+                          @select="selectPlan"
+                        />
+                      </div>
                     </div>
 
                     <div
-                      v-if="selectedPlan"
-                      id="subscription-confirmation"
-                      ref="subscriptionConfirmationRef"
-                      data-testid="subscription-confirmation"
-                      class="mt-5 scroll-mt-24 border-t border-outline pt-5 outline-none"
+                      v-else-if="selectedPlan"
+                      key="subscription-checkout"
+                      ref="subscriptionCheckoutRef"
+                      data-testid="subscription-checkout"
+                      class="scroll-mt-24 outline-none"
                       tabindex="-1"
-                      role="status"
-                      aria-live="polite"
                     >
-                      <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.72fr)]">
-                        <div class="min-w-0">
+                      <header class="flex min-w-0 items-center justify-between gap-3 border-b border-outline pb-4">
+                        <div class="flex min-w-0 items-center gap-3">
+                          <button
+                            type="button"
+                            data-testid="subscription-back-action"
+                            class="btn btn-ghost btn-icon shrink-0"
+                            :aria-label="t('payment.backToPlans')"
+                            @click="backToPlanSelection"
+                          >
+                            <Icon name="arrowLeft" size="sm" aria-hidden="true" />
+                          </button>
+                          <div class="min-w-0">
+                            <h2 class="text-base font-semibold text-foreground">{{ t('payment.confirmSubscription') }}</h2>
+                            <p class="mt-0.5 truncate text-xs text-foreground-subtle">{{ selectedPlan.name }}</p>
+                          </div>
+                        </div>
+                        <RouterLink to="/subscriptions" class="btn btn-ghost btn-sm hidden shrink-0 sm:inline-flex">
+                          <span>{{ t('userSubscriptions.title') }}</span>
+                          <Icon name="arrowRight" size="sm" aria-hidden="true" />
+                        </RouterLink>
+                      </header>
+
+                      <div class="grid min-w-0 gap-5 pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.82fr)]">
+                        <section class="min-w-0" :aria-label="t('payment.selectedPlanSummary')">
                           <div class="flex min-w-0 items-start justify-between gap-3">
                             <div class="min-w-0">
-                              <p class="text-sm text-foreground-subtle">{{ t('payment.selectPlan') }}</p>
-                              <h3 class="mt-1 break-words text-lg font-semibold text-foreground">{{ selectedPlan.name }}</h3>
+                              <p class="text-sm font-medium text-foreground-subtle">{{ t('payment.selectedPlanSummary') }}</p>
+                              <h3 class="mt-1 break-words text-xl font-semibold text-foreground">{{ selectedPlan.name }}</h3>
                             </div>
                             <span :class="['badge shrink-0', planBadgeClass]">{{ platformLabel(selectedPlan.group_platform || '') }}</span>
                           </div>
+
                           <div class="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                            <span :class="['text-2xl font-semibold tabular-nums', planTextClass]">{{ formatSelectedSubscriptionPaymentAmount(selectedPlan.price) }}</span>
+                            <span :class="['text-3xl font-semibold tabular-nums', planTextClass]">{{ formatSelectedSubscriptionPaymentAmount(selectedPlan.price) }}</span>
                             <span class="text-sm text-foreground-subtle">/ {{ planValiditySuffix }}</span>
                             <span v-if="selectedPlan.original_price" class="text-sm text-foreground-subtle line-through">{{ formatSelectedSubscriptionPaymentAmount(selectedPlan.original_price) }}</span>
                           </div>
                           <p v-if="selectedPlan.description" class="mt-2 text-sm leading-6 text-foreground-subtle">{{ selectedPlan.description }}</p>
-                        </div>
 
-                        <div class="min-w-0 space-y-4 border-t border-outline pt-5 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+                          <dl class="mt-5 grid gap-x-5 gap-y-3 border-y border-outline py-4 text-sm sm:grid-cols-2">
+                            <div class="flex items-center justify-between gap-3">
+                              <dt class="text-foreground-subtle">{{ t('payment.planCard.rate') }}</dt>
+                              <dd class="font-semibold text-foreground">{{ formatPlanRate(selectedPlan.rate_multiplier) }}</dd>
+                            </div>
+                            <div v-if="selectedPlan.daily_limit_usd != null" class="flex items-center justify-between gap-3">
+                              <dt class="text-foreground-subtle">{{ t('payment.planCard.dailyLimit') }}</dt>
+                              <dd class="font-semibold tabular-nums text-foreground">{{ formatPlanQuota(selectedPlan.daily_limit_usd) }}</dd>
+                            </div>
+                            <div v-if="selectedPlan.weekly_limit_usd != null" class="flex items-center justify-between gap-3">
+                              <dt class="text-foreground-subtle">{{ t('payment.planCard.weeklyLimit') }}</dt>
+                              <dd class="font-semibold tabular-nums text-foreground">{{ formatPlanQuota(selectedPlan.weekly_limit_usd) }}</dd>
+                            </div>
+                            <div v-if="selectedPlan.monthly_limit_usd != null" class="flex items-center justify-between gap-3">
+                              <dt class="text-foreground-subtle">{{ t('payment.planCard.monthlyLimit') }}</dt>
+                              <dd class="font-semibold tabular-nums text-foreground">{{ formatPlanQuota(selectedPlan.monthly_limit_usd) }}</dd>
+                            </div>
+                          </dl>
+
+                          <ul v-if="selectedPlan.features.length > 0" class="mt-4 space-y-2 text-sm leading-5 text-foreground-muted">
+                            <li v-for="feature in selectedPlan.features" :key="feature" class="flex items-start gap-2">
+                              <Icon name="check" size="sm" class="mt-0.5 shrink-0 text-success-foreground" aria-hidden="true" />
+                              <span>{{ feature }}</span>
+                            </li>
+                          </ul>
+                        </section>
+
+                        <aside class="min-w-0 rounded-panel border border-outline bg-surface-subtle p-4 sm:p-5 lg:sticky lg:top-24 lg:self-start" :aria-label="t('payment.checkoutSummary')">
                           <PaymentMethodSelector
                             compact
                             :methods="subMethodOptions"
                             :selected="selectedMethod"
                             @select="selectedMethod = $event"
                           />
-                          <dl class="space-y-2.5 border-t border-outline pt-4 text-sm">
+                          <dl class="mt-5 space-y-3 border-y border-outline py-4 text-sm">
                             <div class="flex items-center justify-between gap-4">
-                              <dt class="text-foreground-subtle">{{ t('payment.amountLabel') }}</dt>
+                              <dt class="text-foreground-subtle">{{ t('payment.planAmount') }}</dt>
                               <dd class="font-medium tabular-nums text-foreground">{{ formatSelectedPaymentAmount(subPaymentAmount) }}</dd>
                             </div>
                             <div v-if="feeRate > 0 && selectedPlan.price > 0" class="flex items-center justify-between gap-4">
                               <dt class="text-foreground-subtle">{{ t('payment.fee') }} ({{ feeRate }}%)</dt>
-                              <dd class="font-medium tabular-nums text-foreground">{{ formatSelectedPaymentAmount(subFeeAmount) }}</dd>
+                              <dd class="font-medium tabular-nums text-foreground">+{{ formatSelectedPaymentAmount(subFeeAmount) }}</dd>
                             </div>
                           </dl>
-                        </div>
-                      </div>
-
-                      <div class="mt-5 flex flex-col gap-4 border-t border-outline pt-5 sm:flex-row sm:items-end sm:justify-between">
-                        <dl class="min-w-0">
-                          <dt class="text-sm font-medium text-foreground-subtle">{{ t('payment.actualPay') }}</dt>
-                          <dd class="mt-1 text-2xl font-semibold tabular-nums text-foreground">{{ formatSelectedPaymentAmount(subTotalAmount) }}</dd>
-                        </dl>
-                        <button
-                          type="button"
-                          data-testid="subscription-confirm-action"
-                          class="payment-confirm-button btn btn-lg w-full sm:w-auto sm:min-w-[240px]"
-                          :disabled="!canSubmitSubscription || submitting"
-                          :aria-busy="submitting"
-                          @click="confirmSubscribe"
-                        >
-                          <span v-if="submitting" class="flex items-center justify-center gap-2">
-                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
-                            {{ t('common.processing') }}
-                          </span>
-                          <span v-else>{{ t('payment.createOrder') }} {{ formatSelectedPaymentAmount(subTotalAmount) }}</span>
-                        </button>
+                          <dl class="mt-4">
+                            <dt class="text-sm font-medium text-foreground-subtle">{{ t('payment.actualPay') }}</dt>
+                            <dd class="mt-1 text-3xl font-semibold tabular-nums text-foreground">{{ formatSelectedPaymentAmount(subTotalAmount) }}</dd>
+                          </dl>
+                          <button
+                            type="button"
+                            data-testid="subscription-confirm-action"
+                            class="payment-confirm-button btn btn-lg mt-4 hidden w-full lg:inline-flex"
+                            :disabled="!canSubmitSubscription || submitting"
+                            :aria-busy="submitting"
+                            @click="confirmSubscribe"
+                          >
+                            <span v-if="submitting" class="flex items-center justify-center gap-2">
+                              <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                              {{ t('common.processing') }}
+                            </span>
+                            <span v-else>{{ t('payment.payAmount', { amount: formatSelectedPaymentAmount(subTotalAmount) }) }}</span>
+                          </button>
+                        </aside>
                       </div>
                     </div>
-                  </template>
+                  </Transition>
                 </section>
 
               </article>
@@ -382,6 +425,30 @@
       </div>
     </div>
 
+    <div
+      v-if="showMobileSubscriptionBar"
+      class="fixed inset-x-0 bottom-0 z-40 border-t border-outline bg-surface-raised/95 px-3 pt-2 shadow-floating backdrop-blur-md lg:hidden"
+      style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom))"
+    >
+      <div class="mx-auto grid max-w-lg grid-cols-[minmax(0,1fr)_minmax(155px,auto)] items-center gap-3">
+        <dl class="min-w-0">
+          <dt class="truncate text-[10px] leading-4 text-foreground-subtle">{{ selectedPlan?.name }}</dt>
+          <dd class="truncate text-base font-semibold tabular-nums text-foreground">{{ formatSelectedPaymentAmount(subTotalAmount) }}</dd>
+        </dl>
+        <button
+          type="button"
+          data-testid="mobile-subscription-confirm-action"
+          class="payment-confirm-button btn h-11 w-full px-3 text-sm"
+          :disabled="!canSubmitSubscription || submitting"
+          :aria-busy="submitting"
+          @click="confirmSubscribe"
+        >
+          <span v-if="submitting">{{ t('common.processing') }}</span>
+          <span v-else>{{ t('payment.payAmount', { amount: formatSelectedPaymentAmount(subTotalAmount) }) }}</span>
+        </button>
+      </div>
+    </div>
+
     <PurchaseAuxiliaryDrawer
       :mode="auxiliaryMode"
       :affiliate-enabled="affiliateEnabled"
@@ -408,7 +475,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePaymentStore } from '@/stores/payment'
 import { useSubscriptionStore } from '@/stores/subscriptions'
@@ -464,12 +531,14 @@ const submitting = ref(false)
 const errorMessage = ref('')
 const errorHintMessage = ref('')
 type PurchaseTab = 'recharge' | 'subscription'
+type SubscriptionStage = 'plans' | 'checkout'
 
 const activeTab = ref<PurchaseTab>('recharge')
 const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
-const subscriptionConfirmationRef = ref<HTMLElement | null>(null)
+const subscriptionStage = ref<SubscriptionStage>('plans')
+const subscriptionCheckoutRef = ref<HTMLElement | null>(null)
 const methodSwitchNotice = ref('')
 const previewImage = ref('')
 const auxiliaryMode = ref<PurchaseAuxiliaryMode | null>(null)
@@ -630,6 +699,11 @@ function onPaymentDone() {
   resetPayment()
   selectedPlan.value = null
   if (wasSubscription) {
+    subscriptionStage.value = 'plans'
+    const query: LocationQueryRaw = { ...route.query, tab: 'subscription' }
+    delete query.plan
+    delete query.group
+    void router.replace({ path: route.path, query })
     subscriptionStore.fetchActiveSubscriptions(true).catch(() => {})
   }
 }
@@ -696,7 +770,9 @@ const showInstantHelp = computed(() =>
 
 const pageContainerClass = computed(() => [
   'mx-auto w-full space-y-5',
-  activeTab.value === 'recharge' ? 'max-w-[1320px] pb-24 lg:pb-0' : 'max-w-[1320px]',
+  activeTab.value === 'recharge' || (activeTab.value === 'subscription' && subscriptionStage.value === 'checkout')
+    ? 'max-w-[1320px] pb-24 lg:pb-0'
+    : 'max-w-[1320px]',
 ])
 
 function ensureVisiblePurchaseTab(preferred?: PurchaseTab) {
@@ -716,6 +792,13 @@ const showMobileRechargeBar = computed(() =>
   paymentPhase.value === 'select'
   && activeTab.value === 'recharge'
   && tabs.value.length > 0
+  && enabledMethods.value.length > 0
+)
+const showMobileSubscriptionBar = computed(() =>
+  paymentPhase.value === 'select'
+  && activeTab.value === 'subscription'
+  && subscriptionStage.value === 'checkout'
+  && selectedPlan.value !== null
   && enabledMethods.value.length > 0
 )
 const validAmount = computed(() => amount.value ?? 0)
@@ -824,6 +907,15 @@ function formatSelectedPaymentAmount(value: number): string {
 
 function formatSelectedSubscriptionPaymentAmount(value: number): string {
   return formatSelectedPaymentAmount(subscriptionPaymentAmountForCurrency(value, selectedCurrency.value))
+}
+
+function formatPlanRate(value?: number): string {
+  const rate = Number.isFinite(value) ? Number(value) : 1
+  return `${Number(rate.toPrecision(10))}x`
+}
+
+function formatPlanQuota(value: number): string {
+  return formatPaymentAmount(value, 'USD', localeCode.value)
 }
 
 
@@ -964,12 +1056,19 @@ function paymentMethodDisplayName(type: string): string {
   return visibleMethods.value[type]?.display_name || t(`payment.methods.${type}`, type)
 }
 
-async function selectPlan(plan: SubscriptionPlan) {
+async function enterSubscriptionCheckout(plan: SubscriptionPlan, syncRoute = true) {
   selectedPlan.value = plan
+  subscriptionStage.value = 'checkout'
   errorMessage.value = ''
-  await nextTick()
 
-  const target = subscriptionConfirmationRef.value
+  if (syncRoute) {
+    const query: LocationQueryRaw = { ...route.query, tab: 'subscription', plan: String(plan.id) }
+    delete query.group
+    await router.push({ path: route.path, query })
+  }
+
+  await nextTick()
+  const target = subscriptionCheckoutRef.value
   if (!target) return
   const reduceMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -977,17 +1076,60 @@ async function selectPlan(plan: SubscriptionPlan) {
   target.focus({ preventScroll: true })
 }
 
-function selectPlanFromModal(plan: SubscriptionPlan) {
+async function selectPlan(plan: SubscriptionPlan) {
+  await enterSubscriptionCheckout(plan)
+}
+
+async function backToPlanSelection() {
+  subscriptionStage.value = 'plans'
+  errorMessage.value = ''
+  const query: LocationQueryRaw = { ...route.query, tab: 'subscription' }
+  delete query.plan
+  delete query.group
+  await router.push({ path: route.path, query })
+}
+
+async function selectPlanFromModal(plan: SubscriptionPlan) {
   showRenewalModal.value = false
   renewGroupId.value = null
-  selectedPlan.value = plan
-  errorMessage.value = ''
+  await enterSubscriptionCheckout(plan)
 }
 
 function closeRenewalModal() {
   showRenewalModal.value = false
   renewGroupId.value = null
 }
+
+function syncSubscriptionStageFromRoute(): void {
+  if (route.query.tab !== 'subscription' || paymentPhase.value !== 'select') return
+
+  const planId = Number(route.query.plan)
+  if (Number.isFinite(planId) && planId > 0) {
+    const plan = checkout.value.plans.find(item => item.id === planId)
+    if (plan) {
+      selectedPlan.value = plan
+      subscriptionStage.value = 'checkout'
+      return
+    }
+  }
+
+  const groupId = Number(route.query.group)
+  if (Number.isFinite(groupId) && groupId > 0) {
+    const groupPlans = checkout.value.plans.filter(plan => plan.group_id === groupId)
+    if (groupPlans.length === 1) {
+      selectedPlan.value = groupPlans[0]
+      subscriptionStage.value = 'checkout'
+      return
+    }
+  }
+
+  subscriptionStage.value = 'plans'
+}
+
+watch(
+  () => [route.query.tab, route.query.plan, route.query.group],
+  syncSubscriptionStageFromRoute,
+)
 
 async function handleSubmitRecharge() {
   if (!canSubmit.value || submitting.value) return
@@ -1309,6 +1451,7 @@ async function resumeWechatPaymentFromQuery() {
   }
   if (resume.orderType === 'subscription' && resume.planId) {
     selectedPlan.value = checkout.value.plans.find(plan => plan.id === resume.planId) ?? null
+    if (selectedPlan.value) subscriptionStage.value = 'checkout'
   }
 
   await router.replace({ path: route.path, query: stripWechatResumeQuery(route.query) })
@@ -1378,14 +1521,20 @@ onMounted(async () => {
       }
     }
     await resumeWechatPaymentFromQuery()
-    // Handle renewal navigation: ?tab=subscription&group=123
+    // Handle direct checkout navigation: ?tab=subscription&plan=123 or renewal ?group=123.
     if (route.query.tab === 'subscription') {
       ensureVisiblePurchaseTab('subscription')
-      if (route.query.group) {
+      const planId = Number(route.query.plan)
+      const routePlan = Number.isFinite(planId) && planId > 0
+        ? checkout.value.plans.find(plan => plan.id === planId)
+        : undefined
+      if (routePlan) {
+        await enterSubscriptionCheckout(routePlan, false)
+      } else if (route.query.group) {
         const groupId = Number(route.query.group)
         const groupPlans = checkout.value.plans.filter(p => p.group_id === groupId)
         if (groupPlans.length === 1) {
-          selectedPlan.value = groupPlans[0]
+          await enterSubscriptionCheckout(groupPlans[0], false)
         } else if (groupPlans.length > 1) {
           renewGroupId.value = groupId
           showRenewalModal.value = true
@@ -1522,6 +1671,28 @@ onMounted(async () => {
 @media (prefers-reduced-motion: reduce) {
   .payment-confirm-button::before {
     animation: none;
+  }
+}
+
+.subscription-stage-enter-active,
+.subscription-stage-leave-active {
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.subscription-stage-enter-from {
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+.subscription-stage-leave-to {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subscription-stage-enter-active,
+  .subscription-stage-leave-active {
+    transition: none;
   }
 }
 

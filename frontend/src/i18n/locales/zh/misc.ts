@@ -542,8 +542,12 @@ export default {
       qrFailed: '未能获取微信支付二维码',
     },
     subscribeNow: '立即开通',
+    continueCheckout: '继续订阅',
     renewNow: '续费',
     selectPlan: '选择套餐',
+    backToPlans: '返回套餐列表',
+    selectedPlanSummary: '已选套餐',
+    planAmount: '套餐金额',
     planFeatures: '功能特性',
     planCard: {
       rate: '倍率',

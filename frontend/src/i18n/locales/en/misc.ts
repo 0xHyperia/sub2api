@@ -518,8 +518,12 @@ export default {
       qrFailed: 'Failed to get WeChat Pay QR code',
     },
     subscribeNow: 'Subscribe Now',
+    continueCheckout: 'Continue',
     renewNow: 'Renew',
     selectPlan: 'Select Plan',
+    backToPlans: 'Back to plans',
+    selectedPlanSummary: 'Selected plan',
+    planAmount: 'Plan amount',
     planFeatures: 'Features',
     planCard: {
       rate: 'Rate',

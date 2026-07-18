@@ -238,7 +238,10 @@ async function mountPaymentView(
           template: '<div><slot /></div>',
         },
         Teleport: true,
-        Transition: false,
+        Transition: {
+          inheritAttrs: false,
+          template: '<slot />',
+        },
       },
     },
   })
@@ -308,18 +311,45 @@ describe('PaymentView subscription confirmation amounts', () => {
     expect(action.element.parentElement?.className).toContain('max-w-lg')
   })
 
-  it('keeps subscription confirmation in a full-width action footer', async () => {
+  it('opens direct subscription links in a dedicated checkout stage', async () => {
     const wrapper = await mountSubscriptionConfirm()
     const action = wrapper.get('[data-testid="subscription-confirm-action"]')
 
     expect(action.classes()).toContain('btn-lg')
     expect(action.classes()).toContain('payment-confirm-button')
-    expect(action.classes()).not.toContain('btn-wxpay')
-    expect(action.classes()).toContain('sm:min-w-[240px]')
-    expect(action.element.parentElement?.className).toContain('sm:justify-between')
+    expect(action.classes()).toContain('w-full')
+    expect(action.classes()).toContain('lg:inline-flex')
+    expect(wrapper.find('[data-testid="subscription-plan-grid"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="subscription-checkout"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="mobile-subscription-confirm-action"]').text()).toContain(formatPaymentAmount(128, 'CNY'))
+  })
+
+  it('moves from the plan catalog into checkout and can return without losing selection', async () => {
+    const wrapper = await mountPaymentView(checkoutInfoWithPlansFixture(), { tab: 'subscription' })
+
+    expect(wrapper.get('[data-testid="subscription-plan-catalog"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="subscription-plan-grid"]').classes()).toContain('plan-grid')
+    expect(wrapper.find('[data-testid="subscription-checkout"]').exists()).toBe(false)
+
+    const card = wrapper.getComponent(SubscriptionPlanCard)
+    card.vm.$emit('select', card.props('plan'))
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="subscription-checkout"]').exists()).toBe(true)
+    expect(routerPush).toHaveBeenCalledWith({
+      path: '/purchase',
+      query: { tab: 'subscription', plan: '7' },
+    })
+
+    await wrapper.get('[data-testid="subscription-back-action"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="subscription-plan-catalog"]').exists()).toBe(true)
     expect(wrapper.getComponent(SubscriptionPlanCard).props('selected')).toBe(true)
-    expect(wrapper.get('[data-testid="subscription-confirmation"]').attributes('aria-live')).toBe('polite')
+    expect(routerPush).toHaveBeenLastCalledWith({
+      path: '/purchase',
+      query: { tab: 'subscription' },
+    })
   })
 
   it('announces when the amount requires a different payment method', async () => {
