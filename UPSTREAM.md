@@ -2,16 +2,16 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
-## USA0 v1.0.6（候选）
+## USA0 v1.0.6
 
-- 候选发布版本：v1.0.6
+- 发布版本：v1.0.6
 - 集成分支：`codex/merge-upstream-v0.1.161`
-- 计划发布分支：`usa0/main`
+- 发布分支：`usa0/main`
 - 官方基线版本：v0.1.161
 - 官方基线提交：`19149ca196eeae4a4482e5299dc6fa4ba0b06c8c`
 - 上一官方基线：v0.1.158（`26abd19a2812edba02bbef93c3e2a620141cc257`）
 - 集成提交：`b1d9516700ccbd7cabe09d8ae239dea81ad88c7f`
-- 同步状态：已完成冲突解决、USA0 适配和完整验证，生成合并提交并快进合入 `usa0/main`，已推送至 `origin/usa0/main`；未创建 v1.0.6 tag
+- 同步状态：已完成冲突解决、USA0 适配和完整验证，生成合并提交并快进合入 `usa0/main`，已推送至 `origin/usa0/main`，并创建、推送 v1.0.6 tag
 - 记录日期：2026-07-19
 
 ### 同步范围
