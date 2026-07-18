@@ -114,23 +114,6 @@
           </div>
         </div>
 
-        <div v-if="detail.attempted_key_prefix" class="detail-field p-4">
-          <div class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.errorDetail.attemptedKeyPrefix') }}</div>
-          <div class="mt-1 font-mono text-sm font-medium text-foreground">
-            {{ detail.attempted_key_prefix }}
-          </div>
-        </div>
-
-        <div v-if="detail.deleted_key_owner_email" class="detail-field p-4">
-          <div class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.errorDetail.deletedKeyOwner') }}</div>
-          <div class="mt-1 text-sm font-medium text-foreground">
-            {{ detail.deleted_key_owner_email }}
-            <span v-if="detail.deleted_key_name" class="ml-1 text-xs text-foreground-subtle">({{ detail.deleted_key_name }})</span>
-            <span class="ml-2 inline-flex items-center rounded bg-danger-subtle px-1.5 py-0.5 text-[10px] font-bold text-danger-foreground ring-1 ring-inset ring-danger/20">
-              {{ t('admin.ops.errorDetail.keyDeletedBadge') }}
-            </span>
-          </div>
-        </div>
       </div>
 
       <!-- Response content (client request -> error_body; upstream -> upstream_error_detail/message) -->

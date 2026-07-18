@@ -30,9 +30,9 @@
     </div>
 
     <template v-else-if="detail">
-      <section class="affiliate-stat-banner px-4 py-4 text-sky-950 sm:px-5" :aria-label="t('affiliate.title')">
+      <section class="affiliate-stat-banner px-4 py-4 text-foreground sm:px-5" :aria-label="t('affiliate.title')">
         <div class="mb-5 flex items-center justify-between gap-3">
-          <h3 class="text-base font-semibold text-sky-950">{{ t('purchaseWorkspace.rewardStats') }}</h3>
+          <h3 class="text-base font-semibold text-foreground">{{ t('purchaseWorkspace.rewardStats') }}</h3>
           <button
             type="button"
             class="reward-transfer-button inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-control px-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -44,21 +44,21 @@
             <span>{{ transferring ? t('affiliate.transfer.transferring') : t('affiliate.transfer.button') }}</span>
           </button>
         </div>
-        <dl class="grid grid-cols-3 divide-x divide-sky-900/15 text-center">
+        <dl class="grid grid-cols-3 divide-x divide-outline/60 text-center">
           <div class="min-w-0 px-2">
-            <dd class="break-words text-xl font-semibold tabular-nums text-sky-950 sm:text-2xl">{{ formatCurrency(detail.aff_quota) }}</dd>
-            <dt class="mt-1.5 text-[11px] leading-4 text-sky-900/70 sm:text-xs">{{ t('affiliate.stats.availableQuota') }}</dt>
+            <dd class="break-words text-xl font-semibold tabular-nums text-foreground sm:text-2xl">{{ formatCurrency(detail.aff_quota) }}</dd>
+            <dt class="mt-1.5 text-[11px] leading-4 text-foreground-muted sm:text-xs">{{ t('affiliate.stats.availableQuota') }}</dt>
           </div>
           <div class="min-w-0 px-2">
-            <dd class="break-words text-xl font-semibold tabular-nums text-sky-950 sm:text-2xl">{{ formatCurrency(detail.aff_history_quota) }}</dd>
-            <dt class="mt-1.5 text-[11px] leading-4 text-sky-900/70 sm:text-xs">{{ t('affiliate.stats.totalQuota') }}</dt>
+            <dd class="break-words text-xl font-semibold tabular-nums text-foreground sm:text-2xl">{{ formatCurrency(detail.aff_history_quota) }}</dd>
+            <dt class="mt-1.5 text-[11px] leading-4 text-foreground-muted sm:text-xs">{{ t('affiliate.stats.totalQuota') }}</dt>
           </div>
           <div class="min-w-0 px-2">
-            <dd class="text-xl font-semibold tabular-nums text-sky-950 sm:text-2xl">{{ formatCount(detail.aff_count) }}</dd>
-            <dt class="mt-1.5 text-[11px] leading-4 text-sky-900/70 sm:text-xs">{{ t('affiliate.stats.invitedUsers') }}</dt>
+            <dd class="text-xl font-semibold tabular-nums text-foreground sm:text-2xl">{{ formatCount(detail.aff_count) }}</dd>
+            <dt class="mt-1.5 text-[11px] leading-4 text-foreground-muted sm:text-xs">{{ t('affiliate.stats.invitedUsers') }}</dt>
           </div>
         </dl>
-        <p v-if="detail.aff_frozen_quota > 0" class="mt-4 text-xs text-amber-700">
+        <p v-if="detail.aff_frozen_quota > 0" class="mt-4 text-xs text-warning-foreground">
           {{ t('affiliate.stats.frozenQuota') }}: {{ formatCurrency(detail.aff_frozen_quota) }}
         </p>
       </section>

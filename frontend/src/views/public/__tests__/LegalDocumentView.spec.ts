@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LegalDocumentView from '../LegalDocumentView.vue'
 
@@ -40,6 +41,7 @@ function settings() {
 function mountView() {
   return mount(LegalDocumentView, {
     global: {
+      plugins: [createPinia()],
       stubs: {
         RouterLink: {
           props: ['to'],

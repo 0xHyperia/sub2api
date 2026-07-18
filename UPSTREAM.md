@@ -5,23 +5,23 @@
 ## USA0 v1.0.6（候选）
 
 - 候选发布版本：v1.0.6
-- 集成分支：`codex/merge-upstream-v0.1.158`
+- 集成分支：`codex/merge-upstream-v0.1.161`
 - 计划发布分支：`usa0/main`
-- 官方基线版本：v0.1.158
-- 官方基线提交：`26abd19a2812edba02bbef93c3e2a620141cc257`
-- 上一官方基线：v0.1.156（`12f991dde8a58e183d4bd16a87ef6fd0df714757`）
-- 同步状态：已通过合并提交 `bcfcda109` 完成适配并快进合入 `usa0/main`；尚未推送或创建 v1.0.6 tag
-- 记录日期：2026-07-16
+- 官方基线版本：v0.1.161
+- 官方基线提交：`19149ca196eeae4a4482e5299dc6fa4ba0b06c8c`
+- 上一官方基线：v0.1.158（`26abd19a2812edba02bbef93c3e2a620141cc257`）
+- 同步状态：已在集成分支完成无提交合并、冲突解决、适配和完整验证；尚未提交、合入 `usa0/main`、推送或创建 v1.0.6 tag
+- 记录日期：2026-07-19
 
 ### 同步范围
 
-- 从官方 v0.1.156 同步至 v0.1.158，共纳入 102 个上游提交。
-- 合入操作审计日志、会话 IP/UA 绑定、敏感操作 step-up 2FA 及对应管理页面。
-- 合入异步图片生成任务、对象存储结果持久化、图片输入 token/费用拆分和渠道级图片输入定价。
-- 合入上游 Sub2API 计费倍率探测、按倍率调度、API Key 计费倍率自省和账号展示。
-- 合入 Grok 自定义/区域上游端点、请求头编辑与 key 建号模板，并纳入 OAuth 路由、媒体请求和模型清单修复。
-- 合入管理员批量修改用户限额、分组一键复制和渠道监控一键复制。
-- 合入 OpenAI/Codex Responses、WebSocket、图片桥接、请求体超限故障转移、瞬态冷却和字段重试修复。
+- 从官方 v0.1.158 同步至 v0.1.161，共纳入 98 个上游提交、377 个变更文件。
+- 合入独立的提示词安全审计引擎、审计节点池、策略配置、运行状态、事件复查及 `/admin/prompt-audit` 管理页面。
+- 合入敏感操作 step-up 2FA 总开关和会话 IP/UA 绑定默认关闭策略；设置更新字段使用可空语义，避免旧客户端静默重置安全开关。
+- 合入入口拒绝聚合日志、无效认证防护、认证缓存失效 Outbox、统一可信客户端 IP 识别及对应运维接口。
+- 合入上游计费倍率排序与探测设置、APIKey 上游地址跳转、套餐有效期动态单位和 Stripe SDK 延迟加载。
+- 合入 Grok 受保护视频同源代理、媒体资格隔离与模型映射修复，以及按模型隔离临时冷却和池模式临时规则。
+- 合入 OpenAI APIKey 独立搜索调度修复、Responses 流事件补全、WebSocket 回合生命周期、瞬时耗尽 503 语义及 Anthropic 监控文本提取修复。
 
 ### 保留的 USA0 二开内容
 
@@ -35,16 +35,24 @@
 - 保留支付订单功能开关、路由门控和支付状态失败恢复界面。
 - 保留自定义首页内容的 URL/HTML 净化、iframe 沙箱与加载失败恢复。
 - 模型监控调用适配上游低倍率优先调度参数，并显式保持中性探测策略。
+- 后端依赖注入同时保留 USA0 App JWT/ZeroBox、工单、模型监控及上游 Prompt Audit、Ingress Reject、认证缓存清理生命周期。
+- 管理侧栏将内容审核与提示词审计组合为安全审计分组，同时保留 USA0 工单、支付、模型广场和监控入口。
+- Prompt Audit、账号、设置、运维日志、DataTable、套餐和法律文档页面统一使用 USA0 语义设计令牌、响应式与无障碍约束；本次上游新增的原始色板类已全部清理。
+- 账号计费倍率设置迁移至系统设置页，保留账号表格排序、批量选择、实时状态和安全上游地址跳转。
+- 保留 USA0 订阅/充值重构，并移植上游动态套餐有效期与 Stripe 纯模块延迟加载。
 
 ### 验证结果
 
-- `go generate ./ent` 与 `go generate ./cmd/server` 成功，USA0 `AppAuthorization` 与上游新增 Schema/服务同时保留。
-- 前端 `pnpm run lint:check`、`pnpm run typecheck`、`pnpm run test:run` 和 `pnpm run build` 通过；lint 为 0 errors、1 条既有 warning。
+- 19 个文本冲突均完成语义合并；精确冲突标记扫描为 0，设置/API 严格契约、App 授权、模型广场、支付、工单和路由守卫测试均通过。
+- `go generate ./ent` 与 `go generate ./cmd/server` 成功且生成后无漂移；USA0 `AppAuthorization`、工单、模型监控与上游新增服务同时保留。
 - 后端 `go test ./...`、`go test -tags=unit ./...` 通过，`golangci-lint run ./...` 为 0 issues。
-- 上游原 `177` 至 `181` 迁移在本 fork 首次发布前顺延为 `181` 至 `185`；USA0 已发布的 `177` 至 `180` 保持不变，最新区间无编号冲突。
-- `git diff --check`、冲突标记扫描、设置/API 严格契约测试和前端语义令牌守卫通过。
-- `docker compose -f deploy/docker-compose.dev.yml build sub2api` 成功，并以 `--no-deps` 仅替换应用容器；PostgreSQL 与 Redis 未重启。
-- 新容器启动后迁移无报错，Docker 健康检查通过，`http://localhost:8081/health` 返回 `{"status":"ok"}`。
+- 前端 `pnpm run test:run` 共 240 个测试文件、1509 项测试通过；`pnpm run lint:check` 为 0 errors、1 条既有 warning，`pnpm run typecheck` 和 `pnpm run build` 通过。
+- 前端语义设计令牌和 Toggle 无障碍守卫通过；Prompt Audit 已生成独立生产 chunk，DataTable、设置、账号、Stripe 和法律文档回归测试通过。
+- USA0 已发布迁移 `177` 至 `186` 保持不变；上游 `181` 至 `184` 原 SQL 按依赖顺延为 `187` 至 `190`，最新区间编号唯一连续。
+- Docker 启动迁移后，开发 PostgreSQL 已确认 `prompt_audit_jobs`、`prompt_audit_events`、`ops_ingress_reject_aggregates`、`auth_cache_invalidation_outbox` 及 `full_prompt` 列存在。
+- 实际源码 `git diff --check` 与冲突标记扫描通过；上游自带 `openspec/source-freeze/aicodex-prompt-audit-tracked.patch` 是原始补丁快照，内部保留的空白格式不作为源码格式错误修改。
+- `docker compose -f deploy/docker-compose.dev.yml build sub2api` 成功，并以 `--no-deps` 仅替换应用容器；PostgreSQL 与 Redis 未重启，Docker 健康检查通过，`http://localhost:8081/health` 返回 `{"status":"ok"}`。
+- 浏览器检查覆盖 1440x900 桌面登录页、390x844 移动登录页和移动首页；无横向溢出或控制台错误，管理员路由正确重定向到带原目标的登录页。
 
 ---
 

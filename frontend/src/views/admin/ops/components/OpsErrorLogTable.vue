@@ -77,19 +77,6 @@
             <span v-else class="font-medium text-foreground">{{ row.user_email || '-' }}</span>
             <span class="ml-1 text-foreground-subtle">#{{ row.user_id }}</span>
           </div>
-          <!-- 认证失败行 user_id 为空:回退显示已删除 KEY 所有者(归因快照,与详情弹窗一致) -->
-          <div v-else-if="row.deleted_key_owner_user_id" class="text-sm">
-            <button
-              v-if="userClickable && row.deleted_key_owner_email"
-              class="font-medium text-info-foreground underline decoration-dashed underline-offset-2 transition-colors hover:brightness-75"
-              :title="t('admin.usage.clickToViewBalance')"
-              @click.stop="emit('userClick', row.deleted_key_owner_user_id, row.deleted_key_owner_email ?? undefined)"
-            >
-              {{ row.deleted_key_owner_email }}
-            </button>
-            <span v-else class="font-medium text-foreground">{{ row.deleted_key_owner_email || '-' }}</span>
-            <span class="ml-1 text-foreground-subtle">#{{ row.deleted_key_owner_user_id }}</span>
-          </div>
           <span v-else class="text-sm text-foreground-subtle">-</span>
         </template>
 

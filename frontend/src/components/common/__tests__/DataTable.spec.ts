@@ -61,6 +61,9 @@ describe('DataTable', () => {
         ],
         defaultSortKey: 'name',
         defaultSortOrder: 'asc'
+      },
+      slots: {
+        'header-name': '<span data-test="custom-name-header">Name</span>'
       }
     })
 
@@ -68,6 +71,7 @@ describe('DataTable', () => {
 
     const nameHeader = wrapper.findAll('th')[0]
     const sortButton = nameHeader.get('button')
+    expect(nameHeader.find('[data-test="custom-name-header"]').exists()).toBe(true)
     expect(nameHeader.attributes('aria-sort')).toBe('ascending')
     expect(sortButton.attributes('aria-label')).toBe('Sort Name descending')
     expect(nameHeader.findAll('svg')).toHaveLength(2)

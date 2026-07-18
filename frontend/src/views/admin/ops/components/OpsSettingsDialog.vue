@@ -601,19 +601,6 @@ async function saveAllSettings() {
 
             <div class="flex items-center justify-between">
               <div>
-                <label class="text-sm font-medium text-foreground-muted">{{ t('admin.ops.settings.ignoreInvalidApiKeyErrors') }}</label>
-                <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.ops.settings.ignoreInvalidApiKeyErrorsHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="advancedSettings.ignore_invalid_api_key_errors"
-                :aria-label="t('admin.ops.settings.ignoreInvalidApiKeyErrors')"
-              />
-            </div>
-
-            <div class="flex items-center justify-between">
-              <div>
                 <label class="text-sm font-medium text-foreground-muted">{{ t('admin.ops.settings.ignoreInsufficientBalanceErrors') }}</label>
                 <p class="mt-1 text-xs text-foreground-subtle">
                   {{ t('admin.ops.settings.ignoreInsufficientBalanceErrorsHint') }}

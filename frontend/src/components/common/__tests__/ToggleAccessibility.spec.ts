@@ -24,8 +24,8 @@ interface AstNode {
 }
 
 const scopedFiles = [
-  { path: 'src/views/admin/SettingsView.vue', expectedCount: 69 },
-  { path: 'src/views/admin/ops/components/OpsSettingsDialog.vue', expectedCount: 14 },
+  { path: 'src/views/admin/SettingsView.vue', expectedCount: 72 },
+  { path: 'src/views/admin/ops/components/OpsSettingsDialog.vue', expectedCount: 13 },
   { path: 'src/components/admin/account/ScheduledTestsPanel.vue', expectedCount: 5 },
   { path: 'src/components/admin/monitor/MonitorFormDialog.vue', expectedCount: 1 }
 ] as const

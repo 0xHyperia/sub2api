@@ -29,7 +29,7 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
-vi.mock('@stripe/stripe-js', () => ({
+vi.mock('@stripe/stripe-js/pure', () => ({
   loadStripe,
 }))
 

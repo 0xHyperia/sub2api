@@ -436,11 +436,16 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
         { path: '/admin/usage', label: t('nav.usage'), icon: 'chart' },
         { path: '/admin/audit-logs', label: t('nav.auditLogs'), icon: 'shield', hideInSimpleMode: true },
         {
-          path: '/admin/risk-control',
-          label: t('nav.riskControl'),
+          path: '/admin/security-audit',
+          label: t('nav.securityAudit'),
           icon: 'shield',
           hideInSimpleMode: true,
-          featureFlag: flagRiskControl
+          expandOnly: true,
+          featureFlag: flagRiskControl,
+          children: [
+            { path: '/admin/risk-control', label: t('nav.contentModeration'), icon: 'shield' },
+            { path: '/admin/prompt-audit', label: t('nav.promptAudit'), icon: 'shield' }
+          ]
         }
       ]
     },
