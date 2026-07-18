@@ -109,7 +109,7 @@ import Icon from '@/components/icons/Icon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useAffiliateRewards } from '@/composables/useAffiliateRewards'
-import { formatCurrency } from '@/utils/format'
+import { formatPaymentAmount } from '@/components/payment/currency'
 
 const { t } = useI18n()
 const {
@@ -126,6 +126,10 @@ const {
 
 function formatCount(value: number): string {
   return value.toLocaleString()
+}
+
+function formatCurrency(value: number): string {
+  return formatPaymentAmount(value, 'USD')
 }
 
 onMounted(() => {

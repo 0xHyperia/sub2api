@@ -614,6 +614,14 @@ export default {
     days: '天',
     codeRedeemSuccess: '兑换成功！',
     failedToRedeem: '兑换失败，请检查兑换码后重试。',
+    errors: {
+      REDEEM_CODE_NOT_FOUND: '兑换码不存在或已失效，请检查后重试。',
+      REDEEM_CODE_USED: '该兑换码已被使用。',
+      REDEEM_CODE_EXPIRED: '该兑换码已过期。',
+      REDEEM_RATE_LIMITED: '失败尝试次数过多，请稍后再试。',
+      REDEEM_CODE_LOCKED: '该兑换码正在处理中，请稍后再试。',
+      REDEEM_CODE_UNSUPPORTED_TYPE: '该兑换码不能在此处使用。'
+    },
     subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
     pleaseEnterCode: '请输入兑换码'
   },

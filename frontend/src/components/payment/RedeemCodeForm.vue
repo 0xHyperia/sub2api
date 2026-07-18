@@ -85,7 +85,7 @@ import { redeemAPI, type RedeemResult } from '@/api/redeem'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useSubscriptionStore } from '@/stores/subscriptions'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { extractI18nErrorMessage } from '@/utils/apiError'
 import Icon from '@/components/icons/Icon.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
@@ -135,7 +135,7 @@ async function handleRedeem(): Promise<void> {
     emit('redeemed', result)
     appStore.showSuccess(t('redeem.codeRedeemSuccess'))
   } catch (error: unknown) {
-    errorMessage.value = extractApiErrorMessage(error, t('redeem.failedToRedeem'))
+    errorMessage.value = extractI18nErrorMessage(error, t, 'redeem.errors', t('redeem.failedToRedeem'))
     appStore.showError(t('redeem.redeemFailed'))
   } finally {
     submitting.value = false

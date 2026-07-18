@@ -10,6 +10,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
+	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -283,6 +284,8 @@ type UpdateSettingsRequest struct {
 	PaymentCustomRechargeEnabled     *bool                          `json:"payment_custom_recharge_amount_enabled"`
 	PaymentSubscriptionUSDToCNYRate  *float64                       `json:"payment_subscription_usd_to_cny_rate"`
 	PaymentRechargeFeeRate           *float64                       `json:"payment_recharge_fee_rate"`
+	PaymentAlipayRechargeFeeRate     *float64                       `json:"payment_alipay_recharge_fee_rate"`
+	PaymentWxpayRechargeFeeRate      *float64                       `json:"payment_wxpay_recharge_fee_rate"`
 	PaymentLoadBalanceStrat          *string                        `json:"payment_load_balance_strategy"`
 	PaymentProductNamePrefix         *string                        `json:"payment_product_name_prefix"`
 	PaymentProductNameSuffix         *string                        `json:"payment_product_name_suffix"`
@@ -1636,6 +1639,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			CustomRechargeEnabled:     req.PaymentCustomRechargeEnabled,
 			SubscriptionUSDToCNYRate:  req.PaymentSubscriptionUSDToCNYRate,
 			RechargeFeeRate:           req.PaymentRechargeFeeRate,
+			AlipayRechargeFeeRate:     req.PaymentAlipayRechargeFeeRate,
+			WxpayRechargeFeeRate:      req.PaymentWxpayRechargeFeeRate,
 			LoadBalanceStrategy:       req.PaymentLoadBalanceStrat,
 			ProductNamePrefix:         req.PaymentProductNamePrefix,
 			ProductNameSuffix:         req.PaymentProductNameSuffix,
@@ -1888,6 +1893,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PaymentCustomRechargeEnabled:                           updatedPaymentCfg.CustomRechargeEnabled,
 		PaymentSubscriptionUSDToCNYRate:                        updatedPaymentCfg.SubscriptionUSDToCNYRate,
 		PaymentRechargeFeeRate:                                 updatedPaymentCfg.RechargeFeeRate,
+		PaymentAlipayRechargeFeeRate:                           updatedPaymentCfg.RechargeFeeRateFor(payment.TypeAlipay),
+		PaymentWxpayRechargeFeeRate:                            updatedPaymentCfg.RechargeFeeRateFor(payment.TypeWxpay),
 		PaymentLoadBalanceStrat:                                updatedPaymentCfg.LoadBalanceStrategy,
 		PaymentProductNamePrefix:                               updatedPaymentCfg.ProductNamePrefix,
 		PaymentProductNameSuffix:                               updatedPaymentCfg.ProductNameSuffix,

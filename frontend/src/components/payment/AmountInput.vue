@@ -24,7 +24,7 @@
       <legend class="text-sm font-medium text-foreground">
         {{ t('payment.quickAmounts') }}
       </legend>
-      <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 2xl:grid-cols-4">
+      <div class="grid grid-cols-3 gap-2 min-[520px]:grid-cols-5">
         <button
           v-for="item in filteredAmounts"
           :key="item.amount"

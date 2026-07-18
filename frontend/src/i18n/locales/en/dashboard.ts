@@ -609,6 +609,14 @@ export default {
     days: ' days',
     codeRedeemSuccess: 'Code redeemed successfully!',
     failedToRedeem: 'Failed to redeem code. Please check the code and try again.',
+    errors: {
+      REDEEM_CODE_NOT_FOUND: 'This redeem code does not exist or is no longer valid.',
+      REDEEM_CODE_USED: 'This redeem code has already been used.',
+      REDEEM_CODE_EXPIRED: 'This redeem code has expired.',
+      REDEEM_RATE_LIMITED: 'Too many failed attempts. Please try again later.',
+      REDEEM_CODE_LOCKED: 'This redeem code is being processed. Please try again later.',
+      REDEEM_CODE_UNSUPPORTED_TYPE: 'This redeem code cannot be used here.'
+    },
     subscriptionRefreshFailed: 'Redeemed successfully, but failed to refresh subscription status.',
     pleaseEnterCode: 'Please enter a redeem code'
   },

@@ -6982,7 +6982,7 @@
                       }}
                     </p>
                   </div>
-                  <div>
+                  <div class="sm:col-span-2">
                     <label class="input-label">{{
                       t("admin.settings.payment.rechargeFeeRate")
                     }}</label>
@@ -7029,6 +7029,36 @@
                         })
                       }}
                     </p>
+                  </div>
+                  <div>
+                    <label class="input-label">{{ t("admin.settings.payment.alipayRechargeFeeRate") }}</label>
+                    <div class="relative">
+                      <input
+                        v-model.number="form.payment_alipay_recharge_fee_rate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        class="input pr-8"
+                      />
+                      <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-foreground-subtle">%</span>
+                    </div>
+                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ t("admin.settings.payment.methodFeeRateHint") }}</p>
+                  </div>
+                  <div>
+                    <label class="input-label">{{ t("admin.settings.payment.wxpayRechargeFeeRate") }}</label>
+                    <div class="relative">
+                      <input
+                        v-model.number="form.payment_wxpay_recharge_fee_rate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        class="input pr-8"
+                      />
+                      <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-foreground-subtle">%</span>
+                    </div>
+                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ t("admin.settings.payment.methodFeeRateHint") }}</p>
                   </div>
                   <div>
                     <label class="input-label"
@@ -8715,6 +8745,8 @@ const form = reactive<SettingsForm>({
   payment_custom_recharge_amount_enabled: true,
   payment_subscription_usd_to_cny_rate: 0,
   payment_recharge_fee_rate: 0,
+  payment_alipay_recharge_fee_rate: 3,
+  payment_wxpay_recharge_fee_rate: 3.8,
   payment_enabled_types: [],
   payment_help_image_url: "",
   payment_help_text: "",
@@ -10309,6 +10341,8 @@ async function saveSettings() {
       payment_subscription_usd_to_cny_rate:
         Number(form.payment_subscription_usd_to_cny_rate) || 0,
       payment_recharge_fee_rate: Number(form.payment_recharge_fee_rate) || 0,
+      payment_alipay_recharge_fee_rate: Number(form.payment_alipay_recharge_fee_rate) || 0,
+      payment_wxpay_recharge_fee_rate: Number(form.payment_wxpay_recharge_fee_rate) || 0,
       payment_enabled_types: form.payment_enabled_types,
       payment_load_balance_strategy: form.payment_load_balance_strategy,
       payment_product_name_prefix: form.payment_product_name_prefix,

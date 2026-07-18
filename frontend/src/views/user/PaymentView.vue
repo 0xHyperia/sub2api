@@ -17,51 +17,6 @@
       </div>
 
       <template v-else>
-        <header v-if="paymentPhase === 'select'" class="space-y-5">
-          <div class="page-header mb-0 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-foreground-subtle">{{ t('purchaseWorkspace.accountTitle') }}</p>
-              <h2 class="page-title mt-1">{{ t('payment.title') }}</h2>
-              <p class="page-description">{{ t('purchaseWorkspace.accountDescription') }}</p>
-            </div>
-            <RouterLink to="/orders" class="btn btn-secondary shrink-0">
-              <Icon name="clipboard" size="sm" aria-hidden="true" />
-              <span>{{ t('purchaseWorkspace.orders') }}</span>
-            </RouterLink>
-          </div>
-
-          <dl class="grid overflow-hidden rounded-panel border border-outline bg-surface sm:grid-cols-2 xl:grid-cols-4">
-            <div class="min-w-0 border-b border-outline p-4 sm:border-r sm:p-5 xl:border-b-0">
-              <dt class="text-sm text-foreground-subtle">{{ t('payment.currentBalance') }}</dt>
-              <dd class="mt-2 text-2xl font-semibold tabular-nums text-foreground">{{ '$' }}{{ user?.balance?.toFixed(2) || '0.00' }}</dd>
-            </div>
-            <div class="min-w-0 border-b border-outline p-4 sm:p-5 xl:border-b-0 xl:border-r">
-              <dt class="text-sm text-foreground-subtle">{{ t('purchaseWorkspace.todaySpent') }}</dt>
-              <dd class="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-                <span v-if="accountStatsLoading || accountStatsLoadFailed">--</span>
-                <span v-else>{{ '$' }}{{ (accountStats?.today_actual_cost || 0).toFixed(2) }}</span>
-              </dd>
-            </div>
-            <div class="min-w-0 border-b border-outline p-4 sm:border-b-0 sm:border-r sm:p-5">
-              <dt class="text-sm text-foreground-subtle">{{ t('purchaseWorkspace.totalSpent') }}</dt>
-              <dd class="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-                <span v-if="accountStatsLoading || accountStatsLoadFailed">--</span>
-                <span v-else>{{ '$' }}{{ (accountStats?.total_actual_cost || 0).toFixed(2) }}</span>
-              </dd>
-            </div>
-            <div class="min-w-0 p-4 sm:p-5">
-              <dt class="text-sm text-foreground-subtle">{{ t('purchaseWorkspace.totalRequests') }}</dt>
-              <dd class="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-                <span v-if="accountStatsLoading || accountStatsLoadFailed">--</span>
-                <span v-else>{{ formatCount(accountStats?.total_requests || 0) }}</span>
-              </dd>
-            </div>
-          </dl>
-          <p v-if="accountStatsLoadFailed" class="text-xs text-warning-foreground" role="status">
-            {{ t('purchaseWorkspace.statsUnavailable') }}
-          </p>
-        </header>
-
         <div
           v-if="errorMessage"
           class="rounded-panel border border-danger/20 bg-danger-subtle p-4 text-sm text-danger-foreground"
@@ -79,7 +34,7 @@
             :payment-type="paymentState.paymentType"
             :pay-url="paymentState.payUrl"
             :order-type="paymentState.orderType"
-            :currency="DISPLAY_PAYMENT_CURRENCY"
+            :currency="paymentState.currency || selectedCurrency"
             @done="onPaymentDone"
             @success="onPaymentSuccess"
             @settled="onPaymentSettled"
@@ -92,21 +47,19 @@
           </div>
 
           <div v-else class="space-y-5">
-            <div
-              :class="[
-                'grid items-start gap-5',
-                workspaceGridClass,
-              ]"
-            >
+            <div class="grid items-start gap-5 min-[1600px]:grid-cols-[minmax(0,1fr)_400px]">
               <article class="card min-w-0 overflow-hidden">
-                <div v-if="tabs.length > 1" class="border-b border-outline bg-surface-subtle p-2.5 sm:p-3">
-                  <div class="tabs grid w-full grid-cols-2" role="tablist" :aria-label="t('payment.title')">
+                <div
+                  class="flex min-h-14 items-center gap-2 border-b border-outline bg-surface-subtle p-2.5 sm:p-3"
+                  :class="{ 'min-[1600px]:hidden': tabs.length === 1 }"
+                >
+                  <div v-if="tabs.length > 1" class="purchase-tabs min-w-0 flex-1 sm:max-w-[360px]" role="tablist" :aria-label="t('payment.title')">
                     <button
                       v-for="(tab, index) in tabs"
                       :id="'purchase-tab-' + tab.key"
                       :key="tab.key"
                       type="button"
-                      class="tab purchase-tab min-w-0"
+                      class="purchase-tab min-w-0 flex-1"
                       :class="{ 'purchase-tab-active': activeTab === tab.key }"
                       role="tab"
                       :aria-selected="activeTab === tab.key"
@@ -118,12 +71,42 @@
                       {{ tab.label }}
                     </button>
                   </div>
+                  <div class="ml-auto flex shrink-0 items-center gap-1 min-[1600px]:hidden" :aria-label="t('purchaseWorkspace.toolsTitle')">
+                    <button
+                      type="button"
+                      data-testid="purchase-mobile-tools-action"
+                      class="btn btn-ghost btn-sm md:hidden"
+                      @click="auxiliaryMode = 'combined'"
+                    >
+                      <Icon name="gift" size="sm" aria-hidden="true" />
+                      <span>{{ t('purchaseWorkspace.toolsTitle') }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="purchase-redeem-action"
+                      class="btn btn-ghost btn-sm hidden md:inline-flex"
+                      @click="auxiliaryMode = 'redeem'"
+                    >
+                      <Icon name="gift" size="sm" aria-hidden="true" />
+                      <span>{{ t('redeem.redeemCodeLabel') }}</span>
+                    </button>
+                    <button
+                      v-if="affiliateEnabled"
+                      type="button"
+                      data-testid="purchase-affiliate-action"
+                      class="btn btn-ghost btn-sm hidden md:inline-flex"
+                      @click="auxiliaryMode = 'affiliate'"
+                    >
+                      <Icon name="users" size="sm" aria-hidden="true" />
+                      <span>{{ t('purchaseWorkspace.affiliateTitle') }}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <section
                   v-if="activeTab === 'recharge'"
                   id="purchase-panel-recharge"
-                  class="p-4 sm:p-5"
+                  class="min-w-0"
                   role="tabpanel"
                   :aria-labelledby="tabs.length > 1 ? 'purchase-tab-recharge' : undefined"
                   :aria-label="tabs.length === 1 ? t('payment.tabTopUp') : undefined"
@@ -133,25 +116,36 @@
                   </div>
 
                   <template v-else>
-                    <header>
-                      <h2 class="text-base font-semibold text-foreground">{{ t('payment.amountLabel') }}</h2>
-                      <p class="mt-1 text-sm text-foreground-subtle">
-                        {{ checkout.custom_recharge_amount_enabled ? t('payment.customAmount') : t('payment.selectQuickAmount') }}
-                      </p>
-                    </header>
-
-                    <div class="mt-4 min-w-0">
+                    <div class="grid min-w-0 xl:grid-cols-[minmax(0,1fr)_minmax(380px,0.8fr)]">
+                      <div class="min-w-0 p-4 sm:p-5 lg:p-6">
                       <AmountInput
                         v-model="amount"
                         :amounts="checkout.quick_recharge_amounts"
                         :min="globalMinAmount"
                         :max="globalMaxAmount"
                         :custom-enabled="checkout.custom_recharge_amount_enabled"
-                        :currency="DISPLAY_PAYMENT_CURRENCY"
+                        :currency="BALANCE_CURRENCY"
                       />
                       <p v-if="amountError" class="mt-3 text-sm text-warning-foreground" role="alert">{{ amountError }}</p>
 
-                      <div class="mt-5 border-t border-outline pt-5">
+                      <div class="mt-4 flex items-center gap-2 rounded-control bg-info-subtle px-3 py-2.5 text-sm text-info-foreground">
+                        <Icon name="arrowsUpDown" size="sm" class="shrink-0" aria-hidden="true" />
+                        <span>{{ t('payment.fixedBalanceConversion') }}</span>
+                      </div>
+
+                      <RechargeValueEstimator
+                        v-if="modelMarketplaceEnabled"
+                        class="mt-5"
+                        :credited-amount="creditedAmount"
+                        :recharge-amount="validAmount"
+                        :balance-recharge-multiplier="balanceRechargeMultiplier"
+                        :official-usd-to-cny-rate="subscriptionUsdToCnyRate"
+                        :quick-recharge-amounts="checkout.quick_recharge_amounts"
+                      />
+
+                      </div>
+
+                      <aside class="min-w-0 border-t border-outline bg-surface-subtle p-4 sm:p-5 lg:p-6 xl:border-l xl:border-t-0" :aria-label="t('payment.checkoutSummary')">
                         <PaymentMethodSelector
                           compact
                           :methods="methodOptions"
@@ -167,40 +161,42 @@
                           <Icon name="infoCircle" size="sm" class="mt-0.5 shrink-0" aria-hidden="true" />
                           <span>{{ methodSwitchNotice }}</span>
                         </p>
-                      </div>
 
-                      <div class="mt-5 grid gap-5 border-t border-outline pt-5 md:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] md:items-end">
-                        <div class="min-w-0">
-                          <dl class="space-y-2.5 text-sm">
-                            <div class="flex items-center justify-between gap-4">
-                              <dt class="text-foreground-subtle">{{ t('payment.paymentAmount') }}</dt>
-                              <dd class="font-medium tabular-nums text-foreground">{{ formatSelectedPaymentAmount(validAmount) }}</dd>
+                        <div class="mt-5 divide-y divide-outline border-y border-outline text-sm">
+                          <dl class="py-3">
+                            <div class="mb-3 flex items-baseline justify-between gap-3">
+                              <dt class="font-medium text-foreground">{{ t('payment.balanceSummary') }}</dt>
+                              <dd class="text-xl font-semibold tabular-nums text-foreground">{{ formatBalanceAmount(creditedAmount) }}</dd>
                             </div>
-                            <div v-if="feeRate > 0" class="flex items-center justify-between gap-4">
-                              <dt class="text-foreground-subtle">{{ t('payment.fee') }} ({{ feeRate }}%)</dt>
-                              <dd class="font-medium tabular-nums text-foreground">{{ formatSelectedPaymentAmount(feeAmount) }}</dd>
+                            <div class="flex items-center justify-between gap-3 text-foreground-subtle">
+                              <dt>{{ t('payment.baseBalance') }}</dt>
+                              <dd class="tabular-nums">{{ formatBalanceAmount(validAmount * balanceRechargeMultiplier) }}</dd>
                             </div>
-                            <div v-if="selectedRechargeBonus > 0" class="flex items-center justify-between gap-4">
-                              <dt class="text-success-foreground">{{ t('payment.bonusBalance') }}</dt>
-                              <dd class="font-medium tabular-nums text-success-foreground">+${{ selectedRechargeBonus.toFixed(2) }}</dd>
-                            </div>
-                            <div v-if="balanceRechargeMultiplier !== 1 || selectedRechargeBonus > 0" class="flex items-center justify-between gap-4">
-                              <dt class="text-foreground-subtle">{{ t('payment.creditedBalance') }}</dt>
-                              <dd class="font-medium tabular-nums text-foreground">{{ '$' }}{{ creditedAmount.toFixed(2) }}</dd>
-                            </div>
-                            <div class="flex items-center justify-between gap-4 border-t border-outline pt-2.5">
-                              <dt class="font-medium text-foreground">{{ t('payment.actualPay') }}</dt>
-                              <dd class="text-xl font-semibold tabular-nums text-foreground">{{ formatSelectedPaymentAmount(totalAmount) }}</dd>
+                            <div v-if="selectedRechargeBonus > 0" class="mt-2 flex items-center justify-between gap-3 text-success-foreground">
+                              <dt>{{ t('payment.bonusBalance') }}</dt>
+                              <dd class="tabular-nums">+{{ formatBalanceAmount(selectedRechargeBonus) }}</dd>
                             </div>
                           </dl>
-                          <p v-if="balanceRechargeMultiplier !== 1" class="mt-3 text-xs leading-5 text-foreground-subtle">
-                            {{ t('payment.rechargeRatePreview', { usd: balanceRechargeMultiplier.toFixed(2) }) }}
-                          </p>
+
+                          <dl class="py-3">
+                            <div class="mb-3 flex items-baseline justify-between gap-3">
+                              <dt class="font-medium text-foreground">{{ t('payment.paymentSummary', { method: selectedMethodLabel }) }}</dt>
+                              <dd class="text-xl font-semibold tabular-nums text-foreground">{{ formatGatewayAmount(totalAmount) }}</dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-3 text-foreground-subtle">
+                              <dt>{{ t('payment.paymentAmount') }}</dt>
+                              <dd class="tabular-nums">{{ formatGatewayAmount(validAmount) }}</dd>
+                            </div>
+                            <div v-if="feeRate > 0" class="mt-2 flex items-center justify-between gap-3 text-foreground-subtle">
+                              <dt>{{ t('payment.channelFee') }} ({{ feeRate }}%)</dt>
+                              <dd class="tabular-nums">+{{ formatGatewayAmount(feeAmount) }}</dd>
+                            </div>
+                          </dl>
                         </div>
                         <button
                           type="button"
                           data-testid="recharge-confirm-action"
-                          class="payment-confirm-button btn btn-lg w-full md:min-w-[240px] md:justify-self-end"
+                          class="payment-confirm-button btn btn-lg mt-4 hidden w-full lg:inline-flex"
                           :disabled="!canSubmit || submitting"
                           :aria-busy="submitting"
                           @click="handleSubmitRecharge"
@@ -209,9 +205,9 @@
                             <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
                             {{ t('common.processing') }}
                           </span>
-                          <span v-else>{{ t('payment.createOrder') }} {{ formatSelectedPaymentAmount(totalAmount) }}</span>
+                          <span v-else>{{ t('payment.payAmount', { amount: formatGatewayAmount(totalAmount) }) }}</span>
                         </button>
-                      </div>
+                      </aside>
                     </div>
                   </template>
                 </section>
@@ -323,15 +319,15 @@
 
               </article>
 
-              <div data-testid="purchase-side-tools" :class="['space-y-5', sideToolsClass]">
+              <aside data-testid="purchase-side-tools" class="hidden space-y-4 min-[1600px]:sticky min-[1600px]:top-24 min-[1600px]:block">
                 <AffiliateRewardPanel
                   v-if="affiliateEnabled"
                   data-testid="affiliate-reward-panel"
                 />
-                <section data-testid="purchase-redeem-card" class="card min-w-0 p-4 sm:p-5" :aria-label="t('redeem.redeemCodeLabel')">
-                  <RedeemCodeForm />
+                <section data-testid="purchase-redeem-card" class="card min-w-0 p-5" :aria-label="t('redeem.redeemCodeLabel')">
+                  <RedeemCodeForm show-description />
                 </section>
-              </div>
+              </aside>
             </div>
 
             <section v-if="showInstantHelp" class="grid gap-4 lg:grid-cols-2">
@@ -355,6 +351,42 @@
         </template>
       </template>
     </div>
+
+    <div
+      v-if="showMobileRechargeBar"
+      class="fixed inset-x-0 bottom-0 z-40 border-t border-outline bg-surface-raised/95 px-3 pt-2 shadow-floating backdrop-blur-md lg:hidden"
+      style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom))"
+    >
+      <div class="mx-auto grid max-w-lg grid-cols-[minmax(0,1fr)_minmax(145px,auto)] items-center gap-3">
+        <dl class="grid min-w-0 grid-cols-2 gap-3">
+          <div class="min-w-0">
+            <dt class="text-[10px] leading-4 text-foreground-subtle">{{ t('payment.balanceSummary') }}</dt>
+            <dd class="truncate text-sm font-semibold tabular-nums text-foreground">{{ formatBalanceAmount(creditedAmount) }}</dd>
+          </div>
+          <div class="min-w-0 border-l border-outline pl-3">
+            <dt class="text-[10px] leading-4 text-foreground-subtle">{{ t('payment.actualPay') }}</dt>
+            <dd class="truncate text-sm font-semibold tabular-nums text-foreground">{{ formatGatewayAmount(totalAmount) }}</dd>
+          </div>
+        </dl>
+        <button
+          type="button"
+          data-testid="mobile-recharge-confirm-action"
+          class="payment-confirm-button btn h-11 w-full px-3 text-sm"
+          :disabled="!canSubmit || submitting"
+          :aria-busy="submitting"
+          @click="handleSubmitRecharge"
+        >
+          <span v-if="submitting">{{ t('common.processing') }}</span>
+          <span v-else>{{ t('payment.mobilePay', { amount: formatGatewayAmount(totalAmount) }) }}</span>
+        </button>
+      </div>
+    </div>
+
+    <PurchaseAuxiliaryDrawer
+      :mode="auxiliaryMode"
+      :affiliate-enabled="affiliateEnabled"
+      @close="auxiliaryMode = null"
+    />
 
     <BaseDialog :show="showRenewalModal" :title="t('payment.selectPlan')" width="wide" @close="closeRenewalModal">
       <div class="grid gap-4 sm:grid-cols-2">
@@ -382,7 +414,6 @@ import { usePaymentStore } from '@/stores/payment'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import { useAppStore } from '@/stores'
 import { paymentAPI } from '@/api/payment'
-import usageAPI, { type UserDashboardStats } from '@/api/usage'
 import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
 import type { SubscriptionPlan, CheckoutInfoResponse, CreateOrderResult, OrderType } from '@/types/payment'
@@ -393,6 +424,8 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
 import AmountInput from '@/components/payment/AmountInput.vue'
 import AffiliateRewardPanel from '@/components/payment/AffiliateRewardPanel.vue'
+import PurchaseAuxiliaryDrawer, { type PurchaseAuxiliaryMode } from '@/components/payment/PurchaseAuxiliaryDrawer.vue'
+import RechargeValueEstimator from '@/components/payment/RechargeValueEstimator.vue'
 import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector.vue'
 import RedeemCodeForm from '@/components/payment/RedeemCodeForm.vue'
 import { METHOD_ORDER, getPaymentPopupFeatures } from '@/components/payment/providerConfig'
@@ -417,7 +450,7 @@ import { hasWechatResumeQuery, parseWechatResumeRoute, stripWechatResumeQuery } 
 
 const i18n = useI18n()
 const { t } = i18n
-const DISPLAY_PAYMENT_CURRENCY = 'USD'
+const BALANCE_CURRENCY = 'USD'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -425,13 +458,8 @@ const paymentStore = usePaymentStore()
 const subscriptionStore = useSubscriptionStore()
 const appStore = useAppStore()
 
-const user = computed(() => authStore.user)
-
 const loading = ref(true)
 const checkoutLoadFailed = ref(false)
-const accountStats = ref<UserDashboardStats | null>(null)
-const accountStatsLoading = ref(true)
-const accountStatsLoadFailed = ref(false)
 const submitting = ref(false)
 const errorMessage = ref('')
 const errorHintMessage = ref('')
@@ -444,36 +472,12 @@ const selectedPlan = ref<SubscriptionPlan | null>(null)
 const subscriptionConfirmationRef = ref<HTMLElement | null>(null)
 const methodSwitchNotice = ref('')
 const previewImage = ref('')
+const auxiliaryMode = ref<PurchaseAuxiliaryMode | null>(null)
 
 const paymentPhase = ref<'select' | 'paying'>('select')
 
 const affiliateEnabled = computed(() => appStore.cachedPublicSettings?.affiliate_enabled === true)
-const workspaceGridClass = computed(() => {
-  return activeTab.value === 'subscription'
-    ? 'grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_minmax(380px,440px)]'
-    : 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(380px,460px)]'
-})
-const sideToolsClass = computed(() => activeTab.value === 'subscription'
-  ? 'w-full max-w-[720px] 2xl:sticky 2xl:top-24 2xl:max-w-none'
-  : 'xl:sticky xl:top-24'
-)
-
-function formatCount(value: number): string {
-  return value.toLocaleString()
-}
-
-async function loadAccountStats(): Promise<void> {
-  accountStatsLoading.value = true
-  accountStatsLoadFailed.value = false
-  try {
-    accountStats.value = await usageAPI.getDashboardStats()
-  } catch (error) {
-    console.error('Failed to load purchase account stats:', error)
-    accountStatsLoadFailed.value = true
-  } finally {
-    accountStatsLoading.value = false
-  }
-}
+const modelMarketplaceEnabled = computed(() => appStore.cachedPublicSettings?.model_marketplace_enabled === true)
 
 interface CreateOrderOptions {
   openid?: string
@@ -690,7 +694,10 @@ const showInstantHelp = computed(() =>
     && paymentPhase.value === 'select'
 )
 
-const pageContainerClass = computed(() => 'mx-auto w-full max-w-[1440px] space-y-5')
+const pageContainerClass = computed(() => [
+  'mx-auto w-full space-y-5',
+  activeTab.value === 'recharge' ? 'max-w-[1320px] pb-24 lg:pb-0' : 'max-w-[1320px]',
+])
 
 function ensureVisiblePurchaseTab(preferred?: PurchaseTab) {
   const available = tabs.value.map(tab => tab.key)
@@ -705,6 +712,12 @@ function ensureVisiblePurchaseTab(preferred?: PurchaseTab) {
 
 const visibleMethods = computed(() => getVisibleMethods(checkout.value.methods))
 const enabledMethods = computed(() => Object.keys(visibleMethods.value))
+const showMobileRechargeBar = computed(() =>
+  paymentPhase.value === 'select'
+  && activeTab.value === 'recharge'
+  && tabs.value.length > 0
+  && enabledMethods.value.length > 0
+)
 const validAmount = computed(() => amount.value ?? 0)
 const balanceRechargeMultiplier = computed(() => {
   const multiplier = checkout.value.balance_recharge_multiplier
@@ -797,8 +810,16 @@ function subscriptionPaymentAmountForCurrency(value: number, currency: string): 
   return roundPaymentAmount(value * rate, currency)
 }
 
+function formatBalanceAmount(value: number): string {
+  return formatPaymentAmount(value, BALANCE_CURRENCY, localeCode.value)
+}
+
+function formatGatewayAmount(value: number, currency = selectedCurrency.value): string {
+  return formatPaymentAmount(value, currency, localeCode.value)
+}
+
 function formatSelectedPaymentAmount(value: number): string {
-  return formatPaymentAmount(value, DISPLAY_PAYMENT_CURRENCY, localeCode.value)
+  return formatGatewayAmount(value)
 }
 
 function formatSelectedSubscriptionPaymentAmount(value: number): string {
@@ -818,7 +839,15 @@ const methodOptions = computed<PaymentMethodOption[]>(() =>
   })
 )
 
-const feeRate = computed(() => checkout.value?.recharge_fee_rate ?? 0)
+const selectedMethodLabel = computed(() => {
+  const option = methodOptions.value.find(method => method.type === selectedMethod.value)
+  if (option?.display_name) return option.display_name
+  const key = `payment.methods.${normalizeVisibleMethod(selectedMethod.value) || selectedMethod.value}`
+  const translated = t(key)
+  return translated === key ? selectedMethod.value : translated
+})
+
+const feeRate = computed(() => selectedLimit.value?.fee_rate ?? checkout.value?.recharge_fee_rate ?? 0)
 const feeAmount = computed(() =>
   feeRate.value > 0 && validAmount.value > 0
     ? Math.ceil(((validAmount.value * feeRate.value) / 100) * 100) / 100
@@ -1303,7 +1332,6 @@ async function resumeWechatPaymentFromQuery() {
 }
 
 onMounted(async () => {
-  void loadAccountStats()
   try {
     checkoutLoadFailed.value = false
     const res = await paymentAPI.getCheckoutInfo()
@@ -1375,14 +1403,54 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.purchase-tab-active {
-  color: #fff;
-  background: #111;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+.purchase-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 7px;
+  background: var(--ui-surface, #fff);
 }
 
-.purchase-tab-active:hover {
-  color: #fff;
+.purchase-tab {
+  position: relative;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ui-text-muted, #667085);
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.purchase-tab:hover {
+  color: var(--ui-text, #0f172a);
+  background: var(--ui-surface-subtle, #f4f7fb);
+}
+
+.purchase-tab:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-focus, #2563eb) 16%, transparent);
+}
+
+.purchase-tab-active {
+  color: var(--ui-focus, #2563eb);
+  background: color-mix(in srgb, var(--ui-focus, #2563eb) 9%, var(--ui-surface, #fff));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-focus, #2563eb) 22%, transparent);
+}
+
+.purchase-tab-active::after {
+  position: absolute;
+  right: 50%;
+  bottom: 3px;
+  width: 26px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--ui-focus, #2563eb);
+  content: '';
+  transform: translateX(50%);
 }
 
 .payment-confirm-button {

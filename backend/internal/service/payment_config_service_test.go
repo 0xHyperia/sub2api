@@ -102,6 +102,30 @@ func TestParsePaymentConfig(t *testing.T) {
 		if len(cfg.EnabledTypes) != 0 {
 			t.Fatalf("expected empty EnabledTypes, got %v", cfg.EnabledTypes)
 		}
+		if got := cfg.RechargeFeeRateFor(payment.TypeAlipay); got != 3 {
+			t.Fatalf("Alipay fee rate = %v, want 3", got)
+		}
+		if got := cfg.RechargeFeeRateFor(payment.TypeWxpay); got != 3.8 {
+			t.Fatalf("WeChat Pay fee rate = %v, want 3.8", got)
+		}
+	})
+
+	t.Run("method fee rates override the legacy fallback", func(t *testing.T) {
+		t.Parallel()
+		cfg := svc.parsePaymentConfig(map[string]string{
+			SettingRechargeFeeRate:       "2.5",
+			SettingAlipayRechargeFeeRate: "3.2",
+			SettingWxpayRechargeFeeRate:  "3.9",
+		})
+		if got := cfg.RechargeFeeRateFor(payment.TypeAlipayDirect); got != 3.2 {
+			t.Fatalf("Alipay fee rate = %v, want 3.2", got)
+		}
+		if got := cfg.RechargeFeeRateFor(payment.TypeWxpayDirect); got != 3.9 {
+			t.Fatalf("WeChat Pay fee rate = %v, want 3.9", got)
+		}
+		if got := cfg.RechargeFeeRateFor(payment.TypeStripe); got != 2.5 {
+			t.Fatalf("fallback fee rate = %v, want 2.5", got)
+		}
 	})
 
 	t.Run("all values populated", func(t *testing.T) {

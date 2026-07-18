@@ -598,6 +598,8 @@ export interface SystemSettings {
   payment_custom_recharge_amount_enabled: boolean;
   payment_subscription_usd_to_cny_rate: number;
   payment_recharge_fee_rate: number;
+  payment_alipay_recharge_fee_rate: number;
+  payment_wxpay_recharge_fee_rate: number;
   payment_load_balance_strategy: string;
   payment_product_name_prefix: string;
   payment_product_name_suffix: string;
@@ -884,6 +886,8 @@ export interface UpdateSettingsRequest {
   payment_custom_recharge_amount_enabled?: boolean;
   payment_subscription_usd_to_cny_rate?: number;
   payment_recharge_fee_rate?: number;
+  payment_alipay_recharge_fee_rate?: number;
+  payment_wxpay_recharge_fee_rate?: number;
   payment_load_balance_strategy?: string;
   payment_product_name_prefix?: string;
   payment_product_name_suffix?: string;

@@ -10,7 +10,11 @@ const showWarning = vi.hoisted(() => vi.fn())
 const showError = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key }),
+  useI18n: () => ({
+    t: (key: string) => key === 'redeem.errors.REDEEM_CODE_NOT_FOUND'
+      ? '兑换码不存在或已失效，请检查后重试。'
+      : key,
+  }),
 }))
 
 vi.mock('@/api/redeem', () => ({
@@ -77,5 +81,17 @@ describe('RedeemCodeForm', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('invalid code')
     expect(showError).toHaveBeenCalledWith('redeem.redeemFailed')
+  })
+
+  it('localizes known redeem service errors', async () => {
+    redeem.mockRejectedValue({ reason: 'REDEEM_CODE_NOT_FOUND', message: 'redeem code not found' })
+    const wrapper = mount(RedeemCodeForm)
+
+    await wrapper.get('input').setValue('MISSING')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.get('[role="alert"]').text()).toBe('兑换码不存在或已失效，请检查后重试。')
+    expect(wrapper.text()).not.toContain('redeem code not found')
   })
 })

@@ -252,6 +252,8 @@ type SystemSettings struct {
 	PaymentCustomRechargeEnabled     bool                          `json:"payment_custom_recharge_amount_enabled"`
 	PaymentSubscriptionUSDToCNYRate  float64                       `json:"payment_subscription_usd_to_cny_rate"`
 	PaymentRechargeFeeRate           float64                       `json:"payment_recharge_fee_rate"`
+	PaymentAlipayRechargeFeeRate     float64                       `json:"payment_alipay_recharge_fee_rate"`
+	PaymentWxpayRechargeFeeRate      float64                       `json:"payment_wxpay_recharge_fee_rate"`
 	PaymentLoadBalanceStrat          string                        `json:"payment_load_balance_strategy"`
 	PaymentProductNamePrefix         string                        `json:"payment_product_name_prefix"`
 	PaymentProductNameSuffix         string                        `json:"payment_product_name_suffix"`

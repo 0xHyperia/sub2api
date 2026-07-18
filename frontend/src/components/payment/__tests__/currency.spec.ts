@@ -7,6 +7,10 @@ describe('formatPaymentAmount', () => {
     expect(formatPaymentAmount(100, 'KRW', 'en-US')).not.toContain('.00')
     expect(formatPaymentAmount(100, 'HKD', 'en-US')).toContain('.00')
   })
+
+  it('uses a compact dollar symbol in Chinese instead of the US$ prefix', () => {
+    expect(formatPaymentAmount(0, 'USD', 'zh-CN')).toBe('$0.00')
+  })
 })
 
 describe('currencySymbol', () => {

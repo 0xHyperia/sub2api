@@ -32,6 +32,8 @@ const (
 	// 0/未配置 = 关闭换算（订阅按 price 数值直付），显式配置后 CNY 通道订阅按 price × rate 收款。
 	SettingSubscriptionUSDToCNYRate = "SUBSCRIPTION_USD_TO_CNY_RATE"
 	SettingRechargeFeeRate          = "RECHARGE_FEE_RATE"
+	SettingAlipayRechargeFeeRate    = "ALIPAY_RECHARGE_FEE_RATE"
+	SettingWxpayRechargeFeeRate     = "WXPAY_RECHARGE_FEE_RATE"
 	SettingProductNamePrefix        = "PRODUCT_NAME_PREFIX"
 	SettingProductNameSuffix        = "PRODUCT_NAME_SUFFIX"
 	SettingHelpImageURL             = "PAYMENT_HELP_IMAGE_URL"
@@ -49,6 +51,8 @@ const (
 	defaultOrderTimeoutMin  = 30
 	defaultMaxPendingOrders = 3
 	maxQuickRechargeAmounts = 24
+	defaultAlipayFeeRate    = 3.0
+	defaultWxpayFeeRate     = 3.8
 )
 
 var defaultQuickRechargeAmounts = []QuickRechargeAmount{
@@ -77,14 +81,15 @@ type PaymentConfig struct {
 	QuickRechargeAmounts      []QuickRechargeAmount `json:"quick_recharge_amounts"`
 	CustomRechargeEnabled     bool                  `json:"custom_recharge_amount_enabled"`
 	// SubscriptionUSDToCNYRate 为 0 时订阅换算关闭（兼容存量行为）。
-	SubscriptionUSDToCNYRate float64 `json:"subscription_usd_to_cny_rate"`
-	RechargeFeeRate          float64 `json:"recharge_fee_rate"`
-	LoadBalanceStrategy      string  `json:"load_balance_strategy"`
-	ProductNamePrefix        string  `json:"product_name_prefix"`
-	ProductNameSuffix        string  `json:"product_name_suffix"`
-	HelpImageURL             string  `json:"help_image_url"`
-	HelpText                 string  `json:"help_text"`
-	StripePublishableKey     string  `json:"stripe_publishable_key,omitempty"`
+	SubscriptionUSDToCNYRate float64            `json:"subscription_usd_to_cny_rate"`
+	RechargeFeeRate          float64            `json:"recharge_fee_rate"`
+	PaymentMethodFeeRates    map[string]float64 `json:"payment_method_fee_rates"`
+	LoadBalanceStrategy      string             `json:"load_balance_strategy"`
+	ProductNamePrefix        string             `json:"product_name_prefix"`
+	ProductNameSuffix        string             `json:"product_name_suffix"`
+	HelpImageURL             string             `json:"help_image_url"`
+	HelpText                 string             `json:"help_text"`
+	StripePublishableKey     string             `json:"stripe_publishable_key,omitempty"`
 
 	// Cancel rate limit settings
 	CancelRateLimitEnabled bool   `json:"cancel_rate_limit_enabled"`
@@ -113,6 +118,8 @@ type UpdatePaymentConfigRequest struct {
 	CustomRechargeEnabled     *bool                  `json:"custom_recharge_amount_enabled"`
 	SubscriptionUSDToCNYRate  *float64               `json:"subscription_usd_to_cny_rate"`
 	RechargeFeeRate           *float64               `json:"recharge_fee_rate"`
+	AlipayRechargeFeeRate     *float64               `json:"alipay_recharge_fee_rate"`
+	WxpayRechargeFeeRate      *float64               `json:"wxpay_recharge_fee_rate"`
 	LoadBalanceStrategy       *string                `json:"load_balance_strategy"`
 	ProductNamePrefix         *string                `json:"product_name_prefix"`
 	ProductNameSuffix         *string                `json:"product_name_suffix"`
@@ -152,6 +159,19 @@ type MethodLimitsResponse struct {
 	Methods   map[string]MethodLimits `json:"methods"`
 	GlobalMin float64                 `json:"global_min"` // 0 = no minimum
 	GlobalMax float64                 `json:"global_max"` // 0 = no maximum
+}
+
+// RechargeFeeRateFor returns the configured rate for a user-visible payment
+// method, falling back to the legacy global rate for other methods.
+func (c *PaymentConfig) RechargeFeeRateFor(paymentType string) float64 {
+	if c == nil {
+		return 0
+	}
+	method := NormalizeVisibleMethod(paymentType)
+	if rate, ok := c.PaymentMethodFeeRates[method]; ok {
+		return rate
+	}
+	return c.RechargeFeeRate
 }
 
 type CreateProviderInstanceRequest struct {
@@ -235,7 +255,7 @@ func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentCo
 	keys := []string{
 		SettingPaymentEnabled, SettingPaymentInstantEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
 		SettingDailyRechargeLimit, SettingOrderTimeoutMinutes, SettingMaxPendingOrders,
-		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingQuickRechargeAmounts, SettingCustomRechargeEnabled, SettingSubscriptionUSDToCNYRate, SettingRechargeFeeRate, SettingLoadBalanceStrategy,
+		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingQuickRechargeAmounts, SettingCustomRechargeEnabled, SettingSubscriptionUSDToCNYRate, SettingRechargeFeeRate, SettingAlipayRechargeFeeRate, SettingWxpayRechargeFeeRate, SettingLoadBalanceStrategy,
 		SettingProductNamePrefix, SettingProductNameSuffix,
 		SettingHelpImageURL, SettingHelpText,
 		SettingCancelRateLimitOn, SettingCancelRateLimitMax,
@@ -269,11 +289,15 @@ func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *Payme
 		CustomRechargeEnabled:     pcParseBoolDefault(vals[SettingCustomRechargeEnabled], true),
 		SubscriptionUSDToCNYRate:  normalizeSubscriptionUSDToCNYRate(pcParseFloat(vals[SettingSubscriptionUSDToCNYRate], 0)),
 		RechargeFeeRate:           pcParseFloat(vals[SettingRechargeFeeRate], 0),
-		LoadBalanceStrategy:       vals[SettingLoadBalanceStrategy],
-		ProductNamePrefix:         vals[SettingProductNamePrefix],
-		ProductNameSuffix:         vals[SettingProductNameSuffix],
-		HelpImageURL:              vals[SettingHelpImageURL],
-		HelpText:                  vals[SettingHelpText],
+		PaymentMethodFeeRates: map[string]float64{
+			payment.TypeAlipay: pcParseFloat(vals[SettingAlipayRechargeFeeRate], defaultAlipayFeeRate),
+			payment.TypeWxpay:  pcParseFloat(vals[SettingWxpayRechargeFeeRate], defaultWxpayFeeRate),
+		},
+		LoadBalanceStrategy: vals[SettingLoadBalanceStrategy],
+		ProductNamePrefix:   vals[SettingProductNamePrefix],
+		ProductNameSuffix:   vals[SettingProductNameSuffix],
+		HelpImageURL:        vals[SettingHelpImageURL],
+		HelpText:            vals[SettingHelpText],
 
 		CancelRateLimitEnabled: vals[SettingCancelRateLimitOn] == "true",
 		CancelRateLimitMax:     pcParseInt(vals[SettingCancelRateLimitMax], 10),
@@ -336,13 +360,18 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 		}
 	}
 	if req.RechargeFeeRate != nil {
-		v := *req.RechargeFeeRate
-		if math.IsNaN(v) || math.IsInf(v, 0) || v < 0 || v > 100 {
-			return infraerrors.BadRequest("INVALID_RECHARGE_FEE_RATE", "recharge fee rate must be between 0 and 100")
+		if err := validateRechargeFeeRate(*req.RechargeFeeRate); err != nil {
+			return err
 		}
-		// Enforce max 2 decimal places
-		if math.Round(v*100) != v*100 {
-			return infraerrors.BadRequest("INVALID_RECHARGE_FEE_RATE", "recharge fee rate allows at most 2 decimal places")
+	}
+	if req.AlipayRechargeFeeRate != nil {
+		if err := validateRechargeFeeRate(*req.AlipayRechargeFeeRate); err != nil {
+			return err
+		}
+	}
+	if req.WxpayRechargeFeeRate != nil {
+		if err := validateRechargeFeeRate(*req.WxpayRechargeFeeRate); err != nil {
+			return err
 		}
 	}
 	quickAmountsForValidation := req.QuickRechargeAmounts
@@ -378,6 +407,8 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 		SettingBalanceRechargeMult:               formatPositiveFloat(req.BalanceRechargeMultiplier),
 		SettingSubscriptionUSDToCNYRate:          formatPositiveFloatExact(req.SubscriptionUSDToCNYRate),
 		SettingRechargeFeeRate:                   formatNonNegativeFloat(req.RechargeFeeRate),
+		SettingAlipayRechargeFeeRate:             formatNonNegativeFloat(req.AlipayRechargeFeeRate),
+		SettingWxpayRechargeFeeRate:              formatNonNegativeFloat(req.WxpayRechargeFeeRate),
 		SettingLoadBalanceStrategy:               derefStr(req.LoadBalanceStrategy),
 		SettingProductNamePrefix:                 derefStr(req.ProductNamePrefix),
 		SettingProductNameSuffix:                 derefStr(req.ProductNameSuffix),
@@ -410,6 +441,16 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 		m[SettingEnabledPaymentTypes] = ""
 	}
 	return s.settingRepo.SetMultiple(ctx, m)
+}
+
+func validateRechargeFeeRate(value float64) error {
+	if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > 100 {
+		return infraerrors.BadRequest("INVALID_RECHARGE_FEE_RATE", "recharge fee rate must be between 0 and 100")
+	}
+	if math.Round(value*100) != value*100 {
+		return infraerrors.BadRequest("INVALID_RECHARGE_FEE_RATE", "recharge fee rate allows at most 2 decimal places")
+	}
+	return nil
 }
 
 func parseQuickRechargeAmounts(raw string) []QuickRechargeAmount {

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
+	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -316,6 +317,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		PaymentCustomRechargeEnabled:                           paymentCfg.CustomRechargeEnabled,
 		PaymentSubscriptionUSDToCNYRate:                        paymentCfg.SubscriptionUSDToCNYRate,
 		PaymentRechargeFeeRate:                                 paymentCfg.RechargeFeeRate,
+		PaymentAlipayRechargeFeeRate:                           paymentCfg.RechargeFeeRateFor(payment.TypeAlipay),
+		PaymentWxpayRechargeFeeRate:                            paymentCfg.RechargeFeeRateFor(payment.TypeWxpay),
 		PaymentLoadBalanceStrat:                                paymentCfg.LoadBalanceStrategy,
 		PaymentProductNamePrefix:                               paymentCfg.ProductNamePrefix,
 		PaymentProductNameSuffix:                               paymentCfg.ProductNameSuffix,

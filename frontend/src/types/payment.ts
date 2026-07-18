@@ -38,6 +38,8 @@ export interface PaymentConfig {
   quick_recharge_amounts: QuickRechargeAmount[]
   custom_recharge_amount_enabled: boolean
   subscription_usd_to_cny_rate: number
+  recharge_fee_rate?: number
+  payment_method_fee_rates?: Record<string, number>
   enabled_payment_types: PaymentType[]
   help_image_url: string
   help_text: string

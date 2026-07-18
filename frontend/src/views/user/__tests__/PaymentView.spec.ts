@@ -3,6 +3,7 @@ import { flushPromises, shallowMount } from '@vue/test-utils'
 import PaymentView from '../PaymentView.vue'
 import AmountInput from '@/components/payment/AmountInput.vue'
 import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector.vue'
+import PurchaseAuxiliaryDrawer from '@/components/payment/PurchaseAuxiliaryDrawer.vue'
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import { PAYMENT_RECOVERY_STORAGE_KEY } from '@/components/payment/paymentFlow'
 import { formatPaymentAmount } from '@/components/payment/currency'
@@ -23,11 +24,6 @@ const showError = vi.hoisted(() => vi.fn())
 const showInfo = vi.hoisted(() => vi.fn())
 const showWarning = vi.hoisted(() => vi.fn())
 const getCheckoutInfo = vi.hoisted(() => vi.fn())
-const getDashboardStats = vi.hoisted(() => vi.fn().mockResolvedValue({
-  today_actual_cost: 1.27,
-  total_actual_cost: 5.92,
-  total_requests: 8589,
-}))
 const bridgeInvoke = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-router', async () => {
@@ -48,7 +44,9 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => key,
+      t: (key: string, params?: Record<string, unknown>) => key === 'payment.payAmount'
+        ? `${key} ${params?.amount ?? ''}`
+        : key,
     }),
   }
 })
@@ -90,12 +88,6 @@ vi.mock('@/stores', () => ({
 vi.mock('@/api/payment', () => ({
   paymentAPI: {
     getCheckoutInfo,
-  },
-}))
-
-vi.mock('@/api/usage', () => ({
-  default: {
-    getDashboardStats,
   },
 }))
 
@@ -263,20 +255,57 @@ async function mountSubscriptionConfirm(options: Parameters<typeof checkoutInfoW
 }
 
 describe('PaymentView subscription confirmation amounts', () => {
-  it('keeps the invite rewards panel mounted while switching purchase tabs', async () => {
+  it('starts directly with the purchase workspace without an account summary header', async () => {
+    const wrapper = await mountPaymentView(checkoutInfoFixture(), {})
+
+    expect(wrapper.text()).not.toContain('purchaseWorkspace.accountTitle')
+    expect(wrapper.text()).not.toContain('purchaseWorkspace.todaySpent')
+    expect(wrapper.text()).not.toContain('purchaseWorkspace.totalSpent')
+    expect(wrapper.text()).not.toContain('purchaseWorkspace.totalRequests')
+    expect(wrapper.text()).not.toContain('purchaseWorkspace.orders')
+    expect(wrapper.find('#purchase-panel-recharge').exists()).toBe(true)
+    expect(wrapper.find('#purchase-panel-recharge > header').exists()).toBe(false)
+    expect(wrapper.get('#purchase-tab-recharge').classes()).toContain('purchase-tab-active')
+    expect(wrapper.get('#purchase-tab-recharge').classes()).not.toContain('tab-active')
+  })
+
+  it('keeps desktop tools visible with enough width and exposes overlay actions at narrower widths', async () => {
     const wrapper = await mountSubscriptionConfirm()
     const panel = wrapper.find('[data-testid="affiliate-reward-panel"]')
     const sideTools = wrapper.get('[data-testid="purchase-side-tools"]')
 
     expect(panel.exists()).toBe(true)
+    expect(sideTools.classes()).toContain('hidden')
+    expect(sideTools.classes()).toContain('min-[1600px]:block')
     expect(sideTools.element.children[0]).toBe(panel.element)
     expect(sideTools.element.children[1]?.getAttribute('data-testid')).toBe('purchase-redeem-card')
+    expect(wrapper.find('[data-testid="purchase-mobile-tools-action"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="purchase-redeem-action"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="purchase-affiliate-action"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="purchase-redeem-action"]').trigger('click')
+    expect(wrapper.getComponent(PurchaseAuxiliaryDrawer).props('mode')).toBe('redeem')
+
+    await wrapper.get('[data-testid="purchase-affiliate-action"]').trigger('click')
+    expect(wrapper.getComponent(PurchaseAuxiliaryDrawer).props('mode')).toBe('affiliate')
+
+    await wrapper.get('[data-testid="purchase-mobile-tools-action"]').trigger('click')
+    expect(wrapper.getComponent(PurchaseAuxiliaryDrawer).props('mode')).toBe('combined')
+
     await wrapper.find('#purchase-tab-recharge').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="affiliate-reward-panel"]').element).toBe(panel.element)
     expect(wrapper.find('#purchase-panel-recharge').exists()).toBe(true)
     expect(wrapper.find('#purchase-panel-recharge [data-testid="purchase-redeem-card"]').exists()).toBe(false)
+  })
+
+  it('keeps the mobile recharge action fixed outside the checkout card', async () => {
+    const wrapper = await mountPaymentView(checkoutInfoFixture(), {})
+
+    const action = wrapper.get('[data-testid="mobile-recharge-confirm-action"]')
+    expect(action.element.closest('.card')).toBeNull()
+    expect(action.element.parentElement?.className).toContain('max-w-lg')
   })
 
   it('keeps subscription confirmation in a full-width action footer', async () => {
@@ -330,7 +359,38 @@ describe('PaymentView subscription confirmation amounts', () => {
     expect(wrapper.text()).toContain('payment.bonusBalance')
     expect(wrapper.text()).toContain('+$5.00')
     expect(wrapper.text()).toContain('$55.00')
-    expect(wrapper.get('[data-testid="recharge-confirm-action"]').text()).toContain('$50.00')
+    expect(wrapper.get('[data-testid="recharge-confirm-action"]').text()).toContain(formatPaymentAmount(50, 'CNY'))
+  })
+
+  it('recalculates the CNY total from the selected payment method fee', async () => {
+    const alipayMethod: MethodLimit = {
+      daily_limit: 0,
+      daily_used: 0,
+      daily_remaining: 0,
+      single_min: 0,
+      single_max: 0,
+      currency: 'CNY',
+      fee_rate: 3,
+      available: true,
+    }
+    const wrapper = await mountPaymentView(checkoutInfoFixture({
+      methods: {
+        alipay: alipayMethod,
+        wxpay: { ...alipayMethod, fee_rate: 3.8 },
+      },
+    }), {})
+
+    wrapper.getComponent(AmountInput).vm.$emit('update:modelValue', 100)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain(formatPaymentAmount(3, 'CNY'))
+    expect(wrapper.get('[data-testid="recharge-confirm-action"]').text()).toContain(formatPaymentAmount(103, 'CNY'))
+
+    wrapper.getComponent(PaymentMethodSelector).vm.$emit('select', 'wxpay')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain(formatPaymentAmount(3.8, 'CNY'))
+    expect(wrapper.get('[data-testid="recharge-confirm-action"]').text()).toContain(formatPaymentAmount(103.8, 'CNY'))
   })
 
   it('shows converted CNY pay amount using the subscription rate, not the balance multiplier', async () => {
@@ -349,30 +409,14 @@ describe('PaymentView subscription confirmation amounts', () => {
     })
 
     const text = wrapper.text()
-    const convertedPrice = formatPaymentAmount(71.43, 'USD')
-    const convertedOriginalPrice = formatPaymentAmount(92.88, 'USD')
+    const convertedPrice = formatPaymentAmount(71.43, 'CNY')
+    const convertedOriginalPrice = formatPaymentAmount(92.88, 'CNY')
 
     expect(text).toContain(convertedPrice)
     expect(text).toContain(convertedOriginalPrice)
     // 换算必须使用订阅汇率（×7.15），而不是余额倍率（÷0.14 = 71.36）
-    expect(text).not.toContain(formatPaymentAmount(71.36, 'USD'))
+    expect(text).not.toContain(formatPaymentAmount(71.36, 'CNY'))
     expect(wrapper.findAll('button').some(button => button.text().includes(convertedPrice))).toBe(true)
-    expect(text).toContain('$1.27')
-    expect(text).toContain('$5.92')
-    expect(text).toContain('8,589')
-  })
-
-  it('keeps subscription checkout usable when account statistics fail', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    getDashboardStats.mockRejectedValueOnce(new Error('stats unavailable'))
-
-    const wrapper = await mountSubscriptionConfirm({ plan: { price: 18 } })
-
-    expect(wrapper.text()).toContain(formatPaymentAmount(18, 'USD'))
-    expect(wrapper.text()).toContain('purchaseWorkspace.statsUnavailable')
-    expect(wrapper.text().match(/--/g)).toHaveLength(3)
-    expect(wrapper.findAll('button').some(button => button.text().includes('payment.createOrder'))).toBe(true)
-    consoleError.mockRestore()
   })
 
   it('keeps plan price when the subscription rate is not configured or payment currency is not CNY', async () => {
@@ -390,9 +434,9 @@ describe('PaymentView subscription confirmation amounts', () => {
       },
     })
 
-    expect(cnyWrapper.text()).toContain(formatPaymentAmount(7.99, 'USD'))
-    expect(cnyWrapper.text()).not.toContain(formatPaymentAmount(57.07, 'USD'))
-    expect(cnyWrapper.text()).not.toContain(formatPaymentAmount(57.13, 'USD'))
+    expect(cnyWrapper.text()).toContain(formatPaymentAmount(7.99, 'CNY'))
+    expect(cnyWrapper.text()).not.toContain(formatPaymentAmount(57.07, 'CNY'))
+    expect(cnyWrapper.text()).not.toContain(formatPaymentAmount(57.13, 'CNY'))
 
     const usdWrapper = await mountSubscriptionConfirm({
       checkout: {
@@ -419,6 +463,7 @@ describe('PaymentView subscription confirmation amounts', () => {
       },
       method: {
         currency: 'CNY',
+        fee_rate: 2.5,
       },
       plan: {
         price: 9.99,
@@ -426,9 +471,9 @@ describe('PaymentView subscription confirmation amounts', () => {
     })
 
     const text = wrapper.text()
-    const convertedPrice = formatPaymentAmount(71.43, 'USD')
-    const fee = formatPaymentAmount(1.79, 'USD')
-    const total = formatPaymentAmount(73.22, 'USD')
+    const convertedPrice = formatPaymentAmount(71.43, 'CNY')
+    const fee = formatPaymentAmount(1.79, 'CNY')
+    const total = formatPaymentAmount(73.22, 'CNY')
 
     expect(text).toContain(convertedPrice)
     expect(text).toContain(fee)
