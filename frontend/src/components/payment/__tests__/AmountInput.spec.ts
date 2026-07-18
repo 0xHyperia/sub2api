@@ -14,7 +14,7 @@ function mountAmountInput(customEnabled = true) {
     props: {
       modelValue: null,
       customEnabled,
-      currency: 'CNY',
+      currency: 'USD',
       amounts: [
         { amount: 50, bonus: 5 },
         { amount: 100, bonus: 0 },

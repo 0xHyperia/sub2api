@@ -44,7 +44,7 @@
             </div>
             <div class="flex justify-between gap-4 py-3">
               <dt class="text-foreground-subtle">{{ t('payment.orders.payAmount') }}</dt>
-              <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(paidOrder.pay_amount, paidOrder.currency) }}</dd>
+              <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(paidOrder.pay_amount) }}</dd>
             </div>
           </dl>
           <button type="button" class="btn btn-primary min-w-32" @click="handleDone">{{ t('common.confirm') }}</button>
@@ -250,8 +250,8 @@ const countdownDisplay = computed(() => {
   return m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0')
 })
 
-function formatGatewayAmount(value: number, currency?: string | null): string {
-  return formatPaymentAmount(value, currency || paymentCurrency.value, localeCode.value)
+function formatGatewayAmount(value: number): string {
+  return formatPaymentAmount(value, paymentCurrency.value, localeCode.value)
 }
 
 function isSuccessStatus(status: string | null | undefined): boolean {

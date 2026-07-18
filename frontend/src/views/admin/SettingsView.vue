@@ -7080,7 +7080,7 @@
                         <span class="mb-1 block text-xs text-foreground-subtle sm:hidden">{{ t("admin.settings.payment.quickRechargePayAmount") }}</span>
                         <div class="relative">
                           <input v-model.number="item.amount" type="number" min="0.01" step="0.01" class="input pr-14" required />
-                          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle">CNY</span>
+                          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle">USD</span>
                         </div>
                       </label>
                       <label class="min-w-0">

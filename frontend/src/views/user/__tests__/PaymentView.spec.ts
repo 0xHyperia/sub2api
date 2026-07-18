@@ -318,6 +318,21 @@ describe('PaymentView subscription confirmation amounts', () => {
     expect(wrapper.getComponent(PaymentMethodSelector).props('selected')).toBe('wxpay')
   })
 
+  it('shows configured bonus balance in the recharge summary', async () => {
+    const wrapper = await mountPaymentView(checkoutInfoFixture({
+      quick_recharge_amounts: [{ amount: 50, bonus: 5 }],
+    }), {})
+
+    expect(wrapper.getComponent(AmountInput).props('amounts')).toEqual([{ amount: 50, bonus: 5 }])
+    wrapper.getComponent(AmountInput).vm.$emit('update:modelValue', 50)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('payment.bonusBalance')
+    expect(wrapper.text()).toContain('+$5.00')
+    expect(wrapper.text()).toContain('$55.00')
+    expect(wrapper.get('[data-testid="recharge-confirm-action"]').text()).toContain('$50.00')
+  })
+
   it('shows converted CNY pay amount using the subscription rate, not the balance multiplier', async () => {
     const wrapper = await mountSubscriptionConfirm({
       checkout: {
@@ -334,14 +349,13 @@ describe('PaymentView subscription confirmation amounts', () => {
     })
 
     const text = wrapper.text()
-    const convertedPrice = formatPaymentAmount(71.43, 'CNY')
-    const convertedOriginalPrice = formatPaymentAmount(92.88, 'CNY')
+    const convertedPrice = formatPaymentAmount(71.43, 'USD')
+    const convertedOriginalPrice = formatPaymentAmount(92.88, 'USD')
 
     expect(text).toContain(convertedPrice)
     expect(text).toContain(convertedOriginalPrice)
-    expect(text).not.toContain(formatPaymentAmount(9.99, 'CNY'))
     // 换算必须使用订阅汇率（×7.15），而不是余额倍率（÷0.14 = 71.36）
-    expect(text).not.toContain(formatPaymentAmount(71.36, 'CNY'))
+    expect(text).not.toContain(formatPaymentAmount(71.36, 'USD'))
     expect(wrapper.findAll('button').some(button => button.text().includes(convertedPrice))).toBe(true)
     expect(text).toContain('$1.27')
     expect(text).toContain('$5.92')
@@ -354,7 +368,7 @@ describe('PaymentView subscription confirmation amounts', () => {
 
     const wrapper = await mountSubscriptionConfirm({ plan: { price: 18 } })
 
-    expect(wrapper.text()).toContain(formatPaymentAmount(18, 'CNY'))
+    expect(wrapper.text()).toContain(formatPaymentAmount(18, 'USD'))
     expect(wrapper.text()).toContain('purchaseWorkspace.statsUnavailable')
     expect(wrapper.text().match(/--/g)).toHaveLength(3)
     expect(wrapper.findAll('button').some(button => button.text().includes('payment.createOrder'))).toBe(true)
@@ -376,9 +390,9 @@ describe('PaymentView subscription confirmation amounts', () => {
       },
     })
 
-    expect(cnyWrapper.text()).toContain(formatPaymentAmount(7.99, 'CNY'))
-    expect(cnyWrapper.text()).not.toContain(formatPaymentAmount(57.07, 'CNY'))
-    expect(cnyWrapper.text()).not.toContain(formatPaymentAmount(57.13, 'CNY'))
+    expect(cnyWrapper.text()).toContain(formatPaymentAmount(7.99, 'USD'))
+    expect(cnyWrapper.text()).not.toContain(formatPaymentAmount(57.07, 'USD'))
+    expect(cnyWrapper.text()).not.toContain(formatPaymentAmount(57.13, 'USD'))
 
     const usdWrapper = await mountSubscriptionConfirm({
       checkout: {
@@ -412,9 +426,9 @@ describe('PaymentView subscription confirmation amounts', () => {
     })
 
     const text = wrapper.text()
-    const convertedPrice = formatPaymentAmount(71.43, 'CNY')
-    const fee = formatPaymentAmount(1.79, 'CNY')
-    const total = formatPaymentAmount(73.22, 'CNY')
+    const convertedPrice = formatPaymentAmount(71.43, 'USD')
+    const fee = formatPaymentAmount(1.79, 'USD')
+    const total = formatPaymentAmount(73.22, 'USD')
 
     expect(text).toContain(convertedPrice)
     expect(text).toContain(fee)

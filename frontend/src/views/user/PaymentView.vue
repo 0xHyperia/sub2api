@@ -79,7 +79,7 @@
             :payment-type="paymentState.paymentType"
             :pay-url="paymentState.payUrl"
             :order-type="paymentState.orderType"
-            :currency="paymentState.currency || selectedCurrency"
+            :currency="DISPLAY_PAYMENT_CURRENCY"
             @done="onPaymentDone"
             @success="onPaymentSuccess"
             @settled="onPaymentSettled"
@@ -147,7 +147,7 @@
                         :min="globalMinAmount"
                         :max="globalMaxAmount"
                         :custom-enabled="checkout.custom_recharge_amount_enabled"
-                        :currency="selectedCurrency"
+                        :currency="DISPLAY_PAYMENT_CURRENCY"
                       />
                       <p v-if="amountError" class="mt-3 text-sm text-warning-foreground" role="alert">{{ amountError }}</p>
 
@@ -417,6 +417,7 @@ import { hasWechatResumeQuery, parseWechatResumeRoute, stripWechatResumeQuery } 
 
 const i18n = useI18n()
 const { t } = i18n
+const DISPLAY_PAYMENT_CURRENCY = 'USD'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -797,7 +798,7 @@ function subscriptionPaymentAmountForCurrency(value: number, currency: string): 
 }
 
 function formatSelectedPaymentAmount(value: number): string {
-  return formatPaymentAmount(value, selectedCurrency.value, localeCode.value)
+  return formatPaymentAmount(value, DISPLAY_PAYMENT_CURRENCY, localeCode.value)
 }
 
 function formatSelectedSubscriptionPaymentAmount(value: number): string {

@@ -67,7 +67,7 @@ const props = withDefaults(defineProps<{
   min: 0,
   max: 0,
   customEnabled: true,
-  currency: 'CNY',
+  currency: 'USD',
 })
 
 const emit = defineEmits<{
