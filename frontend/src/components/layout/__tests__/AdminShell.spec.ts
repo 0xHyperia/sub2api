@@ -19,6 +19,10 @@ describe('admin shell structure', () => {
     expect(headerSource).toContain("import { useTheme } from '@/composables/useTheme'")
   })
 
+  it('centers icon-only header actions inside their hover targets', () => {
+    expect(headerSource).toContain('@apply inline-flex h-10 w-10 flex-shrink-0 items-center justify-center')
+  })
+
   it('uses the shared accessible keyboard model for the user menu', () => {
     expect(headerSource).toContain("useDropdownMenu('header-user-menu')")
     expect(headerSource).toContain('aria-haspopup="menu"')

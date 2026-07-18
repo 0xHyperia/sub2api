@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
 }
 
 .header-action {
-  @apply h-10 w-10 flex-shrink-0 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .admin-mode-badge,
