@@ -10,7 +10,9 @@
 - 官方基线提交：`19149ca196eeae4a4482e5299dc6fa4ba0b06c8c`
 - 上一 USA0 版本：v1.0.6
 - 功能提交：`8f1aed0cef47726342a142cee6303bf7781008b9`
-- 发布状态：已完成发布前验证，等待创建并推送 v1.0.7 tag
+- 发布状态：已创建并推送 v1.0.7 tag，GitHub Release 与 x86_64 GHCR 镜像发布成功
+- Release：https://github.com/0xHyperia/sub2api/releases/tag/v1.0.7
+- Release 工作流：https://github.com/0xHyperia/sub2api/actions/runs/29674998261
 - 记录日期：2026-07-19
 
 ### 版本变更
