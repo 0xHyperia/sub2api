@@ -74,23 +74,31 @@
               @change="toggleRowSelection(row, index, ($event.target as HTMLInputElement).checked)"
             />
           </div>
-          <div
-            v-for="column in dataColumns"
-            :key="column.key"
-            class="flex min-w-0 items-start justify-between gap-3"
+          <slot
+            name="mobile-card"
+            :row="row"
+            :index="index"
+            :selected="selectable && isRowSelected(row, index)"
+            :expanded="actionsExpanded"
           >
-            <span class="max-w-[42%] flex-shrink-0 text-xs font-medium text-foreground-muted">
-              {{ column.label }}
-            </span>
-            <div class="min-w-0 max-w-[58%] break-words text-right text-sm text-foreground">
-              <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :expanded="actionsExpanded">
-                {{ column.formatter ? column.formatter(row[column.key], row) : row[column.key] }}
-              </slot>
+            <div
+              v-for="column in mobileDataColumns"
+              :key="column.key"
+              class="flex min-w-0 items-start justify-between gap-3"
+            >
+              <span class="max-w-[42%] flex-shrink-0 text-xs font-medium text-foreground-muted">
+                {{ column.label }}
+              </span>
+              <div class="min-w-0 max-w-[58%] break-words text-right text-sm text-foreground">
+                <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :expanded="actionsExpanded">
+                  {{ column.formatter ? column.formatter(row[column.key], row) : row[column.key] }}
+                </slot>
+              </div>
             </div>
-          </div>
-          <div v-if="hasActionsColumn" class="border-t border-outline pt-2">
-            <slot name="cell-actions" :row="row" :value="row['actions']" :expanded="actionsExpanded"></slot>
-          </div>
+            <div v-if="hasActionsColumn" class="border-t border-outline pt-2">
+              <slot name="cell-actions" :row="row" :value="row['actions']" :expanded="actionsExpanded"></slot>
+            </div>
+          </slot>
         </div>
       </div>
     </template>
@@ -665,6 +673,7 @@ const resolveStableRowKey = (row: any): string | number | undefined => {
 const resolveRowKey = (row: any, index: number) => resolveStableRowKey(row) ?? index
 
 const dataColumns = computed(() => props.columns.filter((column) => column.key !== 'actions'))
+const mobileDataColumns = computed(() => dataColumns.value.filter((column) => !column.mobileHidden))
 const columnsSignature = computed(() =>
   props.columns.map((column) => `${column.key}:${column.sortable ? '1' : '0'}`).join('|')
 )

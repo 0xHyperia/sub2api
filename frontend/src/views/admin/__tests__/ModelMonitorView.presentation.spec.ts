@@ -24,4 +24,13 @@ describe('model monitor presentation controls', () => {
     expect(source).toContain('void load(true)')
     expect(source).toContain('window.clearInterval')
   })
+
+  it('uses business-specific mobile monitor cards and a history timeline', () => {
+    expect(source).toContain('<template #mobile-card="{ row }">')
+    expect(source).toContain('activeFilterCount')
+    expect(source).toContain('grid grid-cols-2 gap-px')
+    expect(source).toContain('mobile-history-')
+    expect(source).toContain('class="divide-y divide-outline sm:hidden"')
+    expect(source).toContain('class="hidden overflow-x-auto sm:block"')
+  })
 })

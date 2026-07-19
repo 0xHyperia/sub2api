@@ -203,6 +203,7 @@ export default {
       clearRateLimit: '清除速率限制',
       resetQuota: '重置配额',
       quotaLimit: '配额限制',
+      quotaUnlimited: '无限制',
       quotaLimitPlaceholder: '0 表示不限制',
       quotaLimitHint: '设置日/周/总使用额度（美元），任一维度达到限额后账号暂停调度。Anthropic API Key 账号还可配置客户端亲和。修改限额不会重置已用额度。',
       quotaLimitToggle: '启用配额限制',

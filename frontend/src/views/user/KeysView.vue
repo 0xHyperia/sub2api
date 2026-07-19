@@ -3,7 +3,42 @@
     <TablePageLayout>
       <template #filters>
         <div class="flex flex-col gap-3">
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="flex min-w-0 items-center gap-2 sm:hidden">
+            <SearchInput
+              v-model="filterSearch"
+              :placeholder="t('keys.searchPlaceholder')"
+              class="min-w-0 flex-1"
+              @search="onFilterChange"
+            />
+            <button
+              type="button"
+              class="btn btn-secondary relative h-10 shrink-0 px-3"
+              :aria-label="t('common.filter')"
+              :aria-expanded="mobileFiltersOpen"
+              @click="mobileFiltersOpen = !mobileFiltersOpen"
+            >
+              <Icon name="filter" size="sm" />
+              <span>{{ t('common.filter') }}</span>
+              <span v-if="activeMobileFilterCount" class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-semibold text-brand-foreground">
+                {{ activeMobileFilterCount }}
+              </span>
+            </button>
+          </div>
+          <div v-if="mobileFiltersOpen" class="grid grid-cols-2 gap-2 sm:hidden">
+            <Select
+              :model-value="filterGroupId"
+              class="min-w-0"
+              :options="groupFilterOptions"
+              @update:model-value="onGroupFilterChange"
+            />
+            <Select
+              :model-value="filterStatus"
+              class="min-w-0"
+              :options="statusFilterOptions"
+              @update:model-value="onStatusFilterChange"
+            />
+          </div>
+          <div class="hidden flex-wrap items-center gap-3 sm:flex">
             <SearchInput
               v-model="filterSearch"
               :placeholder="t('keys.searchPlaceholder')"
@@ -106,6 +141,186 @@
           default-sort-order="desc"
           @sort="handleSort"
         >
+          <template #mobile-card="{ row }">
+            <article class="space-y-3">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex min-w-0 items-center gap-1.5">
+                    <h3 class="truncate text-sm font-semibold text-foreground">{{ row.name }}</h3>
+                    <Icon
+                      v-if="row.ip_whitelist?.length > 0 || row.ip_blacklist?.length > 0"
+                      name="shield"
+                      size="xs"
+                      class="shrink-0 text-info-foreground"
+                      :title="t('keys.ipRestrictionEnabled')"
+                    />
+                  </div>
+                  <div class="mt-1 flex min-w-0 items-center gap-1">
+                    <code class="min-w-0 truncate font-mono text-xs text-foreground-muted">
+                      {{ maskApiKey(row.key) }}
+                    </code>
+                    <button
+                      type="button"
+                      class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground"
+                      :class="copiedKeyId === row.id && 'text-success-foreground'"
+                      :title="copiedKeyId === row.id ? t('keys.copied') : t('keys.copyToClipboard')"
+                      :aria-label="copiedKeyId === row.id ? t('keys.copied') : t('keys.copyToClipboard')"
+                      @click.stop="copyToClipboard(row.key, row.id)"
+                    >
+                      <Icon :name="copiedKeyId === row.id ? 'check' : 'clipboard'" size="xs" />
+                    </button>
+                  </div>
+                </div>
+                <span
+                  :class="[
+                    'badge shrink-0',
+                    row.status === 'active' ? 'badge-success' :
+                    row.status === 'quota_exhausted' ? 'badge-warning' :
+                    row.status === 'expired' ? 'badge-danger' :
+                    'badge-gray'
+                  ]"
+                >
+                  {{ t('keys.status.' + row.status) }}
+                </span>
+              </header>
+
+              <div class="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-outline bg-outline">
+                <button
+                  type="button"
+                  :ref="(el) => setGroupButtonRef(row.id, el)"
+                  class="min-w-0 bg-surface-subtle px-3 py-2 text-left transition-colors hover:bg-brand-subtle"
+                  :title="t('keys.clickToChangeGroup')"
+                  :aria-label="t('keys.clickToChangeGroup')"
+                  :aria-expanded="groupSelectorKeyId === row.id"
+                  aria-haspopup="listbox"
+                  @click.stop="openGroupSelector(row)"
+                >
+                  <span class="block text-[11px] font-medium text-foreground-subtle">{{ t('keys.group') }}</span>
+                  <span class="mt-0.5 block truncate text-sm font-medium text-foreground">
+                    {{ row.group?.name || t('keys.noGroup') }}
+                  </span>
+                </button>
+                <div class="bg-surface-subtle px-3 py-2">
+                  <span class="block text-[11px] font-medium text-foreground-subtle">{{ t('keys.today') }}</span>
+                  <span class="mt-0.5 block whitespace-nowrap text-sm font-semibold tabular-nums text-foreground">
+                    ${{ (usageStats[row.id]?.today_actual_cost ?? 0).toFixed(4) }}
+                  </span>
+                </div>
+                <div class="bg-surface-subtle px-3 py-2">
+                  <span class="block text-[11px] font-medium text-foreground-subtle">{{ t('keys.currentConcurrency') }}</span>
+                  <span class="mt-0.5 block text-sm font-semibold tabular-nums text-foreground">
+                    {{ row.current_concurrency ?? 0 }}
+                  </span>
+                </div>
+                <div class="bg-surface-subtle px-3 py-2">
+                  <span class="block text-[11px] font-medium text-foreground-subtle">{{ t('keys.total') }}</span>
+                  <span class="mt-0.5 block whitespace-nowrap text-sm font-semibold tabular-nums text-foreground">
+                    ${{ (usageStats[row.id]?.total_actual_cost ?? 0).toFixed(4) }}
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="row.quota > 0" class="space-y-1.5">
+                <div class="flex items-center justify-between gap-3 text-xs">
+                  <span class="font-medium text-foreground-muted">{{ t('keys.quota') }}</span>
+                  <span class="whitespace-nowrap tabular-nums text-foreground">
+                    ${{ row.quota_used?.toFixed(2) || '0.00' }} / ${{ row.quota.toFixed(2) }}
+                  </span>
+                </div>
+                <div class="h-1.5 overflow-hidden rounded-full bg-outline">
+                  <div
+                    :class="[
+                      'h-full rounded-full',
+                      row.quota_used >= row.quota ? 'bg-danger' :
+                      row.quota_used >= row.quota * 0.8 ? 'bg-warning' : 'bg-brand'
+                    ]"
+                    :style="{ width: Math.min((row.quota_used / row.quota) * 100, 100) + '%' }"
+                  />
+                </div>
+              </div>
+
+              <details
+                v-if="row.rate_limit_5h > 0 || row.rate_limit_1d > 0 || row.rate_limit_7d > 0"
+                class="group rounded-panel border border-outline bg-surface-subtle px-3 py-2"
+              >
+                <summary class="flex min-h-7 cursor-pointer list-none items-center justify-between text-xs font-medium text-foreground-muted">
+                  <span>{{ t('keys.rateLimitColumn') }}</span>
+                  <Icon name="chevronDown" size="xs" class="transition-transform group-open:rotate-180" />
+                </summary>
+                <div class="mt-2 space-y-1.5 border-t border-outline pt-2 text-xs tabular-nums">
+                  <div v-if="row.rate_limit_5h > 0" class="flex justify-between gap-3">
+                    <span class="text-foreground-subtle">5h</span>
+                    <span class="text-foreground">${{ row.usage_5h.toFixed(2) }} / ${{ row.rate_limit_5h.toFixed(2) }}</span>
+                  </div>
+                  <div v-if="row.rate_limit_1d > 0" class="flex justify-between gap-3">
+                    <span class="text-foreground-subtle">1d</span>
+                    <span class="text-foreground">${{ row.usage_1d.toFixed(2) }} / ${{ row.rate_limit_1d.toFixed(2) }}</span>
+                  </div>
+                  <div v-if="row.rate_limit_7d > 0" class="flex justify-between gap-3">
+                    <span class="text-foreground-subtle">7d</span>
+                    <span class="text-foreground">${{ row.usage_7d.toFixed(2) }} / ${{ row.rate_limit_7d.toFixed(2) }}</span>
+                  </div>
+                </div>
+              </details>
+
+              <footer class="flex items-center gap-2 border-t border-outline pt-3">
+                <button
+                  type="button"
+                  class="btn btn-secondary min-w-0 flex-1"
+                  @click.stop="openUseKeyModal(row)"
+                >
+                  <Icon name="terminal" size="sm" />
+                  <span class="truncate">{{ t('keys.useKey') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-outline text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground"
+                  :title="t('common.edit')"
+                  :aria-label="t('common.edit')"
+                  @click.stop="editKey(row)"
+                >
+                  <Icon name="edit" size="sm" />
+                </button>
+                <details class="group/menu relative" @click.stop>
+                  <summary
+                    class="inline-flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-control border border-outline text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground"
+                    :title="t('common.actions')"
+                    :aria-label="t('common.actions')"
+                  >
+                    <Icon name="more" size="sm" />
+                  </summary>
+                  <div class="absolute bottom-full right-0 z-30 mb-1 w-40 overflow-hidden rounded-panel border border-outline bg-surface py-1 shadow-floating">
+                    <button
+                      v-if="!publicSettings?.hide_ccs_import_button"
+                      type="button"
+                      class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
+                      @click="importToCcswitch(row)"
+                    >
+                      <Icon name="upload" size="sm" />
+                      {{ t('keys.importToCcSwitch') }}
+                    </button>
+                    <button
+                      type="button"
+                      class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
+                      @click="toggleKeyStatus(row)"
+                    >
+                      <Icon :name="row.status === 'active' ? 'ban' : 'checkCircle'" size="sm" />
+                      {{ row.status === 'active' ? t('keys.disable') : t('keys.enable') }}
+                    </button>
+                    <button
+                      type="button"
+                      class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger-foreground hover:bg-danger-subtle"
+                      @click="confirmDelete(row)"
+                    >
+                      <Icon name="trash" size="sm" />
+                      {{ t('common.delete') }}
+                    </button>
+                  </div>
+                </details>
+              </footer>
+            </article>
+          </template>
+
           <template #cell-id="{ value }">
             <span class="font-mono text-xs text-foreground-subtle">#{{ value }}</span>
           </template>
@@ -1263,6 +1478,10 @@ const sortState = ref({
 const filterSearch = ref('')
 const filterStatus = ref('')
 const filterGroupId = ref<string | number>('')
+const mobileFiltersOpen = ref(false)
+const activeMobileFilterCount = computed(() =>
+  Number(filterGroupId.value !== '') + Number(Boolean(filterStatus.value))
+)
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)

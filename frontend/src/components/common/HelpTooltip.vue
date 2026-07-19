@@ -165,7 +165,7 @@ onBeforeUnmount(() => {
         :id="tooltipId"
         role="tooltip"
         :class="[
-          'fixed z-[99999] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-panel p-3 text-xs leading-relaxed text-white shadow-floating ring-1 ring-white/10 bg-foreground',
+          'fixed z-[99999] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-panel bg-inverse p-3 text-xs leading-relaxed text-inverse-foreground shadow-floating ring-1 ring-inverse-foreground/10',
           placement === 'top' && '-translate-y-full',
           props.widthClass,
         ]"
@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
         <button
           v-if="props.trigger === 'click'"
           type="button"
-          class="absolute right-1.5 top-1.5 rounded p-1 text-foreground-subtle transition-colors hover:bg-white/10 hover:text-white"
+          class="absolute right-1.5 top-1.5 rounded-control p-1 text-inverse-foreground/70 transition-colors hover:bg-inverse-foreground/10 hover:text-inverse-foreground"
           :aria-label="closeLabel"
           @click.stop="closeTooltip(true)"
         >
@@ -185,7 +185,7 @@ onBeforeUnmount(() => {
         <slot>{{ content }}</slot>
         <div
           :class="[
-            'absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-foreground',
+            'absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-inverse',
             placement === 'top' ? '-bottom-1' : '-top-1'
           ]"
         ></div>

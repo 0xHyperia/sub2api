@@ -12,7 +12,7 @@
           <div
             :class="[
               'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold',
-              step >= 1 ? 'bg-brand text-white' : 'text-foreground-subtle bg-outline'
+              step >= 1 ? 'bg-brand text-brand-foreground' : 'text-foreground-subtle bg-outline'
             ]"
           >
             1
@@ -26,7 +26,7 @@
           <div
             :class="[
               'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold',
-              step >= 2 ? 'bg-brand text-white' : 'text-foreground-subtle bg-outline'
+              step >= 2 ? 'bg-brand text-brand-foreground' : 'text-foreground-subtle bg-outline'
             ]"
           >
             2
@@ -181,7 +181,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'oauth-based'
-                  ? 'bg-warning text-white'
+                  ? 'bg-warning text-warning-solid-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -211,7 +211,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'apikey'
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-brand-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -241,7 +241,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'bedrock'
-                  ? 'bg-warning text-white'
+                  ? 'bg-warning text-warning-solid-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -271,7 +271,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'service_account'
-                  ? 'bg-info text-white'
+                  ? 'bg-info text-info-solid-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -311,7 +311,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'oauth-based'
-                  ? 'bg-success text-white'
+                  ? 'bg-success text-success-solid-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -337,7 +337,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'apikey'
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-brand-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -397,7 +397,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'apikey'
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-brand-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -441,7 +441,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'oauth-based'
-                  ? 'bg-info text-white'
+                  ? 'bg-info text-info-solid-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -471,7 +471,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'apikey'
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-brand-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -513,7 +513,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 accountCategory === 'service_account'
-                  ? 'bg-info text-white'
+                  ? 'bg-info text-info-solid-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -573,7 +573,7 @@
                 :class="[
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                   geminiOAuthType === 'google_one'
-                    ? 'bg-brand text-white'
+                    ? 'bg-brand text-brand-foreground'
                     : 'bg-outline text-foreground-subtle'
                 ]"
               >
@@ -616,7 +616,7 @@
                 :class="[
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                   geminiOAuthType === 'code_assist'
-                    ? 'bg-info text-white'
+                    ? 'bg-info text-info-solid-foreground'
                     : 'bg-outline text-foreground-subtle'
                 ]"
               >
@@ -700,7 +700,7 @@
                 :class="[
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                   geminiOAuthType === 'ai_studio'
-                    ? 'bg-warning text-white'
+                    ? 'bg-warning text-warning-solid-foreground'
                     : 'bg-outline text-foreground-subtle'
                 ]"
               >
@@ -812,7 +812,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 antigravityAccountType === 'oauth'
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-brand-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -838,7 +838,7 @@
               :class="[
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-panel',
                 antigravityAccountType === 'upstream'
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-brand-foreground'
                   : 'bg-outline text-foreground-subtle'
               ]"
             >
@@ -2005,7 +2005,7 @@
         </div>
 
         <div v-if="headerOverrideEnabled" class="space-y-3">
-          <div class="rounded-lg bg-info-subtle p-3 /20">
+          <div class="rounded-control bg-info-subtle p-3">
             <p class="text-xs text-info-foreground ">
               <Icon name="exclamationCircle" size="sm" class="mr-1 inline" :stroke-width="2" />
               {{ t('admin.accounts.headerOverride.info') }}
@@ -2569,7 +2569,7 @@
                 :class="[
                   'px-3 py-1.5 text-sm rounded-control border transition-colors',
                   userMsgQueueMode === opt.value
-                    ? 'bg-brand text-white border-brand'
+                    ? 'bg-brand text-brand-foreground border-brand'
                     : 'bg-surface-subtle text-foreground-muted border-outline-strong hover:bg-surface-subtle'
                 ]">
                 {{ opt.label }}
@@ -3105,7 +3105,7 @@
             </span>
             <!-- Tooltip（向下显示避免被弹窗裁剪） -->
             <div
-              class="pointer-events-none absolute left-0 top-full z-[100] mt-1.5 w-72 rounded px-3 py-2 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 bg-surface-subtle"
+              class="pointer-events-none absolute left-0 top-full z-[100] mt-1.5 w-72 rounded-control bg-inverse px-3 py-2 text-xs text-inverse-foreground opacity-0 shadow-floating transition-opacity group-hover:opacity-100"
             >
               {{ t('admin.accounts.mixedSchedulingTooltip') }}
               <div
@@ -3132,7 +3132,7 @@
               ?
             </span>
             <div
-              class="pointer-events-none absolute left-0 top-full z-[100] mt-1.5 w-72 rounded px-3 py-2 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 bg-surface-subtle"
+              class="pointer-events-none absolute left-0 top-full z-[100] mt-1.5 w-72 rounded-control bg-inverse px-3 py-2 text-xs text-inverse-foreground opacity-0 shadow-floating transition-opacity group-hover:opacity-100"
             >
               {{ t('admin.accounts.allowOveragesTooltip') }}
               <div

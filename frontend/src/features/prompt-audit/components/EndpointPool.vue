@@ -13,7 +13,7 @@
     <div v-if="endpoints.length === 0" class="mt-5 rounded-xl border border-dashed border-outline px-5 py-10 text-center text-sm text-foreground-subtle   ">
       {{ t('admin.promptAudit.pool.empty') }}
     </div>
-    <div v-else class="mt-5 overflow-hidden rounded-xl border border-outline bg-white  ">
+    <div v-else class="mt-5 overflow-hidden rounded-xl border border-outline bg-surface">
       <div class="hidden grid-cols-[minmax(260px,1.45fr)_minmax(210px,1fr)_minmax(190px,.8fr)_minmax(230px,1.15fr)_auto] gap-5 border-b border-l-[3px] border-b-gray-200 border-l-transparent bg-surface-subtle/80 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground-subtle    xl:grid">
         <span>{{ t('admin.promptAudit.pool.node') }}</span>
         <span>{{ t('admin.promptAudit.pool.model') }}</span>
@@ -27,7 +27,7 @@
           v-for="endpoint in endpoints"
           :key="endpoint.id"
           :data-test="`endpoint-${endpoint.id}`"
-          class="group grid gap-4 border-l-[3px] border-l-transparent px-4 py-4 transition-[background-color,border-color] duration-200 hover:border-l-primary-500 hover:bg-surface-subtle/80 dark:hover:bg-foreground/55 sm:px-5 xl:grid-cols-[minmax(260px,1.45fr)_minmax(210px,1fr)_minmax(190px,.8fr)_minmax(230px,1.15fr)_auto] xl:items-center xl:gap-5"
+          class="group grid gap-4 border-l-[3px] border-l-transparent px-4 py-4 transition-[background-color,border-color] duration-200 hover:border-l-primary-500 hover:bg-surface-subtle/80 sm:px-5 xl:grid-cols-[minmax(260px,1.45fr)_minmax(210px,1fr)_minmax(190px,.8fr)_minmax(230px,1.15fr)_auto] xl:items-center xl:gap-5"
         >
           <div class="flex min-w-0 items-center gap-3">
             <button

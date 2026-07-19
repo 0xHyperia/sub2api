@@ -419,4 +419,44 @@ describe('DataTable', () => {
 
     expect(wrapper.emitted('update:selectedKeys')?.at(-1)?.[0]).toEqual([99, 1, 2])
   })
+
+  it('lets business pages replace generic mobile rows with a dedicated card', async () => {
+    stubMobileMatchMedia()
+    const wrapper = mount(DataTable, {
+      props: {
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'status', label: 'Status' }
+        ],
+        data: [{ id: 1, name: 'Primary key', status: 'active' }]
+      },
+      slots: {
+        'mobile-card': `
+          <template #mobile-card="{ row, index }">
+            <article data-test="business-card">{{ index }}:{{ row.name }}:{{ row.status }}</article>
+          </template>
+        `
+      }
+    })
+
+    expect(wrapper.get('[data-test="business-card"]').text()).toBe('0:Primary key:active')
+    expect(wrapper.text()).not.toContain('Name')
+  })
+
+  it('can hide secondary columns only from the generic mobile card', async () => {
+    stubMobileMatchMedia()
+    const wrapper = mount(DataTable, {
+      props: {
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'notes', label: 'Notes', mobileHidden: true }
+        ],
+        data: [{ id: 1, name: 'Primary key', notes: 'Desktop-only detail' }]
+      }
+    })
+
+    expect(wrapper.text()).toContain('Primary key')
+    expect(wrapper.text()).not.toContain('Desktop-only detail')
+    expect(wrapper.text()).not.toContain('Notes')
+  })
 })

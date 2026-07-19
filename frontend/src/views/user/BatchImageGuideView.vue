@@ -3,8 +3,44 @@
     <TablePageLayout>
       <template #filters>
         <div class="flex flex-col gap-3">
-          <div class="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
-            <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[260px_160px_144px_152px] 2xl:w-auto">
+          <div class="space-y-2 lg:hidden">
+            <div class="flex min-w-0 items-center gap-2">
+              <SearchInput
+                v-model="filters.taskName"
+                placeholder="搜索任务名称"
+                class="min-w-0 flex-1"
+                @search="applyFilters"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary relative h-10 shrink-0 px-3"
+                :aria-expanded="showMobileFilterModal"
+                aria-controls="batch-image-mobile-filters"
+                @click="openMobileFilterModal"
+              >
+                <Icon name="filter" size="sm" />
+                <span>筛选</span>
+                <span v-if="activeBatchFilterCount" class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-semibold text-brand-foreground">
+                  {{ activeBatchFilterCount }}
+                </span>
+              </button>
+            </div>
+            <div class="grid grid-cols-[40px_40px_minmax(0,1fr)] gap-2">
+              <button type="button" class="btn btn-secondary btn-icon" :disabled="loadingKeys || loadingJobs" title="刷新" aria-label="刷新" @click="refreshPage">
+                <Icon name="refresh" size="sm" :class="loadingKeys || loadingJobs ? 'animate-spin' : ''" />
+              </button>
+              <button type="button" class="btn btn-secondary btn-icon" title="使用说明" aria-label="使用说明" @click="showGuideModal = true">
+                <Icon name="book" size="sm" />
+              </button>
+              <button type="button" class="btn btn-primary min-w-0" @click="openCreateModal">
+                <Icon name="plus" size="sm" />
+                <span class="truncate">创建批量任务</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hidden flex-col gap-3 lg:flex 2xl:flex-row 2xl:items-center 2xl:justify-between">
+            <div class="grid w-full grid-cols-[260px_160px_144px_152px] gap-3 2xl:w-auto">
               <div class="min-w-0">
                 <SearchInput
                   v-model="filters.taskName"
@@ -74,6 +110,95 @@
           :expandable-actions="false"
           row-key="id"
         >
+          <template #mobile-card="{ row }">
+            <article class="min-w-0">
+              <header class="flex min-w-0 items-start gap-3">
+                <input
+                  type="checkbox"
+                  class="mt-0.5 h-4 w-4 shrink-0 rounded border-outline-strong text-brand focus:ring-focus"
+                  :aria-label="batchJobSelectionLabel(row)"
+                  :checked="selectedJobIds.has(row.id)"
+                  @change="toggleJobSelection(row.id, ($event.target as HTMLInputElement).checked)"
+                  @click.stop
+                />
+                <div class="min-w-0 flex-1">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <h3 class="truncate text-sm font-semibold text-foreground" :title="row.task_name || defaultTaskName(row.created_at)">
+                      {{ row.task_name || defaultTaskName(row.created_at) }}
+                    </h3>
+                    <span v-if="row.is_child" class="badge badge-warning shrink-0 font-normal">子任务</span>
+                  </div>
+                  <p class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground-subtle">
+                    <span class="max-w-40 truncate" :title="row.model">{{ row.model }}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{{ formatDate(row.created_at) }}</span>
+                  </p>
+                </div>
+                <span :class="statusBadgeClass(displayJob(row))" class="badge shrink-0 whitespace-nowrap">
+                  {{ statusLabel(displayJob(row)) }}
+                </span>
+              </header>
+
+              <button
+                v-if="row.child_count > 0 && !row.is_child"
+                type="button"
+                class="mt-3 flex min-h-9 w-full items-center justify-between rounded-control bg-surface-subtle px-3 text-xs font-medium text-foreground-muted"
+                :aria-expanded="expandedParentIds.has(row.id)"
+                @click.stop="toggleChildRows(row.id)"
+              >
+                <span>{{ row.child_count }} 个子任务</span>
+                <Icon :name="expandedParentIds.has(row.id) ? 'chevronUp' : 'chevronDown'" size="xs" />
+              </button>
+
+              <dl class="mt-3 grid grid-cols-2 gap-2 rounded-control bg-surface-subtle px-3 py-2.5">
+                <div>
+                  <dt class="text-[10px] text-foreground-subtle">成功 / 失败</dt>
+                  <dd class="mt-0.5 flex items-baseline gap-1.5 text-sm font-semibold tabular-nums">
+                    <span class="text-success-foreground">{{ displayJob(row).success_count }}</span>
+                    <span class="text-foreground-subtle">/</span>
+                    <span :class="displayJob(row).fail_count > 0 ? 'text-danger-foreground' : 'text-foreground-muted'">{{ displayJob(row).fail_count }}</span>
+                    <span class="text-[10px] font-normal text-foreground-subtle">共 {{ displayJob(row).item_count }}</span>
+                  </dd>
+                </div>
+                <div class="text-right">
+                  <dt class="text-[10px] text-foreground-subtle">费用</dt>
+                  <dd class="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{{ costLabel(displayJob(row)) }}</dd>
+                </div>
+              </dl>
+
+              <div class="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_40px] gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-primary btn-sm min-w-0" @click.stop="selectJob(row.id)">
+                  <Icon name="eye" size="sm" />
+                  <span>查看</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm min-w-0"
+                  :disabled="!canDownload(row) || downloading"
+                  @click.stop="downloadJob(row)"
+                >
+                  <Icon :name="isDownloadingJob(row.id) ? 'refresh' : 'download'" size="sm" :class="isDownloadingJob(row.id) ? 'animate-spin' : ''" />
+                  <span>下载</span>
+                </button>
+                <button
+                  v-if="canRetry(row) || canDeleteRecord(row)"
+                  type="button"
+                  :id="moreMenuTriggerId(row.id)"
+                  class="btn btn-secondary btn-icon h-9 w-10"
+                  :class="{ 'bg-surface-subtle text-foreground': openMoreJobId === row.id }"
+                  title="更多操作"
+                  aria-haspopup="menu"
+                  :aria-controls="moreMenuId(row.id)"
+                  :aria-expanded="openMoreJobId === row.id"
+                  @click.stop="toggleMoreMenu(row, $event)"
+                >
+                  <Icon name="more" size="sm" />
+                </button>
+                <span v-else class="h-9 w-10" aria-hidden="true"></span>
+              </div>
+            </article>
+          </template>
+
           <template #header-select>
             <input
               type="checkbox"
@@ -97,7 +222,7 @@
           </template>
 
           <template #cell-id="{ row }">
-	            <div class="flex w-[220px] items-start gap-1" :class="row.is_child ? 'pl-6' : ''">
+            <div class="flex min-w-0 items-start gap-1 lg:w-[220px]" :class="row.is_child ? 'pl-6' : ''">
 	              <button
 	                v-if="row.child_count > 0 && !row.is_child"
 	                type="button"
@@ -129,7 +254,7 @@
 	          </template>
 
           <template #cell-model="{ row }">
-	            <div class="mx-auto max-w-[180px] text-center">
+            <div class="mx-auto min-w-0 text-center lg:max-w-[180px]">
 	              <p class="truncate text-sm text-foreground-muted" :title="row.model">{{ row.model }}</p>
 	            </div>
 	          </template>
@@ -339,6 +464,32 @@
       </div>
     </Teleport>
 
+    <BaseDialog
+      :show="showMobileFilterModal"
+      title="筛选任务"
+      width="narrow"
+      @close="closeMobileFilterModal"
+    >
+      <div id="batch-image-mobile-filters" class="space-y-4">
+        <label class="block text-sm font-medium text-foreground-muted">
+          API Key
+          <Select v-model="mobileFilterDraft.apiKeyId" :options="apiKeyFilterOptions" class="mt-1.5 w-full" />
+        </label>
+        <label class="block text-sm font-medium text-foreground-muted">
+          状态
+          <Select v-model="mobileFilterDraft.status" :options="statusFilterOptions" class="mt-1.5 w-full" />
+        </label>
+        <label class="block text-sm font-medium text-foreground-muted">
+          下载状态
+          <Select v-model="mobileFilterDraft.downloaded" :options="downloadFilterOptions" class="mt-1.5 w-full" />
+        </label>
+      </div>
+      <template #footer>
+        <button type="button" class="btn btn-secondary" @click="resetMobileFilterDraft">重置</button>
+        <button type="button" class="btn btn-primary" @click="applyMobileFilterDraft">查看结果</button>
+      </template>
+    </BaseDialog>
+
     <BaseDialog :show="!!currentJob" title="任务详情" width="extra-wide" @close="closeDetail">
       <div v-if="currentJob" class="space-y-4">
         <div class="rounded-panel border border-outline bg-surface-subtle px-4 py-3">
@@ -380,7 +531,72 @@
           </button>
         </div>
 
-        <div v-if="items.length" class="overflow-x-auto rounded-panel border border-outline bg-surface">
+        <template v-if="items.length">
+          <div class="grid gap-3 lg:hidden">
+            <article
+              v-for="item in items"
+              :key="itemPreviewKey(item)"
+              class="min-w-0 rounded-panel border border-outline bg-surface p-3"
+              :class="detailItemRowClass(item)"
+            >
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-[10px] font-medium uppercase text-foreground-subtle">Custom ID</p>
+                  <h4 class="mt-0.5 truncate font-mono text-sm font-semibold" :class="isRecoveredOriginalFailure(item) ? 'text-foreground-subtle' : 'text-foreground'" :title="item.custom_id">
+                    {{ item.custom_id }}
+                  </h4>
+                </div>
+                <span :class="itemDisplayStatusBadgeClass(item)" class="badge max-w-36 shrink-0 truncate whitespace-nowrap" :title="itemDisplayStatusLabel(item)">
+                  {{ itemDisplayStatusLabel(item) }}
+                </span>
+              </header>
+
+              <div class="mt-3 grid grid-cols-[84px_minmax(0,1fr)] gap-3">
+                <div class="aspect-square overflow-hidden rounded-control border border-outline bg-surface-subtle">
+                  <button
+                    v-if="itemPreviewUrls[itemPreviewKey(item)] && !previewErrorIds.has(itemPreviewKey(item))"
+                    type="button"
+                    class="block h-full w-full overflow-hidden"
+                    :title="`放大压缩预览 ${item.custom_id}`"
+                    @click="openImagePreview(item)"
+                  >
+                    <img :src="itemPreviewUrls[itemPreviewKey(item)]" class="h-full w-full object-cover" alt="" @error="handlePreviewError(itemPreviewKey(item))" />
+                  </button>
+                  <button
+                    v-else-if="canLoadItemPreview(item)"
+                    type="button"
+                    class="flex h-full w-full flex-col items-center justify-center gap-1 text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-brand disabled:cursor-wait disabled:opacity-70"
+                    :disabled="previewLoadingIds.has(itemPreviewKey(item))"
+                    :title="previewErrorIds.has(itemPreviewKey(item)) ? '重新加载压缩预览' : '加载压缩预览'"
+                    @click="loadItemPreview(item)"
+                  >
+                    <Icon :name="previewLoadingIds.has(itemPreviewKey(item)) ? 'refresh' : 'eye'" size="sm" :class="previewLoadingIds.has(itemPreviewKey(item)) ? 'animate-spin' : ''" />
+                    <span class="text-[10px]">{{ previewErrorIds.has(itemPreviewKey(item)) ? '重试' : '预览' }}</span>
+                  </button>
+                  <div v-else class="flex h-full w-full flex-col items-center justify-center gap-1 text-foreground-subtle">
+                    <Icon name="document" size="sm" />
+                    <span class="text-[10px]">无图片</span>
+                  </div>
+                </div>
+
+                <div class="min-w-0">
+                  <p class="text-[10px] font-medium text-foreground-subtle">Prompt</p>
+                  <p class="mt-1 line-clamp-3 text-xs leading-5" :class="isRecoveredOriginalFailure(item) ? 'text-foreground-subtle' : 'text-foreground-muted'">
+                    {{ item.prompt_preview || '-' }}
+                  </p>
+                  <span
+                    class="mt-2 inline-flex max-w-full items-center truncate rounded-control px-2 py-1 text-[11px] font-medium ring-1 ring-inset"
+                    :class="itemResultClass(item)"
+                    :title="itemResultLabel(item)"
+                  >
+                    {{ itemResultLabel(item) }}
+                  </span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="hidden overflow-x-auto rounded-panel border border-outline bg-surface lg:block">
           <table class="w-full min-w-[860px] table-fixed divide-y divide-outline text-sm">
             <colgroup>
               <col class="w-[18%]" />
@@ -478,7 +694,8 @@
               </tr>
             </tbody>
           </table>
-        </div>
+          </div>
+        </template>
         <div v-else class="rounded-panel border border-dashed border-outline py-10 text-center">
           <Icon name="refresh" size="lg" class="mx-auto mb-3 text-foreground-subtle" :class="loadingItems ? 'animate-spin' : ''" />
           <p class="text-sm font-medium text-foreground-muted">
@@ -901,6 +1118,16 @@ const filters = reactive({
   status: '',
   downloaded: '',
 })
+
+const showMobileFilterModal = ref(false)
+const mobileFilterDraft = reactive({
+  apiKeyId: '',
+  status: '',
+  downloaded: '',
+})
+const activeBatchFilterCount = computed(() =>
+  [filters.apiKeyId, filters.status, filters.downloaded].filter(Boolean).length
+)
 
 const pagination = reactive({
   page: 1,
@@ -1349,6 +1576,31 @@ function resetFilters() {
   filters.apiKeyId = ''
   filters.status = ''
   filters.downloaded = ''
+  applyFilters()
+}
+
+function openMobileFilterModal() {
+  mobileFilterDraft.apiKeyId = filters.apiKeyId
+  mobileFilterDraft.status = filters.status
+  mobileFilterDraft.downloaded = filters.downloaded
+  showMobileFilterModal.value = true
+}
+
+function closeMobileFilterModal() {
+  showMobileFilterModal.value = false
+}
+
+function resetMobileFilterDraft() {
+  mobileFilterDraft.apiKeyId = ''
+  mobileFilterDraft.status = ''
+  mobileFilterDraft.downloaded = ''
+}
+
+function applyMobileFilterDraft() {
+  filters.apiKeyId = mobileFilterDraft.apiKeyId
+  filters.status = mobileFilterDraft.status
+  filters.downloaded = mobileFilterDraft.downloaded
+  closeMobileFilterModal()
   applyFilters()
 }
 

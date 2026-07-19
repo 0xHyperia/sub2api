@@ -166,7 +166,7 @@
                   <span>{{ t('modelMarketplace.filters.title') }}</span>
                   <span
                     v-if="activeFilterCount"
-                    class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 font-mono text-[9px] font-semibold text-white"
+                    class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 font-mono text-[9px] font-semibold text-brand-foreground"
                   >
                     {{ activeFilterCount }}
                   </span>

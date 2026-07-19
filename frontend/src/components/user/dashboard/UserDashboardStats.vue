@@ -3,18 +3,18 @@
     <h2 class="sr-only">{{ t('dashboard.title') }}</h2>
 
     <div :class="['dashboard-metric-grid dashboard-metric-grid-core', { 'dashboard-metric-grid-simple': isSimple }]">
-      <article v-if="!isSimple" class="dashboard-metric">
+      <article v-if="!isSimple" class="dashboard-metric dashboard-metric-balance">
         <span class="dashboard-metric-icon dashboard-metric-icon-success" aria-hidden="true">
           <Icon name="dollar" size="md" :stroke-width="2" />
         </span>
         <div class="min-w-0">
           <p class="dashboard-metric-label">{{ t('dashboard.balance') }}</p>
-          <p class="dashboard-metric-value text-success-foreground">${{ formatBalance(balance) }}</p>
+          <p class="dashboard-metric-value text-success-foreground" :title="`$${formatBalance(balance)}`">${{ formatBalance(balance) }}</p>
           <p class="dashboard-metric-meta">{{ t('common.available') }}</p>
         </div>
       </article>
 
-      <article class="dashboard-metric">
+      <article class="dashboard-metric dashboard-metric-api-keys">
         <span class="dashboard-metric-icon" aria-hidden="true">
           <Icon name="key" size="md" :stroke-width="2" />
         </span>
@@ -27,7 +27,7 @@
         </div>
       </article>
 
-      <article class="dashboard-metric">
+      <article class="dashboard-metric dashboard-metric-requests">
         <span class="dashboard-metric-icon" aria-hidden="true">
           <Icon name="chart" size="md" :stroke-width="2" />
         </span>
@@ -40,20 +40,20 @@
         </div>
       </article>
 
-      <article class="dashboard-metric">
+      <article class="dashboard-metric dashboard-metric-cost">
         <span class="dashboard-metric-icon" aria-hidden="true">
           <Icon name="dollar" size="md" :stroke-width="2" />
         </span>
         <div class="min-w-0">
           <p class="dashboard-metric-label">{{ t('dashboard.todayCost') }}</p>
-          <p class="dashboard-metric-value dashboard-cost-value">
-            <span :title="t('dashboard.actual')">${{ formatCost(stats?.today_actual_cost || 0) }}</span>
-            <span class="dashboard-cost-standard" :title="t('dashboard.standard')"> / ${{ formatCost(stats?.today_cost || 0) }}</span>
+          <p class="dashboard-metric-value dashboard-cost-value" :title="t('dashboard.actual')">
+            ${{ formatCost(stats?.today_actual_cost || 0) }}
           </p>
-          <p class="dashboard-metric-meta">
-            {{ t('common.total') }}:
-            <span :title="t('dashboard.actual')">${{ formatCost(stats?.total_actual_cost || 0) }}</span>
-            <span class="text-foreground-subtle" :title="t('dashboard.standard')"> / ${{ formatCost(stats?.total_cost || 0) }}</span>
+          <p class="dashboard-metric-meta dashboard-cost-meta">
+            <span :title="t('dashboard.standard')">{{ t('dashboard.standard') }} ${{ formatCost(stats?.today_cost || 0) }}</span>
+            <span :title="`${t('dashboard.actual')} / ${t('dashboard.standard')}`">
+              {{ t('common.total') }} ${{ formatCost(stats?.total_actual_cost || 0) }} / ${{ formatCost(stats?.total_cost || 0) }}
+            </span>
           </p>
         </div>
       </article>
@@ -427,7 +427,9 @@ const formatDuration = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(2)}s`
 
 .dashboard-metric-value {
   margin-top: 0.125rem;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--ui-text);
   font-size: 1.25rem;
   font-weight: 650;
@@ -436,14 +438,24 @@ const formatDuration = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(2)}s`
 }
 
 .dashboard-cost-value {
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
-.dashboard-cost-standard,
 .dashboard-unit {
   color: var(--ui-text-subtle);
   font-size: 0.75rem;
   font-weight: 400;
+}
+
+.dashboard-cost-meta {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  column-gap: 0.75rem;
+}
+
+.dashboard-cost-meta span {
+  white-space: nowrap;
 }
 
 .dashboard-platforms {
@@ -580,6 +592,34 @@ const formatDuration = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(2)}s`
 
   .dashboard-metric-grid-simple .dashboard-metric:last-child {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 479px) {
+  .dashboard-metric-balance,
+  .dashboard-metric-cost {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-metric-grid-secondary .dashboard-metric {
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .dashboard-metric-grid-secondary .dashboard-metric-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-basis: 1.75rem;
+  }
+
+  .dashboard-metric-grid-secondary .dashboard-metric-value {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .dashboard-metric-grid-secondary .dashboard-metric-meta {
+    font-size: 0.6875rem;
+    line-height: 1rem;
   }
 }
 

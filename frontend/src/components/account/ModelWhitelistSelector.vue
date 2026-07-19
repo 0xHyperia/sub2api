@@ -58,7 +58,7 @@
               :class="[
                 'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
                 modelValue.includes(model.value)
-                  ? 'border-brand bg-brand text-white'
+                  ? 'border-brand bg-brand text-brand-foreground'
                   : 'border-outline-strong'
               ]"
             >

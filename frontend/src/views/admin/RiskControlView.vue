@@ -273,7 +273,99 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto">
+          <div class="divide-y divide-outline md:hidden" data-test="mobile-risk-log-list">
+            <div v-if="logsLoading" class="px-4 py-12 text-center text-sm text-foreground-subtle">
+              {{ t('common.loading') }}
+            </div>
+            <div v-else-if="logs.length === 0" class="px-4 py-12 text-center text-sm text-foreground-subtle">
+              {{ t('admin.riskControl.emptyLogs') }}
+            </div>
+            <article v-for="row in logs" v-else :key="`mobile-${row.id}`" class="space-y-3 px-4 py-4">
+              <header class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <span class="inline-flex shrink-0 rounded-control px-2 py-1 text-xs font-medium" :class="resultBadgeClass(row)">
+                      {{ resultLabel(row) }}
+                    </span>
+                    <h3 class="truncate text-sm font-semibold text-foreground" :title="row.model || row.endpoint || '-'">
+                      {{ row.model || row.endpoint || '-' }}
+                    </h3>
+                  </div>
+                  <p class="mt-1 truncate text-xs text-foreground-subtle">
+                    {{ row.provider || '-' }} / {{ row.endpoint || '-' }}
+                  </p>
+                </div>
+                <time class="shrink-0 text-right text-[10px] leading-4 text-foreground-subtle">
+                  {{ formatDateTime(row.created_at) }}
+                </time>
+              </header>
+
+              <dl class="grid grid-cols-2 gap-x-4 gap-y-2 rounded-panel bg-surface-subtle px-3 py-2.5">
+                <div class="min-w-0">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.riskControl.table.user') }}</dt>
+                  <dd class="mt-0.5 truncate text-xs font-medium text-foreground" :title="row.user_email || '-'">{{ row.user_email || '-' }}</dd>
+                  <dd v-if="row.user_id" class="text-[10px] text-foreground-subtle">UID {{ row.user_id }}</dd>
+                </div>
+                <div class="min-w-0">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.riskControl.table.group') }}</dt>
+                  <dd class="mt-0.5 truncate text-xs font-medium text-foreground">{{ row.group_name || '-' }}</dd>
+                  <dd class="truncate text-[10px] text-foreground-subtle">{{ row.api_key_name || '-' }}</dd>
+                </div>
+              </dl>
+
+              <div class="flex items-start justify-between gap-4 border-y border-outline py-2.5">
+                <div class="min-w-0">
+                  <p class="text-[10px] text-foreground-subtle">{{ t('admin.riskControl.table.highest') }}</p>
+                  <p class="mt-0.5 text-xs font-medium text-foreground">
+                    {{ row.highest_category || '-' }}
+                    <span class="font-mono text-foreground-muted">{{ percent(row.highest_score) }}</span>
+                  </p>
+                  <p v-if="row.matched_keyword" class="mt-1 break-words text-xs font-medium text-danger-foreground">
+                    {{ t('admin.riskControl.matchedKeyword') }}: {{ row.matched_keyword }}
+                  </p>
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="text-[10px] text-foreground-subtle">{{ t('admin.riskControl.table.latency') }}</p>
+                  <p class="mt-0.5 font-mono text-xs font-medium tabular-nums text-foreground">{{ latencyText(row.upstream_latency_ms) }}</p>
+                  <p v-if="row.queue_delay_ms !== null && row.queue_delay_ms !== undefined" class="text-[10px] text-foreground-subtle">
+                    {{ t('admin.riskControl.queueDelay', { ms: row.queue_delay_ms }) }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-start justify-between gap-3 text-xs">
+                <div class="min-w-0 text-foreground-muted">
+                  <p>{{ violationCountText(row) }}</p>
+                  <p class="mt-0.5 text-[10px] text-foreground-subtle">
+                    {{ row.email_sent ? t('admin.riskControl.emailSent') : t('admin.riskControl.emailNotSent') }}
+                    <span v-if="row.auto_banned"> / {{ t('admin.riskControl.autoBanned') }}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="inline-flex min-w-0 items-center gap-1 rounded-control px-2 py-1.5 text-xs text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground"
+                  :title="inputSummaryText(row)"
+                  @click="openInputDetail(row)"
+                >
+                  <Icon name="eye" size="xs" class="shrink-0" />
+                  <span class="max-w-32 truncate">{{ inputSummaryText(row) }}</span>
+                </button>
+              </div>
+
+              <button
+                v-if="canUnbanRow(row)"
+                type="button"
+                class="btn btn-secondary w-full text-success-foreground"
+                :disabled="unbanningUserID === row.user_id"
+                @click="unbanUser(row)"
+              >
+                <Icon name="checkCircle" size="xs" :class="unbanningUserID === row.user_id ? 'animate-spin' : ''" />
+                {{ unbanningUserID === row.user_id ? t('common.processing') : t('admin.riskControl.unbanUser') }}
+              </button>
+            </article>
+          </div>
+
+          <div class="hidden overflow-x-auto md:block" data-test="desktop-risk-log-table">
             <table class="min-w-[1280px] divide-y divide-outline">
               <thead class="bg-surface">
                 <tr>
@@ -496,7 +588,7 @@
                       <button
                         type="button"
                         class="rounded-control px-3 py-1.5 text-xs font-medium transition-colors"
-                        :class="configForm.api_keys_mode === 'replace' ? 'bg-warning text-white shadow-sm' : 'text-foreground-muted hover:bg-surface-subtle'"
+                        :class="configForm.api_keys_mode === 'replace' ? 'bg-warning text-warning-solid-foreground shadow-sm' : 'text-foreground-muted hover:bg-surface-subtle'"
                         :disabled="configForm.clear_api_key"
                         @click="setAPIKeysMode('replace')"
                       >

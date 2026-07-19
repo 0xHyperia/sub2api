@@ -2,7 +2,58 @@
   <AppLayout><div class="mx-auto w-full max-w-[1440px] space-y-4">
     <header class="page-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 class="page-title">{{ localText('工单队列', 'Ticket queue') }}</h1><p class="page-description">{{ localText('查看并回复所有用户工单。', 'Review and reply to user tickets.') }}</p></div><button type="button" class="btn btn-secondary" @click="openCategories"><Icon name="cog" size="sm" />{{ localText('管理分类', 'Manage categories') }}</button></header>
     <section class="rounded-panel border border-outline bg-surface p-3 shadow-card"><div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_160px_180px_auto]"><input v-model="search" class="input" :placeholder="localText('搜索工单号、标题或用户', 'Search ticket or user')" @keyup.enter="load"><select v-model="status" class="input" @change="load"><option value="">{{ localText('全部状态', 'All statuses') }}</option><option value="open">{{ localText('待处理', 'Open') }}</option><option value="answered">{{ localText('已回复', 'Answered') }}</option><option value="closed">{{ localText('已关闭', 'Closed') }}</option></select><select v-model.number="categoryId" class="input" @change="load"><option :value="0">{{ localText('全部分类', 'All categories') }}</option><option v-for="category in categories" :key="category.id" :value="category.id">{{ categoryName(category) }}</option></select><button class="btn btn-secondary" @click="load"><Icon name="refresh" size="sm" />{{ localText('刷新', 'Refresh') }}</button></div></section>
-    <section class="overflow-hidden rounded-panel border border-outline bg-surface shadow-card"><div class="overflow-x-auto"><table class="w-full min-w-[800px] text-left text-sm"><thead class="bg-surface-subtle text-xs text-foreground-muted"><tr><th class="px-4 py-3">{{ localText('工单', 'Ticket') }}</th><th class="px-4 py-3">{{ localText('用户', 'User') }}</th><th class="px-4 py-3">{{ localText('分类', 'Category') }}</th><th class="px-4 py-3">{{ localText('状态', 'Status') }}</th><th class="px-4 py-3">{{ localText('最后活动', 'Last activity') }}</th></tr></thead><tbody class="divide-y divide-outline"><tr v-for="ticket in tickets" :key="ticket.id" class="cursor-pointer hover:bg-surface-subtle" @click="router.push(`/admin/tickets/${ticket.number}`)"><td class="px-4 py-3"><div class="font-semibold text-info-foreground">{{ ticket.number }}</div><div class="mt-1 max-w-xl truncate text-foreground">{{ ticket.subject }}</div></td><td class="px-4 py-3"><div>{{ ticket.user_name || '-' }}</div><div class="text-xs text-foreground-muted">{{ ticket.user_email }}</div></td><td class="px-4 py-3">{{ categoryName(ticket.category) }}</td><td class="px-4 py-3"><span class="status-badge" :class="statusClass(ticket.status)">{{ statusLabel(ticket.status) }}</span><span v-if="ticket.admin_unread_count" class="ml-2 rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white">{{ ticket.admin_unread_count }}</span></td><td class="px-4 py-3 text-foreground-muted">{{ formatDate(ticket.last_message_at) }}</td></tr><tr v-if="!loading && tickets.length === 0"><td colspan="5" class="px-4 py-12 text-center text-foreground-muted">{{ localText('没有匹配的工单', 'No matching tickets') }}</td></tr></tbody></table></div></section>
+    <section class="overflow-hidden rounded-panel border border-outline bg-surface shadow-card">
+      <div class="md:hidden" data-test="mobile-ticket-list">
+        <div v-if="loading" class="flex min-h-32 items-center justify-center gap-2 px-4 py-10 text-sm text-foreground-muted" role="status">
+          <Icon name="refresh" size="sm" class="animate-spin" />
+          {{ localText('正在加载工单', 'Loading tickets') }}
+        </div>
+        <div v-else-if="tickets.length === 0" class="px-4 py-12 text-center text-sm text-foreground-muted">
+          {{ localText('没有匹配的工单', 'No matching tickets') }}
+        </div>
+        <div v-else class="divide-y divide-outline">
+          <button
+            v-for="ticket in tickets"
+            :key="ticket.id"
+            type="button"
+            class="block min-h-[124px] w-full px-4 py-3 text-left transition-colors hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+            :aria-label="`${ticket.number}: ${ticket.subject}`"
+            :data-test="`mobile-ticket-${ticket.number}`"
+            @click="router.push(`/admin/tickets/${ticket.number}`)"
+          >
+            <div class="flex min-w-0 items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-mono text-xs font-semibold text-info-foreground">{{ ticket.number }}</span>
+                  <span v-if="ticket.admin_unread_count" class="inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-danger-solid-foreground">
+                    {{ ticket.admin_unread_count }}
+                  </span>
+                </div>
+                <p class="mt-1.5 line-clamp-2 break-words text-sm font-semibold leading-5 text-foreground">{{ ticket.subject }}</p>
+              </div>
+              <span class="status-badge flex-none" :class="statusClass(ticket.status)">{{ statusLabel(ticket.status) }}</span>
+            </div>
+            <div class="mt-3 flex min-w-0 items-end justify-between gap-3 text-xs text-foreground-muted">
+              <div class="min-w-0">
+                <p class="truncate font-medium text-foreground-muted">{{ ticket.user_name || ticket.user_email || '-' }}</p>
+                <p v-if="ticket.user_name && ticket.user_email" class="mt-0.5 truncate text-foreground-subtle">{{ ticket.user_email }}</p>
+                <p class="mt-1 truncate text-foreground-subtle">{{ categoryName(ticket.category) }}</p>
+              </div>
+              <time class="flex-none text-right text-foreground-subtle" :datetime="ticket.last_message_at">
+                {{ formatDate(ticket.last_message_at) }}
+              </time>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="hidden overflow-x-auto md:block" data-test="desktop-ticket-table">
+        <table class="w-full min-w-[800px] text-left text-sm">
+          <thead class="bg-surface-subtle text-xs text-foreground-muted"><tr><th class="px-4 py-3">{{ localText('工单', 'Ticket') }}</th><th class="px-4 py-3">{{ localText('用户', 'User') }}</th><th class="px-4 py-3">{{ localText('分类', 'Category') }}</th><th class="px-4 py-3">{{ localText('状态', 'Status') }}</th><th class="px-4 py-3">{{ localText('最后活动', 'Last activity') }}</th></tr></thead>
+          <tbody class="divide-y divide-outline"><tr v-for="ticket in tickets" :key="ticket.id" class="cursor-pointer hover:bg-surface-subtle" @click="router.push(`/admin/tickets/${ticket.number}`)"><td class="px-4 py-3"><div class="font-semibold text-info-foreground">{{ ticket.number }}</div><div class="mt-1 max-w-xl truncate text-foreground">{{ ticket.subject }}</div></td><td class="px-4 py-3"><div>{{ ticket.user_name || '-' }}</div><div class="text-xs text-foreground-muted">{{ ticket.user_email }}</div></td><td class="px-4 py-3">{{ categoryName(ticket.category) }}</td><td class="px-4 py-3"><span class="status-badge" :class="statusClass(ticket.status)">{{ statusLabel(ticket.status) }}</span><span v-if="ticket.admin_unread_count" class="ml-2 rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-danger-solid-foreground">{{ ticket.admin_unread_count }}</span></td><td class="px-4 py-3 text-foreground-muted">{{ formatDate(ticket.last_message_at) }}</td></tr><tr v-if="!loading && tickets.length === 0"><td colspan="5" class="px-4 py-12 text-center text-foreground-muted">{{ localText('没有匹配的工单', 'No matching tickets') }}</td></tr></tbody>
+        </table>
+      </div>
+    </section>
     <nav v-if="pages > 1" class="flex items-center justify-end gap-2" :aria-label="localText('分页', 'Pagination')"><button class="btn btn-secondary btn-sm" :disabled="page <= 1" @click="page--; load()"><Icon name="chevronLeft" size="sm" /></button><span class="text-sm text-foreground-muted">{{ page }} / {{ pages }}</span><button class="btn btn-secondary btn-sm" :disabled="page >= pages" @click="page++; load()"><Icon name="chevronRight" size="sm" /></button></nav>
   </div>
   <BaseDialog :show="showCategories" :title="localText('工单分类', 'Ticket categories')" width="wide" @close="showCategories = false">

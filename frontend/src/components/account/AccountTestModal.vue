@@ -13,7 +13,7 @@
       >
         <div class="flex items-center gap-3">
           <div
-            class="flex h-10 w-10 items-center justify-center rounded-control bg-brand text-white"
+            class="flex h-10 w-10 items-center justify-center rounded-control bg-brand text-brand-foreground"
           >
             <Icon name="play" size="md" class="text-white" :stroke-width="2" />
           </div>
@@ -209,12 +209,12 @@
           :class="[
             'flex items-center gap-2 rounded-panel px-4 py-2 text-sm font-medium transition-all',
             status === 'connecting' || !selectedModelId
-              ? 'cursor-not-allowed bg-brand text-white'
+              ? 'cursor-not-allowed bg-brand text-brand-foreground'
               : status === 'success'
-                ? 'bg-success text-white hover:bg-success-subtle'
+                ? 'bg-success text-success-solid-foreground hover:brightness-90'
                 : status === 'error'
-                  ? 'bg-warning text-white hover:bg-warning-subtle'
-                  : 'bg-brand text-white hover:bg-brand'
+                  ? 'bg-warning text-warning-solid-foreground hover:brightness-90'
+                  : 'bg-brand text-brand-foreground hover:bg-brand-hover'
           ]"
         >
           <Icon

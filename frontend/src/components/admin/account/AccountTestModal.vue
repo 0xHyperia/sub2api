@@ -137,7 +137,7 @@
           v-if="outputLines.length > 0"
           type="button"
           @click="copyOutput"
-          class="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-control bg-foreground text-foreground-subtle opacity-100 transition-colors hover:bg-surface/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+          class="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-control bg-canvas/80 text-foreground opacity-100 transition-colors hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-canvas sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
           :title="t('admin.accounts.copyOutput')"
           :aria-label="t('admin.accounts.copyOutput')"
         >
@@ -235,7 +235,7 @@
             status === 'connecting' || !selectedModelId
               ? 'cursor-not-allowed'
               : status === 'success'
-                ? 'bg-success text-white hover:bg-success/90'
+                ? 'bg-success text-success-solid-foreground hover:bg-success/90'
                 : status === 'error'
                   ? 'bg-warning text-warning-foreground hover:bg-warning/90'
                   : ''

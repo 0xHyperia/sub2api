@@ -319,6 +319,125 @@
           @sort="handleSort"
           @update:selected-keys="handleSelectedKeysUpdate"
         >
+          <template #mobile-card="{ row }">
+            <article class="space-y-3" :data-test="`user-mobile-card-${row.id}`">
+              <header class="flex min-w-0 items-start gap-3">
+                <div class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-brand-subtle text-sm font-semibold text-brand">
+                  {{ row.email.charAt(0).toUpperCase() }}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="break-all text-sm font-semibold text-foreground">{{ row.email }}</p>
+                  <p v-if="row.username" class="mt-0.5 truncate text-xs text-foreground-subtle">{{ row.username }}</p>
+                </div>
+                <div class="flex flex-none flex-col items-end gap-1.5">
+                  <span :class="['badge', row.role === 'admin' ? 'badge-purple' : 'badge-gray']">
+                    {{ t('admin.users.roles.' + row.role) }}
+                  </span>
+                  <span class="inline-flex items-center gap-1 text-xs text-foreground-muted">
+                    <span class="h-2 w-2 rounded-full" :class="row.status === 'active' ? 'bg-success' : 'bg-danger'"></span>
+                    {{ row.status === 'active' ? t('common.active') : t('admin.users.disabled') }}
+                  </span>
+                </div>
+              </header>
+
+              <dl class="grid grid-cols-3 divide-x divide-outline rounded-panel bg-surface-subtle py-3 text-center">
+                <div class="min-w-0 px-2">
+                  <dt class="text-[11px] text-foreground-subtle">{{ t('admin.users.columns.balance') }}</dt>
+                  <dd class="mt-1 truncate text-sm font-semibold tabular-nums text-foreground">${{ row.balance.toFixed(2) }}</dd>
+                </div>
+                <div class="min-w-0 px-2">
+                  <dt class="text-[11px] text-foreground-subtle">{{ t('admin.users.columns.subscriptions') }}</dt>
+                  <dd class="mt-1 text-sm font-semibold tabular-nums text-foreground">{{ row.subscriptions?.length ?? 0 }}</dd>
+                </div>
+                <div class="min-w-0 px-2">
+                  <dt class="text-[11px] text-foreground-subtle">{{ t('admin.users.today') }}</dt>
+                  <dd class="mt-1 truncate text-sm font-semibold tabular-nums text-foreground">
+                    ${{ (usageStats[row.id]?.today_actual_cost ?? 0).toFixed(4) }}
+                  </dd>
+                </div>
+              </dl>
+
+              <div class="border-t border-outline pt-2">
+                <button
+                  type="button"
+                  class="flex min-h-10 w-full items-center justify-between text-left text-xs font-medium text-foreground-muted"
+                  :aria-expanded="expandedMobileUserIds.has(row.id)"
+                  :aria-controls="`user-mobile-details-${row.id}`"
+                  :data-test="`user-mobile-details-toggle-${row.id}`"
+                  @click="toggleMobileUserDetails(row.id)"
+                >
+                  <span>{{ expandedMobileUserIds.has(row.id) ? t('common.collapse') : t('common.expand') }}</span>
+                  <Icon name="chevronDown" size="sm" class="transition-transform" :class="expandedMobileUserIds.has(row.id) && 'rotate-180'" />
+                </button>
+                <div
+                  v-if="expandedMobileUserIds.has(row.id)"
+                  :id="`user-mobile-details-${row.id}`"
+                  class="space-y-3 pb-2"
+                  :data-test="`user-mobile-details-${row.id}`"
+                >
+                  <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.users.columns.id') }}</dt>
+                      <dd class="mt-0.5 font-mono text-foreground">#{{ row.id }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.users.columns.concurrency') }}</dt>
+                      <dd class="mt-0.5 tabular-nums text-foreground">{{ row.current_concurrency ?? 0 }} / {{ row.concurrency }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.users.columns.lastUsed') }}</dt>
+                      <dd class="mt-0.5 break-words text-foreground">{{ row.last_used_at ? formatDateTime(row.last_used_at) : '-' }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.users.columns.created') }}</dt>
+                      <dd class="mt-0.5 break-words text-foreground">{{ formatDateTime(row.created_at) }}</dd>
+                    </div>
+                  </dl>
+                  <div v-if="row.subscriptions?.length" class="flex flex-wrap gap-1.5">
+                    <GroupBadge
+                      v-for="sub in row.subscriptions"
+                      :key="sub.id"
+                      :name="sub.group?.name || ''"
+                      :platform="sub.group?.platform"
+                      :subscription-type="sub.group?.subscription_type"
+                      :rate-multiplier="sub.group?.rate_multiplier"
+                      :days-remaining="sub.expires_at ? getDaysRemaining(sub.expires_at) : null"
+                    />
+                  </div>
+                  <p v-if="row.notes" class="break-words rounded-control bg-surface-subtle px-3 py-2 text-xs text-foreground-muted">
+                    {{ row.notes }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-secondary btn-sm min-w-0" :data-test="`user-mobile-deposit-${row.id}`" @click="handleDeposit(row)">
+                  <Icon name="plus" size="sm" class="text-success-foreground" />
+                  <span class="truncate">{{ t('admin.users.deposit') }}</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm min-w-0" :data-test="`user-mobile-edit-${row.id}`" @click="handleEdit(row)">
+                  <Icon name="edit" size="sm" />
+                  <span class="truncate">{{ t('common.edit') }}</span>
+                </button>
+                <button
+                  :id="getActionMenuTriggerId(row.id, 'mobile')"
+                  type="button"
+                  class="action-menu-trigger btn btn-secondary btn-sm min-w-0"
+                  :class="{ 'bg-surface-subtle text-foreground': activeMenuId === row.id }"
+                  aria-haspopup="menu"
+                  :aria-expanded="actionMenuOpen && activeMenuId === row.id"
+                  :aria-controls="actionMenuOpen && activeMenuId === row.id ? actionMenuId : undefined"
+                  :data-test="`user-mobile-more-${row.id}`"
+                  @click="openActionMenu(row, $event)"
+                  @keydown="handleActionTriggerKeydown(row, $event)"
+                >
+                  <Icon name="more" size="sm" />
+                  <span class="truncate">{{ t('common.more') }}</span>
+                </button>
+              </div>
+            </article>
+          </template>
+
           <template #cell-email="{ value }">
             <div class="flex items-center gap-2">
               <div
@@ -385,9 +504,9 @@
                 <!-- Hover tooltip（操作菜单未打开时显示） -->
                 <div
                   v-if="expandedGroupUserId !== row.id"
-                  class="pointer-events-none absolute left-0 top-full z-50 mt-1.5 rounded bg-foreground px-2.5 py-1.5 text-xs text-white opacity-0 shadow-floating transition-opacity duration-75 group-hover/ex:opacity-100 bg-outline"
+                  class="pointer-events-none absolute left-0 top-full z-50 mt-1.5 rounded border border-outline bg-surface-raised px-2.5 py-1.5 text-xs text-foreground opacity-0 shadow-floating transition-opacity duration-75 group-hover/ex:opacity-100"
                 >
-                  <div class="absolute left-4 bottom-full border-4 border-transparent border-b-foreground"></div>
+                  <div class="absolute left-4 bottom-full border-4 border-transparent border-b-surface-raised"></div>
                   <div class="flex flex-col gap-0.5 whitespace-nowrap">
                     <span v-for="g in getUserGroups(row).exclusive" :key="g.id">{{ g.name }}</span>
                   </div>
@@ -420,8 +539,8 @@
                 <span class="font-medium text-foreground-muted">{{ getUserGroups(row).publicGroups.length }}</span>
                 <span class="text-foreground-subtle">{{ t('admin.users.publicLabel') }}</span>
                 <!-- Tooltip: 向下弹出 -->
-                <div class="pointer-events-none absolute left-0 top-full z-50 mt-1.5 rounded bg-foreground px-2.5 py-1.5 text-xs text-white opacity-0 shadow-floating transition-opacity duration-75 group-hover/pub:opacity-100 bg-outline">
-                  <div class="absolute left-4 bottom-full border-4 border-transparent border-b-foreground"></div>
+                <div class="pointer-events-none absolute left-0 top-full z-50 mt-1.5 rounded border border-outline bg-surface-raised px-2.5 py-1.5 text-xs text-foreground opacity-0 shadow-floating transition-opacity duration-75 group-hover/pub:opacity-100">
+                  <div class="absolute left-4 bottom-full border-4 border-transparent border-b-surface-raised"></div>
                   <div class="flex flex-col gap-0.5 whitespace-nowrap">
                     <span v-for="g in getUserGroups(row).publicGroups" :key="g.id">{{ g.name }}</span>
                   </div>
@@ -471,9 +590,9 @@
                   ${{ value.toFixed(2) }}
                 </button>
                 <!-- Instant tooltip -->
-                <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-white opacity-0 shadow-floating transition-opacity duration-75 group-hover:opacity-100 bg-outline">
+                <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded border border-outline bg-surface-raised px-2 py-1 text-xs text-foreground opacity-0 shadow-floating transition-opacity duration-75 group-hover:opacity-100">
                   {{ t('admin.users.balanceHistoryTip') }}
-                  <div class="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-foreground"></div>
+                  <div class="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-surface-raised"></div>
                 </div>
               </div>
               <button
@@ -681,7 +800,7 @@
 
               <!-- More Actions Menu Trigger -->
               <button
-                :id="getActionMenuTriggerId(row.id)"
+                :id="getActionMenuTriggerId(row.id, 'desktop')"
                 type="button"
                 @click="openActionMenu(row, $event)"
                 @keydown="handleActionTriggerKeydown(row, $event)"
@@ -728,8 +847,8 @@
         :id="actionMenuId"
         ref="actionMenuRef"
         role="menu"
-        :aria-labelledby="getActionMenuTriggerId(activeMenuId)"
-        class="action-menu-content fixed z-[9999] w-52 overflow-hidden rounded-panel border border-outline bg-surface shadow-floating"
+        :aria-labelledby="activeActionMenuTriggerId || undefined"
+        class="action-menu-content fixed z-[9999] max-h-[calc(100dvh-1rem)] w-52 overflow-y-auto rounded-panel border border-outline bg-surface shadow-floating"
         :style="{ top: menuPosition.top + 'px', left: menuPosition.left + 'px' }"
         @keydown="handleActionMenuKeydown"
       >
@@ -756,6 +875,17 @@
               >
                 <Icon name="users" size="sm" class="text-foreground-subtle" :stroke-width="2" />
                 {{ t('admin.users.groups') }}
+              </button>
+
+              <button
+                v-if="user.role !== 'admin'"
+                type="button"
+                role="menuitem"
+                @click="handleToggleStatus(user); closeActionMenu()"
+                class="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground-muted hover:bg-surface-subtle"
+              >
+                <Icon :name="user.status === 'active' ? 'ban' : 'checkCircle'" size="sm" class="text-foreground-subtle" />
+                {{ user.status === 'active' ? t('admin.users.disable') : t('admin.users.enable') }}
               </button>
 
               <div class="my-1 border-t border-outline"></div>
@@ -1443,6 +1573,17 @@ const sortedUsers = computed(() => {
     .map((x) => x.row)
 })
 
+const expandedMobileUserIds = ref<Set<number>>(new Set())
+const toggleMobileUserDetails = (userId: number) => {
+  const next = new Set(expandedMobileUserIds.value)
+  if (next.has(userId)) {
+    next.delete(userId)
+  } else {
+    next.add(userId)
+  }
+  expandedMobileUserIds.value = next
+}
+
 const {
   selectedIds,
   selectedCount,
@@ -1503,7 +1644,8 @@ const loadUsersSecondaryData = async (
 
   const tasks: Promise<void>[] = []
 
-  if (hasVisibleUsageColumn.value) {
+  const mobileViewport = typeof window !== 'undefined' && window.innerWidth < 1024
+  if (hasVisibleUsageColumn.value || mobileViewport) {
     tasks.push(
       (async () => {
         try {
@@ -1580,6 +1722,7 @@ const refreshCurrentPageSecondaryData = () => {
 
 // Action Menu State
 const activeMenuId = ref<number | null>(null)
+const activeActionMenuTriggerId = ref('')
 const menuPosition = ref<{ top: number; left: number } | null>(null)
 const {
   open: actionMenuOpen,
@@ -1591,7 +1734,8 @@ const {
   handleMenuKeydown: handleActionDropdownKeydown,
 } = useDropdownMenu('admin-users-actions')
 
-const getActionMenuTriggerId = (userId: number) => `admin-users-actions-trigger-${userId}`
+const getActionMenuTriggerId = (userId: number, surface: 'mobile' | 'desktop') =>
+  `admin-users-actions-trigger-${surface}-${userId}`
 type ActionMenuFocusTarget = 'first' | 'last'
 
 const openActionMenu = (
@@ -1610,7 +1754,7 @@ const openActionMenu = (
 
     const rect = target.getBoundingClientRect()
     const menuWidth = 200
-    const menuHeight = 240
+    const menuHeight = 360
     const padding = 8
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
@@ -1647,6 +1791,7 @@ const openActionMenu = (
     }
 
     actionMenuTriggerRef.value = target
+    activeActionMenuTriggerId.value = target.id
     menuPosition.value = { top, left }
     activeMenuId.value = user.id
     void openActionDropdown(focusTarget)
@@ -1655,6 +1800,7 @@ const openActionMenu = (
 
 const closeActionMenu = (restoreTriggerFocus = false) => {
   activeMenuId.value = null
+  activeActionMenuTriggerId.value = ''
   menuPosition.value = null
   void closeActionDropdown(restoreTriggerFocus)
 }
@@ -1673,6 +1819,7 @@ const handleActionMenuKeydown = (event: KeyboardEvent) => {
   handleActionDropdownKeydown(event)
   if (event.key === 'Escape' || event.key === 'Tab') {
     activeMenuId.value = null
+    activeActionMenuTriggerId.value = ''
     menuPosition.value = null
   }
 }

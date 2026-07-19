@@ -30,6 +30,30 @@
         default-sort-order="asc"
         @sort="handleSort"
       >
+        <template #mobile-card="{ row }">
+          <article class="space-y-3">
+            <header class="flex min-w-0 items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="truncate text-sm font-semibold text-foreground">{{ row.email }}</h3>
+                <p class="mt-0.5 truncate text-xs text-foreground-subtle">{{ row.username || '-' }}</p>
+              </div>
+              <span :class="['badge shrink-0', row.eligible ? 'badge-success' : 'badge-gray']">
+                {{ row.eligible ? t('admin.announcements.eligible') : t('common.no') }}
+              </span>
+            </header>
+            <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-outline bg-outline">
+              <div class="bg-surface-subtle px-3 py-2.5">
+                <dt class="text-[10px] text-foreground-subtle">{{ t('common.balance') }}</dt>
+                <dd class="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">${{ Number(row.balance ?? 0).toFixed(2) }}</dd>
+              </div>
+              <div class="bg-surface-subtle px-3 py-2.5">
+                <dt class="text-[10px] text-foreground-subtle">{{ t('admin.announcements.readAt') }}</dt>
+                <dd class="mt-0.5 text-xs font-medium leading-5 text-foreground">{{ row.read_at ? formatDateTime(row.read_at) : t('admin.announcements.unread') }}</dd>
+              </div>
+            </dl>
+          </article>
+        </template>
+
         <template #cell-email="{ value }">
           <span class="font-medium text-foreground">{{ value }}</span>
         </template>

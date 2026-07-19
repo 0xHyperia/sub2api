@@ -103,7 +103,7 @@
           <div
             v-if="codexAuthMode === 'api-key'"
             data-testid="codex-api-key-restart-notice"
-            class="mt-3 flex items-start gap-2 border-l-2 border-warning bg-warning-subtle px-3 py-2 text-xs leading-5 text-warning-foreground  /30 "
+            class="mt-3 flex items-start gap-2 border-l-2 border-warning/30 bg-warning-subtle px-3 py-2 text-xs leading-5 text-warning-foreground"
           >
             <Icon name="exclamationCircle" size="sm" class="mt-0.5 flex-shrink-0" />
             <p>{{ t('keys.useKeyModal.openai.authModeApiKeyRestartNotice') }}</p>
@@ -145,7 +145,7 @@
               <Icon name="exclamationCircle" size="sm" class="flex-shrink-0" />
               {{ file.hint }}
             </p>
-            <div class="bg-canvas rounded-panel overflow-hidden">
+            <div class="overflow-hidden rounded-panel border border-outline bg-surface-subtle">
               <!-- Code Header -->
               <div class="flex items-center justify-between border-b border-outline bg-surface px-4 py-2">
                 <span class="min-w-0 truncate font-mono text-xs text-foreground-subtle">{{ file.path }}</span>
@@ -155,7 +155,7 @@
                   class="flex flex-shrink-0 items-center gap-1.5 rounded-panel px-2.5 py-1 text-xs font-medium transition-colors"
                   :class="copiedIndex === index
                     ? 'bg-success-subtle text-success-foreground'
-                    : 'bg-surface/10 text-foreground-subtle hover:bg-surface/20 hover:text-white'"
+                    : 'border border-outline bg-surface-raised text-foreground-muted hover:bg-surface hover:text-foreground'"
                 >
                   <svg v-if="copiedIndex === index" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -167,7 +167,7 @@
                 </button>
               </div>
               <!-- Code Content -->
-              <pre class="p-4 text-sm font-mono text-surface overflow-x-auto"><code v-if="file.highlighted" v-html="file.highlighted"></code><code v-else v-text="file.content"></code></pre>
+              <pre class="overflow-x-auto p-4 font-mono text-sm text-foreground"><code v-if="file.highlighted" v-html="file.highlighted"></code><code v-else v-text="file.content"></code></pre>
             </div>
           </div>
         </div>

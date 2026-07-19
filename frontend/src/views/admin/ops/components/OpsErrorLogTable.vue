@@ -14,6 +14,72 @@
         @sort="onSort"
         @rowClick="(row) => emit('openErrorDetail', row.id)"
       >
+        <template #mobile-card="{ row }">
+          <article class="space-y-3">
+            <header class="flex min-w-0 items-start justify-between gap-3">
+              <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+                <span class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium" :class="getTypeBadge(row).className">{{ getTypeBadge(row).label }}</span>
+                <span class="text-xs text-foreground-muted">{{ t('usage.errors.categories.' + mapErrorCategory(row.phase, row.type)) }}</span>
+              </div>
+              <div class="flex shrink-0 items-center gap-1">
+                <span class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium" :class="getStatusClass(row.status_code)">{{ row.status_code }}</span>
+                <span v-if="row.severity" :class="['rounded px-1.5 py-0.5 text-[10px] font-medium', getSeverityClass(row.severity)]">{{ row.severity }}</span>
+              </div>
+            </header>
+
+            <div class="min-w-0">
+              <div class="flex min-w-0 items-center justify-between gap-3">
+                <h3 class="truncate text-sm font-semibold text-foreground">{{ displayModel(row) || '-' }}</h3>
+                <span class="shrink-0 text-[10px] uppercase text-foreground-subtle">{{ row.platform || '-' }}</span>
+              </div>
+              <p v-if="hasModelMapping(row)" class="mt-0.5 truncate text-[10px] text-foreground-subtle">{{ row.requested_model }} → {{ row.upstream_model }}</p>
+              <p class="mt-2 line-clamp-3 text-xs leading-5 text-foreground-muted" :title="row.message">{{ formatSmartMessage(row.message) || '-' }}</p>
+            </div>
+
+            <dl class="grid grid-cols-2 gap-x-3 gap-y-2 rounded-panel bg-surface-subtle px-3 py-2.5">
+              <div class="min-w-0">
+                <dt class="text-[9px] text-foreground-subtle">{{ t('admin.ops.errorLog.user') }}</dt>
+                <dd class="mt-0.5 truncate text-xs text-foreground">{{ row.user_email || (row.user_id ? '#' + row.user_id : '-') }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-[9px] text-foreground-subtle">{{ t('admin.ops.errorLog.apiKey') }}</dt>
+                <dd class="mt-0.5 truncate text-xs text-foreground">{{ row.api_key_name || (row.api_key_id ? '#' + row.api_key_id : '-') }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-[9px] text-foreground-subtle">{{ t('admin.ops.errorLog.account') }}</dt>
+                <dd class="mt-0.5 truncate text-xs text-foreground">{{ row.account_name || (row.account_id ? '#' + row.account_id : '-') }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-[9px] text-foreground-subtle">{{ t('admin.ops.errorLog.group') }}</dt>
+                <dd class="mt-0.5 truncate text-xs text-foreground">{{ row.group_name || (row.group_id ? '#' + row.group_id : '-') }}</dd>
+              </div>
+            </dl>
+
+            <details class="group rounded-panel border border-outline px-3 py-2">
+              <summary class="flex min-h-7 cursor-pointer list-none items-center justify-between gap-3 text-xs text-foreground-muted">
+                <span class="truncate">{{ row.inbound_endpoint?.trim() || '-' }}</span>
+                <Icon name="chevronDown" size="xs" class="shrink-0 transition-transform group-open:rotate-180" />
+              </summary>
+              <div class="mt-2 space-y-1.5 border-t border-outline pt-2 text-[10px] text-foreground-subtle">
+                <p class="break-all"><span class="font-medium">{{ t('usage.inbound') }}:</span> {{ row.inbound_endpoint?.trim() || '-' }}</p>
+                <p v-if="row.upstream_endpoint" class="break-all"><span class="font-medium">{{ t('usage.upstream') }}:</span> {{ row.upstream_endpoint.trim() }}</p>
+                <p class="flex flex-wrap items-center gap-1">
+                  <span>{{ row.client_ip || '-' }}</span>
+                  <IpGeoCell v-if="row.client_ip" :ip="row.client_ip" />
+                </p>
+              </div>
+            </details>
+
+            <footer class="flex items-center justify-between gap-3 border-t border-outline pt-3">
+              <time class="text-[10px] text-foreground-subtle" :title="row.request_id || row.client_request_id">{{ formatDateTime(row.created_at) }}</time>
+              <button type="button" class="btn btn-secondary h-9 px-3" @click.stop="emit('openErrorDetail', row.id)">
+                <Icon name="eye" size="sm" />
+                {{ t('admin.ops.errorLog.details') }}
+              </button>
+            </footer>
+          </article>
+        </template>
+
         <template #cell-created_at="{ row }">
           <span
             class="text-sm text-foreground-subtle"
@@ -186,6 +252,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import IpGeoCell from '@/components/common/IpGeoCell.vue'
 import IpGeoBatchToolbar from '@/components/common/IpGeoBatchToolbar.vue'
+import Icon from '@/components/icons/Icon.vue'
 import type { OpsErrorLog } from '@/api/admin/ops'
 import type { Column } from '@/components/common/types'
 import { getSeverityClass, formatDateTime } from '../utils/opsFormatters'

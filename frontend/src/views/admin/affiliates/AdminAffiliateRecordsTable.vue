@@ -34,6 +34,111 @@
           :sort-storage-key="sortStorageKey"
           @sort="handleSort"
         >
+          <template #mobile-card="{ row }">
+            <template v-if="props.type === 'invites'">
+              <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2">
+                <div class="min-w-0">
+                  <p class="mb-1 text-xs font-medium text-foreground-subtle">{{ t('admin.affiliates.records.inviter') }}</p>
+                  <UserCell
+                    :id="row.inviter_id"
+                    :email="row.inviter_email"
+                    :username="row.inviter_username"
+                    clickable
+                    @open="openUserOverview"
+                  />
+                </div>
+                <Icon name="arrowRight" size="sm" class="mt-6 text-foreground-subtle" aria-hidden="true" />
+                <div class="min-w-0 text-right">
+                  <p class="mb-1 text-xs font-medium text-foreground-subtle">{{ t('admin.affiliates.records.invitee') }}</p>
+                  <div class="[&_.affiliate-user-link]:text-right [&_div]:max-w-full">
+                    <UserCell
+                      :id="row.invitee_id"
+                      :email="row.invitee_email"
+                      :username="row.invitee_username"
+                      clickable
+                      @open="openUserOverview"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3 grid grid-cols-2 gap-3 border-t border-outline pt-2 text-xs">
+                <div>
+                  <p class="text-foreground-subtle">{{ t('admin.affiliates.records.totalRebate') }}</p>
+                  <p class="mt-0.5 font-semibold tabular-nums text-success-foreground">${{ formatAmount(row.total_rebate) }}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-foreground-subtle">{{ t('admin.affiliates.records.invitedAt') }}</p>
+                  <time class="mt-0.5 block text-foreground-muted">{{ formatDateTime(row.created_at) }}</time>
+                </div>
+              </div>
+            </template>
+
+            <template v-else-if="props.type === 'rebates'">
+              <div class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="mb-1 text-xs font-medium text-foreground-subtle">{{ t('admin.affiliates.records.user') }}</p>
+                  <UserCell
+                    :id="row.inviter_id"
+                    :email="row.inviter_email"
+                    :username="row.inviter_username"
+                    clickable
+                    @open="openUserOverview"
+                  />
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="text-xs text-foreground-subtle">{{ t('admin.affiliates.records.rebateAmount') }}</p>
+                  <p class="mt-0.5 text-base font-semibold tabular-nums text-success-foreground">${{ formatAmount(row.rebate_amount) }}</p>
+                </div>
+              </div>
+              <div class="mt-3 rounded-control bg-surface-subtle px-3 py-2">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="font-mono text-sm font-medium text-foreground">#{{ row.order_id }}</p>
+                    <p class="mt-0.5 truncate text-xs text-foreground-muted">{{ row.out_trade_no || '-' }}</p>
+                  </div>
+                  <OrderStatusBadge :status="row.order_status" />
+                </div>
+              </div>
+              <div class="mt-3 flex items-end justify-between gap-3 border-t border-outline pt-2 text-xs">
+                <div class="min-w-0">
+                  <p class="text-foreground-subtle">{{ t('admin.affiliates.records.invitee') }}</p>
+                  <p class="mt-0.5 truncate text-foreground-muted">{{ row.invitee_email || row.invitee_username || '-' }}</p>
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="text-foreground-subtle">{{ t('admin.affiliates.records.rebatedAt') }}</p>
+                  <time class="mt-0.5 block text-foreground-muted">{{ formatDateTime(row.created_at) }}</time>
+                </div>
+              </div>
+            </template>
+
+            <template v-else>
+              <div class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="mb-1 text-xs font-medium text-foreground-subtle">{{ t('admin.affiliates.records.user') }}</p>
+                  <UserCell
+                    :id="row.user_id"
+                    :email="row.user_email"
+                    :username="row.username"
+                  />
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="text-xs text-foreground-subtle">{{ t('admin.affiliates.records.transferAmount') }}</p>
+                  <p class="mt-0.5 text-base font-semibold tabular-nums text-success-foreground">${{ formatAmount(row.amount) }}</p>
+                  <span class="status-badge status-badge-success mt-1">{{ t('admin.affiliates.records.transferCompleted') }}</span>
+                </div>
+              </div>
+              <dl class="mt-3 grid grid-cols-2 gap-3 border-t border-outline pt-2 text-xs">
+                <div>
+                  <dt class="text-foreground-subtle">{{ t('admin.affiliates.records.initiatedAt') }}</dt>
+                  <dd class="mt-0.5 text-foreground-muted">{{ formatDateTime(row.created_at) }}</dd>
+                </div>
+                <div class="text-right">
+                  <dt class="text-foreground-subtle">{{ t('admin.affiliates.records.completedAt') }}</dt>
+                  <dd class="mt-0.5 text-foreground-muted">{{ formatDateTime(row.created_at) }}</dd>
+                </div>
+              </dl>
+            </template>
+          </template>
           <template #cell-inviter="{ row }">
             <UserCell
               :id="row.inviter_id"

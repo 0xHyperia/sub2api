@@ -126,6 +126,19 @@
             <Icon name="refresh" size="sm" class="text-foreground-subtle" />
             {{ t('admin.accounts.resetQuota') }}
           </button>
+          <div v-if="showDelete" role="separator" class="my-1 border-t border-outline" />
+          <button
+            v-if="showDelete"
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="dropdown-item w-full text-left text-danger"
+            data-test="account-action-delete"
+            @click="selectAction('delete')"
+          >
+            <Icon name="trash" size="sm" />
+            {{ t('common.delete') }}
+          </button>
         </template>
       </div>
     </div>
@@ -149,11 +162,13 @@ type AccountAction =
   | 'reset-quota'
   | 'set-privacy'
   | 'create-spark-shadow'
+  | 'delete'
 
 const props = defineProps<{
   show: boolean
   account: Account | null
   position: { top: number; left: number } | null
+  showDelete?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -168,6 +183,7 @@ const emit = defineEmits<{
   (e: 'reset-quota', account: Account): void
   (e: 'set-privacy', account: Account): void
   (e: 'create-spark-shadow', account: Account): void
+  (e: 'delete', account: Account): void
 }>()
 
 const { t } = useI18n()
@@ -259,6 +275,7 @@ const selectAction = (action: AccountAction) => {
     case 'reset-quota': emit('reset-quota', account); break
     case 'set-privacy': emit('set-privacy', account); break
     case 'create-spark-shadow': emit('create-spark-shadow', account); break
+    case 'delete': emit('delete', account); break
   }
   emit('close')
 }

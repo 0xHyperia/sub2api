@@ -98,7 +98,7 @@ describe('UserPlatformQuotaModal', () => {
       ],
     })
     const w = await mountAndOpen()
-    const inputs = w.findAll('input[type=number]')
+    const inputs = w.findAll('[data-desktop-layout="quota-table"] input[type=number]')
     // 5 platforms × 3 windows = 15 inputs
     expect(inputs.length).toBe(15)
     // 第一个 input 是 anthropic.daily = 10
@@ -144,7 +144,7 @@ describe('UserPlatformQuotaModal', () => {
     expect(dialog.props('message')).toBe('admin.users.platformQuota.clearAllConfirm')
     dialog.vm.$emit('confirm')
     await flushPromises()
-    const inputs = w.findAll('input[type=number]')
+    const inputs = w.findAll('[data-desktop-layout="quota-table"] input[type=number]')
     for (const inp of inputs) {
       expect((inp.element as HTMLInputElement).value).toBe('')
     }
@@ -165,7 +165,7 @@ describe('UserPlatformQuotaModal', () => {
     dialog.vm.$emit('cancel')
     await flushPromises()
     // anthropic daily 应保持 10（未被清空）
-    const inputs = w.findAll('input[type=number]')
+    const inputs = w.findAll('[data-desktop-layout="quota-table"] input[type=number]')
     const dailyVal = (inputs[0].element as HTMLInputElement).value
     expect(dailyVal).toBe('10')
   })
@@ -191,6 +191,20 @@ describe('UserPlatformQuotaModal', () => {
     dialog.vm.$emit('confirm')
     await flushPromises()
     expect(apiMocks.resetPlatformQuotaWindow).toHaveBeenCalledWith(99, 'anthropic', 'daily')
+  })
+
+  it('renders platform cards on mobile and keeps their edits synced with the desktop table', async () => {
+    const w = await mountAndOpen()
+    const cards = w.findAll('[data-mobile-layout="platform-cards"] details')
+    const mobileInputs = w.findAll('[data-mobile-layout="platform-cards"] input[type=number]')
+    const desktopInputs = w.findAll('[data-desktop-layout="quota-table"] input[type=number]')
+
+    expect(cards).toHaveLength(5)
+    expect(mobileInputs).toHaveLength(15)
+    expect(desktopInputs).toHaveLength(15)
+
+    await mobileInputs[0].setValue('12.5')
+    expect((desktopInputs[0].element as HTMLInputElement).value).toBe('12.5')
   })
 
   describe('subscription warning banner', () => {

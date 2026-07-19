@@ -4,7 +4,7 @@
       <div class="flex min-w-0 items-center gap-2.5">
         <button
           type="button"
-          class="header-action lg:hidden"
+          class="header-action inline-flex lg:hidden"
           :aria-label="localText('打开导航', 'Open navigation')"
           :aria-expanded="appStore.mobileOpen"
           aria-controls="app-sidebar"
@@ -15,7 +15,10 @@
 
         <div class="min-w-0">
           <div class="flex min-w-0 items-center gap-2">
-            <span v-if="authStore.isAdmin && isAdminContext" class="admin-mode-badge">Admin</span>
+            <span
+              v-if="authStore.isAdmin && isAdminContext"
+              class="admin-mode-badge hidden sm:inline-flex"
+            >Admin</span>
             <h1 class="truncate text-base font-semibold text-foreground lg:text-lg">
               {{ pageTitle }}
             </h1>
@@ -37,7 +40,7 @@
           :href="docUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="header-action hidden sm:flex"
+          class="header-action hidden sm:inline-flex"
           :aria-label="t('nav.docs')"
           :title="t('nav.docs')"
         >
@@ -48,7 +51,7 @@
 
         <button
           type="button"
-          class="header-action"
+          class="header-action inline-flex"
           :aria-label="isDark ? t('nav.lightMode') : t('nav.darkMode')"
           :title="isDark ? t('nav.lightMode') : t('nav.darkMode')"
           @click="toggleTheme"
@@ -400,7 +403,7 @@ onBeforeUnmount(() => {
 }
 
 .header-action {
-  @apply inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
+  @apply h-10 w-10 flex-shrink-0 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40;
 }
 
 .admin-mode-badge,

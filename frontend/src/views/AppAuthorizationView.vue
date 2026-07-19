@@ -1,5 +1,5 @@
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-canvas px-4 py-10 text-foreground">
+  <main class="flex min-h-[100dvh] items-center justify-center bg-canvas px-4 py-10 text-foreground">
     <section class="w-full max-w-xl overflow-hidden rounded-panel border border-outline bg-surface shadow-modal">
       <header class="border-b border-outline px-5 py-5 sm:px-6">
         <div class="flex items-center gap-4">

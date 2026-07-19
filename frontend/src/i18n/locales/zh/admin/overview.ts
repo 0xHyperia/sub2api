@@ -398,6 +398,9 @@ export default {
         availableQuotaAfter: '提取后可提',
         frozenQuotaAfter: '提取后冻结',
         historyQuotaAfter: '提取后历史返利',
+        transferCompleted: '已完成',
+        initiatedAt: '发起时间',
+        completedAt: '完成时间',
         invitedAt: '邀请时间',
         rebatedAt: '返利时间',
         transferredAt: '提取时间'

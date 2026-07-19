@@ -24,18 +24,28 @@ interface Props {
   groupId?: number | null
 }
 
+interface OpsRequestDetailMetrics extends OpsRequestDetail {
+  input_tokens?: number | null
+  output_tokens?: number | null
+  cache_read_input_tokens?: number | null
+  cache_creation_input_tokens?: number | null
+  actual_cost?: number | null
+  standard_cost?: number | null
+  first_token_ms?: number | null
+}
+
 const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'openErrorDetail', errorId: number): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 const { copyToClipboard } = useClipboard()
 
 const loading = ref(false)
-const items = ref<OpsRequestDetail[]>([])
+const items = ref<OpsRequestDetailMetrics[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
@@ -146,6 +156,25 @@ const kindBadgeClass = (kind: string) => {
   if (kind === 'error') return 'bg-danger-subtle text-danger-foreground'
   return 'bg-success-subtle text-success-foreground'
 }
+
+function localText(zh: string, en: string): string {
+  return locale.value.startsWith('zh') ? zh : en
+}
+
+function formatMetric(value: number | null | undefined): string {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? new Intl.NumberFormat(locale.value).format(value)
+    : '—'
+}
+
+function formatCost(value: number | null | undefined): string {
+  return typeof value === 'number' && Number.isFinite(value) ? `$${value.toFixed(6)}` : '—'
+}
+
+function totalTokens(row: OpsRequestDetailMetrics): number | null {
+  if (typeof row.input_tokens !== 'number' && typeof row.output_tokens !== 'number') return null
+  return (row.input_tokens || 0) + (row.output_tokens || 0)
+}
 </script>
 
 <template>
@@ -187,7 +216,107 @@ const kindBadgeClass = (kind: string) => {
             <div class="mt-1 text-xs text-foreground-subtle">{{ t('admin.ops.requestDetails.emptyHint') }}</div>
           </div>
 
-          <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-panel border border-outline">
+          <template v-else>
+            <div data-mobile-layout="request-cards" class="min-h-0 flex-1 space-y-3 overflow-y-auto sm:hidden">
+              <article
+                v-for="(row, idx) in items"
+                :key="`mobile-${row.request_id || idx}`"
+                class="rounded-panel border border-outline bg-surface p-3 shadow-card"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="rounded-full px-2 py-1 text-[10px] font-bold" :class="kindBadgeClass(row.kind)">
+                        {{ row.kind === 'error' ? t('admin.ops.requestDetails.kind.error') : t('admin.ops.requestDetails.kind.success') }}
+                      </span>
+                      <span class="text-xs tabular-nums text-foreground-subtle">{{ formatDateTime(row.created_at) }}</span>
+                    </div>
+                    <h4 class="mt-2 break-words text-sm font-semibold text-foreground">{{ row.model || '-' }}</h4>
+                    <p class="mt-0.5 text-xs uppercase text-foreground-muted">{{ row.platform || 'unknown' }}</p>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <div class="text-sm font-semibold tabular-nums text-foreground">
+                      {{ typeof row.duration_ms === 'number' ? `${row.duration_ms} ms` : '—' }}
+                    </div>
+                    <div class="mt-1 text-xs tabular-nums text-foreground-subtle">
+                      {{ t('admin.ops.requestDetails.table.status') }}: {{ row.status_code ?? '—' }}
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="row.request_id" class="mt-3 flex min-w-0 items-center gap-2 rounded-control bg-surface-subtle p-2.5">
+                  <code class="min-w-0 flex-1 truncate font-mono text-[11px] text-foreground-muted" :title="row.request_id">
+                    {{ row.request_id }}
+                  </code>
+                  <button
+                    type="button"
+                    data-mobile-action="copy-request-id"
+                    class="btn btn-secondary btn-sm shrink-0"
+                    @click="handleCopyRequestId(row.request_id)"
+                  >
+                    {{ t('admin.ops.requestDetails.copy') }}
+                  </button>
+                </div>
+
+                <div class="mt-3 space-y-2 border-t border-outline pt-3">
+                  <details class="group rounded-control border border-outline bg-surface-subtle/40">
+                    <summary class="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-medium text-foreground marker:hidden">
+                      {{ localText('Token 明细', 'Token details') }}
+                      <span class="tabular-nums text-foreground-subtle">{{ formatMetric(totalTokens(row)) }}</span>
+                    </summary>
+                    <dl class="grid gap-2 border-t border-outline px-3 py-2 text-xs">
+                      <div class="flex justify-between gap-3"><dt class="text-foreground-subtle">{{ localText('输入 Token', 'Input tokens') }}</dt><dd class="tabular-nums text-foreground">{{ formatMetric(row.input_tokens) }}</dd></div>
+                      <div class="flex justify-between gap-3"><dt class="text-foreground-subtle">{{ localText('输出 Token', 'Output tokens') }}</dt><dd class="tabular-nums text-foreground">{{ formatMetric(row.output_tokens) }}</dd></div>
+                    </dl>
+                  </details>
+
+                  <details class="group rounded-control border border-outline bg-surface-subtle/40">
+                    <summary class="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-medium text-foreground marker:hidden">
+                      {{ localText('费用明细', 'Cost details') }}
+                      <span class="tabular-nums text-foreground-subtle">{{ formatCost(row.actual_cost) }}</span>
+                    </summary>
+                    <dl class="grid gap-2 border-t border-outline px-3 py-2 text-xs">
+                      <div class="flex justify-between gap-3"><dt class="text-foreground-subtle">{{ localText('实际费用', 'Actual cost') }}</dt><dd class="tabular-nums text-foreground">{{ formatCost(row.actual_cost) }}</dd></div>
+                      <div class="flex justify-between gap-3"><dt class="text-foreground-subtle">{{ localText('标准费用', 'Standard cost') }}</dt><dd class="tabular-nums text-foreground">{{ formatCost(row.standard_cost) }}</dd></div>
+                    </dl>
+                  </details>
+
+                  <details class="group rounded-control border border-outline bg-surface-subtle/40">
+                    <summary class="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-medium text-foreground marker:hidden">
+                      {{ localText('缓存明细', 'Cache details') }}
+                      <span class="text-foreground-subtle">{{ formatMetric(row.cache_read_input_tokens) }}</span>
+                    </summary>
+                    <dl class="grid gap-2 border-t border-outline px-3 py-2 text-xs">
+                      <div class="flex justify-between gap-3"><dt class="text-foreground-subtle">{{ localText('缓存读取 Token', 'Cache read tokens') }}</dt><dd class="tabular-nums text-foreground">{{ formatMetric(row.cache_read_input_tokens) }}</dd></div>
+                      <div class="flex justify-between gap-3"><dt class="text-foreground-subtle">{{ localText('缓存写入 Token', 'Cache write tokens') }}</dt><dd class="tabular-nums text-foreground">{{ formatMetric(row.cache_creation_input_tokens) }}</dd></div>
+                    </dl>
+                  </details>
+
+                  <details class="group rounded-control border border-outline bg-surface-subtle/40">
+                    <summary class="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-medium text-foreground marker:hidden">
+                      {{ localText('耗时明细', 'Timing details') }}
+                      <span class="tabular-nums text-foreground-subtle">{{ typeof row.duration_ms === 'number' ? `${row.duration_ms} ms` : '—' }}</span>
+                    </summary>
+                    <dl class="grid gap-2 border-t border-outline px-3 py-2 text-xs">
+                      <div class="flex justify-between gap-3"><dt class="text-foreground-subtle">{{ localText('总耗时', 'Total duration') }}</dt><dd class="tabular-nums text-foreground">{{ typeof row.duration_ms === 'number' ? `${row.duration_ms} ms` : '—' }}</dd></div>
+                      <div class="flex justify-between gap-3"><dt class="text-foreground-subtle">{{ localText('首 Token', 'First token') }}</dt><dd class="tabular-nums text-foreground">{{ typeof row.first_token_ms === 'number' ? `${row.first_token_ms} ms` : '—' }}</dd></div>
+                    </dl>
+                  </details>
+                </div>
+
+                <button
+                  v-if="row.kind === 'error' && row.error_id"
+                  type="button"
+                  data-mobile-action="view-error"
+                  class="btn btn-danger btn-sm mt-3 w-full"
+                  @click="openErrorDetail(row.error_id)"
+                >
+                  {{ t('admin.ops.requestDetails.viewError') }}
+                </button>
+              </article>
+            </div>
+
+            <div data-desktop-layout="requests-table" class="hidden min-h-0 flex-1 flex-col overflow-hidden rounded-panel border border-outline sm:flex">
             <div class="min-h-0 flex-1 overflow-auto">
               <table class="min-w-[960px] divide-y divide-outline">
                 <thead class="sticky top-0 z-10 bg-canvas">
@@ -278,7 +407,18 @@ const kindBadgeClass = (kind: string) => {
               @update:page="handlePageChange"
               @update:pageSize="handlePageSizeChange"
             />
-          </div>
+            </div>
+
+            <div class="sm:hidden">
+              <Pagination
+                :total="total"
+                :page="page"
+                :page-size="pageSize"
+                @update:page="handlePageChange"
+                @update:pageSize="handlePageSizeChange"
+              />
+            </div>
+          </template>
         </div>
       </div>
     </template>

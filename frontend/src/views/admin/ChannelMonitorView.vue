@@ -16,6 +16,84 @@
 
       <template #table>
         <DataTable :columns="columns" :data="monitors" :loading="loading">
+          <template #mobile-card="{ row }">
+            <article class="space-y-3">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex min-w-0 items-center gap-1.5">
+                    <h3 class="truncate text-sm font-semibold text-foreground">{{ row.name }}</h3>
+                    <Icon v-if="row.api_key_decrypt_failed" name="exclamationTriangle" size="xs" class="shrink-0 text-danger-foreground" :title="t('admin.channelMonitor.apiKeyDecryptFailed')" />
+                  </div>
+                  <span class="mt-1 inline-flex items-center rounded-control px-2 py-0.5 text-[10px] font-medium" :class="providerBadgeClass(row.provider)">
+                    {{ providerLabel(row.provider) }}
+                  </span>
+                </div>
+                <Toggle :modelValue="row.enabled" :aria-label="`${t('admin.channelMonitor.columns.enabled')}: ${row.name}`" @update:modelValue="toggleEnabled(row)" />
+              </header>
+
+              <div class="rounded-panel border border-outline bg-surface-subtle px-3 py-2.5">
+                <div class="flex min-w-0 items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="text-[10px] text-foreground-subtle">{{ t('admin.channelMonitor.columns.primaryModel') }}</p>
+                    <p class="mt-0.5 truncate font-mono text-xs font-semibold text-foreground">{{ row.primary_model }}</p>
+                  </div>
+                  <span class="inline-flex shrink-0 items-center gap-1.5 rounded-control px-2 py-1 text-xs" :class="statusBadgeClass(row.primary_status)">
+                    {{ statusLabel(row.primary_status) }}
+                  </span>
+                </div>
+              </div>
+
+              <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-outline bg-outline">
+                <div class="bg-surface-subtle px-3 py-2.5">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.channelMonitor.columns.availability7d') }}</dt>
+                  <dd class="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">{{ formatAvailability(row) }}</dd>
+                </div>
+                <div class="bg-surface-subtle px-3 py-2.5">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.channelMonitor.columns.latency') }}</dt>
+                  <dd class="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">{{ formatLatency(row.primary_latency_ms) }}</dd>
+                </div>
+              </dl>
+
+              <dl class="grid grid-cols-3 gap-3 text-xs">
+                <div class="min-w-0">
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.channelMonitor.form.groupName') }}</dt>
+                  <dd class="mt-0.5 truncate text-foreground">{{ row.group_name || '—' }}</dd>
+                </div>
+                <div>
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.channelMonitor.form.interval') }}</dt>
+                  <dd class="mt-0.5 text-foreground">{{ row.interval_seconds }}s</dd>
+                </div>
+                <div>
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.channelMonitor.form.extraModels') }}</dt>
+                  <dd class="mt-0.5 tabular-nums text-foreground">{{ row.extra_models?.length || 0 }}</dd>
+                </div>
+              </dl>
+
+              <footer class="flex items-center gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-secondary min-w-0 flex-1" :disabled="runningId === row.id" @click="handleRunNow(row)">
+                  <Icon name="refresh" size="sm" :class="runningId === row.id ? 'animate-spin' : ''" />
+                  {{ t('admin.channelMonitor.runNow') }}
+                </button>
+                <button type="button" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-outline text-foreground-muted hover:bg-surface-subtle hover:text-foreground" :title="t('common.edit')" :aria-label="t('common.edit')" @click="openEditDialog(row)">
+                  <Icon name="edit" size="sm" />
+                </button>
+                <details class="group/menu relative" @click.stop>
+                  <summary class="inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-control border border-outline text-foreground-muted hover:bg-surface-subtle hover:text-foreground" :title="t('common.actions')" :aria-label="t('common.actions')">
+                    <Icon name="more" size="sm" />
+                  </summary>
+                  <div class="absolute bottom-full right-0 z-30 mb-1 w-40 overflow-hidden rounded-panel border border-outline bg-surface py-1 shadow-floating">
+                    <button type="button" class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground disabled:opacity-50" :disabled="duplicatingIds.has(row.id) || Boolean(row.api_key_decrypt_failed)" @click="handleDuplicate(row)">
+                      <Icon name="copy" size="sm" />{{ duplicatingIds.has(row.id) ? t('admin.channelMonitor.duplicating') : t('admin.channelMonitor.duplicate') }}
+                    </button>
+                    <button type="button" class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger-foreground hover:bg-danger-subtle" @click="handleDelete(row)">
+                      <Icon name="trash" size="sm" />{{ t('common.delete') }}
+                    </button>
+                  </div>
+                </details>
+              </footer>
+            </article>
+          </template>
+
           <template #cell-name="{ row, value }">
             <div class="flex items-center gap-1.5">
               <span class="font-medium text-foreground">{{ value }}</span>
@@ -154,6 +232,8 @@ const appStore = useAppStore()
 const {
   providerLabel,
   providerBadgeClass,
+  statusLabel,
+  statusBadgeClass,
   formatLatency,
   formatAvailability,
 } = useChannelMonitorFormat()

@@ -115,15 +115,15 @@
   }
 
   .btn-danger {
-    @apply border-danger bg-danger text-white hover:brightness-90;
+    @apply border-danger bg-danger text-danger-solid-foreground hover:brightness-90;
   }
 
   .btn-success {
-    @apply border-success bg-success text-white hover:brightness-90;
+    @apply border-success bg-success text-success-solid-foreground hover:brightness-90;
   }
 
   .btn-warning {
-    @apply border-warning bg-warning text-white hover:brightness-90;
+    @apply border-warning bg-warning text-warning-solid-foreground hover:brightness-90;
   }
 
   .btn-stripe {
@@ -602,7 +602,7 @@
   }
 
   .code-block {
-    @apply overflow-x-auto rounded-panel bg-gray-950 p-4 font-mono text-sm text-gray-100;
+    @apply overflow-x-auto rounded-panel bg-code p-4 font-mono text-sm text-code-foreground;
   }
 
   /* Onboarding content */

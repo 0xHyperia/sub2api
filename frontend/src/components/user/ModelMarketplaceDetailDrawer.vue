@@ -148,7 +148,26 @@
 
                   <div v-if="groups.length && pricingRows.length" class="mt-5">
                     <h4 class="text-xs font-semibold text-foreground-muted">{{ t('modelMarketplace.details.groupPricing') }}</h4>
-                    <div class="mt-2 overflow-x-auto rounded-panel border border-outline">
+                    <div class="mt-2 space-y-2 sm:hidden">
+                      <article
+                        v-for="row in groupPricingRows"
+                        :key="`mobile-price-${row.id}`"
+                        class="rounded-panel border border-outline p-3"
+                        :class="row.id === activeGroup?.id ? 'bg-surface-subtle ring-1 ring-inset ring-outline-strong' : ''"
+                      >
+                        <div class="flex items-center justify-between gap-3">
+                          <h5 class="min-w-0 truncate text-xs font-semibold text-foreground" :title="row.name">{{ row.name }}</h5>
+                          <span class="shrink-0 font-mono text-xs text-foreground-muted">{{ formatRate(row.effectiveRate) }}×</span>
+                        </div>
+                        <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-outline pt-2">
+                          <div v-for="price in row.prices" :key="price.key" class="min-w-0">
+                            <dt class="truncate text-[10px] text-foreground-subtle">{{ price.label }}</dt>
+                            <dd class="mt-0.5 truncate font-mono text-xs tabular-nums text-foreground">{{ price.value }}</dd>
+                          </div>
+                        </dl>
+                      </article>
+                    </div>
+                    <div class="mt-2 hidden overflow-x-auto rounded-panel border border-outline sm:block">
                       <table class="w-full min-w-[680px] text-left text-xs">
                         <thead class="border-b border-outline bg-surface-subtle text-foreground-muted">
                           <tr>
@@ -171,7 +190,22 @@
 
                   <div v-if="entry.pricing?.intervals.length" class="mt-5">
                     <h4 class="text-xs font-semibold text-foreground-muted">{{ t('modelMarketplace.details.tieredPricing') }}</h4>
-                    <div class="mt-2 overflow-x-auto rounded-panel border border-outline">
+                    <dl class="mt-2 divide-y divide-outline rounded-panel border border-outline sm:hidden">
+                      <div v-for="(interval, index) in entry.pricing.intervals" :key="`mobile-tier-${index}`" class="p-3">
+                        <dt class="text-xs font-medium text-foreground">{{ intervalLabel(interval.min_tokens, interval.max_tokens) }}</dt>
+                        <dd class="mt-2 grid grid-cols-2 gap-3">
+                          <span>
+                            <span class="block text-[10px] text-foreground-subtle">{{ t('modelMarketplace.price.input') }}</span>
+                            <span class="mt-0.5 block font-mono text-xs text-foreground">{{ intervalPrice(interval.input_price) }}</span>
+                          </span>
+                          <span>
+                            <span class="block text-[10px] text-foreground-subtle">{{ t('modelMarketplace.price.output') }}</span>
+                            <span class="mt-0.5 block font-mono text-xs text-foreground">{{ intervalPrice(interval.output_price) }}</span>
+                          </span>
+                        </dd>
+                      </div>
+                    </dl>
+                    <div class="mt-2 hidden overflow-x-auto rounded-panel border border-outline sm:block">
                       <table class="w-full min-w-96 text-left text-xs">
                         <thead class="border-b border-outline bg-surface-subtle text-foreground-muted">
                           <tr><th class="px-3 py-2">{{ t('modelMarketplace.details.range') }}</th><th class="px-3 py-2">{{ t('modelMarketplace.price.input') }}</th><th class="px-3 py-2">{{ t('modelMarketplace.price.output') }}</th></tr>
@@ -231,7 +265,26 @@
                     </h3>
                     <p class="mt-0.5 text-xs text-foreground-subtle">{{ t('modelMarketplace.details.groupPerformanceHint') }}</p>
                   </div>
-                  <div class="overflow-x-auto rounded-panel border border-outline">
+                  <div class="space-y-2 sm:hidden">
+                    <article v-for="row in groupPerformanceRows" :key="`mobile-performance-${row.id}`" class="rounded-panel border border-outline p-3">
+                      <h4 class="truncate text-xs font-semibold text-foreground" :title="row.name">{{ row.name }}</h4>
+                      <dl class="mt-2 grid grid-cols-3 gap-2 border-t border-outline pt-2 text-center">
+                        <div>
+                          <dt class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.averageLatency') }}</dt>
+                          <dd class="mt-1 font-mono text-xs tabular-nums text-foreground">{{ row.averageLatency }}</dd>
+                        </div>
+                        <div>
+                          <dt class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.successRate') }}</dt>
+                          <dd class="mt-1 font-mono text-xs font-semibold tabular-nums" :class="row.successRateClass">{{ row.successRate }}</dd>
+                        </div>
+                        <div>
+                          <dt class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.samples') }}</dt>
+                          <dd class="mt-1 font-mono text-xs tabular-nums text-foreground-muted">{{ row.samples }}</dd>
+                        </div>
+                      </dl>
+                    </article>
+                  </div>
+                  <div class="hidden overflow-x-auto rounded-panel border border-outline sm:block">
                     <table class="w-full min-w-[620px] text-left text-xs">
                       <thead class="border-b border-outline bg-surface-subtle text-foreground-muted">
                         <tr>
@@ -317,7 +370,17 @@
                     <Icon name="calculator" size="sm" class="text-foreground-subtle" />
                     {{ t('modelMarketplace.details.supportedParameters') }}
                   </h3>
-                  <div class="overflow-x-auto rounded-panel border border-outline">
+                  <dl class="divide-y divide-outline rounded-panel border border-outline sm:hidden">
+                    <div v-for="parameter in apiParameters" :key="`mobile-parameter-${parameter.name}`" class="p-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <dt class="font-mono text-xs font-semibold text-foreground">{{ parameter.name }}</dt>
+                        <span class="shrink-0 rounded-control bg-surface-subtle px-2 py-0.5 font-mono text-[10px] text-foreground-muted">{{ parameter.type }}</span>
+                      </div>
+                      <dd class="mt-1.5 text-xs leading-5 text-foreground-muted">{{ parameter.description }}</dd>
+                      <dd class="mt-1 font-mono text-[10px] text-foreground-subtle">{{ parameter.range }}</dd>
+                    </div>
+                  </dl>
+                  <div class="hidden overflow-x-auto rounded-panel border border-outline sm:block">
                     <table class="w-full min-w-[720px] text-left text-xs">
                       <thead class="border-b border-outline bg-surface-subtle text-foreground-muted">
                         <tr>
@@ -344,7 +407,15 @@
                     <Icon name="clock" size="sm" class="text-foreground-subtle" />
                     {{ t('modelMarketplace.details.rateLimits') }}
                   </h3>
-                  <div class="overflow-x-auto rounded-panel border border-outline">
+                  <dl class="divide-y divide-outline rounded-panel border border-outline sm:hidden">
+                    <div v-for="group in groups" :key="`mobile-limit-${group.id}`" class="flex items-center justify-between gap-3 px-3 py-2.5">
+                      <dt class="min-w-0 truncate text-xs text-foreground">{{ group.name }}</dt>
+                      <dd class="shrink-0 font-mono text-xs tabular-nums text-foreground">
+                        {{ group.rpm_limit ? `${group.rpm_limit.toLocaleString()} RPM` : t('modelMarketplace.details.unlimited') }}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div class="hidden overflow-x-auto rounded-panel border border-outline sm:block">
                     <table class="w-full min-w-[420px] text-left text-xs">
                       <thead class="border-b border-outline bg-surface-subtle text-foreground-muted">
                         <tr><th class="px-3 py-2.5 font-medium">{{ t('modelMarketplace.details.group') }}</th><th class="px-3 py-2.5 text-right font-medium">RPM</th></tr>
@@ -474,7 +545,7 @@ const primaryBasePricingRows = computed(() => basePricingRows.value.filter(row =
 const secondaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'cache-read' || row.key === 'cache-write' || row.key === 'image-input'))
 const groupPricingRows = computed(() => props.groups.map(group => ({
   ...group,
-  prices: pricingRows.value.map(row => ({ key: row.key, value: scaledPrice(row.rawValue, row.scale, group.effectiveRate) })),
+  prices: pricingRows.value.map(row => ({ key: row.key, label: row.label, value: scaledPrice(row.rawValue, row.scale, group.effectiveRate) })),
 })))
 
 const groupPerformanceRows = computed(() => props.groups.map(group => {

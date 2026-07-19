@@ -11,6 +11,8 @@ describe('admin shell structure', () => {
   it('keeps the route title visible at every viewport size', () => {
     expect(headerSource).toContain('<h1 class="truncate text-base')
     expect(headerSource).not.toContain('<div class="hidden lg:block">')
+    expect(headerSource).toContain('class="admin-mode-badge hidden sm:inline-flex"')
+    expect(headerSource).toContain('class="header-action hidden sm:inline-flex"')
   })
 
   it('keeps personal balance and subscription noise out of the admin header', () => {
@@ -20,7 +22,8 @@ describe('admin shell structure', () => {
   })
 
   it('centers icon-only header actions inside their hover targets', () => {
-    expect(headerSource).toContain('@apply inline-flex h-10 w-10 flex-shrink-0 items-center justify-center')
+    expect(headerSource).toContain('@apply h-10 w-10 flex-shrink-0 items-center justify-center')
+    expect(headerSource).toContain('class="header-action inline-flex"')
   })
 
   it('uses the shared accessible keyboard model for the user menu', () => {

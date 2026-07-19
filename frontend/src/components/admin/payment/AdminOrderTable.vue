@@ -43,6 +43,72 @@
     </div>
 
     <DataTable :columns="columns" :data="orders" :loading="loading">
+      <template #mobile-card="{ row }">
+        <article class="space-y-3" :data-test="`admin-order-mobile-card-${row.id}`">
+          <header class="flex min-w-0 items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="badge badge-gray">
+                  {{ t('payment.admin.' + row.order_type + 'Order', row.order_type) }}
+                </span>
+                <span :class="['badge', statusBadgeClass(row.status)]">
+                  {{ t('payment.status.' + row.status.toLowerCase(), row.status) }}
+                </span>
+              </div>
+              <p class="mt-1.5 font-mono text-sm font-semibold text-foreground">#{{ row.id }}</p>
+            </div>
+            <div class="flex-none text-right">
+              <p class="text-xs text-foreground-subtle">{{ t('payment.orders.userId') }}</p>
+              <p class="mt-0.5 font-mono text-sm font-medium text-foreground">#{{ row.user_id }}</p>
+            </div>
+          </header>
+
+          <dl class="grid grid-cols-2 overflow-hidden rounded-panel border border-outline bg-surface-subtle">
+            <div class="min-w-0 px-3 py-2.5">
+              <dt class="text-[11px] text-foreground-subtle">{{ t('payment.orders.payAmount') }}</dt>
+              <dd class="mt-1 text-base font-semibold tabular-nums text-foreground">
+                {{ paymentAmountSymbol(row) }}{{ row.pay_amount.toFixed(2) }}
+              </dd>
+              <p v-if="row.amount !== row.pay_amount" class="mt-0.5 truncate text-[11px] text-foreground-subtle">
+                {{ t('payment.orders.creditedAmount') }}: {{ creditedAmountSymbol }}{{ row.amount.toFixed(2) }}
+              </p>
+            </div>
+            <div class="min-w-0 border-l border-outline px-3 py-2.5">
+              <dt class="text-[11px] text-foreground-subtle">{{ t('payment.orders.paymentMethod') }}</dt>
+              <dd class="mt-1 truncate text-sm font-semibold text-foreground">
+                {{ t('payment.methods.' + row.payment_type, row.payment_type) }}
+              </dd>
+              <p v-if="row.fee_rate > 0" class="mt-0.5 text-[11px] text-foreground-subtle">
+                {{ t('payment.orders.fee') }} {{ row.fee_rate }}%
+              </p>
+            </div>
+          </dl>
+
+          <div class="flex items-center justify-between gap-3 text-xs">
+            <span class="text-foreground-subtle">{{ t('payment.orders.createdAt') }}</span>
+            <time class="text-right text-foreground-muted" :datetime="row.created_at">{{ formatDateTime(row.created_at) }}</time>
+          </div>
+
+          <footer class="flex flex-wrap items-center gap-2 border-t border-outline pt-3">
+            <button type="button" class="btn btn-secondary min-w-0 flex-1" :data-test="`admin-order-mobile-detail-${row.id}`" @click="emit('detail', row)">
+              <Icon name="eye" size="sm" />
+              {{ t('common.view') }}
+            </button>
+            <button v-if="row.status === 'PENDING'" type="button" class="btn btn-secondary text-warning-foreground" :data-test="`admin-order-mobile-cancel-${row.id}`" @click="emit('cancel', row)">
+              <Icon name="x" size="sm" />
+              {{ t('payment.orders.cancel') }}
+            </button>
+            <button v-if="row.status === 'FAILED'" type="button" class="btn btn-secondary" :data-test="`admin-order-mobile-retry-${row.id}`" @click="emit('retry', row)">
+              <Icon name="refresh" size="sm" />
+              {{ t('payment.admin.retry') }}
+            </button>
+            <button v-if="canRefundRow(row)" type="button" class="btn btn-secondary text-danger-foreground" :data-test="`admin-order-mobile-refund-${row.id}`" @click="emit('refund', row)">
+              <Icon name="dollar" size="sm" />
+              {{ t('payment.admin.refund') }}
+            </button>
+          </footer>
+        </article>
+      </template>
       <template #cell-id="{ value }">
         <span class="font-mono text-sm">#{{ value }}</span>
       </template>

@@ -23,7 +23,7 @@
             />
           </div>
 
-          <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <div class="ml-auto flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
             <button
               type="button"
               @click="loadCodes"
@@ -34,7 +34,7 @@
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
             </button>
-            <button type="button" @click="showCreateDialog = true" class="btn btn-primary">
+            <button type="button" @click="showCreateDialog = true" class="btn btn-primary min-w-0 flex-1 sm:flex-none">
               <Icon name="plus" size="sm" />
               {{ t('admin.promo.createCode') }}
             </button>
@@ -43,6 +43,88 @@
       </template>
 
       <template #table>
+        <div data-mobile-layout="promo-cards" class="space-y-3 md:hidden">
+          <div v-if="loading" class="flex items-center justify-center py-12 text-foreground-subtle">
+            <Icon name="refresh" size="lg" class="animate-spin" />
+          </div>
+          <div v-else-if="codes.length === 0" class="rounded-panel border border-dashed border-outline px-4 py-10 text-center text-sm text-foreground-subtle">
+            {{ t('admin.promo.noCodesYet') }}
+          </div>
+          <article
+            v-for="row in codes"
+            v-else
+            :key="`mobile-${row.id}`"
+            class="rounded-panel border border-outline bg-surface p-3 shadow-card"
+          >
+            <div class="flex min-w-0 items-start justify-between gap-2">
+              <button
+                type="button"
+                class="flex min-w-0 items-center gap-2 text-left"
+                :title="t('keys.copyToClipboard')"
+                @click="copyToClipboard(row.code)"
+              >
+                <code class="truncate font-mono text-sm font-semibold text-foreground">{{ row.code }}</code>
+                <Icon :name="copiedCode === row.code ? 'check' : 'copy'" size="sm" class="shrink-0 text-foreground-subtle" />
+              </button>
+              <span class="badge shrink-0" :class="getStatusClass(row.status, row)">
+                {{ getStatusLabel(row.status, row) }}
+              </span>
+            </div>
+
+            <div class="mt-3 rounded-control border border-info/20 bg-info-subtle p-3">
+              <div class="flex items-end justify-between gap-3">
+                <div>
+                  <div class="text-xs font-medium text-info-foreground">{{ t('admin.promo.columns.bonusAmount') }}</div>
+                  <div class="mt-1 text-xs text-foreground-subtle">{{ localText('适用于新注册用户', 'For new registrations') }}</div>
+                </div>
+                <div class="text-xl font-semibold tabular-nums text-foreground">+${{ row.bonus_amount.toFixed(2) }}</div>
+              </div>
+            </div>
+
+            <dl class="mt-3 space-y-2 text-xs">
+              <div class="flex justify-between gap-3">
+                <dt class="text-foreground-subtle">{{ t('admin.promo.columns.usage') }}</dt>
+                <dd class="font-medium tabular-nums text-foreground-muted">{{ row.used_count }} / {{ row.max_uses === 0 ? '∞' : row.max_uses }}</dd>
+              </div>
+              <div class="flex justify-between gap-3">
+                <dt class="text-foreground-subtle">{{ t('admin.promo.columns.expiresAt') }}</dt>
+                <dd class="text-right text-foreground-muted">{{ row.expires_at ? formatDateTime(row.expires_at) : t('admin.promo.neverExpires') }}</dd>
+              </div>
+              <div v-if="row.notes" class="flex justify-between gap-3">
+                <dt class="shrink-0 text-foreground-subtle">{{ t('admin.promo.notes') }}</dt>
+                <dd class="break-words text-right text-foreground-muted">{{ row.notes }}</dd>
+              </div>
+            </dl>
+
+            <div class="mt-3 flex items-center gap-2 border-t border-outline pt-3">
+              <button type="button" data-mobile-action="copy-register-link" class="btn btn-primary btn-sm min-w-0 flex-1" @click="copyRegisterLink(row)">
+                <Icon name="link" size="sm" />
+                {{ t('admin.promo.copyRegisterLink') }}
+              </button>
+              <button type="button" data-mobile-action="edit" class="btn btn-secondary btn-sm min-w-0 flex-1" @click="handleEdit(row)">
+                <Icon name="edit" size="sm" />
+                {{ t('common.edit') }}
+              </button>
+              <details class="group relative shrink-0">
+                <summary class="inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-control text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus marker:hidden" :aria-label="`${t('common.more')} ${row.code}`">
+                  <Icon name="more" size="md" />
+                </summary>
+                <div class="dropdown bottom-12 right-0 top-auto w-48">
+                  <button type="button" class="dropdown-item w-full" @click="handleViewUsages(row)">
+                    <Icon name="eye" size="sm" />
+                    {{ t('admin.promo.viewUsages') }}
+                  </button>
+                  <button type="button" class="dropdown-item w-full text-danger-foreground hover:bg-danger-subtle" @click="handleDelete(row)">
+                    <Icon name="trash" size="sm" />
+                    {{ t('common.delete') }}
+                  </button>
+                </div>
+              </details>
+            </div>
+          </article>
+        </div>
+
+        <div data-desktop-layout="promo-table" class="hidden md:block">
         <DataTable
           :columns="columns"
           :data="codes"
@@ -149,6 +231,7 @@
             </div>
           </template>
         </DataTable>
+        </div>
       </template>
 
       <template #pagination>
@@ -421,9 +504,11 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 const { copyToClipboard: clipboardCopy } = useClipboard()
+
+const localText = (zh: string, en: string) => locale.value.startsWith('zh') ? zh : en
 
 // State
 const codes = ref<PromoCode[]>([])

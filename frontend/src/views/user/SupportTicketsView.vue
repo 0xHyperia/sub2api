@@ -1,15 +1,22 @@
 <template>
   <AppLayout>
     <div class="mx-auto w-full max-w-[1200px] space-y-4">
-      <header class="page-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 class="page-title">{{ localText('工单支持', 'Support tickets') }}</h1><p class="page-description">{{ localText('遇到充值、模型、延迟或账户问题时，在这里和后台沟通。', 'Contact support about billing, models, latency, or account issues.') }}</p></div>
-        <button class="btn btn-primary" type="button" @click="showCreate = true"><Icon name="plus" size="sm" />{{ localText('创建工单', 'Create ticket') }}</button>
+      <header class="page-header">
+        <div class="flex items-start justify-between gap-3">
+          <h1 class="page-title">{{ localText('工单支持', 'Support tickets') }}</h1>
+          <button class="btn btn-primary shrink-0" type="button" @click="showCreate = true"><Icon name="plus" size="sm" />{{ localText('创建工单', 'Create ticket') }}</button>
+        </div>
+        <p class="page-description">{{ localText('遇到充值、模型、延迟或账户问题时，在这里和后台沟通。', 'Contact support about billing, models, latency, or account issues.') }}</p>
       </header>
       <section class="rounded-panel border border-outline bg-surface p-3 shadow-card">
-        <div class="flex flex-col gap-2 sm:flex-row"><input v-model="search" class="input flex-1" :placeholder="localText('搜索工单号或问题', 'Search tickets')" @keyup.enter="load"><select v-model="status" class="input sm:w-40" @change="load"><option value="">{{ localText('全部状态', 'All statuses') }}</option><option value="open">{{ localText('待处理', 'Open') }}</option><option value="answered">{{ localText('已回复', 'Answered') }}</option><option value="closed">{{ localText('已关闭', 'Closed') }}</option></select><button class="btn btn-secondary" @click="load"><Icon name="refresh" size="sm" />{{ localText('刷新', 'Refresh') }}</button></div>
+        <div class="grid grid-cols-[minmax(0,1fr)_104px_40px] gap-2 sm:flex">
+          <input v-model="search" class="input min-w-0 sm:flex-1" :placeholder="localText('搜索工单号或问题', 'Search tickets')" @keyup.enter="load">
+          <select v-model="status" class="input min-w-0 sm:w-40" @change="load"><option value="">{{ localText('全部状态', 'All statuses') }}</option><option value="open">{{ localText('待处理', 'Open') }}</option><option value="answered">{{ localText('已回复', 'Answered') }}</option><option value="closed">{{ localText('已关闭', 'Closed') }}</option></select>
+          <button class="btn btn-secondary btn-icon" :title="localText('刷新', 'Refresh')" :aria-label="localText('刷新', 'Refresh')" @click="load"><Icon name="refresh" size="sm" /></button>
+        </div>
       </section>
       <section class="space-y-2">
-        <button v-for="ticket in tickets" :key="ticket.id" type="button" class="w-full rounded-panel border border-outline bg-surface p-4 text-left shadow-card transition-colors hover:border-info" @click="router.push(`/support/${ticket.number}`)"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-xs font-semibold text-info-foreground">{{ ticket.number }}</div><h2 class="mt-1 truncate text-sm font-semibold text-foreground">{{ ticket.subject }}</h2><p class="mt-2 text-xs text-foreground-muted">{{ categoryName(ticket.category) }} · {{ formatDate(ticket.last_message_at) }}</p></div><span class="status-badge" :class="statusClass(ticket.status)">{{ statusLabel(ticket.status) }}</span></div></button>
+        <button v-for="ticket in tickets" :key="ticket.id" type="button" class="w-full rounded-panel border border-outline bg-surface p-4 text-left shadow-card transition-colors hover:border-info" @click="router.push(`/support/${ticket.number}`)"><div class="flex items-center gap-3"><div class="min-w-0 flex-1"><div class="text-xs font-semibold text-info-foreground">{{ ticket.number }}</div><h2 class="mt-1 truncate text-sm font-semibold text-foreground">{{ ticket.subject }}</h2><p class="mt-2 text-xs text-foreground-muted">{{ categoryName(ticket.category) }} · {{ formatDate(ticket.last_message_at) }}</p></div><div class="flex shrink-0 flex-col items-end gap-2"><span class="status-badge" :class="statusClass(ticket.status)">{{ statusLabel(ticket.status) }}</span><Icon name="chevronRight" size="sm" class="text-foreground-subtle" aria-hidden="true" /></div></div></button>
         <div v-if="!loading && tickets.length === 0" class="rounded-panel border border-dashed border-outline p-12 text-center text-sm text-foreground-muted">{{ localText('还没有工单', 'No tickets yet') }}</div>
       </section>
       <nav v-if="pages > 1" class="flex items-center justify-end gap-2" :aria-label="localText('分页', 'Pagination')"><button class="btn btn-secondary btn-sm" :disabled="page <= 1" @click="page--; load()"><Icon name="chevronLeft" size="sm" /></button><span class="text-sm text-foreground-muted">{{ page }} / {{ pages }}</span><button class="btn btn-secondary btn-sm" :disabled="page >= pages" @click="page++; load()"><Icon name="chevronRight" size="sm" /></button></nav>

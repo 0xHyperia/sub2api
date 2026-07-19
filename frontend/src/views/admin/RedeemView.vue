@@ -64,6 +64,107 @@
       </template>
 
       <template #table>
+        <div data-mobile-layout="redeem-cards" class="space-y-3 md:hidden">
+          <div v-if="loading" class="flex items-center justify-center py-12 text-foreground-subtle">
+            <Icon name="refresh" size="lg" class="animate-spin" />
+          </div>
+          <div v-else-if="codes.length === 0" class="rounded-panel border border-dashed border-outline px-4 py-10 text-center text-sm text-foreground-subtle">
+            {{ t('admin.redeem.noCodes') }}
+          </div>
+          <template v-else>
+            <label class="flex min-h-10 items-center gap-2 rounded-control border border-outline bg-surface-subtle px-3 text-sm font-medium text-foreground-muted">
+              <input
+                type="checkbox"
+                class="h-5 w-5 cursor-pointer rounded border-outline-strong text-brand focus:ring-focus"
+                :checked="allVisibleSelected"
+                @change="toggleSelectAllVisible($event)"
+              />
+              {{ t('common.selectAll') }}
+            </label>
+            <article
+              v-for="row in codes"
+              :key="`mobile-${row.id}`"
+              class="rounded-panel border border-outline bg-surface p-3 shadow-card"
+            >
+            <div class="flex items-start gap-3">
+              <input
+                data-mobile-select-code
+                type="checkbox"
+                class="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-outline-strong text-brand focus:ring-focus"
+                :checked="selectedCodeIds.has(row.id)"
+                :aria-label="row.code"
+                @change="toggleSelectRow(row.id, $event)"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex min-w-0 items-start justify-between gap-2">
+                  <button
+                    type="button"
+                    class="flex min-w-0 items-center gap-2 text-left"
+                    :title="t('keys.copyToClipboard')"
+                    @click="copyToClipboard(row.code)"
+                  >
+                    <code class="truncate font-mono text-sm font-semibold text-foreground">{{ row.code }}</code>
+                    <Icon :name="copiedCode === row.code ? 'check' : 'copy'" size="sm" class="shrink-0 text-foreground-subtle" />
+                  </button>
+                  <span
+                    class="badge shrink-0"
+                    :class="row.status === 'unused' ? 'badge-success' : row.status === 'used' ? 'badge-gray' : 'badge-danger'"
+                  >
+                    {{ t('admin.redeem.status.' + row.status) }}
+                  </span>
+                </div>
+
+                <div class="mt-3 flex items-end justify-between gap-3 rounded-control bg-surface-subtle p-3">
+                  <div>
+                    <span
+                      class="badge"
+                      :class="row.type === 'balance' ? 'badge-success' : row.type === 'subscription' ? 'badge-warning' : 'badge-primary'"
+                    >
+                      {{ t('admin.redeem.types.' + row.type) }}
+                    </span>
+                    <div v-if="row.type === 'subscription' && row.group" class="mt-1 text-xs text-foreground-subtle">{{ row.group.name }}</div>
+                  </div>
+                  <div class="text-right text-lg font-semibold tabular-nums text-foreground">
+                    <template v-if="row.type === 'balance'">${{ row.value.toFixed(2) }}</template>
+                    <template v-else-if="row.type === 'subscription'">{{ row.validity_days || 30 }} {{ t('admin.redeem.days') }}</template>
+                    <template v-else>{{ row.value }}</template>
+                  </div>
+                </div>
+
+                <dl class="mt-3 space-y-2 text-xs">
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-foreground-subtle">{{ t('admin.redeem.columns.usedBy') }}</dt>
+                    <dd class="min-w-0 break-all text-right text-foreground-muted">{{ row.user?.email || (row.used_by ? t('admin.redeem.userPrefix', { id: row.used_by }) : '—') }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-foreground-subtle">{{ t('admin.redeem.columns.expiresAt') }}</dt>
+                    <dd :class="row.status === 'expired' ? 'text-danger-foreground' : 'text-foreground-muted'">{{ row.expires_at ? formatDateTime(row.expires_at) : t('admin.redeem.neverExpires') }}</dd>
+                  </div>
+                  <div v-if="row.used_at" class="flex justify-between gap-3">
+                    <dt class="text-foreground-subtle">{{ t('admin.redeem.columns.usedAt') }}</dt>
+                    <dd class="text-foreground-muted">{{ formatDateTime(row.used_at) }}</dd>
+                  </div>
+                </dl>
+
+                <details v-if="row.status === 'unused'" class="group relative mt-3 border-t border-outline pt-3">
+                  <summary class="flex min-h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-control text-sm font-medium text-foreground-muted hover:bg-surface-subtle hover:text-foreground marker:hidden">
+                    <Icon name="more" size="sm" />
+                    {{ t('common.more') }}
+                  </summary>
+                  <div class="dropdown bottom-12 right-0 top-auto w-44">
+                    <button type="button" class="dropdown-item w-full text-danger-foreground hover:bg-danger-subtle" @click="handleDelete(row)">
+                      <Icon name="trash" size="sm" />
+                      {{ t('common.delete') }}
+                    </button>
+                  </div>
+                </details>
+              </div>
+            </div>
+            </article>
+          </template>
+        </div>
+
+        <div data-desktop-layout="redeem-table" class="hidden md:block">
         <DataTable
           :columns="columns"
           :data="codes"
@@ -202,6 +303,7 @@
             </div>
           </template>
         </DataTable>
+        </div>
       </template>
 
       <template #pagination>

@@ -34,7 +34,51 @@
         </p>
       </div>
 
-      <div v-else class="max-h-96 overflow-auto rounded-panel border border-outline-strong">
+      <template v-else>
+        <div data-mobile-layout="profile-cards" class="max-h-[60dvh] space-y-3 overflow-y-auto sm:hidden">
+          <article
+            v-for="profile in profiles"
+            :key="`mobile-${profile.id}`"
+            class="rounded-panel border border-outline bg-surface p-3 shadow-card"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h4 class="break-words text-sm font-semibold text-foreground">{{ profile.name }}</h4>
+                <p v-if="profile.description" class="mt-1 break-words text-xs leading-5 text-foreground-subtle">
+                  {{ profile.description }}
+                </p>
+              </div>
+              <span
+                class="badge shrink-0"
+                :class="profile.enable_grease ? 'badge-success' : 'badge-gray'"
+              >
+                {{ t('admin.tlsFingerprintProfiles.columns.grease') }}:
+                {{ profile.enable_grease ? t('common.enabled') : t('common.disabled') }}
+              </span>
+            </div>
+
+            <div class="mt-3 border-t border-outline pt-3">
+              <div class="mb-1 text-xs font-medium text-foreground-muted">{{ t('admin.tlsFingerprintProfiles.columns.alpn') }}</div>
+              <div v-if="profile.alpn_protocols?.length" class="flex flex-wrap gap-1.5">
+                <span v-for="proto in profile.alpn_protocols" :key="proto" class="badge badge-primary">{{ proto }}</span>
+              </div>
+              <div v-else class="text-xs text-foreground-subtle">—</div>
+            </div>
+
+            <div class="mt-3 flex gap-2 border-t border-outline pt-3">
+              <button type="button" class="btn btn-secondary btn-sm min-w-0 flex-1" @click="handleEdit(profile)">
+                <Icon name="edit" size="sm" />
+                {{ t('common.edit') }}
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm min-w-0 flex-1 text-danger-foreground hover:bg-danger-subtle" @click="handleDelete(profile)">
+                <Icon name="trash" size="sm" />
+                {{ t('common.delete') }}
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div data-desktop-layout="profiles-table" class="hidden max-h-96 overflow-auto rounded-panel border border-outline-strong sm:block">
         <table class="min-w-[40rem] divide-y divide-outline">
           <thead class="sticky top-0 bg-surface-subtle">
             <tr>
@@ -113,7 +157,8 @@
             </tr>
           </tbody>
         </table>
-      </div>
+        </div>
+      </template>
     </div>
 
     <template #footer>

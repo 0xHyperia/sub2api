@@ -1,5 +1,5 @@
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-canvas p-4 text-foreground">
+  <main class="flex min-h-[100dvh] items-center justify-center bg-canvas p-4 text-foreground">
     <div
       class="w-full max-w-md space-y-5 rounded-panel border border-outline bg-surface p-5 shadow-modal sm:p-6"
     >

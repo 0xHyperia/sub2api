@@ -32,6 +32,7 @@ const detailLoading = ref(false)
 const detailActionLoading = ref(false)
 const historyLoading = ref(false)
 const history = ref<AlertEvent[]>([])
+const resolvingEventIds = ref<Set<number>>(new Set())
 const historyRange = ref('7d')
 const historyRangeOptions = computed(() => [
   { value: '7d', label: t('admin.ops.timeRange.7d') },
@@ -341,6 +342,23 @@ async function manualResolve() {
   }
 }
 
+async function resolveFromList(event: AlertEvent) {
+  if (event.status !== 'firing' || resolvingEventIds.value.has(event.id)) return
+  resolvingEventIds.value = new Set(resolvingEventIds.value).add(event.id)
+  try {
+    await opsAPI.updateAlertEventStatus(event.id, 'manual_resolved')
+    events.value = events.value.map((item) => item.id === event.id ? { ...item, status: 'manual_resolved' } : item)
+    appStore.showSuccess(t('admin.ops.alertEvents.detail.manualResolvedSuccess'))
+  } catch (err: any) {
+    console.error('[OpsAlertEventsCard] Failed to resolve alert from list', err)
+    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertEvents.detail.manualResolvedFailed'))
+  } finally {
+    const next = new Set(resolvingEventIds.value)
+    next.delete(event.id)
+    resolvingEventIds.value = next
+  }
+}
+
 onMounted(() => {
   loadFirstPage()
 })
@@ -447,7 +465,78 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
       {{ t('admin.ops.alertEvents.empty') }}
     </div>
 
-    <div v-else class="overflow-x-auto rounded-panel border border-outline">
+    <div v-else>
+      <div class="overflow-hidden rounded-panel border border-outline md:hidden" data-test="mobile-alert-events">
+        <div class="divide-y divide-outline bg-surface">
+          <article v-for="row in events" :key="row.id" class="space-y-3 p-3" :data-test="`mobile-alert-event-${row.id}`">
+            <header class="flex min-w-0 items-start justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-full px-2 py-1 text-[10px] font-bold" :class="severityBadgeClass(String(row.severity || ''))">
+                  {{ row.severity || '-' }}
+                </span>
+                <span class="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-bold ring-1 ring-inset" :class="statusBadgeClass(row.status)">
+                  {{ formatStatusLabel(row.status) }}
+                </span>
+              </div>
+              <time class="flex-none text-right text-[11px] text-foreground-subtle" :datetime="row.fired_at || row.created_at">
+                {{ formatDateTime(row.fired_at || row.created_at) }}
+              </time>
+            </header>
+
+            <div>
+              <div class="flex min-w-0 items-center gap-2">
+                <span class="flex-none font-mono text-[11px] text-foreground-subtle">#{{ row.rule_id }}</span>
+                <h4 class="min-w-0 truncate text-sm font-semibold text-foreground">{{ row.title || '-' }}</h4>
+              </div>
+              <p v-if="row.description" class="mt-1 line-clamp-2 text-xs leading-5 text-foreground-muted">{{ row.description }}</p>
+              <p v-else class="mt-1 text-xs text-foreground-subtle">{{ formatDurationLabel(row) }}</p>
+            </div>
+
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 rounded-panel bg-surface-subtle px-3 py-2.5 text-xs">
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">{{ t('admin.ops.alertEvents.table.platform') }}</dt>
+                <dd class="mt-0.5 truncate text-foreground">{{ getDimensionString(row, 'platform') || '-' }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">model</dt>
+                <dd class="mt-0.5 truncate text-foreground">{{ getDimensionString(row, 'model') || '-' }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">user</dt>
+                <dd class="mt-0.5 truncate text-foreground">{{ getDimensionString(row, 'user') || getDimensionString(row, 'user_id') || '-' }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">{{ t('admin.ops.alertEvents.table.email') }}</dt>
+                <dd class="mt-0.5 text-foreground">{{ row.email_sent ? t('admin.ops.alertEvents.table.emailSent') : t('admin.ops.alertEvents.table.emailIgnored') }}</dd>
+              </div>
+            </dl>
+
+            <div class="grid grid-cols-2 gap-2 border-t border-outline pt-3">
+              <button type="button" class="btn btn-secondary btn-sm" :data-test="`mobile-alert-view-${row.id}`" @click="openDetail(row)">
+                {{ t('common.view') }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                :disabled="row.status !== 'firing' || resolvingEventIds.has(row.id)"
+                :data-test="`mobile-alert-resolve-${row.id}`"
+                @click="resolveFromList(row)"
+              >
+                {{ t('admin.ops.alertEvents.detail.manualResolve') }}
+              </button>
+            </div>
+          </article>
+        </div>
+        <div class="border-t border-outline p-3 text-center">
+          <button v-if="loadMoreError" type="button" class="btn btn-secondary btn-sm w-full" @click="retryLoadMore">{{ t('common.retry') }}</button>
+          <button v-else-if="hasMore" type="button" class="btn btn-secondary btn-sm w-full" :disabled="loadingMore" data-test="mobile-alert-load-more" @click="loadMore">
+            {{ loadingMore ? t('admin.ops.alertEvents.loading') : t('common.more') }}
+          </button>
+          <span v-else class="text-xs text-foreground-subtle">-</span>
+        </div>
+      </div>
+
+      <div class="hidden overflow-x-auto rounded-panel border border-outline md:block" data-test="desktop-alert-events">
       <div class="max-h-[600px] min-w-[900px] overflow-y-auto" @scroll="onScroll">
         <table class="min-w-full divide-y divide-outline">
           <thead class="sticky top-0 z-10 bg-canvas">
@@ -568,6 +657,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value && !loa
         <div v-else-if="!hasMore && events.length > 0" class="py-3 text-center text-xs text-foreground-subtle">
           -
         </div>
+      </div>
       </div>
     </div>
 

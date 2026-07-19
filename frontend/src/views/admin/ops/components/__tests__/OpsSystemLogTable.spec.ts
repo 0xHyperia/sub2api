@@ -84,6 +84,13 @@ describe('OpsSystemLogTable host support', () => {
           level: 'warn',
           component: 'app',
           message: 'request failed',
+          request_id: 'req-mobile-1',
+          extra: {
+            method: 'GET',
+            path: '/api/v1/health',
+            status_code: 503,
+            latency_ms: 184,
+          },
         },
       ],
       total: 1,
@@ -126,6 +133,45 @@ describe('OpsSystemLogTable host support', () => {
     await flushPromises()
 
     expect(mockCleanupSystemLogs).toHaveBeenCalledWith(expect.objectContaining({ host: 'api-node-2' }))
+  })
+
+  it('uses a scannable mobile log card and collapses secondary controls by default', async () => {
+    const wrapper = mount(OpsSystemLogTable, {
+      global: {
+        stubs: {
+          Select: SelectStub,
+          Pagination: PaginationStub,
+        },
+      },
+    })
+    await flushPromises()
+
+    const card = wrapper.get('[data-testid="system-log-mobile-card"]')
+    expect(card.text()).toContain('warn')
+    expect(card.text()).toContain('app')
+    expect(card.text()).toContain('api-node-1')
+    expect(card.text()).toContain('request failed')
+    expect(card.text()).toContain('GET /api/v1/health')
+    expect(card.text()).toContain('req-mobile-1')
+
+    const tableShell = wrapper.get('table').element.parentElement
+    expect(tableShell?.className).toContain('hidden')
+    expect(tableShell?.className).toContain('md:block')
+
+    const runtimeToggle = wrapper.get('[data-testid="system-log-runtime-toggle"]')
+    const filterToggle = wrapper.get('[data-testid="system-log-filter-toggle"]')
+    expect(runtimeToggle.attributes('aria-expanded')).toBe('false')
+    expect(filterToggle.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.get('#ops-system-log-runtime-panel').classes()).toContain('hidden')
+    expect(wrapper.get('#ops-system-log-filter-panel').classes()).toContain('hidden')
+
+    await runtimeToggle.trigger('click')
+    await filterToggle.trigger('click')
+
+    expect(runtimeToggle.attributes('aria-expanded')).toBe('true')
+    expect(filterToggle.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('#ops-system-log-runtime-panel').classes()).toContain('grid')
+    expect(wrapper.get('#ops-system-log-filter-panel').classes()).toContain('grid')
   })
 
   it.each([

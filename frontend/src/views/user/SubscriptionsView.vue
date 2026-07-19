@@ -1,14 +1,20 @@
 <template>
   <AppLayout>
     <div class="mx-auto w-full max-w-[1280px] space-y-5">
-      <header class="page-header mb-0 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header class="page-header mb-0 flex items-start justify-between gap-3">
         <div class="min-w-0">
           <h1 class="page-title">{{ t('userSubscriptions.title') }}</h1>
           <p class="page-description">{{ t('userSubscriptions.description') }}</p>
         </div>
-        <button type="button" class="btn btn-primary shrink-0" @click="router.push('/purchase?tab=subscription')">
+        <button
+          type="button"
+          class="btn btn-primary btn-icon shrink-0 sm:w-auto sm:px-4"
+          :title="t('payment.tabSubscribe')"
+          :aria-label="t('payment.tabSubscribe')"
+          @click="router.push('/purchase?tab=subscription')"
+        >
           <Icon name="plus" size="sm" aria-hidden="true" />
-          <span>{{ t('payment.tabSubscribe') }}</span>
+          <span class="hidden sm:inline">{{ t('payment.tabSubscribe') }}</span>
         </button>
       </header>
 
@@ -83,7 +89,7 @@
               <button
                 v-if="subscription.status === 'active'"
                 type="button"
-                class="btn btn-secondary btn-sm self-start sm:self-auto"
+                class="btn btn-secondary btn-sm w-full self-start sm:w-auto sm:self-auto"
                 @click="router.push({ path: '/purchase', query: { tab: 'subscription', group: String(subscription.group_id) } })"
               >
                 {{ t('payment.renewNow') }}

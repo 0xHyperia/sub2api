@@ -34,7 +34,84 @@
         </p>
       </div>
 
-      <div v-else class="max-h-96 overflow-auto rounded-panel border border-outline-strong">
+      <template v-else>
+        <div data-mobile-layout="rule-cards" class="max-h-[60dvh] space-y-3 overflow-y-auto sm:hidden">
+          <article
+            v-for="rule in rules"
+            :key="`mobile-${rule.id}`"
+            class="rounded-panel border border-outline bg-surface p-3 shadow-card"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex min-w-0 items-center gap-2">
+                  <span class="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-control bg-surface-subtle px-1 text-xs font-semibold tabular-nums text-foreground-muted">
+                    {{ rule.priority }}
+                  </span>
+                  <h4 class="min-w-0 break-words text-sm font-semibold text-foreground">{{ rule.name }}</h4>
+                </div>
+                <p v-if="rule.description" class="mt-1 break-words text-xs leading-5 text-foreground-subtle">
+                  {{ rule.description }}
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="rule.enabled"
+                :aria-label="`${rule.name}: ${t('admin.errorPassthrough.columns.status')}`"
+                class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-focus"
+                :class="rule.enabled ? 'bg-brand' : 'bg-outline-strong'"
+                @click="toggleEnabled(rule)"
+              >
+                <span
+                  class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform"
+                  :class="rule.enabled ? 'translate-x-5' : 'translate-x-0'"
+                />
+              </button>
+            </div>
+
+            <dl class="mt-3 space-y-3 border-t border-outline pt-3 text-xs">
+              <div>
+                <dt class="mb-1 font-medium text-foreground-muted">{{ t('admin.errorPassthrough.columns.conditions') }}</dt>
+                <dd class="flex flex-wrap gap-1.5">
+                  <span v-for="code in rule.error_codes" :key="code" class="badge badge-danger">{{ code }}</span>
+                  <span v-for="keyword in rule.keywords" :key="keyword" class="badge badge-gray break-all">"{{ keyword }}"</span>
+                  <span v-if="rule.error_codes.length === 0 && rule.keywords.length === 0" class="text-foreground-subtle">—</span>
+                </dd>
+                <div class="mt-1 text-foreground-subtle">{{ t('admin.errorPassthrough.matchMode.' + rule.match_mode) }}</div>
+              </div>
+
+              <div>
+                <dt class="mb-1 font-medium text-foreground-muted">{{ t('admin.errorPassthrough.columns.platforms') }}</dt>
+                <dd v-if="rule.platforms.length === 0" class="text-foreground-subtle">{{ t('admin.errorPassthrough.allPlatforms') }}</dd>
+                <dd v-else class="flex flex-wrap gap-1.5">
+                  <span v-for="platform in rule.platforms" :key="platform" class="badge badge-primary">{{ platform }}</span>
+                </dd>
+              </div>
+
+              <div>
+                <dt class="mb-1 font-medium text-foreground-muted">{{ t('admin.errorPassthrough.columns.behavior') }}</dt>
+                <dd class="grid gap-1.5 text-foreground-subtle">
+                  <span>{{ t('admin.errorPassthrough.code') }}: {{ rule.passthrough_code ? t('admin.errorPassthrough.passthrough') : (rule.response_code || '-') }}</span>
+                  <span>{{ t('admin.errorPassthrough.body') }}: {{ rule.passthrough_body ? t('admin.errorPassthrough.passthrough') : t('admin.errorPassthrough.custom') }}</span>
+                  <span v-if="rule.skip_monitoring" class="text-warning-foreground">{{ t('admin.errorPassthrough.skipMonitoring') }}</span>
+                </dd>
+              </div>
+            </dl>
+
+            <div class="mt-3 flex gap-2 border-t border-outline pt-3">
+              <button type="button" class="btn btn-secondary btn-sm min-w-0 flex-1" @click="handleEdit(rule)">
+                <Icon name="edit" size="sm" />
+                {{ t('common.edit') }}
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm min-w-0 flex-1 text-danger-foreground hover:bg-danger-subtle" @click="handleDelete(rule)">
+                <Icon name="trash" size="sm" />
+                {{ t('common.delete') }}
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div data-desktop-layout="rules-table" class="hidden max-h-96 overflow-auto rounded-panel border border-outline-strong sm:block">
         <table class="min-w-[56rem] divide-y divide-outline">
           <thead class="sticky top-0 bg-surface-subtle">
             <tr>
@@ -205,7 +282,8 @@
             </tr>
           </tbody>
         </table>
-      </div>
+        </div>
+      </template>
     </div>
 
     <template #footer>

@@ -12,7 +12,7 @@
       <Icon name="bell" size="md" />
       <span
         v-if="unreadCount > 0"
-        class="absolute right-0 top-0 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold leading-4 text-white"
+        class="absolute right-0 top-0 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold leading-4 text-danger-solid-foreground"
         aria-hidden="true"
       >
         {{ unreadCount > 99 ? '99+' : unreadCount }}

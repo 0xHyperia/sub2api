@@ -9,7 +9,9 @@ import OpsConcurrencyCard from '../OpsConcurrencyCard.vue'
 const mocks = vi.hoisted(() => ({
   listAlertEvents: vi.fn(),
   getAlertEvent: vi.fn(),
+  updateAlertEventStatus: vi.fn(),
   listAlertRules: vi.fn(),
+  updateAlertRule: vi.fn(),
   getConcurrencyStats: vi.fn(),
   getAccountAvailabilityStats: vi.fn(),
   getUserConcurrencyStats: vi.fn(),
@@ -22,7 +24,9 @@ vi.mock('@/api/admin/ops', () => ({
   opsAPI: {
     listAlertEvents: mocks.listAlertEvents,
     getAlertEvent: mocks.getAlertEvent,
+    updateAlertEventStatus: mocks.updateAlertEventStatus,
     listAlertRules: mocks.listAlertRules,
+    updateAlertRule: mocks.updateAlertRule,
     getConcurrencyStats: mocks.getConcurrencyStats,
     getAccountAvailabilityStats: mocks.getAccountAvailabilityStats,
     getUserConcurrencyStats: mocks.getUserConcurrencyStats,
@@ -99,7 +103,8 @@ function alertEvent(id: number, title: string) {
     severity: 'P1',
     status: 'firing',
     title,
-    dimensions: { platform: 'openai' },
+    description: `${title} message`,
+    dimensions: { platform: 'openai', model: 'gpt-5', user: 'alice' },
     fired_at: `2026-01-01T00:00:${String(id % 60).padStart(2, '0')}Z`,
     email_sent: true,
     created_at: `2026-01-01T00:00:${String(id % 60).padStart(2, '0')}Z`,
@@ -153,6 +158,8 @@ describe('ops async request states', () => {
     vi.clearAllMocks()
     mocks.getGroups.mockResolvedValue([])
     mocks.getAlertEvent.mockImplementation(async (id: number) => alertEvent(id, `detail-${id}`))
+    mocks.updateAlertEventStatus.mockResolvedValue(undefined)
+    mocks.updateAlertRule.mockImplementation(async (_id: number, patch: Record<string, unknown>) => patch)
     mocks.getUserConcurrencyStats.mockResolvedValue({ enabled: true, user: {} })
   })
 
@@ -220,6 +227,34 @@ describe('ops async request states', () => {
     wrapper.unmount()
   })
 
+  it('renders alert events as mobile action cards while preserving the desktop table', async () => {
+    const event = alertEvent(12, 'Queue depth exceeded')
+    mocks.listAlertEvents.mockResolvedValue([event])
+
+    const wrapper = mount(OpsAlertEventsCard, { global: { stubs: commonStubs } })
+    await flushPromises()
+
+    const mobileCard = wrapper.get('[data-test="mobile-alert-event-12"]')
+    expect(wrapper.get('[data-test="mobile-alert-events"]').classes()).toContain('md:hidden')
+    expect(wrapper.get('[data-test="desktop-alert-events"]').classes()).toEqual(expect.arrayContaining(['hidden', 'md:block']))
+    expect(wrapper.get('[data-test="desktop-alert-events"] > div').classes()).toContain('min-w-[900px]')
+    expect(mobileCard.text()).toContain('P1')
+    expect(mobileCard.text()).toContain('admin.ops.alertEvents.status.firing')
+    expect(mobileCard.text()).toContain('Queue depth exceeded')
+    expect(mobileCard.text()).toContain('alice')
+    expect(mobileCard.text()).toContain('gpt-5')
+
+    await wrapper.get('[data-test="mobile-alert-view-12"]').trigger('click')
+    await flushPromises()
+    expect(mocks.getAlertEvent).toHaveBeenCalledWith(12)
+
+    await wrapper.get('[data-test="mobile-alert-resolve-12"]').trigger('click')
+    await flushPromises()
+    expect(mocks.updateAlertEventStatus).toHaveBeenCalledWith(12, 'manual_resolved')
+    expect(wrapper.get('[data-test="mobile-alert-event-12"]').text()).toContain('admin.ops.alertEvents.status.manualResolved')
+    wrapper.unmount()
+  })
+
   it('keeps alert rules out of the empty state after a failed initial load and retries', async () => {
     mocks.listAlertRules
       .mockRejectedValueOnce(new Error('rules unavailable'))
@@ -277,6 +312,59 @@ describe('ops async request states', () => {
 
     expect(wrapper.text()).toContain('Preserved Rule')
     expect(wrapper.find('[data-testid="alert-rules-refresh-error"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('renders mobile alert-rule cards with edit, toggle, and delete actions', async () => {
+    const rule = {
+      id: 18,
+      name: 'High error rate',
+      description: 'Notify when errors exceed the threshold',
+      enabled: true,
+      metric_type: 'error_rate',
+      operator: '>',
+      threshold: 5,
+      window_minutes: 5,
+      sustained_minutes: 2,
+      severity: 'P1',
+      cooldown_minutes: 10,
+      notify_email: true,
+    }
+    mocks.listAlertRules.mockResolvedValue([rule])
+    const DialogStateStub = defineComponent({
+      props: ['show'],
+      template: '<div v-if="show" data-test="rule-editor"><slot /><slot name="footer" /></div>',
+    })
+    const ConfirmStateStub = defineComponent({
+      props: ['show'],
+      template: '<div v-if="show" data-test="rule-delete-confirm" />',
+    })
+
+    const wrapper = mount(OpsAlertRulesCard, {
+      global: { stubs: { ...commonStubs, BaseDialog: DialogStateStub, ConfirmDialog: ConfirmStateStub } },
+    })
+    await flushPromises()
+
+    const mobileCard = wrapper.get('[data-test="mobile-alert-rule-18"]')
+    expect(wrapper.get('[data-test="mobile-alert-rules"]').classes()).toContain('md:hidden')
+    expect(wrapper.get('[data-test="desktop-alert-rules"]').classes()).toEqual(expect.arrayContaining(['hidden', 'md:block']))
+    expect(wrapper.get('[data-test="desktop-alert-rules"] > div').classes()).toContain('min-w-[680px]')
+    expect(mobileCard.text()).toContain('High error rate')
+    expect(mobileCard.text()).toContain('error_rate')
+    expect(mobileCard.text()).toContain('> 5')
+    expect(mobileCard.text()).toContain('P1')
+    expect(mobileCard.text()).toContain('admin.ops.alertRules.form.notifyEmail')
+
+    await wrapper.get('[data-test="mobile-rule-edit-18"]').trigger('click')
+    expect(wrapper.find('[data-test="rule-editor"]').exists()).toBe(true)
+
+    await wrapper.get('[data-test="mobile-rule-toggle-18"]').trigger('click')
+    await flushPromises()
+    expect(mocks.updateAlertRule).toHaveBeenCalledWith(18, { enabled: false })
+    expect(wrapper.get('[data-test="mobile-alert-rule-18"]').text()).toContain('common.disabled')
+
+    await wrapper.get('[data-test="mobile-rule-delete-18"]').trigger('click')
+    expect(wrapper.find('[data-test="rule-delete-confirm"]').exists()).toBe(true)
     wrapper.unmount()
   })
 

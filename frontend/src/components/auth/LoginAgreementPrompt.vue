@@ -39,7 +39,7 @@
     v-else-if="!accepted && documents.length > 0"
     class="rounded-panel border border-brand/20 bg-brand-subtle p-3 text-sm text-brand"
   >
-    <div class="flex items-start gap-3">
+    <div class="flex flex-wrap items-start gap-3">
       <Icon name="shield" size="sm" class="mt-0.5 flex-shrink-0 text-brand" />
       <div class="min-w-0 flex-1">
         <p class="font-medium">{{ t('legal.loginAgreementPrompt.noticeTitle') }}</p>
@@ -49,7 +49,7 @@
       </div>
       <button
         type="button"
-        class="min-h-10 flex-shrink-0 rounded-control bg-brand px-3 py-2 text-xs font-medium text-brand-foreground transition hover:bg-brand-hover"
+        class="min-h-10 w-full flex-shrink-0 rounded-control bg-brand px-3 py-2 text-xs font-medium text-brand-foreground transition hover:bg-brand-hover sm:w-auto"
         @click="emit('open')"
       >
         {{ t('legal.loginAgreementPrompt.viewTerms') }}
@@ -69,7 +69,7 @@
         aria-describedby="login-agreement-description"
         @keydown="handleDialogKeydown"
       >
-        <div ref="dialogRef" class="w-full max-w-[600px] overflow-hidden rounded-panel shadow-modal ring-1 ring-black/10 bg-canvas ring-outline" tabindex="-1">
+        <div ref="dialogRef" class="w-full max-w-[600px] overflow-hidden rounded-panel bg-canvas shadow-modal ring-1 ring-outline" tabindex="-1">
           <div class="border-b border-outline px-6 py-6 bg-canvas">
             <div class="flex items-start gap-4">
               <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-panel text-brand ring-1 ring-focus/20 bg-brand-subtle">

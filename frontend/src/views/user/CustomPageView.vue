@@ -746,7 +746,7 @@ onUnmounted(() => {
 .markdown-page-content th { @apply border border-outline px-3 py-2 bg-surface-subtle font-semibold text-left; }
 .markdown-page-content td { @apply border border-outline px-3 py-2; }
 .markdown-page-content code { @apply bg-surface-subtle px-1.5 py-0.5 rounded text-sm font-mono; }
-.markdown-page-content pre { @apply bg-foreground bg-canvas text-surface p-4 rounded-panel overflow-x-auto my-4 relative; }
+.markdown-page-content pre { @apply relative my-4 overflow-x-auto rounded-panel border border-outline bg-surface-subtle p-4 text-foreground; }
 .markdown-page-content pre code { @apply bg-transparent p-0 text-inherit; }
 .markdown-page-content hr { @apply my-6 border-outline; }
 
@@ -762,23 +762,33 @@ onUnmounted(() => {
   padding: 4px 10px;
   font-size: 12px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgb(var(--color-border-strong));
+  background: rgb(var(--color-surface-raised));
+  color: rgb(var(--color-foreground-muted));
   cursor: pointer;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.2s, background 0.2s;
   font-family: inherit;
 }
-.copy-btn:hover { background: rgba(255, 255, 255, 0.25); }
+.copy-btn:hover {
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-foreground));
+}
 .copy-btn:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid rgb(var(--color-focus));
   outline-offset: 2px;
 }
-pre:hover .copy-btn,
-pre:focus-within .copy-btn,
-.copy-btn:focus-visible {
-  opacity: 1;
+
+@media (hover: hover) and (pointer: fine) {
+  .copy-btn {
+    opacity: 0;
+  }
+
+  pre:hover .copy-btn,
+  pre:focus-within .copy-btn,
+  .copy-btn:focus-visible {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

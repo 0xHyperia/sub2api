@@ -1,5 +1,5 @@
 <template>
-  <main class="flex min-h-screen items-center bg-canvas px-4 py-8 text-foreground sm:px-6">
+  <main class="flex min-h-[100dvh] items-center bg-canvas px-4 py-8 text-foreground sm:px-6">
     <section class="mx-auto w-full max-w-lg" aria-live="polite">
       <div v-if="loading" class="flex min-h-64 items-center justify-center" role="status" :aria-label="t('common.loading')">
         <Icon name="refresh" size="lg" class="animate-spin text-foreground-subtle" />

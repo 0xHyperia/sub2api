@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <div class="mx-auto min-w-0 max-w-page space-y-4 pb-8" :aria-busy="isRefreshing">
-      <header class="flex flex-col gap-3 border-b border-outline pb-4 sm:flex-row sm:items-end sm:justify-between">
+      <header class="flex items-start justify-between gap-3 border-b border-outline pb-4 sm:items-end">
         <div class="min-w-0">
           <h1 class="text-xl font-semibold text-foreground sm:text-2xl">
             {{ t('dashboard.title') }}

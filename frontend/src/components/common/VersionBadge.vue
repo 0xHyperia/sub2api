@@ -149,7 +149,7 @@
                 <button
                   @click="handleUpdate"
                   :disabled="updating"
-                  class="flex w-full items-center justify-center gap-2 rounded-panel bg-danger px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-danger disabled:cursor-not-allowed disabled:opacity-50"
+                  class="flex w-full items-center justify-center gap-2 rounded-panel bg-danger px-4 py-2 text-sm font-medium text-danger-solid-foreground transition-colors hover:bg-danger disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {{ t('version.retry') }}
                 </button>
@@ -191,7 +191,7 @@
                 <button
                   @click="handleRestart"
                   :disabled="restarting"
-                  class="flex w-full items-center justify-center gap-2 rounded-panel bg-success px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-success-subtle disabled:cursor-not-allowed disabled:opacity-50"
+                  class="flex w-full items-center justify-center gap-2 rounded-panel bg-success px-4 py-2 text-sm font-medium text-success-solid-foreground transition-[filter] hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <svg
                     v-if="restarting"
@@ -327,7 +327,7 @@
                 <button
                   @click="handleUpdate"
                   :disabled="updating"
-                  class="flex w-full items-center justify-center gap-2 rounded-panel bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50"
+                  class="flex w-full items-center justify-center gap-2 rounded-panel bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <svg v-if="updating" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle
@@ -592,7 +592,7 @@
                             <button
                               @click="handleRollback"
                               :disabled="rollingBack"
-                              class="flex w-full items-center justify-center gap-2 rounded-panel bg-warning px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-warning disabled:cursor-not-allowed disabled:opacity-50"
+                              class="flex w-full items-center justify-center gap-2 rounded-panel bg-warning px-4 py-2 text-sm font-medium text-warning-solid-foreground shadow-sm transition-[filter] hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <svg
                                 v-if="rollingBack"

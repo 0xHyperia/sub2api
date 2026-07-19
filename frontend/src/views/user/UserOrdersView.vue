@@ -1,26 +1,25 @@
 <template>
   <AppLayout>
     <div class="mx-auto w-full max-w-[1440px] space-y-4">
-      <header class="page-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <header class="page-header flex items-start justify-between gap-3">
         <div class="min-w-0">
           <h1 class="page-title">{{ t('payment.orders.title') }}</h1>
         </div>
-        <button type="button" class="btn btn-primary w-full sm:w-auto" @click="router.push('/purchase')">
+        <button type="button" class="btn btn-primary shrink-0" @click="router.push('/purchase')">
           <Icon name="plus" size="sm" aria-hidden="true" />
           <span>{{ t('payment.result.backToRecharge') }}</span>
         </button>
       </header>
 
-      <div class="flex flex-col gap-3 rounded-panel border border-outline bg-surface p-3 shadow-card sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-2 rounded-panel border border-outline bg-surface p-3 shadow-card">
         <Select
           v-model="currentFilter"
           :options="statusFilters"
           :placeholder="t('payment.orders.status')"
-          class="w-full sm:w-44"
+          class="min-w-0 flex-1 sm:w-44 sm:flex-none"
           @change="handleFilterChange"
         />
-        <div class="flex items-center justify-end gap-2">
-            <button
+        <button
               type="button"
               class="btn btn-secondary btn-icon"
               :disabled="loading"
@@ -29,8 +28,7 @@
               @click="fetchOrders"
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" aria-hidden="true" />
-            </button>
-        </div>
+        </button>
       </div>
 
       <div v-if="fetchFailed" class="flex flex-col gap-3 rounded-panel border border-danger/20 bg-danger-subtle px-4 py-3 text-sm text-danger-foreground sm:flex-row sm:items-center sm:justify-between" role="alert">
@@ -42,13 +40,13 @@
       </div>
 
       <section class="min-w-0 lg:overflow-hidden lg:rounded-panel lg:border lg:border-outline lg:bg-surface lg:shadow-card" :aria-label="t('payment.orders.title')">
-        <OrderTable :orders="orders" :loading="loading">
+        <OrderTable :orders="orders" :loading="loading" user-mobile-card>
           <template #actions="{ row }">
-            <div class="flex flex-wrap items-center justify-end gap-1.5">
+            <div v-if="row.status === 'PENDING' || canRequestRefund(row)" class="flex flex-wrap items-center justify-end gap-1.5">
               <button
                 v-if="row.status === 'PENDING'"
                 type="button"
-                class="btn btn-ghost btn-sm text-warning-foreground"
+                class="btn btn-ghost btn-sm w-full text-warning-foreground sm:w-auto"
                 @click="handleCancel(row.id)"
               >
                 <Icon name="x" size="sm" aria-hidden="true" />
@@ -57,7 +55,7 @@
               <button
                 v-if="canRequestRefund(row)"
                 type="button"
-                class="btn btn-ghost btn-sm"
+                class="btn btn-ghost btn-sm w-full sm:w-auto"
                 @click="openRefundDialog(row)"
               >
                 <Icon name="dollar" size="sm" aria-hidden="true" />

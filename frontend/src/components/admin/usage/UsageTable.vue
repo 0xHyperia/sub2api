@@ -26,6 +26,63 @@
         :default-sort-order="defaultSortOrder"
         @sort="(key, order) => $emit('sort', key, order)"
       >
+        <template v-if="userMobileCard" #mobile-card="{ row }">
+          <article class="min-w-0">
+            <header class="flex min-w-0 items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <h3 class="truncate text-sm font-semibold text-foreground" :title="row.model">{{ row.model || '-' }}</h3>
+                <p class="mt-0.5 truncate text-xs text-foreground-subtle" :title="row.api_key?.name || ''">
+                  {{ row.api_key?.name || t('usage.allApiKeys') }}
+                </p>
+              </div>
+              <div class="shrink-0 text-right">
+                <p class="text-sm font-semibold tabular-nums text-success-foreground">${{ row.actual_cost?.toFixed(6) || '0.000000' }}</p>
+                <p class="text-[10px] text-foreground-subtle">{{ t('usage.actualCost') }}</p>
+              </div>
+            </header>
+
+            <div class="mt-3 grid grid-cols-2 gap-2 rounded-control bg-surface-subtle px-3 py-2.5">
+              <div class="min-w-0">
+                <p class="text-[10px] text-foreground-subtle">{{ t('usage.tokens') }}</p>
+                <p class="mt-0.5 truncate text-xs font-medium tabular-nums text-foreground">{{ mobileTokenLabel(row) }}</p>
+              </div>
+              <div class="min-w-0 text-right">
+                <p class="text-[10px] text-foreground-subtle">{{ t('usage.time') }}</p>
+                <p class="mt-0.5 truncate text-xs text-foreground-muted">{{ formatDateTime(row.created_at) }}</p>
+              </div>
+            </div>
+
+            <div v-if="isMobileExpanded(row)" class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-outline pt-3 text-xs">
+              <div>
+                <p class="text-foreground-subtle">{{ t('usage.standardCost') }}</p>
+                <p class="mt-0.5 font-medium tabular-nums text-foreground">${{ row.total_cost?.toFixed(6) || '0.000000' }}</p>
+              </div>
+              <div>
+                <p class="text-foreground-subtle">{{ t('usage.type') }}</p>
+                <p class="mt-0.5 font-medium text-foreground">{{ mobileRequestTypeLabel(row) }}</p>
+              </div>
+              <div>
+                <p class="text-foreground-subtle">{{ t('usage.latencyFirstToken') }}</p>
+                <p class="mt-0.5 font-medium tabular-nums text-foreground">{{ row.first_token_ms == null ? '-' : formatDuration(row.first_token_ms) }}</p>
+              </div>
+              <div>
+                <p class="text-foreground-subtle">{{ t('usage.latencyDuration') }}</p>
+                <p class="mt-0.5 font-medium tabular-nums text-foreground">{{ formatDuration(row.duration_ms) }}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="mt-2 flex min-h-9 w-full items-center justify-center gap-1 rounded-control text-xs font-medium text-brand transition-colors hover:bg-brand-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              :aria-expanded="isMobileExpanded(row)"
+              @click.stop="toggleMobileDetails(row)"
+            >
+              {{ isMobileExpanded(row) ? t('common.collapse') : t('common.view') }}
+              <Icon :name="isMobileExpanded(row) ? 'chevronUp' : 'chevronDown'" size="xs" aria-hidden="true" />
+            </button>
+          </article>
+        </template>
+
         <template #cell-user="{ row }">
           <div class="text-sm">
             <button
@@ -248,17 +305,17 @@
         top: tokenTooltipPosition.y + 'px'
       }"
     >
-      <div class="whitespace-nowrap rounded-panel border px-3 py-2.5 text-xs text-white shadow-floating border-outline-strong bg-foreground">
+      <div class="whitespace-nowrap rounded-panel border border-outline-strong bg-surface-raised px-3 py-2.5 text-xs text-foreground shadow-floating">
         <div class="space-y-1.5">
           <div>
             <div class="text-xs font-semibold text-foreground-muted mb-1">{{ t('usage.tokenDetails') }}</div>
             <div v-if="tokenTooltipData && tokenTooltipData.input_tokens > 0 && !hasImageInputTokens(tokenTooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.inputTokens') }}</span>
-              <span class="font-medium text-white">{{ tokenTooltipData.input_tokens.toLocaleString() }}</span>
+              <span class="font-medium text-foreground">{{ tokenTooltipData.input_tokens.toLocaleString() }}</span>
             </div>
             <div v-if="tokenTooltipData && hasImageInputTokens(tokenTooltipData) && textInputTokens(tokenTooltipData) > 0" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.inputTokens') }}</span>
-              <span class="font-medium text-white">{{ textInputTokens(tokenTooltipData).toLocaleString() }}</span>
+              <span class="font-medium text-foreground">{{ textInputTokens(tokenTooltipData).toLocaleString() }}</span>
             </div>
             <div v-if="tokenTooltipData && hasImageInputTokens(tokenTooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('usage.imageInputTokens') }}</span>
@@ -266,11 +323,11 @@
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.output_tokens > 0 && !hasImageOutputTokens(tokenTooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.outputTokens') }}</span>
-              <span class="font-medium text-white">{{ tokenTooltipData.output_tokens.toLocaleString() }}</span>
+              <span class="font-medium text-foreground">{{ tokenTooltipData.output_tokens.toLocaleString() }}</span>
             </div>
             <div v-if="tokenTooltipData && hasImageOutputTokens(tokenTooltipData) && textOutputTokens(tokenTooltipData) > 0" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.outputTokens') }}</span>
-              <span class="font-medium text-white">{{ textOutputTokens(tokenTooltipData).toLocaleString() }}</span>
+              <span class="font-medium text-foreground">{{ textOutputTokens(tokenTooltipData).toLocaleString() }}</span>
             </div>
             <div v-if="tokenTooltipData && hasImageOutputTokens(tokenTooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('usage.imageOutputTokens') }}</span>
@@ -284,20 +341,20 @@
                     {{ t('admin.usage.cacheCreation5mTokens') }}
                     <span class="inline-flex items-center rounded bg-warning-subtle px-1 py-px text-[10px] font-medium leading-tight text-warning-foreground ring-1 ring-inset ring-warning/30">5m</span>
                   </span>
-                  <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_5m_tokens.toLocaleString() }}</span>
+                  <span class="font-medium text-foreground">{{ tokenTooltipData.cache_creation_5m_tokens.toLocaleString() }}</span>
                 </div>
                 <div v-if="tokenTooltipData.cache_creation_1h_tokens > 0" class="flex items-center justify-between gap-4">
                   <span class="text-foreground-subtle flex items-center gap-1.5">
                     {{ t('admin.usage.cacheCreation1hTokens') }}
                     <span class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-warning-subtle text-warning-foreground ring-1 ring-inset ring-warning/20">1h</span>
                   </span>
-                  <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_1h_tokens.toLocaleString() }}</span>
+                  <span class="font-medium text-foreground">{{ tokenTooltipData.cache_creation_1h_tokens.toLocaleString() }}</span>
                 </div>
               </template>
               <!-- 无明细时，只显示聚合值 -->
               <div v-else class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('admin.usage.cacheCreationTokens') }}</span>
-                <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_tokens.toLocaleString() }}</span>
+                <span class="font-medium text-foreground">{{ tokenTooltipData.cache_creation_tokens.toLocaleString() }}</span>
               </div>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_ttl_overridden" class="flex items-center justify-between gap-4">
@@ -309,7 +366,7 @@
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_read_tokens > 0" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.cacheReadTokens') }}</span>
-              <span class="font-medium text-white">{{ tokenTooltipData.cache_read_tokens.toLocaleString() }}</span>
+              <span class="font-medium text-foreground">{{ tokenTooltipData.cache_read_tokens.toLocaleString() }}</span>
             </div>
           </div>
           <div class="flex items-center justify-between gap-6 border-t border-outline-strong pt-1.5">
@@ -317,7 +374,7 @@
             <span class="font-semibold text-info-foreground">{{ ((tokenTooltipData?.input_tokens || 0) + (tokenTooltipData?.output_tokens || 0) + (tokenTooltipData?.cache_creation_tokens || 0) + (tokenTooltipData?.cache_read_tokens || 0)).toLocaleString() }}</span>
           </div>
         </div>
-        <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-foreground border-t-transparent"></div>
+        <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-surface-raised border-t-transparent"></div>
       </div>
     </div>
   </Teleport>
@@ -332,14 +389,14 @@
         top: tooltipPosition.y + 'px'
       }"
     >
-      <div class="whitespace-nowrap rounded-panel border px-3 py-2.5 text-xs text-white shadow-floating border-outline-strong bg-foreground">
+      <div class="whitespace-nowrap rounded-panel border border-outline-strong bg-surface-raised px-3 py-2.5 text-xs text-foreground shadow-floating">
         <div class="space-y-1.5">
           <!-- Cost Breakdown -->
           <div class="mb-2 border-b border-outline-strong pb-1.5">
             <div class="text-xs font-semibold text-foreground-subtle mb-1">{{ t('usage.costDetails') }}</div>
             <div v-if="tooltipData && tooltipData.input_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.inputCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.input_cost.toFixed(6) }}</span>
+              <span class="font-medium text-foreground">${{ tooltipData.input_cost.toFixed(6) }}</span>
             </div>
             <div v-if="tooltipData && hasImageInputCost(tooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('usage.imageInputCost') }}</span>
@@ -347,7 +404,7 @@
             </div>
             <div v-if="tooltipData && tooltipData.output_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.outputCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.output_cost.toFixed(6) }}</span>
+              <span class="font-medium text-foreground">${{ tooltipData.output_cost.toFixed(6) }}</span>
             </div>
             <div v-if="tooltipData && hasImageOutputCost(tooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('usage.imageOutputCost') }}</span>
@@ -375,27 +432,27 @@
             <template v-else-if="tooltipData && isImageUsage(tooltipData)">
               <div class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('usage.imageCount') }}</span>
-                <span class="font-medium text-white">{{ tooltipData.image_count }}{{ t('usage.imageUnit') }}</span>
+                <span class="font-medium text-foreground">{{ tooltipData.image_count }}{{ t('usage.imageUnit') }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('usage.imageBillingSize') }}</span>
-                <span class="font-medium text-white">{{ formatImageBillingSize(tooltipData, t) }}</span>
+                <span class="font-medium text-foreground">{{ formatImageBillingSize(tooltipData, t) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('usage.imageSizeSource') }}</span>
-                <span class="font-medium text-white">{{ formatImageSizeSource(tooltipData, t) }}</span>
+                <span class="font-medium text-foreground">{{ formatImageSizeSource(tooltipData, t) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('usage.imageInputSize') }}</span>
-                <span class="font-medium text-white">{{ formatImageInputSize(tooltipData, t) }}</span>
+                <span class="font-medium text-foreground">{{ formatImageInputSize(tooltipData, t) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('usage.imageOutputSize') }}</span>
-                <span class="font-medium text-white">{{ formatImageOutputSize(tooltipData, t) }}</span>
+                <span class="font-medium text-foreground">{{ formatImageOutputSize(tooltipData, t) }}</span>
               </div>
               <div v-if="formatImageSizeBreakdown(tooltipData)" class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('usage.imageSizeBreakdown') }}</span>
-                <span class="font-medium text-white">{{ formatImageSizeBreakdown(tooltipData) }}</span>
+                <span class="font-medium text-foreground">{{ formatImageSizeBreakdown(tooltipData) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('usage.imageUnitPrice') }}</span>
@@ -403,7 +460,7 @@
               </div>
               <div class="flex items-center justify-between gap-4">
                 <span class="text-foreground-subtle">{{ t('usage.imageTotalPrice') }}</span>
-                <span class="font-medium text-white">${{ tooltipData.total_cost?.toFixed(6) || '0.000000' }}</span>
+                <span class="font-medium text-foreground">${{ tooltipData.total_cost?.toFixed(6) || '0.000000' }}</span>
               </div>
             </template>
             <div v-else class="flex items-center justify-between gap-4">
@@ -412,11 +469,11 @@
             </div>
             <div v-if="tooltipData && tooltipData.cache_creation_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.cacheCreationCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.cache_creation_cost.toFixed(6) }}</span>
+              <span class="font-medium text-foreground">${{ tooltipData.cache_creation_cost.toFixed(6) }}</span>
             </div>
             <div v-if="tooltipData && tooltipData.cache_read_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-foreground-subtle">{{ t('admin.usage.cacheReadCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.cache_read_cost.toFixed(6) }}</span>
+              <span class="font-medium text-foreground">${{ tooltipData.cache_read_cost.toFixed(6) }}</span>
             </div>
           </div>
           <!-- Rate and Summary -->
@@ -430,7 +487,7 @@
           </div>
           <div class="flex items-center justify-between gap-6">
             <span class="text-foreground-subtle">{{ t('usage.original') }}</span>
-            <span class="font-medium text-white">${{ tooltipData?.total_cost?.toFixed(6) || '0.000000' }}</span>
+            <span class="font-medium text-foreground">${{ tooltipData?.total_cost?.toFixed(6) || '0.000000' }}</span>
           </div>
           <div class="flex items-center justify-between gap-6">
             <span class="text-foreground-subtle">{{ t('usage.userBilled') }}</span>
@@ -454,7 +511,7 @@
             </div>
           </template>
         </div>
-        <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-foreground border-t-transparent"></div>
+        <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-surface-raised border-t-transparent"></div>
       </div>
     </div>
   </Teleport>
@@ -523,6 +580,8 @@ interface Props {
   defaultSortOrder?: 'asc' | 'desc'
   showAccountBilling?: boolean
   showUpstreamEndpoint?: boolean
+  /** 用户用量页在手机端使用精简业务卡；管理端保持原通用移动表格。 */
+  userMobileCard?: boolean
   /** 嵌入统一卡片内使用：去掉自身卡片外观 */
   flat?: boolean
 }
@@ -534,6 +593,7 @@ const props = withDefaults(defineProps<Props>(), {
   defaultSortOrder: 'asc',
   showAccountBilling: true,
   showUpstreamEndpoint: true,
+  userMobileCard: false,
   flat: false
 })
 const emit = defineEmits<{
@@ -545,6 +605,32 @@ const { t } = useI18n()
 const showAccountBilling = props.showAccountBilling
 const showUpstreamEndpoint = props.showUpstreamEndpoint
 const ipGeoBatchLoading = ref(false)
+const mobileExpandedRows = ref(new Set<string | number>())
+
+const mobileRowKey = (row: AdminUsageLog): string | number => row.request_id || row.id
+const isMobileExpanded = (row: AdminUsageLog): boolean => mobileExpandedRows.value.has(mobileRowKey(row))
+const toggleMobileDetails = (row: AdminUsageLog) => {
+  const next = new Set(mobileExpandedRows.value)
+  const key = mobileRowKey(row)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  mobileExpandedRows.value = next
+}
+
+const mobileTokenLabel = (row: AdminUsageLog): string => {
+  if (isImageUsage(row)) return `${row.image_count || 0} ${t('usage.imageUnit')}`
+  const total = (row.input_tokens || 0) + (row.output_tokens || 0) + (row.cache_creation_tokens || 0) + (row.cache_read_tokens || 0)
+  return total.toLocaleString()
+}
+
+const mobileRequestTypeLabel = (row: AdminUsageLog): string => {
+  const requestType = resolveUsageRequestType(row)
+  if (requestType === 'cyber') return t('usage.cyber')
+  if (requestType === 'ws_v2') return t('usage.ws')
+  if (requestType === 'stream') return t('usage.stream')
+  if (requestType === 'sync') return t('usage.sync')
+  return t('usage.unknown')
+}
 
 const showIpGeoToolbar = computed(() => props.columns.some((col) => col.key === 'ip_address'))
 

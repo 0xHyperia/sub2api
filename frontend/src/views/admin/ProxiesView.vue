@@ -124,6 +124,143 @@
             </button>
           </div>
         </div>
+        <div data-mobile-layout="proxy-cards" class="space-y-3 md:hidden">
+          <div v-if="loading" class="flex items-center justify-center py-12 text-foreground-subtle">
+            <Icon name="refresh" size="lg" class="animate-spin" />
+          </div>
+          <EmptyState
+            v-else-if="proxies.length === 0"
+            :title="t('admin.proxies.noProxiesYet')"
+            :description="t('admin.proxies.createFirstProxy')"
+            :action-text="t('admin.proxies.createProxy')"
+            @action="showCreateModal = true"
+          />
+          <article
+            v-for="row in proxies"
+            v-else
+            :key="`mobile-${row.id}`"
+            class="rounded-panel border border-outline bg-surface p-3 shadow-card"
+          >
+            <div class="flex items-start gap-3">
+              <input
+                type="checkbox"
+                class="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-outline-strong text-brand focus:ring-focus"
+                :checked="selectedProxyIds.has(row.id)"
+                :aria-label="`${t('common.select')} ${row.name}`"
+                @change="toggleSelectRow(row.id, $event)"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex min-w-0 items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <h3 class="truncate text-sm font-semibold text-foreground">{{ row.name }}</h3>
+                    <code class="mt-1 block truncate font-mono text-[11px] text-foreground-muted" :title="maskedProxyUrl(row)">
+                      {{ maskedProxyUrl(row) }}
+                    </code>
+                  </div>
+                  <span
+                    class="badge shrink-0"
+                    :class="row.status === 'active' ? 'badge-success' : 'badge-danger'"
+                  >
+                    {{ t('admin.accounts.status.' + row.status) }}
+                  </span>
+                </div>
+
+                <div class="mt-3 space-y-2 border-t border-outline pt-3 text-xs">
+                  <div class="flex items-start justify-between gap-3">
+                    <span class="text-foreground-subtle">{{ t('admin.proxies.columns.latency') }}</span>
+                    <div class="flex min-w-0 flex-wrap justify-end gap-1.5 text-right">
+                      <span v-if="row.latency_status === 'failed'" class="badge badge-danger">{{ t('admin.proxies.latencyFailed') }}</span>
+                      <span v-else-if="typeof row.latency_ms === 'number'" class="badge" :class="row.latency_ms < 200 ? 'badge-success' : 'badge-warning'">{{ row.latency_ms }}ms</span>
+                      <span v-else class="text-foreground-subtle">—</span>
+                      <span v-if="typeof row.quality_checked === 'number'" class="badge" :class="qualityOverallClass(row.quality_status)">
+                        {{ qualityOverallLabel(row.quality_status) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start justify-between gap-3">
+                    <span class="text-foreground-subtle">{{ t('admin.proxies.expiresAt') }}</span>
+                    <span class="text-right text-foreground-muted">{{ expiryLabel(row) }}</span>
+                  </div>
+
+                  <div class="flex items-start justify-between gap-3">
+                    <span class="text-foreground-subtle">{{ t('admin.proxies.fallbackMode') }}</span>
+                    <span class="text-right text-foreground-muted">{{ fallbackModeLabel(row.fallback_mode) }}</span>
+                  </div>
+
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="text-foreground-subtle">{{ t('admin.proxies.columns.accounts') }}</span>
+                    <button
+                      v-if="(row.account_count || 0) > 0"
+                      type="button"
+                      class="badge badge-primary min-h-8"
+                      @click="openAccountsModal(row)"
+                    >
+                      {{ t('admin.groups.accountsCount', { count: row.account_count || 0 }) }}
+                    </button>
+                    <span v-else class="text-foreground-muted">0</span>
+                  </div>
+                </div>
+
+                <div
+                  v-if="proxyIssueSummary(row)"
+                  class="mt-3 rounded-control border border-danger/20 bg-danger-subtle px-3 py-2 text-xs leading-5 text-danger-foreground"
+                >
+                  <div class="font-medium">{{ t('admin.proxies.testFailed') }}</div>
+                  <div class="mt-0.5 break-words">{{ proxyIssueSummary(row) }}</div>
+                </div>
+
+                <div class="mt-3 flex items-center gap-2 border-t border-outline pt-3">
+                  <button
+                    type="button"
+                    data-mobile-action="test"
+                    class="btn btn-secondary btn-sm min-w-0 flex-1"
+                    :disabled="testingProxyIds.has(row.id)"
+                    @click="handleTestConnection(row)"
+                  >
+                    <Icon name="checkCircle" size="sm" :class="testingProxyIds.has(row.id) ? 'animate-pulse' : ''" />
+                    {{ t('admin.proxies.testConnection') }}
+                  </button>
+                  <button
+                    type="button"
+                    data-mobile-action="edit"
+                    class="btn btn-primary btn-sm min-w-0 flex-1"
+                    @click="handleEdit(row)"
+                  >
+                    <Icon name="edit" size="sm" />
+                    {{ t('common.edit') }}
+                  </button>
+
+                  <details class="group relative shrink-0">
+                    <summary
+                      class="inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-control text-foreground-muted hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus marker:hidden"
+                      :aria-label="`${t('common.more')} ${row.name}`"
+                      :title="t('common.more')"
+                    >
+                      <Icon name="more" size="md" />
+                    </summary>
+                    <div class="resource-menu absolute bottom-full right-0 z-20 mb-1 w-48">
+                      <button type="button" class="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground-muted hover:bg-surface-subtle" @click="handleQualityCheck(row)">
+                        <Icon name="shield" size="sm" />
+                        {{ t('admin.proxies.qualityCheck') }}
+                      </button>
+                      <button type="button" class="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground-muted hover:bg-surface-subtle" @click="copyProxyUrl(row)">
+                        <Icon name="copy" size="sm" />
+                        {{ t('admin.proxies.copyProxyUrl') }}
+                      </button>
+                      <button type="button" class="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger-foreground hover:bg-danger-subtle" @click="handleDelete(row)">
+                        <Icon name="trash" size="sm" />
+                        {{ t('common.delete') }}
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div data-desktop-layout="proxies-table" class="hidden md:block">
         <DataTable
           :columns="columns"
           :data="proxies"
@@ -409,6 +546,7 @@
             />
           </template>
         </DataTable>
+        </div>
         </div>
       </template>
 
@@ -1825,6 +1963,39 @@ const expiryLabel = (row: Proxy): string => {
 
 const expiryBadgeClass = (row: Proxy): string =>
   proxyExpiryBadgeClass(row.expires_at, row.status)
+
+const maskProxyHost = (host: string): string => {
+  const normalized = host.trim().replace(/^\[|\]$/g, '')
+  if (!normalized) return '***'
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalized)) {
+    const [first, second] = normalized.split('.')
+    return `${first}.${second}.***.***`
+  }
+  if (normalized.includes(':')) {
+    return `[${normalized.split(':').slice(0, 2).join(':')}:***]`
+  }
+  const segments = normalized.split('.')
+  if (segments.length >= 3) return `***.${segments.slice(-2).join('.')}`
+  if (normalized.length <= 4) return '***'
+  return `${normalized.slice(0, 2)}***${normalized.slice(-2)}`
+}
+
+const maskedProxyUrl = (row: Proxy): string =>
+  `${row.protocol}://${maskProxyHost(row.host)}:${row.port}`
+
+const fallbackModeLabel = (mode: Proxy['fallback_mode']): string => {
+  if (mode === 'proxy') return t('admin.proxies.fallbackProxy')
+  if (mode === 'direct') return t('admin.proxies.fallbackDirect')
+  return t('admin.proxies.fallbackNone')
+}
+
+const proxyIssueSummary = (row: Proxy): string => {
+  if (row.latency_status === 'failed') return row.latency_message || t('admin.proxies.latencyFailed')
+  if (row.quality_status && row.quality_status !== 'healthy') {
+    return row.quality_summary || qualityOverallLabel(row.quality_status)
+  }
+  return ''
+}
 
 const qualityOverallClass = (status?: string) => {
   if (status === 'healthy') return 'badge-success'

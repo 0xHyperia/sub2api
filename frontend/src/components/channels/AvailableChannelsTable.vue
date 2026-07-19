@@ -1,5 +1,130 @@
 <template>
-  <div class="table-wrapper max-w-full overflow-x-auto" role="region" :aria-label="columns.name" tabindex="0">
+  <div class="space-y-3 lg:hidden" role="region" :aria-label="columns.name">
+    <template v-if="loading">
+      <div
+        v-for="index in 3"
+        :key="index"
+        class="animate-pulse rounded-panel border border-outline bg-surface p-4"
+      >
+        <div class="h-5 w-36 rounded bg-surface-subtle"></div>
+        <div class="mt-2 h-3 w-full rounded bg-surface-subtle"></div>
+        <div class="mt-4 h-11 rounded-panel bg-surface-subtle"></div>
+      </div>
+    </template>
+
+    <div
+      v-else-if="rows.length === 0"
+      class="rounded-panel border border-outline bg-surface px-4 py-12 text-center"
+    >
+      <Icon name="inbox" size="xl" class="mx-auto mb-3 h-12 w-12 text-foreground-subtle" />
+      <p class="text-sm text-foreground-subtle">{{ emptyLabel }}</p>
+    </div>
+
+    <article
+      v-for="(channel, chIdx) in rows"
+      v-else
+      :key="`mobile-${channel.name}-${chIdx}`"
+      class="overflow-hidden rounded-panel border border-outline bg-surface"
+    >
+      <header class="border-b border-outline px-4 py-3">
+        <h2 class="text-sm font-semibold text-foreground">{{ channel.name }}</h2>
+        <p v-if="channel.description" class="mt-1 text-xs leading-5 text-foreground-subtle">
+          {{ channel.description }}
+        </p>
+      </header>
+
+      <div class="divide-y divide-outline">
+        <details
+          v-for="section in channel.platforms"
+          :key="`mobile-${channel.name}-${section.platform}`"
+          class="group/platform bg-surface"
+        >
+          <summary
+            class="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+          >
+            <span
+              :class="[
+                'inline-flex shrink-0 items-center gap-1 rounded-control border px-2 py-0.5 text-[11px] font-medium uppercase',
+                platformBadgeClass(section.platform),
+              ]"
+            >
+              <PlatformIcon :platform="section.platform as GroupPlatform" size="xs" />
+              {{ section.platform }}
+            </span>
+            <span class="min-w-0 flex-1 text-right text-[11px] text-foreground-subtle">
+              {{ columns.groups }} {{ section.groups.length }} · {{ columns.supportedModels }} {{ section.supported_models.length }}
+            </span>
+            <Icon
+              name="chevronDown"
+              size="xs"
+              class="shrink-0 text-foreground-subtle transition-transform group-open/platform:rotate-180"
+            />
+          </summary>
+
+          <div class="space-y-4 border-t border-outline bg-surface-subtle/45 px-4 py-3">
+            <section>
+              <h3 class="mb-2 text-[11px] font-semibold uppercase text-foreground-muted">
+                {{ columns.groups }}
+              </h3>
+              <div v-if="section.groups.length" class="space-y-2">
+                <div
+                  v-for="group in section.groups"
+                  :key="`mobile-group-${group.id}`"
+                  class="flex min-w-0 items-center gap-2"
+                >
+                  <Icon
+                    :name="group.is_exclusive ? 'shield' : 'globe'"
+                    size="xs"
+                    class="h-3.5 w-3.5 shrink-0 text-foreground-subtle"
+                    :title="group.is_exclusive ? t('availableChannels.exclusiveTooltip') : t('availableChannels.publicTooltip')"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <GroupBadge
+                      :name="group.name"
+                      :platform="group.platform as GroupPlatform"
+                      :subscription-type="(group.subscription_type || 'standard') as SubscriptionType"
+                      :rate-multiplier="group.rate_multiplier"
+                      :user-rate-multiplier="userGroupRates[group.id] ?? null"
+                      always-show-rate
+                    />
+                  </div>
+                  <span
+                    v-if="hasPeakRate(group)"
+                    class="inline-flex shrink-0 items-center gap-1 rounded-control bg-warning-subtle px-1.5 py-0.5 text-[10px] font-medium text-warning-foreground"
+                    :title="peakRateTitle(group)"
+                  >
+                    <Icon name="clock" size="xs" class="h-3 w-3" />
+                    {{ peakRateLabel(group) }}
+                  </span>
+                </div>
+              </div>
+              <span v-else class="text-xs text-foreground-subtle">-</span>
+            </section>
+
+            <section>
+              <h3 class="mb-2 text-[11px] font-semibold uppercase text-foreground-muted">
+                {{ columns.supportedModels }}
+              </h3>
+              <div v-if="section.supported_models.length" class="flex flex-wrap gap-1.5">
+                <SupportedModelChip
+                  v-for="model in section.supported_models"
+                  :key="`mobile-model-${section.platform}-${model.name}`"
+                  :model="model"
+                  :pricing-key-prefix="pricingKeyPrefix"
+                  :no-pricing-label="noPricingLabel"
+                  :show-platform="false"
+                  :platform-hint="section.platform"
+                />
+              </div>
+              <span v-else class="text-xs text-foreground-subtle">{{ noModelsLabel }}</span>
+            </section>
+          </div>
+        </details>
+      </div>
+    </article>
+  </div>
+
+  <div class="table-wrapper hidden max-w-full overflow-x-auto lg:block" role="region" :aria-label="columns.name" tabindex="0">
     <table class="min-w-[960px] w-full border-collapse text-sm">
       <thead>
         <tr class="border-b border-outline text-xs font-medium uppercase tracking-wide text-foreground-subtle bg-surface/50">

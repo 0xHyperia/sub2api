@@ -19,7 +19,7 @@
       />
       <button
         type="button"
-        class="rounded-lg p-2 text-danger-foreground transition-colors hover:bg-danger-subtle hover:text-danger-foreground dark:hover:bg-danger/20"
+        class="rounded-control p-2 text-danger-foreground transition-colors hover:bg-danger-subtle"
         @click="removeRow(index)"
       >
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,7 +36,7 @@
 
   <button
     type="button"
-    class="w-full rounded-lg border-2 border-dashed border-outline px-4 py-2 text-foreground-muted transition-colors hover:border-outline hover:text-foreground-muted   dark:hover:border-outline dark:hover:text-foreground-muted"
+    class="w-full rounded-control border-2 border-dashed border-outline px-4 py-2 text-foreground-muted transition-colors hover:border-outline-strong hover:text-foreground"
     @click="addRow"
   >
     <svg class="mr-1 inline h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

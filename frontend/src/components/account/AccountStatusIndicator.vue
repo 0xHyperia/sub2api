@@ -67,7 +67,7 @@
       </span>
       <!-- Tooltip -->
       <div
-        class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 whitespace-normal rounded px-3 py-2 text-center text-xs leading-relaxed text-white opacity-0 transition-opacity group-hover:opacity-100 bg-surface-subtle"
+        class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 whitespace-normal rounded-control bg-inverse px-3 py-2 text-center text-xs leading-relaxed text-inverse-foreground opacity-0 shadow-floating transition-opacity group-hover:opacity-100"
       >
         {{ t('admin.accounts.status.rateLimitedUntil', { time: formatDateTime(account.rate_limit_reset_at) }) }}
         <div
@@ -117,7 +117,7 @@
         </span>
         <!-- Tooltip -->
         <div
-          class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 whitespace-normal rounded px-3 py-2 text-center text-xs leading-relaxed text-white opacity-0 transition-opacity group-hover:opacity-100 bg-surface-subtle"
+          class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 whitespace-normal rounded-control bg-inverse px-3 py-2 text-center text-xs leading-relaxed text-inverse-foreground opacity-0 shadow-floating transition-opacity group-hover:opacity-100"
         >
           {{
             item.kind === 'credits_exhausted'
@@ -143,7 +143,7 @@
       </span>
       <!-- Tooltip -->
       <div
-        class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 whitespace-normal rounded px-3 py-2 text-center text-xs leading-relaxed text-white opacity-0 transition-opacity group-hover:opacity-100 bg-surface-subtle"
+        class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 whitespace-normal rounded-control bg-inverse px-3 py-2 text-center text-xs leading-relaxed text-inverse-foreground opacity-0 shadow-floating transition-opacity group-hover:opacity-100"
       >
         {{ t('admin.accounts.status.overloadedUntil', { time: formatTime(account.overload_until) }) }}
         <div

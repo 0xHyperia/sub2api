@@ -6,6 +6,7 @@ import Pagination from '@/components/common/Pagination.vue'
 import Select from '@/components/common/Select.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
 
 const appStore = useAppStore()
@@ -53,6 +54,8 @@ const health = ref<OpsSystemLogSinkHealth>({
 
 const runtimeLoading = ref(false)
 const runtimeSaving = ref(false)
+const runtimePanelOpen = ref(false)
+const filterPanelOpen = ref(false)
 const runtimeConfig = reactive<OpsRuntimeLogConfig>({
   level: 'info',
   enable_sampling: false,
@@ -115,7 +118,7 @@ const levelBadgeClass = (level: string) => {
   const v = String(level || '').toLowerCase()
   if (v === 'error' || v === 'fatal') return 'bg-danger-subtle text-danger-foreground'
   if (v === 'warn' || v === 'warning') return 'bg-warning-subtle text-warning-foreground'
-  if (v === 'debug') return 'bg-foreground text-foreground-subtle'
+  if (v === 'debug') return 'bg-inverse text-inverse-foreground'
   return 'bg-info-subtle text-info-foreground'
 }
 
@@ -174,6 +177,40 @@ const formatSystemLogDetail = (row: OpsSystemLog) => {
 
   // 用空格拼接，交给 CSS 自动换行，尽量“填满再换行”。
   return parts.join('  ')
+}
+
+const formatSystemLogMessage = (row: OpsSystemLog) => {
+  const message = String(row.message || '').trim()
+  if (message) return message
+  const extra = row.extra || {}
+  return getExtraString(extra, 'errors')
+    || getExtraString(extra, 'err')
+    || getExtraString(extra, 'error')
+    || '-'
+}
+
+const formatSystemLogRoute = (row: OpsSystemLog) => {
+  const method = getExtraString(row.extra, 'method')
+  const path = getExtraString(row.extra, 'path')
+  return [method, path].filter(Boolean).join(' ')
+}
+
+const getSystemLogContextItems = (row: OpsSystemLog) => {
+  const extra = row.extra || {}
+  return [
+    { label: 'status', value: getExtraString(extra, 'status_code') },
+    { label: 'latency', value: getExtraString(extra, 'latency_ms') ? `${getExtraString(extra, 'latency_ms')} ms` : '' },
+    { label: 'request_id', value: row.request_id || '' },
+    { label: 'client_request_id', value: row.client_request_id || '' },
+    { label: 'user_id', value: row.user_id == null ? '' : String(row.user_id) },
+    { label: 'key_id', value: row.api_key_id == null ? '' : String(row.api_key_id) },
+    { label: 'account_id', value: row.account_id == null ? '' : String(row.account_id) },
+    { label: 'platform', value: row.platform || '' },
+    { label: 'model', value: row.model || '' },
+    { label: 'client_ip', value: getExtraString(extra, 'client_ip') },
+    { label: 'protocol', value: getExtraString(extra, 'protocol') },
+    { label: 'error', value: getExtraString(extra, 'errors') || getExtraString(extra, 'err') || getExtraString(extra, 'error') }
+  ].filter((item) => item.value)
 }
 
 const toRFC3339 = (value: string) => {
@@ -422,7 +459,7 @@ onMounted(async () => {
         <h3 id="ops-system-logs-title" class="text-sm font-semibold text-foreground">{{ t('admin.ops.systemLogs.title') }}</h3>
         <p class="mt-1 text-xs text-foreground-subtle">{{ t('admin.ops.systemLogs.description') }}</p>
       </div>
-      <div class="flex flex-wrap items-center gap-2 text-xs">
+      <div class="grid w-full grid-cols-2 gap-2 text-xs sm:flex sm:w-auto sm:flex-wrap sm:items-center">
         <span class="rounded-control bg-surface-subtle px-2 py-1 text-foreground-muted">{{ t('admin.ops.systemLogs.queue') }} {{ health.queue_depth }}/{{ health.queue_capacity }}</span>
         <span class="rounded-control bg-surface-subtle px-2 py-1 text-foreground-muted">{{ t('admin.ops.systemLogs.written') }} {{ health.written_count }}</span>
         <span class="rounded-control bg-warning-subtle px-2 py-1 text-warning-foreground">{{ t('admin.ops.systemLogs.dropped') }} {{ health.dropped_count }}</span>
@@ -431,11 +468,28 @@ onMounted(async () => {
     </div>
 
     <div class="mb-4 border-y border-outline bg-surface-subtle py-3">
-      <div class="mb-2 flex items-center justify-between">
+      <div class="mb-2 flex items-center justify-between gap-3">
         <div class="text-xs font-semibold text-foreground-muted">{{ t('admin.ops.systemLogs.runtimeConfig') }}</div>
-        <span v-if="runtimeLoading" class="text-xs text-foreground-subtle">{{ t('common.loading') }}</span>
+        <div class="flex items-center gap-2">
+          <span v-if="runtimeLoading" class="text-xs text-foreground-subtle">{{ t('common.loading') }}</span>
+          <button
+            type="button"
+            class="inline-flex min-h-10 items-center gap-1.5 rounded-control px-2 text-xs font-medium text-foreground-muted hover:bg-surface md:hidden"
+            :aria-expanded="runtimePanelOpen"
+            aria-controls="ops-system-log-runtime-panel"
+            data-testid="system-log-runtime-toggle"
+            @click="runtimePanelOpen = !runtimePanelOpen"
+          >
+            {{ runtimePanelOpen ? t('common.collapse') : t('common.expand') }}
+            <Icon name="chevronDown" size="xs" :class="runtimePanelOpen ? 'rotate-180' : ''" />
+          </button>
+        </div>
       </div>
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+      <div
+        id="ops-system-log-runtime-panel"
+        class="grid-cols-1 gap-3 md:grid md:grid-cols-2 xl:grid-cols-6"
+        :class="runtimePanelOpen ? 'grid' : 'hidden'"
+      >
         <label class="text-xs text-foreground-muted">
           {{ t('admin.ops.systemLogs.level') }}
           <Select v-model="runtimeConfig.level" class="mt-1" :options="runtimeLevelOptions" />
@@ -482,7 +536,29 @@ onMounted(async () => {
       <p v-if="health.last_error" class="mt-2 text-xs text-danger-foreground">{{ t('admin.ops.systemLogs.latestWriteError') }} {{ health.last_error }}</p>
     </div>
 
-    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <button
+      type="button"
+      class="mb-3 flex min-h-11 w-full items-center justify-between rounded-control border border-outline bg-surface-subtle px-3 text-left text-sm font-medium text-foreground md:hidden"
+      :aria-expanded="filterPanelOpen"
+      aria-controls="ops-system-log-filter-panel"
+      data-testid="system-log-filter-toggle"
+      @click="filterPanelOpen = !filterPanelOpen"
+    >
+      <span class="inline-flex min-w-0 items-center gap-2">
+        <Icon name="filter" size="sm" class="shrink-0 text-foreground-subtle" />
+        <span>{{ t('admin.ops.systemLogs.filters') }}</span>
+      </span>
+      <span class="inline-flex items-center gap-1 text-xs font-normal text-foreground-muted">
+        {{ filters.time_range }} · {{ filters.level || t('admin.ops.systemLogs.all') }}
+        <Icon name="chevronDown" size="xs" :class="filterPanelOpen ? 'rotate-180' : ''" />
+      </span>
+    </button>
+
+    <div
+      id="ops-system-log-filter-panel"
+      class="mb-4 grid-cols-1 gap-3 sm:grid-cols-2 md:grid lg:grid-cols-3 xl:grid-cols-5"
+      :class="filterPanelOpen ? 'grid' : 'hidden'"
+    >
       <label class="text-xs text-foreground-muted">
         {{ t('admin.ops.systemLogs.timeRange') }}
         <Select v-model="filters.time_range" class="mt-1" :options="timeRangeOptions" />
@@ -541,11 +617,14 @@ onMounted(async () => {
       </label>
     </div>
 
-    <div class="mb-3 flex flex-wrap gap-2">
-      <button type="button" class="btn btn-primary btn-sm" @click="applyFilters">{{ t('admin.ops.systemLogs.search') }}</button>
-      <button type="button" class="btn btn-secondary btn-sm" @click="resetFilters">{{ t('common.reset') }}</button>
-      <button type="button" class="btn btn-danger btn-sm" @click="requestCurrentFilterCleanup">{{ t('admin.ops.systemLogs.cleanCurrentFilters') }}</button>
-      <button type="button" class="btn btn-secondary btn-sm" @click="fetchHealth">{{ t('admin.ops.systemLogs.refreshHealth') }}</button>
+    <div
+      class="mb-3 grid-cols-2 gap-2 md:flex md:flex-wrap"
+      :class="filterPanelOpen ? 'grid' : 'hidden'"
+    >
+      <button type="button" class="btn btn-primary btn-sm w-full md:w-auto" @click="applyFilters">{{ t('admin.ops.systemLogs.search') }}</button>
+      <button type="button" class="btn btn-secondary btn-sm w-full md:w-auto" @click="resetFilters">{{ t('common.reset') }}</button>
+      <button type="button" class="btn btn-danger btn-sm col-span-2 w-full md:w-auto" @click="requestCurrentFilterCleanup">{{ t('admin.ops.systemLogs.cleanCurrentFilters') }}</button>
+      <button type="button" class="btn btn-secondary btn-sm col-span-2 w-full md:w-auto" @click="fetchHealth">{{ t('admin.ops.systemLogs.refreshHealth') }}</button>
     </div>
 
     <div
@@ -572,8 +651,66 @@ onMounted(async () => {
         @action="fetchLogs"
       />
       <div v-else-if="!hasData" class="px-4 py-8 text-center text-sm text-foreground-subtle">{{ t('admin.ops.systemLogs.empty') }}</div>
-      <div v-else class="overflow-auto">
-        <table class="min-w-full table-fixed divide-y divide-outline">
+      <template v-else>
+        <div class="divide-y divide-outline md:hidden">
+          <article
+          v-for="row in logs"
+          :key="`mobile-${row.id}`"
+          class="p-3.5"
+          data-testid="system-log-mobile-card"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+              <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" :class="levelBadgeClass(row.level)">
+                {{ row.level }}
+              </span>
+              <span v-if="row.component" class="truncate text-xs font-medium text-foreground" :title="row.component">
+                {{ row.component }}
+              </span>
+            </div>
+            <time class="shrink-0 text-right text-[11px] leading-4 text-foreground-subtle">
+              {{ formatTime(row.created_at) }}
+            </time>
+          </div>
+
+          <div class="mt-2 flex min-w-0 items-center gap-1.5 text-xs text-foreground-muted">
+            <Icon name="server" size="xs" class="shrink-0 text-foreground-subtle" />
+            <span class="truncate" :title="row.host || '-'">{{ row.host || '-' }}</span>
+          </div>
+
+          <p class="mt-2 break-words text-sm leading-5 text-foreground">
+            {{ formatSystemLogMessage(row) }}
+          </p>
+
+          <div
+            v-if="formatSystemLogRoute(row)"
+            class="mt-2 overflow-hidden rounded-control bg-code px-2.5 py-2 font-mono text-xs leading-5 text-code-foreground"
+          >
+            <span class="block break-all">{{ formatSystemLogRoute(row) }}</span>
+          </div>
+
+          <details v-if="getSystemLogContextItems(row).length" class="mt-2 border-t border-outline pt-2">
+            <summary class="flex min-h-10 cursor-pointer list-none items-center justify-between text-xs font-medium text-foreground-muted">
+              <span>{{ t('admin.ops.systemLogs.logContext') }}</span>
+              <span class="rounded-full bg-surface-subtle px-2 py-0.5 text-[10px] text-foreground-subtle">
+                {{ getSystemLogContextItems(row).length }}
+              </span>
+            </summary>
+            <dl class="grid gap-2 pb-1 sm:grid-cols-2">
+              <div
+                v-for="item in getSystemLogContextItems(row)"
+                :key="item.label"
+                class="min-w-0 rounded-control bg-surface-subtle px-2.5 py-2"
+              >
+                <dt class="text-[10px] uppercase text-foreground-subtle">{{ item.label }}</dt>
+                <dd class="mt-0.5 break-all text-xs text-foreground-muted">{{ item.value }}</dd>
+              </div>
+            </dl>
+          </details>
+          </article>
+        </div>
+        <div class="hidden overflow-auto md:block">
+          <table class="min-w-full table-fixed divide-y divide-outline">
           <thead class="bg-canvas">
             <tr>
               <th class="w-[170px] px-3 py-2 text-left text-[11px] font-semibold text-foreground-subtle">{{ t('admin.ops.systemLogs.time') }}</th>
@@ -598,8 +735,9 @@ onMounted(async () => {
               </td>
             </tr>
           </tbody>
-        </table>
-      </div>
+          </table>
+        </div>
+      </template>
       <Pagination
         v-if="hasData"
         :total="total"

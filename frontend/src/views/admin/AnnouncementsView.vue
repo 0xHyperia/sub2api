@@ -70,6 +70,62 @@
           default-sort-order="desc"
           @sort="handleSort"
         >
+          <template #mobile-card="{ row }">
+            <article class="space-y-3">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="break-words text-sm font-semibold leading-5 text-foreground">{{ row.title }}</h3>
+                  <p class="mt-1 text-[10px] text-foreground-subtle">#{{ row.id }} · {{ formatDateTime(row.created_at) }}</p>
+                </div>
+                <span :class="['badge shrink-0', row.status === 'active' ? 'badge-success' : row.status === 'draft' ? 'badge-gray' : 'badge-warning']">
+                  {{ statusLabel(row.status) }}
+                </span>
+              </header>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <span :class="['badge', row.notify_mode === 'popup' ? 'badge-warning' : 'badge-gray']">
+                  {{ row.notify_mode === 'popup' ? t('admin.announcements.notifyModeLabels.popup') : t('admin.announcements.notifyModeLabels.silent') }}
+                </span>
+                <span class="min-w-0 truncate text-xs text-foreground-muted">{{ targetingSummary(row.targeting) }}</span>
+              </div>
+
+              <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-outline bg-outline">
+                <div class="bg-surface-subtle px-3 py-2.5">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.announcements.form.startsAt') }}</dt>
+                  <dd class="mt-0.5 text-xs font-medium text-foreground">
+                    {{ row.starts_at ? formatDateTime(row.starts_at) : t('admin.announcements.timeImmediate') }}
+                  </dd>
+                </div>
+                <div class="bg-surface-subtle px-3 py-2.5">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.announcements.form.endsAt') }}</dt>
+                  <dd class="mt-0.5 text-xs font-medium text-foreground">
+                    {{ row.ends_at ? formatDateTime(row.ends_at) : t('admin.announcements.timeNever') }}
+                  </dd>
+                </div>
+              </dl>
+
+              <footer class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-secondary min-w-0 px-2" @click="openReadStatus(row)">
+                  <Icon name="eye" size="sm" />
+                  <span class="truncate">{{ t('admin.announcements.readStatus') }}</span>
+                </button>
+                <button type="button" class="btn btn-secondary min-w-0 px-2" @click="openEditDialog(row)">
+                  <Icon name="edit" size="sm" />
+                  <span class="truncate">{{ t('common.edit') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-10 w-10 items-center justify-center rounded-control border border-danger/30 text-danger-foreground hover:bg-danger-subtle"
+                  :title="t('common.delete')"
+                  :aria-label="`${t('common.delete')}: ${row.title}`"
+                  @click="handleDelete(row)"
+                >
+                  <Icon name="trash" size="sm" />
+                </button>
+              </footer>
+            </article>
+          </template>
+
           <template #cell-title="{ value, row }">
             <div class="min-w-0">
               <div class="flex items-center gap-2">

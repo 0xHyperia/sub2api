@@ -18,6 +18,7 @@ const appStore = useAppStore()
 const loading = ref(false)
 const loadError = ref('')
 const rules = ref<AlertRule[]>([])
+const togglingRuleIds = ref<Set<number>>(new Set())
 let loadRequestSequence = 0
 
 async function load() {
@@ -316,6 +317,24 @@ function openEdit(rule: AlertRule) {
   showEditor.value = true
 }
 
+async function toggleRuleEnabled(rule: AlertRule) {
+  if (!rule.id || togglingRuleIds.value.has(rule.id)) return
+  const nextEnabled = !rule.enabled
+  togglingRuleIds.value = new Set(togglingRuleIds.value).add(rule.id)
+  try {
+    const updated = await opsAPI.updateAlertRule(rule.id, { enabled: nextEnabled })
+    rules.value = rules.value.map((item) => item.id === rule.id ? { ...item, ...updated, enabled: nextEnabled } : item)
+    appStore.showSuccess(t('admin.ops.alertRules.saveSuccess'))
+  } catch (err: any) {
+    console.error('[OpsAlertRulesCard] Failed to toggle rule', err)
+    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertRules.saveFailed'))
+  } finally {
+    const next = new Set(togglingRuleIds.value)
+    next.delete(rule.id)
+    togglingRuleIds.value = next
+  }
+}
+
 const editorValidation = computed(() => {
   const errors: string[] = []
   const r = draft.value
@@ -450,7 +469,55 @@ function cancelDelete() {
       {{ t('admin.ops.alertRules.empty') }}
     </div>
 
-    <div v-else class="max-h-[520px] overflow-x-auto rounded-panel border border-outline">
+    <div v-else>
+      <div class="overflow-hidden rounded-panel border border-outline md:hidden" data-test="mobile-alert-rules">
+        <div class="divide-y divide-outline bg-surface">
+          <article v-for="row in sortedRules" :key="row.id" class="space-y-3 p-3" :data-test="`mobile-alert-rule-${row.id}`">
+            <header class="flex min-w-0 items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h4 class="truncate text-sm font-semibold text-foreground">{{ row.name }}</h4>
+                <p v-if="row.description" class="mt-1 line-clamp-2 text-xs leading-5 text-foreground-muted">{{ row.description }}</p>
+              </div>
+              <div class="flex flex-none flex-col items-end gap-1.5">
+                <span class="rounded-full bg-surface-subtle px-2 py-0.5 text-[10px] font-bold text-foreground-muted">{{ row.severity }}</span>
+                <span class="inline-flex items-center gap-1 text-xs" :class="row.enabled ? 'text-success-foreground' : 'text-foreground-subtle'">
+                  <span class="h-2 w-2 rounded-full" :class="row.enabled ? 'bg-success' : 'bg-outline-strong'"></span>
+                  {{ row.enabled ? t('common.enabled') : t('common.disabled') }}
+                </span>
+              </div>
+            </header>
+
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-3 rounded-panel bg-surface-subtle px-3 py-3 text-xs">
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">{{ t('admin.ops.alertRules.table.metric') }}</dt>
+                <dd class="mt-0.5 truncate font-mono text-foreground">{{ row.metric_type }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">{{ t('admin.ops.alertRules.form.threshold') }}</dt>
+                <dd class="mt-0.5 font-mono text-foreground">{{ row.operator }} {{ row.threshold }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">{{ t('admin.ops.alertRules.form.window') }}</dt>
+                <dd class="mt-0.5 text-foreground">{{ row.window_minutes }}m · {{ row.sustained_minutes }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">{{ t('admin.ops.alertRules.form.notifyEmail') }}</dt>
+                <dd class="mt-0.5 text-foreground">{{ row.notify_email ? t('common.enabled') : t('common.disabled') }}</dd>
+              </div>
+            </dl>
+
+            <div class="grid grid-cols-3 gap-2 border-t border-outline pt-3">
+              <button type="button" class="btn btn-secondary btn-sm min-w-0" :data-test="`mobile-rule-edit-${row.id}`" @click="openEdit(row)">{{ t('common.edit') }}</button>
+              <button type="button" class="btn btn-secondary btn-sm min-w-0" :disabled="!row.id || togglingRuleIds.has(row.id)" :data-test="`mobile-rule-toggle-${row.id}`" @click="toggleRuleEnabled(row)">
+                {{ row.enabled ? t('admin.ops.alertRules.disable') : t('admin.ops.alertRules.enable') }}
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm min-w-0 text-danger-foreground hover:bg-danger-subtle" :data-test="`mobile-rule-delete-${row.id}`" @click="requestDelete(row)">{{ t('common.delete') }}</button>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="hidden max-h-[520px] overflow-x-auto rounded-panel border border-outline md:block" data-test="desktop-alert-rules">
       <div class="max-h-[520px] min-w-[680px] overflow-y-auto">
         <table class="min-w-full divide-y divide-outline">
           <thead class="sticky top-0 z-10 bg-canvas">
@@ -492,15 +559,19 @@ function cancelDelete() {
                 {{ row.severity }}
               </td>
               <td class="whitespace-nowrap px-4 py-3 text-xs text-foreground-muted">
-                {{ row.enabled ? t('common.enabled') : t('common.disabled') }}
+                <span :class="row.enabled ? 'text-success-foreground' : 'text-foreground-subtle'">{{ row.enabled ? t('common.enabled') : t('common.disabled') }}</span>
               </td>
               <td class="whitespace-nowrap px-4 py-3 text-right text-xs">
                 <button class="btn btn-sm btn-secondary" @click="openEdit(row)">{{ t('common.edit') }}</button>
+                <button class="ml-2 btn btn-sm btn-secondary" :disabled="!row.id || togglingRuleIds.has(row.id)" @click="toggleRuleEnabled(row)">
+                  {{ row.enabled ? t('admin.ops.alertRules.disable') : t('admin.ops.alertRules.enable') }}
+                </button>
                 <button class="ml-2 btn btn-sm btn-danger" @click="requestDelete(row)">{{ t('common.delete') }}</button>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
       </div>
     </div>
 

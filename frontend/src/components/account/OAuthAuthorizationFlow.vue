@@ -146,7 +146,7 @@
                 Refresh Token
                 <span
                   v-if="parsedRefreshTokenCount > 1"
-                  class="rounded-full bg-info px-2 py-0.5 text-xs text-white"
+                  class="rounded-full bg-info px-2 py-0.5 text-xs text-info-solid-foreground"
                 >
                   {{ t('admin.accounts.oauth.keysCount', { count: parsedRefreshTokenCount }) }}
                 </span>
@@ -229,7 +229,7 @@
                 {{ t(getOAuthKey('ssoCookieLabel')) }}
                 <span
                   v-if="parsedSSOCount > 1"
-                  class="rounded-full bg-info px-2 py-0.5 text-xs text-white"
+                  class="rounded-full bg-info px-2 py-0.5 text-xs text-info-solid-foreground"
                 >
                   {{ t('admin.accounts.oauth.keysCount', { count: parsedSSOCount }) }}
                 </span>
@@ -304,7 +304,7 @@
                 {{ t(isAgentIdentityInput ? 'admin.accounts.oauth.openai.agentIdentityInputLabel' : 'admin.accounts.oauth.openai.codexSessionInputLabel') }}
                 <span
                   v-if="parsedCodexSessionCount > 1"
-                  class="rounded-full bg-info px-2 py-0.5 text-xs text-white"
+                  class="rounded-full bg-info px-2 py-0.5 text-xs text-info-solid-foreground"
                 >
                   {{ t('admin.accounts.oauth.keysCount', { count: parsedCodexSessionCount }) }}
                 </span>
@@ -457,7 +457,7 @@
                 {{ t('admin.accounts.oauth.sessionKey') }}
                 <span
                   v-if="parsedKeyCount > 1 && allowMultiple"
-                  class="rounded-full bg-info px-2 py-0.5 text-xs text-white"
+                  class="rounded-full bg-info px-2 py-0.5 text-xs text-info-solid-foreground"
                 >
                   {{ t('admin.accounts.oauth.keysCount', { count: parsedKeyCount }) }}
                 </span>
@@ -583,7 +583,7 @@
           >
             <div class="flex items-start gap-3">
               <div
-                class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-info text-xs font-bold text-white"
+                class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-info text-xs font-bold text-info-solid-foreground"
               >
                 1
               </div>
@@ -702,7 +702,7 @@
           >
             <div class="flex items-start gap-3">
               <div
-                class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-info text-xs font-bold text-white"
+                class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-info text-xs font-bold text-info-solid-foreground"
               >
                 2
               </div>
@@ -743,7 +743,7 @@
           >
             <div class="flex items-start gap-3">
               <div
-                class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-info text-xs font-bold text-white"
+                class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-info text-xs font-bold text-info-solid-foreground"
               >
                 3
               </div>

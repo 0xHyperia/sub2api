@@ -5,7 +5,7 @@
       :key="preset.url"
       type="button"
       data-testid="grok-base-url-preset"
-      class="rounded-lg bg-surface-subtle px-3 py-1 text-xs text-foreground-muted transition-colors hover:bg-brand-subtle hover:text-brand   dark:hover:bg-brand/30 dark:hover:text-brand"
+      class="rounded-control bg-surface-subtle px-3 py-1 text-xs text-foreground-muted transition-colors hover:bg-brand-subtle hover:text-brand"
       @click="emit('select', preset.url)"
     >
       {{ presetLabel(preset) }} ({{ displayUrl(preset.url) }})

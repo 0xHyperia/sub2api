@@ -22,6 +22,78 @@
 
       <template #table>
         <DataTable :columns="planColumns" :data="plans" :loading="plansLoading">
+          <template #mobile-card="{ row }">
+            <article class="space-y-3" :data-test="`payment-plan-mobile-card-${row.id}`">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="truncate text-sm font-semibold" :class="getPlanNameClass(row.group_id)" :title="row.name">{{ row.name }}</h3>
+                  <p class="mt-0.5 font-mono text-xs text-foreground-subtle">#{{ row.id }}</p>
+                </div>
+                <span :class="['badge flex-none', row.for_sale ? 'badge-success' : 'badge-gray']">
+                  {{ row.for_sale ? t('payment.admin.onSale') : t('payment.admin.offSale') }}
+                </span>
+              </header>
+
+              <dl class="grid grid-cols-2 overflow-hidden rounded-panel border border-outline bg-surface-subtle">
+                <div class="min-w-0 px-3 py-2.5">
+                  <dt class="text-[11px] text-foreground-subtle">{{ t('payment.admin.price') }}</dt>
+                  <dd class="mt-1 text-base font-semibold tabular-nums text-foreground">
+                    ${{ (row.price ?? 0).toFixed(2) }}
+                    <span v-if="row.currency" class="text-xs font-normal text-foreground-subtle">{{ row.currency }}</span>
+                  </dd>
+                  <p v-if="row.original_price" class="mt-0.5 text-xs text-foreground-subtle line-through">${{ row.original_price.toFixed(2) }}</p>
+                </div>
+                <div class="min-w-0 border-l border-outline px-3 py-2.5">
+                  <dt class="text-[11px] text-foreground-subtle">{{ t('payment.admin.validity') }}</dt>
+                  <dd class="mt-1 text-sm font-semibold tabular-nums text-foreground">
+                    {{ row.validity_days }} {{ t('payment.admin.' + (row.validity_unit || 'days')) }}
+                  </dd>
+                </div>
+              </dl>
+
+              <div class="rounded-control border border-outline px-3 py-2.5">
+                <p class="mb-1.5 text-[11px] text-foreground-subtle">{{ t('payment.admin.group') }}</p>
+                <div v-if="isGroupMissing(row.group_id)" class="flex items-center gap-1.5 text-sm">
+                  <span class="text-foreground-subtle">#{{ row.group_id }}</span>
+                  <span class="badge badge-danger">{{ t('payment.admin.groupMissing') }}</span>
+                </div>
+                <GroupBadge
+                  v-else-if="getGroup(row.group_id)"
+                  :name="getGroup(row.group_id)!.name"
+                  :platform="getGroup(row.group_id)!.platform"
+                  :rate-multiplier="getGroup(row.group_id)!.rate_multiplier"
+                />
+                <span v-else class="text-sm text-foreground-subtle">-</span>
+              </div>
+
+              <footer class="flex items-center gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-secondary min-w-0 flex-1" :data-test="`payment-plan-mobile-edit-${row.id}`" @click="openPlanEdit(row)">
+                  <Icon name="edit" size="sm" />
+                  {{ t('common.edit') }}
+                </button>
+                <details class="group/menu relative" @click.stop>
+                  <summary
+                    class="inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-control border border-outline text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
+                    :title="t('common.actions')"
+                    :aria-label="`${t('common.actions')}: ${row.name}`"
+                    :data-test="`payment-plan-mobile-more-${row.id}`"
+                  >
+                    <Icon name="more" size="sm" />
+                  </summary>
+                  <div class="absolute bottom-full right-0 z-30 mb-1 w-48 overflow-hidden rounded-panel border border-outline bg-surface py-1 shadow-floating">
+                    <button type="button" class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground" :data-test="`payment-plan-mobile-toggle-${row.id}`" @click="toggleForSale(row)">
+                      <Icon :name="row.for_sale ? 'xCircle' : 'checkCircle'" size="sm" />
+                      {{ row.for_sale ? t('payment.admin.offSale') : t('payment.admin.onSale') }}
+                    </button>
+                    <button type="button" class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger-foreground hover:bg-danger-subtle" :data-test="`payment-plan-mobile-delete-${row.id}`" @click="confirmDeletePlan(row)">
+                      <Icon name="trash" size="sm" />
+                      {{ t('common.delete') }}
+                    </button>
+                  </div>
+                </details>
+              </footer>
+            </article>
+          </template>
           <template #cell-name="{ value, row }">
             <span class="text-sm font-medium" :class="getPlanNameClass(row.group_id)">{{ value }}</span>
           </template>

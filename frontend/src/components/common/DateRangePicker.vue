@@ -472,7 +472,7 @@ onUnmounted(() => {
 
 .date-picker-apply {
   @apply rounded-panel px-4 py-1.5 text-sm font-medium;
-  @apply bg-brand text-white;
+  @apply bg-brand text-brand-foreground;
   @apply hover:bg-brand-hover;
   @apply transition-colors duration-150;
 }

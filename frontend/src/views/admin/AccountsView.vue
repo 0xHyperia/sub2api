@@ -236,6 +236,148 @@
           :overscan="5"
           :virtualize-threshold="50"
         >
+          <template #mobile-card="{ row }">
+            <article class="space-y-3" :data-test="`account-mobile-card-${row.id}`">
+              <header class="flex min-w-0 items-start gap-3">
+                <input
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 flex-none cursor-pointer rounded border-outline-strong text-brand focus:ring-focus"
+                  :checked="isSelected(row.id)"
+                  :aria-label="`${t('admin.accounts.columns.name')}: ${row.name}`"
+                  @change="toggleSel(row.id)"
+                />
+                <div class="min-w-0 flex-1 space-y-1.5">
+                  <PlatformTypeBadge
+                    :platform="row.platform"
+                    :type="row.type"
+                    :auth-mode="getOpenAIAuthMode(row)"
+                    :plan-type="getAccountPlanType(row)"
+                    :privacy-mode="row.extra?.privacy_mode || row.parent_privacy_mode"
+                    :subscription-expires-at="row.credentials?.subscription_expires_at || row.parent_subscription_expires_at"
+                  />
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-foreground" :title="row.name">{{ row.name }}</p>
+                    <p
+                      v-if="accountDisplayEmail(row)"
+                      class="truncate text-xs text-foreground-subtle"
+                      :title="accountDisplayEmail(row)"
+                    >
+                      {{ accountDisplayEmail(row) }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex flex-none flex-col items-end gap-1.5">
+                  <AccountStatusIndicator :account="row" @show-temp-unsched="handleShowTempUnsched" />
+                  <span class="inline-flex items-center gap-1 text-xs text-foreground-muted">
+                    <span class="h-2 w-2 rounded-full" :class="row.schedulable ? 'bg-success' : 'bg-foreground-subtle'" />
+                    {{ row.schedulable ? t('admin.accounts.schedulableEnabled') : t('admin.accounts.schedulableDisabled') }}
+                  </span>
+                </div>
+              </header>
+
+              <dl class="grid grid-cols-2 overflow-hidden rounded-panel bg-surface-subtle text-center">
+                <div class="min-w-0 px-2 py-3">
+                  <dt class="text-[11px] text-foreground-subtle">{{ t('admin.accounts.columns.todayStats') }}</dt>
+                  <dd class="mt-1 truncate text-sm font-semibold tabular-nums text-foreground">
+                    ${{ (todayStatsByAccountId[String(row.id)]?.cost ?? 0).toFixed(4) }}
+                  </dd>
+                </div>
+                <div class="min-w-0 border-l border-outline px-2 py-3">
+                  <dt class="truncate text-[11px] text-foreground-subtle">{{ mobileQuotaLabel(row) }}</dt>
+                  <dd class="mt-1 truncate text-sm font-semibold tabular-nums text-foreground">{{ mobileQuotaValue(row) }}</dd>
+                </div>
+                <div class="min-w-0 border-t border-outline px-2 py-3">
+                  <dt class="text-[11px] text-foreground-subtle">{{ t('admin.accounts.columns.capacity') }}</dt>
+                  <dd class="mt-1 text-sm font-semibold tabular-nums text-foreground">
+                    {{ row.current_concurrency ?? 0 }} / {{ row.concurrency }}
+                  </dd>
+                </div>
+                <div class="min-w-0 border-l border-t border-outline px-2 py-3">
+                  <dt class="text-[11px] text-foreground-subtle">{{ t('common.available') }}</dt>
+                  <dd class="mt-1 text-sm font-semibold tabular-nums" :class="row.schedulable && row.status === 'active' ? 'text-success' : 'text-foreground-muted'">
+                    {{ row.schedulable && row.status === 'active' ? t('common.yes') : t('common.no') }}
+                  </dd>
+                </div>
+              </dl>
+
+              <div class="border-t border-outline pt-2">
+                <button
+                  type="button"
+                  class="flex min-h-10 w-full items-center justify-between text-left text-xs font-medium text-foreground-muted"
+                  :aria-expanded="expandedMobileAccountIds.has(row.id)"
+                  :aria-controls="`account-mobile-details-${row.id}`"
+                  :data-test="`account-mobile-details-toggle-${row.id}`"
+                  @click="toggleMobileAccountDetails(row.id)"
+                >
+                  <span>{{ expandedMobileAccountIds.has(row.id) ? t('common.collapse') : t('common.expand') }}</span>
+                  <Icon name="chevronDown" size="sm" class="transition-transform" :class="expandedMobileAccountIds.has(row.id) && 'rotate-180'" />
+                </button>
+                <div
+                  v-if="expandedMobileAccountIds.has(row.id)"
+                  :id="`account-mobile-details-${row.id}`"
+                  class="space-y-3 pb-2"
+                  :data-test="`account-mobile-details-${row.id}`"
+                >
+                  <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.accounts.columns.id') }}</dt>
+                      <dd class="mt-0.5 font-mono text-foreground">#{{ row.id }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.accounts.columns.type') }}</dt>
+                      <dd class="mt-0.5 break-words text-foreground">{{ row.type }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.accounts.columns.proxy') }}</dt>
+                      <dd class="mt-0.5 break-words text-foreground">{{ row.proxy?.name || '-' }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.accounts.columns.lastUsed') }}</dt>
+                      <dd class="mt-0.5 break-words text-foreground">{{ row.last_used_at ? formatRelativeTime(row.last_used_at) : '-' }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.accounts.columns.expiresAt') }}</dt>
+                      <dd class="mt-0.5 break-words text-foreground">{{ formatExpiresAt(row.expires_at) }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                      <dt class="text-foreground-subtle">{{ t('admin.accounts.columns.createdAt') }}</dt>
+                      <dd class="mt-0.5 break-words text-foreground">{{ formatDateTime(row.created_at) }}</dd>
+                    </div>
+                  </dl>
+                  <div v-if="!authStore.isSimpleMode && row.groups?.length" class="space-y-1.5">
+                    <p class="text-xs text-foreground-subtle">{{ t('admin.accounts.columns.groups') }}</p>
+                    <AccountGroupsCell :groups="row.groups" :max-display="4" />
+                  </div>
+                  <p v-if="row.notes" class="break-words rounded-control bg-surface-subtle px-3 py-2 text-xs text-foreground-muted">
+                    {{ row.notes }}
+                  </p>
+                </div>
+              </div>
+
+              <footer class="grid grid-cols-3 gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-secondary min-w-0 px-2" :data-test="`account-mobile-test-${row.id}`" @click="handleTest(row)">
+                  <Icon name="play" size="sm" class="mr-1.5" />
+                  <span class="truncate">{{ t('admin.accounts.testConnection') }}</span>
+                </button>
+                <button type="button" class="btn btn-secondary min-w-0 px-2" :data-test="`account-mobile-edit-${row.id}`" @click="handleEdit(row)">
+                  <Icon name="edit" size="sm" class="mr-1.5" />
+                  <span class="truncate">{{ t('common.edit') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary min-w-0 px-2"
+                  :data-test="`account-mobile-more-${row.id}`"
+                  :aria-label="t('common.more')"
+                  aria-haspopup="menu"
+                  :aria-expanded="menu.show && menu.acc?.id === row.id"
+                  @click="openMenu(row, $event, true)"
+                >
+                  <Icon name="more" size="sm" class="mr-1.5" />
+                  <span class="truncate">{{ t('common.more') }}</span>
+                </button>
+              </footer>
+            </article>
+          </template>
           <template #header-select>
             <input
               type="checkbox"
@@ -470,7 +612,7 @@
     <AccountTestModal :show="showTest" :account="testingAcc" @close="closeTestModal" />
     <AccountStatsModal :show="showStats" :account="statsAcc" @close="closeStatsModal" />
     <ScheduledTestsPanel :show="showSchedulePanel" :account-id="scheduleAcc?.id ?? null" :model-options="scheduleModelOptions" @close="closeSchedulePanel" />
-    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @duplicate="handleDuplicateAccount" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" @create-spark-shadow="handleCreateSparkShadow" />
+    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" :show-delete="menu.showDelete" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @duplicate="handleDuplicateAccount" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" @create-spark-shadow="handleCreateSparkShadow" @delete="handleDelete" />
     <SyncFromCrsModal :show="showSync" @close="showSync = false" @synced="reload" />
     <ImportDataModal :show="showImportData" @close="showImportData = false" @imported="handleDataImported" />
     <BulkEditAccountModal
@@ -646,7 +788,7 @@ const showSchedulePanel = ref(false)
 const scheduleAcc = ref<Account | null>(null)
 const scheduleModelOptions = ref<SelectOption[]>([])
 const togglingSchedulable = ref<number | null>(null)
-const menu = reactive<{show:boolean, acc:Account|null, pos:{top:number, left:number}|null}>({ show: false, acc: null, pos: null })
+const menu = reactive<{show:boolean, acc:Account|null, pos:{top:number, left:number}|null, showDelete:boolean}>({ show: false, acc: null, pos: null, showDelete: false })
 const exportingData = ref(false)
 const probingUpstreamBilling = reactive(new Set<number>())
 const upstreamBillingProbeGloballyEnabled = ref<boolean | undefined>(undefined)
@@ -768,7 +910,8 @@ const refreshTodayStatsBatch = async () => {
   // - today_stats column shows dedicated today's metrics.
   // - usage column also embeds today's stats for Key/Bedrock rows.
   // So we only skip fetching when BOTH columns are hidden.
-  if (hiddenColumns.has('today_stats') && hiddenColumns.has('usage')) {
+  const mobileViewport = typeof window !== 'undefined' && window.innerWidth < 1024
+  if (!mobileViewport && hiddenColumns.has('today_stats') && hiddenColumns.has('usage')) {
     todayStatsLoading.value = false
     todayStatsError.value = null
     return
@@ -1525,9 +1668,39 @@ const cols = computed(() =>
   )
 )
 
+const expandedMobileAccountIds = ref<Set<number>>(new Set())
+const toggleMobileAccountDetails = (accountId: number) => {
+  const next = new Set(expandedMobileAccountIds.value)
+  if (next.has(accountId)) {
+    next.delete(accountId)
+  } else {
+    next.add(accountId)
+  }
+  expandedMobileAccountIds.value = next
+}
+
+const getMobileQuota = (account: Account): { label: string; used: number; limit: number } | null => {
+  if ((account.quota_daily_limit ?? 0) > 0) {
+    return { label: t('admin.accounts.quotaDailyLimit'), used: account.quota_daily_used ?? 0, limit: account.quota_daily_limit ?? 0 }
+  }
+  if ((account.quota_weekly_limit ?? 0) > 0) {
+    return { label: t('admin.accounts.quotaWeeklyLimit'), used: account.quota_weekly_used ?? 0, limit: account.quota_weekly_limit ?? 0 }
+  }
+  if ((account.quota_limit ?? 0) > 0) {
+    return { label: t('admin.accounts.quotaTotalLimit'), used: account.quota_used ?? 0, limit: account.quota_limit ?? 0 }
+  }
+  return null
+}
+const mobileQuotaLabel = (account: Account) => getMobileQuota(account)?.label ?? t('admin.accounts.quotaLimit')
+const mobileQuotaValue = (account: Account) => {
+  const quota = getMobileQuota(account)
+  return quota ? `$${quota.used.toFixed(2)} / $${quota.limit.toFixed(2)}` : t('admin.accounts.quotaUnlimited')
+}
+
 const handleEdit = (a: Account) => { edAcc.value = a; showEdit.value = true }
-const openMenu = (a: Account, e: MouseEvent) => {
+const openMenu = (a: Account, e: MouseEvent, showDelete = false) => {
   menu.acc = a
+  menu.showDelete = showDelete
 
   const target = e.currentTarget as HTMLElement
   if (target) {

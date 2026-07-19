@@ -7414,7 +7414,7 @@
                       :class="[
                         'rounded-panel border px-3 py-1.5 text-sm font-medium transition-all',
                         isPaymentTypeEnabled(pt.value)
-                          ? 'border-brand bg-brand text-white shadow-sm'
+                          ? 'border-brand bg-brand text-brand-foreground shadow-sm'
                           : 'border-outline-strong bg-surface text-foreground-muted hover:border-outline-strong hover:bg-surface-subtle',
                       ]"
                     >

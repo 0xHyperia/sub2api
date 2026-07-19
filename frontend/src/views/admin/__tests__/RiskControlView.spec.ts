@@ -450,4 +450,71 @@ describe('admin RiskControlView', () => {
       'admin.riskControl.flaggedHashesCleared',
     )
   })
+
+  it('presents moderation records as a mobile risk event stream while retaining the desktop table', async () => {
+    listLogs.mockResolvedValue({
+      items: [{
+        id: 91,
+        request_id: 'req-risk-91',
+        user_id: 7,
+        user_email: 'operator@example.com',
+        api_key_id: 4,
+        api_key_name: 'production-key',
+        group_id: 2,
+        group_name: 'Plus',
+        endpoint: '/v1/chat/completions',
+        provider: 'openai',
+        model: 'gpt-5.6',
+        mode: 'pre_block',
+        action: 'block',
+        flagged: true,
+        highest_category: 'harassment',
+        highest_score: 0.99,
+        matched_keyword: 'blocked phrase',
+        category_scores: {},
+        threshold_snapshot: {},
+        input_excerpt: 'Sensitive prompt preview',
+        upstream_latency_ms: 86,
+        error: '',
+        violation_count: 3,
+        auto_banned: false,
+        email_sent: true,
+        user_status: 'active',
+        queue_delay_ms: 4,
+        created_at: '2026-07-19T04:00:00Z',
+      }],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1,
+    })
+
+    const wrapper = mount(RiskControlView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          BaseDialog: BaseDialogStub,
+          Icon: true,
+          Select: true,
+          Toggle: true,
+          Pagination: true,
+          ModelWhitelistSelector: ModelWhitelistSelectorStub,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const mobileList = wrapper.get('[data-test="mobile-risk-log-list"]')
+    expect(mobileList.text()).toContain('gpt-5.6')
+    expect(mobileList.text()).toContain('operator@example.com')
+    expect(mobileList.text()).toContain('harassment')
+    expect(mobileList.text()).toContain('blocked phrase')
+    expect(mobileList.text()).toContain('Sensitive prompt preview')
+    expect(mobileList.text()).toContain('86')
+
+    const desktopTable = wrapper.get('[data-test="desktop-risk-log-table"]')
+    expect(desktopTable.classes()).toEqual(expect.arrayContaining(['hidden', 'md:block']))
+    expect(desktopTable.get('table').classes()).toContain('min-w-[1280px]')
+  })
 })

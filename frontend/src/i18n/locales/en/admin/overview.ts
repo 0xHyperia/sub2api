@@ -398,6 +398,9 @@ export default {
         availableQuotaAfter: 'Available After',
         frozenQuotaAfter: 'Frozen After',
         historyQuotaAfter: 'Historical Rebate After',
+        transferCompleted: 'Completed',
+        initiatedAt: 'Initiated At',
+        completedAt: 'Completed At',
         invitedAt: 'Invited At',
         rebatedAt: 'Rebated At',
         transferredAt: 'Transferred At'

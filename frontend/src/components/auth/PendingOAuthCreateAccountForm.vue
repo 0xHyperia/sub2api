@@ -25,7 +25,7 @@
         @error="onTurnstileError"
       />
     </div>
-    <div v-if="emailVerifyEnabled" class="flex gap-3">
+    <div v-if="emailVerifyEnabled" class="flex flex-col gap-2 sm:flex-row sm:gap-3">
       <input
         v-model="verifyCode"
         :data-testid="`${testIdPrefix}-create-account-verify-code`"
@@ -39,7 +39,7 @@
       <button
         :data-testid="`${testIdPrefix}-create-account-send-code`"
         type="button"
-        class="btn btn-secondary shrink-0"
+        class="btn btn-secondary w-full shrink-0 sm:w-auto"
         :disabled="isSubmitting || isSendingCode || countdown > 0 || !email.trim() || (turnstileEnabled && !turnstileToken)"
         @click="handleSendCode"
       >

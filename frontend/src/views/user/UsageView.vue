@@ -71,7 +71,81 @@
       </section>
 
       <section class="usage-records" aria-labelledby="usage-records-title">
-        <div class="usage-filters">
+        <h2 id="usage-records-title" class="sr-only">{{ t('usage.tabs.usage') }}</h2>
+        <div class="usage-mobile-records-toolbar sm:hidden">
+          <div class="flex min-w-0 items-center justify-between gap-2">
+            <div
+              class="grid min-w-0 flex-1 rounded-control bg-surface-subtle p-1"
+              :class="errorViewEnabled ? 'grid-cols-2' : 'grid-cols-1'"
+              role="tablist"
+              :aria-label="t('usage.tabs.usage')"
+            >
+              <button
+                id="usage-tab-mobile"
+                type="button"
+                role="tab"
+                class="usage-mobile-tab"
+                :class="activeTab === 'usage' ? 'usage-mobile-tab-active' : ''"
+                :aria-selected="activeTab === 'usage'"
+                aria-controls="usage-panel"
+                @click="activateUsageTab('usage')"
+              >
+                {{ t('usage.tabs.usage') }}
+              </button>
+              <button
+                v-if="errorViewEnabled"
+                id="errors-tab-mobile"
+                type="button"
+                role="tab"
+                class="usage-mobile-tab"
+                :class="activeTab === 'errors' ? 'usage-mobile-tab-active' : ''"
+                :aria-selected="activeTab === 'errors'"
+                aria-controls="errors-panel"
+                @click="activateUsageTab('errors')"
+              >
+                {{ t('usage.tabs.errors') }}
+              </button>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary relative h-10 shrink-0 px-3"
+              :aria-label="t('common.filter')"
+              :aria-expanded="mobileFiltersOpen"
+              @click="mobileFiltersOpen = true"
+            >
+              <Icon name="filter" size="sm" />
+              <span>{{ t('common.filter') }}</span>
+              <span v-if="activeFilterChips.length" class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-semibold tabular-nums text-brand-foreground">
+                {{ activeFilterChips.length }}
+              </span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-icon h-10 w-10 shrink-0"
+              :disabled="activeTab === 'errors' ? errorLoading : loading"
+              :title="t('common.refresh')"
+              :aria-label="t('common.refresh')"
+              @click="refreshData"
+            >
+              <Icon name="refresh" size="sm" :class="(activeTab === 'errors' ? errorLoading : loading) ? 'animate-spin' : ''" />
+            </button>
+          </div>
+          <div v-if="activeFilterChips.length" class="-mx-1 mt-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5" :aria-label="t('common.filter')">
+            <button
+              v-for="chip in activeFilterChips"
+              :key="chip.key"
+              type="button"
+              class="inline-flex h-7 shrink-0 items-center gap-1 rounded-control border border-outline bg-surface-subtle px-2 text-[10px] text-foreground-muted"
+              :aria-label="`${t('common.clear')} ${chip.label}`"
+              @click="removeActiveFilter(chip.key)"
+            >
+              <span class="max-w-40 truncate">{{ chip.label }}</span>
+              <Icon name="x" size="xs" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <div class="usage-filters hidden sm:block">
           <div class="usage-filter-row">
             <div v-if="activeTab === 'errors'" class="usage-filter-fields">
             <div class="w-full sm:w-auto sm:min-w-[220px]">
@@ -189,8 +263,7 @@
           </div>
         </div>
 
-        <div class="usage-records-header">
-          <h2 id="usage-records-title" class="sr-only">{{ t('usage.tabs.usage') }}</h2>
+        <div class="usage-records-header hidden sm:block">
           <div v-if="errorViewEnabled" class="usage-tabs" role="tablist" :aria-label="t('usage.tabs.usage')">
             <button
               id="usage-tab"
@@ -240,6 +313,7 @@
             :server-side-sort="true"
             :show-account-billing="false"
             :show-upstream-endpoint="false"
+            user-mobile-card
             default-sort-key="created_at"
             default-sort-order="desc"
             @sort="handleSort"
@@ -279,6 +353,26 @@
         </div>
       </section>
     </div>
+
+    <UsageFilterDrawer
+      :open="mobileFiltersOpen"
+      :mode="activeTab"
+      :usage-filter="mobileUsageFilterValue"
+      :error-filter="mobileErrorFilterValue"
+      :api-key-options="apiKeyOptions"
+      :group-options="groupOptions"
+      :model-options="modelOptions"
+      :request-type-options="requestTypeOptions"
+      :billing-type-options="billingTypeOptions"
+      :billing-mode-options="billingModeOptions"
+      :error-key-options="errorKeyOptions"
+      :error-model-options="errorModelOptions"
+      :error-category-options="errorCategoryOptions"
+      :error-status-options="errorStatusOptions"
+      @close="mobileFiltersOpen = false"
+      @apply-usage="applyMobileUsageFilters"
+      @apply-errors="applyMobileErrorFilters"
+    />
   </AppLayout>
 </template>
 
@@ -299,6 +393,7 @@ import EndpointDistributionChart from '@/components/charts/EndpointDistributionC
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
 import Icon from '@/components/icons/Icon.vue'
 import UserErrorRequestsTable from '@/components/user/UserErrorRequestsTable.vue'
+import UsageFilterDrawer from '@/components/user/UsageFilterDrawer.vue'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import { formatReasoningEffort } from '@/utils/format'
@@ -420,6 +515,7 @@ const groupDistributionMetric = ref<DistributionMetric>('tokens')
 const endpointDistributionMetric = ref<DistributionMetric>('tokens')
 const endpointDistributionSource = ref<EndpointSource>('inbound')
 const activeTab = ref<'usage' | 'errors'>('usage')
+const mobileFiltersOpen = ref(false)
 const errorViewEnabled = computed(() => appStore.cachedPublicSettings?.allow_user_view_error_requests ?? false)
 
 const filters = ref<UsageQueryParams>({
@@ -479,6 +575,92 @@ const modelOptions = computed<SelectOption[]>(() => [
   { value: null, label: t('admin.usage.allModels') },
   ...modelOptionValues.value.map((model) => ({ value: model, label: model })),
 ])
+
+interface ActiveFilterChip {
+  key: string
+  label: string
+}
+
+const findOptionLabel = (options: SelectOption[], value: unknown): string =>
+  options.find(option => String(option.value) === String(value))?.label ?? String(value ?? '')
+
+const mobileUsageFilterValue = computed(() => ({
+  api_key_id: filters.value.api_key_id ?? null,
+  model: filters.value.model ?? null,
+  group_id: filters.value.group_id ?? null,
+  request_type: filters.value.request_type ?? null,
+  billing_type: filters.value.billing_type ?? null,
+  billing_mode: filters.value.billing_mode ?? null,
+}))
+
+const mobileErrorFilterValue = computed(() => ({
+  api_key_id: errorFilter.value.api_key_id ?? null,
+  model: errorFilter.value.model ?? null,
+  category: errorFilter.value.category || '',
+  status_code: errorFilter.value.status_code ?? null,
+}))
+
+const activeFilterChips = computed<ActiveFilterChip[]>(() => {
+  if (activeTab.value === 'errors') {
+    const chips: ActiveFilterChip[] = []
+    if (errorFilter.value.api_key_id != null) chips.push({ key: 'error-api-key', label: `${t('usage.errors.keyName')}: ${findOptionLabel(errorKeyOptions.value, errorFilter.value.api_key_id)}` })
+    if (errorFilter.value.model) chips.push({ key: 'error-model', label: `${t('usage.errors.model')}: ${errorFilter.value.model}` })
+    if (errorFilter.value.category) chips.push({ key: 'error-category', label: `${t('usage.errors.category')}: ${findOptionLabel(errorCategoryOptions.value, errorFilter.value.category)}` })
+    if (errorFilter.value.status_code != null) chips.push({ key: 'error-status', label: `${t('usage.errors.status')}: ${errorFilter.value.status_code}` })
+    return chips
+  }
+
+  const chips: ActiveFilterChip[] = []
+  if (filters.value.api_key_id != null) chips.push({ key: 'api-key', label: `${t('usage.apiKeyFilter')}: ${findOptionLabel(apiKeyOptions.value, filters.value.api_key_id)}` })
+  if (filters.value.model) chips.push({ key: 'model', label: `${t('usage.model')}: ${filters.value.model}` })
+  if (filters.value.group_id != null) chips.push({ key: 'group', label: `${t('admin.usage.group')}: ${findOptionLabel(groupOptions.value, filters.value.group_id)}` })
+  if (filters.value.request_type) chips.push({ key: 'request-type', label: `${t('usage.type')}: ${findOptionLabel(requestTypeOptions.value, filters.value.request_type)}` })
+  if (filters.value.billing_type != null) chips.push({ key: 'billing-type', label: `${t('admin.usage.billingType')}: ${findOptionLabel(billingTypeOptions.value, filters.value.billing_type)}` })
+  if (filters.value.billing_mode) chips.push({ key: 'billing-mode', label: `${t('admin.usage.billingMode')}: ${findOptionLabel(billingModeOptions.value, filters.value.billing_mode)}` })
+  return chips
+})
+
+const applyMobileUsageFilters = (draft: {
+  api_key_id: number | null
+  model: string | null
+  group_id: number | null
+  request_type: string | null
+  billing_type: number | null
+  billing_mode: string | null
+}) => {
+  filters.value.api_key_id = draft.api_key_id ?? undefined
+  filters.value.model = draft.model || undefined
+  filters.value.group_id = draft.group_id ?? undefined
+  filters.value.request_type = (draft.request_type || undefined) as UsageQueryParams['request_type']
+  filters.value.billing_type = draft.billing_type
+  filters.value.billing_mode = draft.billing_mode
+  mobileFiltersOpen.value = false
+  applyFilters()
+}
+
+const applyMobileErrorFilters = (draft: { api_key_id: number | null; model: string | null; category: string; status_code: number | null }) => {
+  errorFilter.value = { ...draft }
+  mobileFiltersOpen.value = false
+  applyErrorFilters()
+}
+
+const removeActiveFilter = (key: string) => {
+  if (key.startsWith('error-')) {
+    if (key === 'error-api-key') errorFilter.value.api_key_id = null
+    else if (key === 'error-model') errorFilter.value.model = ''
+    else if (key === 'error-category') errorFilter.value.category = ''
+    else if (key === 'error-status') errorFilter.value.status_code = null
+    applyErrorFilters()
+    return
+  }
+  if (key === 'api-key') filters.value.api_key_id = undefined
+  else if (key === 'model') filters.value.model = undefined
+  else if (key === 'group') filters.value.group_id = undefined
+  else if (key === 'request-type') filters.value.request_type = undefined
+  else if (key === 'billing-type') filters.value.billing_type = null
+  else if (key === 'billing-mode') filters.value.billing_mode = null
+  applyFilters()
+}
 
 const normalizedFilters = computed<UsageQueryParams>(() => {
   const requestType = filters.value.request_type
@@ -970,7 +1152,8 @@ const handleUsageTabKeydown = (event: KeyboardEvent, current: 'usage' | 'errors'
 
   event.preventDefault()
   activateUsageTab(target)
-  window.requestAnimationFrame(() => document.getElementById(`${target}-tab`)?.focus())
+  const mobileTab = window.matchMedia?.('(max-width: 639px)').matches
+  window.requestAnimationFrame(() => document.getElementById(`${target}-tab${mobileTab ? '-mobile' : ''}`)?.focus())
 }
 
 onMounted(() => {
@@ -1002,6 +1185,39 @@ watch(endpointDistributionSource, () => {
 
 .usage-page {
   gap: 24px;
+}
+
+.usage-mobile-records-toolbar {
+  min-width: 0;
+  border: 1px solid var(--ui-border, #dbe3ee);
+  border-radius: 8px;
+  padding: 0.625rem;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.usage-mobile-tab {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  padding: 0.375rem 0.625rem;
+  color: var(--ui-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.usage-mobile-tab-active {
+  background: var(--ui-surface-raised);
+  color: var(--ui-text);
+  box-shadow: var(--ui-shadow-xs);
+}
+
+.usage-mobile-tab:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 1px;
 }
 
 .usage-chart-toolbar,
@@ -1192,14 +1408,17 @@ watch(endpointDistributionSource, () => {
     padding: 14px;
   }
 
-  .usage-chart-controls,
-  .usage-control-group {
+  .usage-chart-controls {
+    display: grid;
     width: 100%;
+    grid-template-columns: minmax(0, 1fr) 112px;
+    align-items: end;
+    gap: 8px;
   }
 
   .usage-control-group {
-    align-items: flex-start;
-    flex-direction: column;
+    display: block;
+    min-width: 0;
   }
 
   .usage-granularity-control > div {

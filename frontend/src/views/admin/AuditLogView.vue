@@ -3,7 +3,68 @@
     <TablePageLayout>
       <!-- Filters -->
       <template #filters>
-        <div class="card p-4 sm:p-6">
+        <div class="space-y-2 lg:hidden">
+          <div class="relative">
+            <Icon name="search" size="md" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
+            <input
+              v-model.trim="filters.q"
+              type="search"
+              class="input pl-10"
+              :placeholder="t('admin.audit.filters.qPlaceholder')"
+              @keyup.enter="search"
+            />
+          </div>
+          <details class="group rounded-panel border border-outline bg-surface">
+            <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-medium text-foreground-muted">
+              <span class="flex items-center gap-2">
+                <Icon name="filter" size="sm" />
+                {{ t('common.filter') }}
+                <span v-if="activeFilterCount" class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-brand-foreground">{{ activeFilterCount }}</span>
+              </span>
+              <Icon name="chevronDown" size="xs" class="transition-transform group-open:rotate-180" />
+            </summary>
+            <div class="grid grid-cols-1 gap-3 border-t border-outline p-3 sm:grid-cols-2">
+              <div>
+                <label class="input-label">{{ t('admin.audit.filters.actorEmail') }}</label>
+                <input v-model.trim="filters.actor_email" type="text" class="input" @keyup.enter="search" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.audit.filters.action') }}</label>
+                <input v-model.trim="filters.action" type="text" class="input" @keyup.enter="search" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.audit.filters.clientIp') }}</label>
+                <input v-model.trim="filters.client_ip" type="text" class="input" @keyup.enter="search" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.audit.filters.method') }}</label>
+                <Select v-model="filters.method" :options="methodOptions" @change="search" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.audit.filters.authMethod') }}</label>
+                <Select v-model="filters.auth_method" :options="authMethodOptions" @change="search" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.audit.filters.result') }}</label>
+                <Select v-model="filters.success" :options="resultOptions" @change="search" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="input-label">{{ t('admin.dashboard.timeRange') }}</label>
+                <Select :model-value="timeRange" :options="timeRangeOptions" @update:model-value="handleTimeRangeChange" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 border-t border-outline p-3">
+              <button type="button" class="btn btn-primary" :disabled="loading" @click="search">{{ t('common.search') }}</button>
+              <button type="button" class="btn btn-secondary" :disabled="loading" @click="resetFilters">{{ t('common.reset') }}</button>
+              <button type="button" class="btn btn-danger col-span-2" @click="openClearDialog">
+                <Icon name="trash" size="sm" />
+                {{ t('admin.audit.clearAll') }}
+              </button>
+            </div>
+          </details>
+        </div>
+
+        <div class="card hidden p-4 sm:p-6 lg:block">
           <div class="flex flex-wrap items-end justify-between gap-4">
             <!-- Left: filter fields -->
             <div class="flex flex-1 flex-wrap items-end gap-4">
@@ -85,6 +146,51 @@
       <!-- Table -->
       <template #table>
         <DataTable :columns="columns" :data="logs" :loading="loading" row-key="id">
+          <template #mobile-card="{ row }">
+            <article class="space-y-3">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="break-words font-mono text-sm font-semibold text-foreground">{{ row.action }}</h3>
+                  <p class="mt-1 truncate font-mono text-xs text-foreground-subtle" :title="`${row.method} ${row.path}`">{{ row.method }} {{ row.path }}</p>
+                </div>
+                <span :class="statusBadgeClass(row.status_code)">
+                  <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(row.status_code)"></span>
+                  {{ row.status_code }}
+                </span>
+              </header>
+
+              <div class="flex items-center gap-2.5 rounded-panel bg-surface-subtle px-3 py-2.5">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-subtle text-xs font-semibold text-brand">
+                  {{ (row.actor_email || row.actor_role || '?').charAt(0).toUpperCase() }}
+                </span>
+                <div class="min-w-0">
+                  <p class="truncate text-xs font-medium text-foreground">{{ row.actor_email || '—' }}</p>
+                  <p class="mt-0.5 truncate text-[10px] text-foreground-subtle">{{ row.actor_role }}<span v-if="row.auth_method"> · {{ authMethodLabel(row.auth_method) }}</span></p>
+                </div>
+              </div>
+
+              <dl class="grid grid-cols-3 gap-px overflow-hidden rounded-panel border border-outline bg-outline">
+                <div class="min-w-0 bg-surface-subtle px-2.5 py-2">
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.audit.columns.clientIp') }}</dt>
+                  <dd class="mt-0.5 truncate font-mono text-[10px] text-foreground">{{ row.client_ip || '—' }}</dd>
+                </div>
+                <div class="bg-surface-subtle px-2.5 py-2">
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.audit.detail.latency') }}</dt>
+                  <dd class="mt-0.5 font-mono text-xs font-semibold tabular-nums text-foreground">{{ row.latency_ms }} ms</dd>
+                </div>
+                <div class="bg-surface-subtle px-2.5 py-2">
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.audit.columns.time') }}</dt>
+                  <dd class="mt-0.5 text-[10px] leading-4 text-foreground">{{ formatTime(row.created_at) }}</dd>
+                </div>
+              </dl>
+
+              <button type="button" class="btn btn-secondary w-full" @click="openDetail(row.id)">
+                <Icon name="eye" size="sm" />
+                {{ t('admin.audit.columns.detail') }}
+              </button>
+            </article>
+          </template>
+
           <template #cell-created_at="{ value }">
             <span class="whitespace-nowrap text-foreground-muted ">{{ formatTime(value) }}</span>
           </template>
@@ -176,7 +282,7 @@
 
       <div v-else-if="detail" class="space-y-5 py-2">
         <!-- Hero: action + result at a glance -->
-        <div class="rounded-2xl border border-outline bg-surface-subtle/60 p-5  /60">
+        <div class="rounded-panel border border-outline bg-surface-subtle/60 p-5">
           <div class="flex flex-wrap items-center gap-3">
             <span :class="statusBadgeClass(detail.status_code)">
               <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(detail.status_code)"></span>
@@ -187,7 +293,7 @@
             </span>
           </div>
 
-          <div class="mt-3 flex items-center gap-2 rounded-lg bg-white px-3 py-2 ring-1 ring-outline  ">
+          <div class="mt-3 flex items-center gap-2 rounded-lg bg-surface-subtle px-3 py-2 ring-1 ring-outline">
             <span class="rounded bg-surface-subtle px-1.5 py-0.5 font-mono text-[11px] font-bold text-foreground-muted  ">
               {{ detail.method }}
             </span>
@@ -393,6 +499,16 @@ const customEndTime = ref('')
 const showCustomTimeRangeDialog = ref(false)
 const customStartTimeInput = ref('')
 const customEndTimeInput = ref('')
+
+const activeFilterCount = computed(() => [
+  filters.actor_email,
+  filters.action,
+  filters.client_ip,
+  filters.method,
+  filters.auth_method,
+  filters.success,
+  timeRange.value,
+].filter(Boolean).length)
 
 const TIME_RANGE_MINUTES: Record<string, number> = {
   '30m': 30,

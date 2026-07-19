@@ -139,77 +139,18 @@ onMounted(() => {
 
 <style scoped>
 .affiliate-stat-banner {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
   border-bottom: 1px solid rgb(var(--color-border));
-  background: #dceefe;
-}
-
-.affiliate-stat-banner::before {
-  position: absolute;
-  z-index: 0;
-  inset: -35%;
-  content: '';
-  background:
-    radial-gradient(ellipse at center, rgb(80 174 255 / 0.62), transparent 52%),
-    radial-gradient(ellipse at center, rgb(255 180 106 / 0.4), transparent 50%),
-    radial-gradient(ellipse at center, rgb(255 255 255 / 0.82), transparent 48%);
-  background-position: 0% 28%, 100% 72%, 52% 0%;
-  background-repeat: no-repeat;
-  background-size: 62% 72%, 58% 68%, 54% 62%;
-  animation: affiliate-flow 10s linear infinite;
-  will-change: background-position;
-  pointer-events: none;
-}
-
-.affiliate-stat-banner::after {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  content: '';
-  border: 1px solid rgb(255 255 255 / 0.7);
-  background: rgb(255 255 255 / 0.24);
-  backdrop-filter: blur(12px);
-  pointer-events: none;
-}
-
-.affiliate-stat-banner > * {
-  position: relative;
-  z-index: 2;
-}
-
-@keyframes affiliate-flow {
-  0% {
-    background-position: 0% 28%, 100% 72%, 52% 0%;
-  }
-
-  33% {
-    background-position: 72% 12%, 18% 90%, 100% 58%;
-  }
-
-  66% {
-    background-position: 100% 76%, 54% 0%, 0% 42%;
-  }
-
-  100% {
-    background-position: 0% 28%, 100% 72%, 52% 0%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .affiliate-stat-banner::before {
-    animation: none;
-  }
+  background: rgb(var(--color-info-subtle));
 }
 
 .reward-transfer-button {
-  color: #174a72;
-  background: rgb(255 255 255 / 0.78);
-  box-shadow: 0 1px 2px rgb(23 74 114 / 0.08);
+  border: 1px solid rgb(var(--color-border-strong));
+  color: rgb(var(--color-foreground));
+  background: rgb(var(--color-surface-raised));
+  box-shadow: var(--shadow-card);
 }
 
 .reward-transfer-button:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.96);
+  background: rgb(var(--color-surface-subtle));
 }
 </style>

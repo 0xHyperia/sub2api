@@ -23,12 +23,12 @@ interface AstNode {
 }
 
 const scopedViews = [
-  { path: 'src/views/admin/UsersView.vue', menus: 4 },
-  { path: 'src/views/admin/GroupsView.vue', menus: 1 },
-  { path: 'src/views/admin/ProxiesView.vue', menus: 1 },
-  { path: 'src/views/admin/SubscriptionsView.vue', menus: 1 },
-  { path: 'src/views/user/KeysView.vue', menus: 1 },
-  { path: 'src/views/user/UsageView.vue', menus: 1 },
+  { path: 'src/views/admin/UsersView.vue', menus: 4, triggers: 5 },
+  { path: 'src/views/admin/GroupsView.vue', menus: 1, triggers: 1 },
+  { path: 'src/views/admin/ProxiesView.vue', menus: 1, triggers: 1 },
+  { path: 'src/views/admin/SubscriptionsView.vue', menus: 1, triggers: 1 },
+  { path: 'src/views/user/KeysView.vue', menus: 1, triggers: 1 },
+  { path: 'src/views/user/UsageView.vue', menus: 1, triggers: 1 },
 ] as const
 
 function readTemplate(relativePath: string): AstNode {
@@ -69,13 +69,13 @@ function location(path: string, node: AstNode): string {
 }
 
 describe('dropdown menu accessibility contracts', () => {
-  it.each(scopedViews)('$path connects all $menus menus to keyboard-capable triggers', ({ path, menus }) => {
+  it.each(scopedViews)('$path connects all menus to $triggers keyboard-capable triggers', ({ path, menus, triggers }) => {
     const elements = collectElements(readTemplate(path))
     const menuNodes = elements.filter((node) => staticAttribute(node, 'role') === 'menu')
     const menuTriggers = elements.filter((node) => staticAttribute(node, 'aria-haspopup') === 'menu')
 
     expect(menuNodes, `${path} menu count`).toHaveLength(menus)
-    expect(menuTriggers, `${path} trigger count`).toHaveLength(menus)
+    expect(menuTriggers, `${path} trigger count`).toHaveLength(triggers)
 
     const invalidMenus = menuNodes
       .filter((node) =>

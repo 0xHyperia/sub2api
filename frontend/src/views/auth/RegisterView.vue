@@ -115,7 +115,7 @@
               type="button"
               :disabled="registrationActionDisabled"
               @click="showPassword = !showPassword"
-              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-foreground-subtle transition-colors hover:text-foreground-muted"
+              class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center text-foreground-subtle transition-colors hover:text-foreground-muted"
               :aria-label="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
               :aria-pressed="showPassword"
             >

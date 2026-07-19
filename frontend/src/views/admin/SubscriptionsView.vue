@@ -216,6 +216,129 @@
           default-sort-order="desc"
           @sort="handleSort"
         >
+          <template #mobile-card="{ row }">
+            <article class="space-y-3">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <div class="subscription-avatar shrink-0">
+                    <span class="text-sm font-medium">
+                      {{ (row.user?.email || row.user?.username || '?').charAt(0).toUpperCase() }}
+                    </span>
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="truncate text-sm font-semibold text-foreground">
+                      {{ row.user?.email || t('admin.redeem.userPrefix', { id: row.user_id }) }}
+                    </h3>
+                    <p v-if="row.user?.username" class="mt-0.5 truncate text-xs text-foreground-subtle">{{ row.user.username }}</p>
+                  </div>
+                </div>
+                <span :class="['badge shrink-0', row.status === 'active' ? 'badge-success' : row.status === 'expired' ? 'badge-warning' : 'badge-danger']">
+                  {{ t(`admin.subscriptions.status.${row.status}`) }}
+                </span>
+              </header>
+
+              <div class="flex items-start justify-between gap-3 rounded-panel bg-surface-subtle px-3 py-2.5">
+                <GroupBadge
+                  v-if="row.group"
+                  :name="row.group.name"
+                  :platform="row.group.platform"
+                  :subscription-type="row.group.subscription_type"
+                  :rate-multiplier="row.group.rate_multiplier"
+                  :show-rate="false"
+                />
+                <span v-else class="text-xs text-foreground-subtle">-</span>
+                <div class="shrink-0 text-right">
+                  <p class="text-[10px] text-foreground-subtle">{{ t('admin.subscriptions.columns.expires') }}</p>
+                  <p class="mt-0.5 text-xs font-medium" :class="row.expires_at && isExpiringSoon(row.expires_at) ? 'text-warning-foreground' : 'text-foreground'">
+                    {{ row.expires_at ? formatDateOnly(row.expires_at) : t('admin.subscriptions.noExpiration') }}
+                  </p>
+                  <p v-if="row.expires_at && getDaysRemaining(row.expires_at) !== null" class="text-[10px] text-foreground-subtle">
+                    {{ getDaysRemaining(row.expires_at) }} {{ t('admin.subscriptions.daysRemaining') }}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                v-if="row.group?.daily_limit_usd || row.group?.weekly_limit_usd || row.group?.monthly_limit_usd"
+                class="space-y-2.5"
+              >
+                <div v-if="row.group?.daily_limit_usd" class="space-y-1">
+                  <div class="flex items-center justify-between gap-3 text-[10px]">
+                    <span class="text-foreground-subtle">{{ t('admin.subscriptions.daily') }}</span>
+                    <span class="font-mono tabular-nums text-foreground">${{ row.daily_usage_usd?.toFixed(2) || '0.00' }} / ${{ row.group.daily_limit_usd.toFixed(2) }}</span>
+                  </div>
+                  <div class="h-1.5 overflow-hidden rounded-full bg-outline">
+                    <div class="h-full rounded-full" :class="getProgressClass(row.daily_usage_usd, row.group.daily_limit_usd)" :style="{ width: getProgressWidth(row.daily_usage_usd, row.group.daily_limit_usd) }"></div>
+                  </div>
+                </div>
+                <div v-if="row.group?.weekly_limit_usd" class="space-y-1">
+                  <div class="flex items-center justify-between gap-3 text-[10px]">
+                    <span class="text-foreground-subtle">{{ t('admin.subscriptions.weekly') }}</span>
+                    <span class="font-mono tabular-nums text-foreground">${{ row.weekly_usage_usd?.toFixed(2) || '0.00' }} / ${{ row.group.weekly_limit_usd.toFixed(2) }}</span>
+                  </div>
+                  <div class="h-1.5 overflow-hidden rounded-full bg-outline">
+                    <div class="h-full rounded-full" :class="getProgressClass(row.weekly_usage_usd, row.group.weekly_limit_usd)" :style="{ width: getProgressWidth(row.weekly_usage_usd, row.group.weekly_limit_usd) }"></div>
+                  </div>
+                </div>
+                <div v-if="row.group?.monthly_limit_usd" class="space-y-1">
+                  <div class="flex items-center justify-between gap-3 text-[10px]">
+                    <span class="text-foreground-subtle">{{ t('admin.subscriptions.monthly') }}</span>
+                    <span class="font-mono tabular-nums text-foreground">${{ row.monthly_usage_usd?.toFixed(2) || '0.00' }} / ${{ row.group.monthly_limit_usd.toFixed(2) }}</span>
+                  </div>
+                  <div class="h-1.5 overflow-hidden rounded-full bg-outline">
+                    <div class="h-full rounded-full" :class="getProgressClass(row.monthly_usage_usd, row.group.monthly_limit_usd)" :style="{ width: getProgressWidth(row.monthly_usage_usd, row.group.monthly_limit_usd) }"></div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="flex items-center justify-center gap-2 rounded-control border border-outline py-2 text-xs text-foreground-muted">
+                <span class="text-base">∞</span>
+                {{ t('admin.subscriptions.unlimited') }}
+              </div>
+
+              <footer class="flex items-center gap-2 border-t border-outline pt-3">
+                <button
+                  v-if="row.status === 'active' || row.status === 'expired'"
+                  type="button"
+                  class="btn btn-secondary min-w-0 flex-1"
+                  @click="handleExtend(row)"
+                >
+                  <Icon name="calendar" size="sm" />
+                  {{ t('admin.subscriptions.adjust') }}
+                </button>
+                <button
+                  v-if="row.status === 'revoked'"
+                  type="button"
+                  class="btn btn-secondary min-w-0 flex-1"
+                  @click="handleRestore(row)"
+                >
+                  <Icon name="refresh" size="sm" />
+                  {{ t('admin.subscriptions.restore') }}
+                </button>
+                <button
+                  v-if="row.status === 'active'"
+                  type="button"
+                  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-outline text-warning-foreground hover:bg-warning-subtle"
+                  :disabled="resettingQuota && resettingSubscription?.id === row.id"
+                  :title="t('admin.subscriptions.resetQuota')"
+                  :aria-label="`${t('admin.subscriptions.resetQuota')}: ${row.user?.email || row.user_id}`"
+                  @click="handleResetQuota(row)"
+                >
+                  <Icon name="refresh" size="sm" :class="resettingQuota && resettingSubscription?.id === row.id ? 'animate-spin' : ''" />
+                </button>
+                <button
+                  v-if="row.status === 'active'"
+                  type="button"
+                  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-danger/30 text-danger-foreground hover:bg-danger-subtle"
+                  :title="t('admin.subscriptions.revoke')"
+                  :aria-label="`${t('admin.subscriptions.revoke')}: ${row.user?.email || row.user_id}`"
+                  @click="handleRevoke(row)"
+                >
+                  <Icon name="ban" size="sm" />
+                </button>
+              </footer>
+            </article>
+          </template>
+
           <template #cell-user="{ row }">
             <div class="flex items-center gap-2">
               <div class="subscription-avatar">

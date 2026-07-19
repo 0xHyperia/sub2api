@@ -56,7 +56,89 @@
       </div>
     </form>
     <div v-if="error" role="alert" class="mt-4 rounded-lg bg-danger-subtle px-4 py-3 text-sm text-danger-foreground  ">{{ error }}</div>
-    <div class="mt-5 overflow-x-auto rounded-xl border border-outline ">
+    <div class="mt-5 overflow-hidden rounded-xl border border-outline">
+      <div class="md:hidden" data-test="mobile-event-list">
+        <div class="flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-outline bg-surface-subtle px-3 py-2">
+          <label class="inline-flex min-h-10 items-center gap-2 text-xs font-medium text-foreground-muted">
+            <input
+              type="checkbox"
+              :checked="allSelected"
+              :aria-label="t('admin.promptAudit.events.selectAll')"
+              data-test="mobile-select-all-events"
+              @change="toggleAll"
+            />
+            {{ t('admin.promptAudit.events.selectAll') }}
+          </label>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm text-danger-foreground hover:bg-danger-subtle"
+            :disabled="selectedIds.length === 0"
+            data-test="mobile-batch-delete-events"
+            @click="$emit('batch-delete')"
+          >
+            {{ t('admin.promptAudit.events.deleteSelected', { count: selectedIds.length }) }}
+          </button>
+        </div>
+        <div v-if="loading" class="px-4 py-12 text-center text-sm text-foreground-subtle" aria-busy="true">{{ t('common.loading') }}</div>
+        <div v-else-if="events.length === 0" class="px-4 py-12 text-center text-sm text-foreground-subtle">{{ t('admin.promptAudit.events.empty') }}</div>
+        <div v-else class="divide-y divide-outline bg-surface">
+          <article v-for="event in events" :key="event.id" class="space-y-3 p-3" :data-test="`mobile-event-${event.id}`">
+            <header class="flex min-w-0 items-start gap-3">
+              <input
+                type="checkbox"
+                class="mt-1 h-4 w-4 flex-none"
+                :checked="selectedIds.includes(event.id)"
+                :aria-label="t('admin.promptAudit.events.selectEvent', { id: event.id })"
+                :data-test="`mobile-select-event-${event.id}`"
+                @change="toggleOne(event.id)"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="decisionClass(event.decision)">
+                    {{ formatDecisionRisk(event.decision, event.risk_level) }}
+                  </span>
+                  <span class="truncate text-xs text-foreground-subtle" :title="formatCategories(event.categories)">
+                    {{ formatCategories(event.categories) }}
+                  </span>
+                </div>
+                <p class="mt-2 break-all text-sm font-semibold text-foreground">{{ event.snapshot.endpoint }}</p>
+                <p class="mt-1 break-all text-xs text-foreground-muted">
+                  {{ event.snapshot.model }} · {{ event.snapshot.protocol }} · {{ event.snapshot.stage || 'http' }}
+                </p>
+              </div>
+            </header>
+
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 rounded-panel bg-surface-subtle px-3 py-2.5 text-xs">
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">{{ t('admin.promptAudit.events.identity') }}</dt>
+                <dd class="mt-0.5 truncate text-foreground" :title="event.snapshot.user_email || event.snapshot.username">
+                  {{ event.snapshot.username || event.snapshot.user_email || '—' }}
+                </dd>
+                <dd v-if="event.snapshot.api_key_name" class="mt-0.5 truncate text-foreground-subtle">{{ event.snapshot.api_key_name }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-foreground-subtle">{{ t('admin.promptAudit.events.group') }}</dt>
+                <dd class="mt-0.5 truncate text-foreground">{{ event.snapshot.group_name || '—' }}</dd>
+              </div>
+              <div class="col-span-2 min-w-0">
+                <dt class="sr-only">{{ t('admin.promptAudit.events.time') }}</dt>
+                <dd class="text-foreground-subtle">{{ formatDate(event.created_at) }}</dd>
+              </div>
+            </dl>
+
+            <div class="grid grid-cols-2 gap-2 border-t border-outline pt-3">
+              <button type="button" class="btn btn-secondary btn-sm" :data-test="`mobile-view-event-${event.id}`" @click="$emit('view', event.id)">
+                {{ t('common.view') }}
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm text-danger-foreground hover:bg-danger-subtle" :data-test="`mobile-delete-event-${event.id}`" @click="$emit('delete', event.id)">
+                {{ t('common.delete') }}
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="hidden overflow-x-auto md:block" data-test="desktop-event-table">
       <table class="min-w-[1120px] w-full text-left text-sm">
         <thead class="bg-surface-subtle text-xs uppercase tracking-wide text-foreground-subtle  ">
           <tr>
@@ -70,10 +152,10 @@
             <th class="px-3 py-3 text-right font-medium">{{ t('admin.promptAudit.common.actions') }}</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-outline bg-white  ">
+        <tbody class="divide-y divide-outline bg-surface">
           <tr v-if="loading"><td colspan="8" class="px-4 py-12 text-center text-foreground-subtle" aria-busy="true">{{ t('common.loading') }}</td></tr>
           <tr v-else-if="events.length === 0"><td colspan="8" class="px-4 py-12 text-center text-foreground-subtle">{{ t('admin.promptAudit.events.empty') }}</td></tr>
-          <tr v-for="event in events" v-else :key="event.id" :data-test="`event-${event.id}`" class="align-top hover:bg-surface-subtle/70 dark:hover:bg-foreground/70">
+          <tr v-for="event in events" v-else :key="event.id" :data-test="`event-${event.id}`" class="align-top hover:bg-surface-subtle/70">
             <td class="px-3 py-3"><input type="checkbox" :checked="selectedIds.includes(event.id)" :aria-label="t('admin.promptAudit.events.selectEvent', { id: event.id })" @change="toggleOne(event.id)" /></td>
             <td class="whitespace-nowrap px-3 py-3 text-xs text-foreground-muted ">{{ formatDate(event.created_at) }}</td>
             <td class="px-3 py-3">
@@ -98,6 +180,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
       <Pagination :total="total" :page="page" :page-size="pageSize" @update:page="$emit('page', $event)" @update:page-size="$emit('page-size', $event)" />
     </div>
   </section>

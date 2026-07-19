@@ -14,6 +14,29 @@
         @sort="onSort"
         @rowClick="(row) => openDetail(row.id)"
       >
+        <template #mobile-card="{ row }">
+          <article class="min-w-0">
+            <header class="flex min-w-0 items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <h3 class="truncate text-sm font-semibold text-foreground" :title="row.model || ''">{{ row.model || '-' }}</h3>
+                <p class="mt-0.5 truncate text-xs text-foreground-subtle" :title="row.key_name || ''">{{ row.key_name || '-' }}</p>
+              </div>
+              <span class="inline-flex shrink-0 items-center rounded px-2 py-0.5 text-xs font-medium" :class="statusClass(row.status_code)">
+                {{ row.status_code || '-' }}
+              </span>
+            </header>
+            <div class="mt-3 flex min-w-0 items-center justify-between gap-3">
+              <span class="truncate text-xs font-medium text-danger-foreground">{{ t('usage.errors.categories.' + row.category) }}</span>
+              <time class="shrink-0 text-[11px] text-foreground-subtle">{{ formatDateTime(row.created_at) }}</time>
+            </div>
+            <p v-if="row.message" class="mt-2 line-clamp-2 text-xs leading-5 text-foreground-muted">{{ row.message }}</p>
+            <div class="mt-3 flex items-center justify-end gap-1 border-t border-outline pt-2 text-xs font-medium text-brand">
+              <span>{{ t('common.view') }}</span>
+              <Icon name="chevronRight" size="xs" aria-hidden="true" />
+            </div>
+          </article>
+        </template>
+
         <template #cell-model="{ row }">
           <span v-if="row.model" class="text-sm font-medium text-foreground">{{ row.model }}</span>
           <span v-else class="text-sm text-foreground-subtle">-</span>
@@ -129,6 +152,7 @@ import Pagination from '@/components/common/Pagination.vue'
 import UserErrorDetailModal from '@/components/user/UserErrorDetailModal.vue'
 import IpGeoCell from '@/components/common/IpGeoCell.vue'
 import IpGeoBatchToolbar from '@/components/common/IpGeoBatchToolbar.vue'
+import Icon from '@/components/icons/Icon.vue'
 import { formatDateTime } from '@/utils/format'
 import {
   mapErrorSortKey,

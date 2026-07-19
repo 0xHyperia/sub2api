@@ -27,7 +27,7 @@
             <input v-model="groupSearch" type="search" class="input mt-1.5 w-full" :aria-label="t('admin.promptAudit.policy.searchGroups')" />
           </label>
           <div class="mt-3 max-h-52 overflow-y-auto rounded-lg border border-outline p-2 ">
-            <label v-for="group in filteredGroups" :key="group.id" class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-2 text-sm hover:bg-surface-subtle dark:hover:bg-foreground">
+            <label v-for="group in filteredGroups" :key="group.id" class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-2 text-sm hover:bg-surface-subtle">
               <span class="flex items-center gap-2 text-foreground ">
                 <input type="checkbox" :checked="draft.group_ids.includes(group.id)" @change="toggleGroup(group.id)" />
                 {{ group.name }}
@@ -45,7 +45,7 @@
         <fieldset class="mt-5 border-t border-outline pt-5 ">
           <legend class="text-sm font-medium text-foreground ">{{ t('admin.promptAudit.policy.scanners') }}</legend>
           <div class="mt-3 grid gap-2 sm:grid-cols-2">
-            <label v-for="scanner in SCANNER_CATALOG" :key="scanner.id" class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-surface-subtle  dark:hover:bg-foreground">
+            <label v-for="scanner in SCANNER_CATALOG" :key="scanner.id" class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-surface-subtle">
               <input type="checkbox" :checked="draft.scanners.includes(scanner.id)" :aria-label="scannerLabel(scanner.id)" @change="toggleScanner(scanner.id)" />
               <span>{{ scannerLabel(scanner.id) }}</span>
             </label>

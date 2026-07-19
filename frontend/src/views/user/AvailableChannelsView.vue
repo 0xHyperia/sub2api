@@ -2,25 +2,23 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div class="flex items-center gap-2 sm:justify-between">
           <SearchInput
             v-model="searchQuery"
             :placeholder="t('availableChannels.searchPlaceholder')"
-            class="w-full sm:w-80"
+            class="min-w-0 flex-1 sm:w-80 sm:flex-none"
           />
 
-          <div class="flex flex-shrink-0 items-center justify-end">
-            <button
+          <button
               type="button"
               @click="loadChannels"
               :disabled="loading"
-              class="btn btn-secondary px-2.5"
+              class="btn btn-secondary btn-icon shrink-0"
               :title="t('common.refresh', 'Refresh')"
               :aria-label="t('common.refresh', 'Refresh')"
             >
               <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
-            </button>
-          </div>
+          </button>
         </div>
       </template>
 

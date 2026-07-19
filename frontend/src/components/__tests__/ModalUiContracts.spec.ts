@@ -38,3 +38,37 @@ describe.each([
     expect(source).toContain('<ConfirmDialog')
   })
 })
+
+describe.each([
+  {
+    relativePath: '../admin/user/UserPlatformQuotaModal.vue',
+    mobileLayout: 'platform-cards',
+    desktopLayout: 'quota-table',
+    mobileActions: ['@click="onReset(row.platform, quotaWindow)"']
+  },
+  {
+    relativePath: '../admin/ErrorPassthroughRulesModal.vue',
+    mobileLayout: 'rule-cards',
+    desktopLayout: 'rules-table',
+    mobileActions: ['@click="toggleEnabled(rule)"', '@click="handleEdit(rule)"', '@click="handleDelete(rule)"']
+  },
+  {
+    relativePath: '../admin/TLSFingerprintProfilesModal.vue',
+    mobileLayout: 'profile-cards',
+    desktopLayout: 'profiles-table',
+    mobileActions: ['@click="handleEdit(profile)"', '@click="handleDelete(profile)"']
+  }
+])('$relativePath responsive collection contract', ({ relativePath, mobileLayout, desktopLayout, mobileActions }) => {
+  const source = readFileSync(resolve(testDir, relativePath), 'utf8')
+
+  it('uses a mobile card collection while retaining the desktop table', () => {
+    expect(source).toContain(`data-mobile-layout="${mobileLayout}"`)
+    expect(source).toContain(`data-desktop-layout="${desktopLayout}"`)
+    expect(source).toMatch(new RegExp(`data-mobile-layout="${mobileLayout}"[^>]*sm:hidden`))
+    expect(source).toMatch(new RegExp(`data-desktop-layout="${desktopLayout}"[^>]*hidden[^>]*sm:block`))
+  })
+
+  it('keeps editing actions available in the mobile collection', () => {
+    for (const action of mobileActions) expect(source).toContain(action)
+  })
+})

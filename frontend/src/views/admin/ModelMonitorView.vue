@@ -11,7 +11,55 @@
       </template>
 
       <template #filters>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="space-y-2 md:hidden">
+          <div class="flex min-w-0 items-center gap-2">
+            <div class="relative min-w-0 flex-1">
+              <Icon name="search" size="sm" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
+              <input v-model="search" class="input pl-9" :placeholder="t('admin.modelMonitor.searchPlaceholder')" />
+            </div>
+            <button type="button" class="btn btn-secondary btn-icon shrink-0" :title="t('common.refresh')" :disabled="loading || refreshing" @click="load()">
+              <Icon name="refresh" size="sm" :class="loading || refreshing ? 'animate-spin' : ''" />
+            </button>
+          </div>
+          <details class="group rounded-panel border border-outline bg-surface">
+            <summary class="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-medium text-foreground-muted">
+              <span class="flex items-center gap-2">
+                <Icon name="filter" size="sm" />
+                {{ t('common.filter') }}
+                <span v-if="activeFilterCount" class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-brand-foreground">
+                  {{ activeFilterCount }}
+                </span>
+              </span>
+              <Icon name="chevronDown" size="xs" class="transition-transform group-open:rotate-180" />
+            </summary>
+            <div class="grid grid-cols-1 gap-2 border-t border-outline p-3 sm:grid-cols-2">
+              <select v-model="platform" class="input">
+                <option value="">{{ t('admin.modelMonitor.allPlatforms') }}</option>
+                <option v-for="item in platforms" :key="item" :value="item">{{ item }}</option>
+              </select>
+              <select v-model="status" class="input">
+                <option value="">{{ t('admin.modelMonitor.allStatuses') }}</option>
+                <option v-for="item in statuses" :key="item" :value="item">{{ statusLabel(item) }}</option>
+              </select>
+              <select v-model="enabled" class="input">
+                <option value="">{{ t('admin.modelMonitor.allStates') }}</option>
+                <option value="true">{{ t('admin.modelMonitor.enabledOnly') }}</option>
+                <option value="false">{{ t('admin.modelMonitor.disabledOnly') }}</option>
+              </select>
+              <select v-model="sortMode" class="input" :aria-label="t('admin.modelMonitor.sortLabel')">
+                <option value="priority">{{ t('admin.modelMonitor.sortPriority') }}</option>
+                <option value="name">{{ t('admin.modelMonitor.sortName') }}</option>
+                <option value="status">{{ t('admin.modelMonitor.sortStatus') }}</option>
+              </select>
+              <span class="inline-flex min-h-9 items-center gap-1.5 text-xs text-foreground-subtle sm:col-span-2">
+                <span class="h-1.5 w-1.5 rounded-full" :class="refreshing ? 'animate-pulse bg-brand' : 'bg-success'"></span>
+                {{ t('admin.modelMonitor.autoRefresh') }}
+              </span>
+            </div>
+          </details>
+        </div>
+
+        <div class="hidden flex-wrap items-center gap-2 md:flex">
           <div class="relative min-w-56 flex-1">
             <Icon name="search" size="sm" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
             <input v-model="search" class="input pl-9" :placeholder="t('admin.modelMonitor.searchPlaceholder')" />
@@ -46,6 +94,68 @@
 
       <template #table>
         <DataTable :columns="columns" :data="filteredRows" :loading="loading">
+          <template #mobile-card="{ row }">
+            <article class="space-y-3">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex min-w-0 items-center gap-1.5">
+                    <h3 class="truncate text-sm font-semibold text-foreground">{{ row.model }}</h3>
+                    <span v-if="row.label" class="inline-flex h-[18px] max-w-20 shrink-0 items-center truncate rounded-control bg-black px-1.5 text-[9px] font-bold text-white">{{ row.label }}</span>
+                  </div>
+                  <p class="mt-0.5 text-[10px] uppercase text-foreground-subtle">{{ row.platform }}</p>
+                </div>
+                <span class="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium" :class="statusTextClass(row.summary?.status)">
+                  <span class="h-2 w-2 rounded-full bg-current"></span>
+                  {{ statusLabel(row.summary?.status) }}
+                </span>
+              </header>
+
+              <div v-if="!row.catalog_available" class="rounded-control bg-warning-subtle px-2.5 py-1.5 text-xs text-warning-foreground">
+                {{ t('admin.modelMonitor.unavailable') }}
+              </div>
+
+              <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-outline bg-outline">
+                <div class="bg-surface-subtle px-3 py-2">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.modelMonitor.availability') }}</dt>
+                  <dd class="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">{{ formatAvailability(row.summary?.availability_7d) }}</dd>
+                </div>
+                <div class="bg-surface-subtle px-3 py-2">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.modelMonitor.latency') }}</dt>
+                  <dd class="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">{{ formatLatency(row.summary?.latency_ms) }}</dd>
+                </div>
+              </dl>
+
+              <div class="flex h-5 items-end gap-0.5" :aria-label="t('admin.modelMonitor.timeline')">
+                <span v-for="(point, index) in timeline(row)" :key="`mobile-${point.checked_at}-${index}`" class="h-4 min-w-0 flex-1 rounded-[2px]" :class="timelineClass(point.status)" :title="timelineTitle(point)" />
+                <span v-for="index in Math.max(0, 20 - timeline(row).length)" :key="`mobile-empty-${index}`" class="h-4 min-w-0 flex-1 rounded-[2px] bg-surface-emphasis" />
+              </div>
+
+              <button type="button" class="flex w-full items-center justify-between gap-2 rounded-control bg-surface-subtle px-3 py-2 text-left text-xs text-foreground-muted hover:text-brand" @click="openGroups(row)">
+                <span class="truncate">{{ groupSummary(row) }}</span>
+                <Icon name="cog" size="xs" class="shrink-0" />
+              </button>
+
+              <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                <select :value="row.interval_seconds" class="input h-9 min-w-0 py-1 text-xs" @change="changeInterval(row, $event)">
+                  <option v-for="option in intervalOptions" :key="option" :value="option">{{ intervalLabel(option) }}</option>
+                </select>
+                <Toggle :modelValue="row.enabled" :aria-label="`${t('admin.modelMonitor.enabled')}: ${row.model}`" @update:modelValue="toggleRow(row, $event)" />
+              </div>
+
+              <footer class="grid grid-cols-3 gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-secondary px-2" :title="t('admin.modelMonitor.runNow')" :disabled="!featureEnabled || runningKey !== null || !row.catalog_available" @click="runRow(row)">
+                  <Icon name="play" size="sm" />
+                </button>
+                <button type="button" class="btn btn-secondary px-2" :title="t('admin.modelMonitor.configureGroups')" :disabled="!row.catalog_available" @click="openGroups(row)">
+                  <Icon name="cog" size="sm" />
+                </button>
+                <button type="button" class="btn btn-secondary px-2" :title="t('admin.modelMonitor.history')" :disabled="!row.configured" @click="openHistory(row)">
+                  <Icon name="clock" size="sm" />
+                </button>
+              </footer>
+            </article>
+          </template>
+
           <template #cell-model="{ row }">
             <div class="min-w-48">
               <div class="flex items-center gap-2">
@@ -174,6 +284,23 @@
     <BaseDialog :show="historyOpen" :title="t('admin.modelMonitor.historyTitle', { model: historyRow?.model || '' })" width="wide" @close="historyOpen = false">
       <div v-if="historyLoading" class="py-8 text-center text-sm text-foreground-subtle">{{ t('common.loading') }}</div>
       <div v-else class="max-h-[60vh] overflow-auto">
+        <ol class="divide-y divide-outline sm:hidden">
+          <li v-for="item in historyItems" :key="`mobile-history-${item.id}`" class="relative py-3 pl-5">
+            <span class="absolute left-0 top-4 h-2.5 w-2.5 rounded-full bg-current" :class="statusTextClass(item.status)"></span>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-semibold" :class="statusTextClass(item.status)">{{ statusLabel(item.status) }}</p>
+                <p class="mt-1 text-xs text-foreground-muted">{{ item.group_name || '—' }}</p>
+              </div>
+              <time class="text-right text-[10px] leading-4 text-foreground-subtle">{{ formatTime(item.checked_at) }}</time>
+            </div>
+            <div class="mt-2 flex items-center gap-3 font-mono text-xs tabular-nums text-foreground-muted">
+              <span>{{ formatLatency(item.latency_ms) }}</span>
+              <span>{{ t('admin.modelMonitor.attempts', { value: item.attempts }) }}</span>
+            </div>
+          </li>
+        </ol>
+        <div class="hidden overflow-x-auto sm:block">
         <table class="w-full min-w-[640px] text-left text-sm">
           <thead class="sticky top-0 border-b border-outline bg-surface text-xs text-foreground-subtle">
             <tr><th class="py-2">{{ t('admin.modelMonitor.status') }}</th><th>{{ t('admin.modelMonitor.group') }}</th><th>{{ t('admin.modelMonitor.latency') }}</th><th>{{ t('admin.modelMonitor.actions') }}</th><th>{{ t('admin.modelMonitor.checkedAt') }}</th></tr>
@@ -188,6 +315,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </BaseDialog>
   </AppLayout>
@@ -239,6 +367,7 @@ const intervalOptions = [60, 300, 600, 1800, 3600]
 const labelPresets = computed(() => [t('admin.modelMonitor.labels.latest'), t('admin.modelMonitor.labels.popular'), t('admin.modelMonitor.labels.recommended')])
 const featureEnabled = computed(() => appStore.cachedPublicSettings?.model_marketplace_enabled === true && appStore.cachedPublicSettings?.model_monitor_enabled === true)
 const platforms = computed(() => [...new Set(rows.value.map(row => row.platform))].sort())
+const activeFilterCount = computed(() => [platform.value, status.value, enabled.value].filter(Boolean).length)
 const columns = computed<Column[]>(() => [
   { key: 'model', label: t('admin.modelMonitor.model') },
   { key: 'groups', label: t('admin.modelMonitor.groups') },

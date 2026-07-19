@@ -1603,75 +1603,15 @@ onMounted(async () => {
 }
 
 .payment-confirm-button {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  color: #174a72;
-  background: #dceefe;
-  border-color: rgb(80 174 255 / 0.45);
-  box-shadow: 0 4px 14px rgb(23 74 114 / 0.12);
-}
-
-.payment-confirm-button::before {
-  position: absolute;
-  z-index: 0;
-  inset: -70%;
-  content: '';
-  background:
-    radial-gradient(ellipse at center, rgb(80 174 255 / 0.62), transparent 52%),
-    radial-gradient(ellipse at center, rgb(255 180 106 / 0.4), transparent 50%),
-    radial-gradient(ellipse at center, rgb(255 255 255 / 0.82), transparent 48%);
-  background-position: 0% 28%, 100% 72%, 52% 0%;
-  background-repeat: no-repeat;
-  background-size: 62% 72%, 58% 68%, 54% 62%;
-  animation: payment-confirm-flow 10s linear infinite;
-  pointer-events: none;
-}
-
-.payment-confirm-button::after {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  content: '';
-  background: rgb(255 255 255 / 0.2);
-  border: 1px solid rgb(255 255 255 / 0.64);
-  backdrop-filter: blur(8px);
-  pointer-events: none;
-}
-
-.payment-confirm-button > * {
-  position: relative;
-  z-index: 2;
+  color: rgb(var(--color-brand-foreground));
+  background: rgb(var(--color-brand));
+  border-color: rgb(var(--color-brand));
+  box-shadow: var(--shadow-card);
 }
 
 .payment-confirm-button:hover:not(:disabled) {
-  color: #0f3d62;
-  background: #d2eafe;
-  border-color: rgb(80 174 255 / 0.72);
-}
-
-@keyframes payment-confirm-flow {
-  0% {
-    background-position: 0% 28%, 100% 72%, 52% 0%;
-  }
-
-  33% {
-    background-position: 72% 12%, 18% 90%, 100% 58%;
-  }
-
-  66% {
-    background-position: 100% 76%, 54% 0%, 0% 42%;
-  }
-
-  100% {
-    background-position: 0% 28%, 100% 72%, 52% 0%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .payment-confirm-button::before {
-    animation: none;
-  }
+  background: rgb(var(--color-brand-hover));
+  border-color: rgb(var(--color-brand-hover));
 }
 
 .subscription-stage-enter-active,

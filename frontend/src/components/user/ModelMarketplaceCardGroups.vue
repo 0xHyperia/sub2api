@@ -30,7 +30,7 @@
       <span v-if="groups.length === 0" class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.billingGroup') }} -</span>
     </div>
 
-    <div ref="measureRef" class="pointer-events-none absolute invisible flex items-center gap-1.5 whitespace-nowrap" aria-hidden="true">
+    <div ref="measureRef" class="pointer-events-none absolute invisible flex max-w-full items-center gap-1.5 overflow-hidden whitespace-nowrap" aria-hidden="true">
       <button
         v-for="group in groups"
         :key="group.id"

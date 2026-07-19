@@ -2298,7 +2298,7 @@
                 :class="[
                   'px-3 py-1.5 text-sm rounded-control border transition-colors',
                   userMsgQueueMode === opt.value
-                    ? 'bg-brand text-white border-brand'
+                    ? 'bg-brand text-brand-foreground border-brand'
                     : 'bg-surface-subtle text-foreground-muted border-outline-strong hover:bg-surface-subtle'
                 ]">
                 {{ opt.label }}
@@ -2472,7 +2472,7 @@
             </span>
             <!-- Tooltip（向下显示避免被弹窗裁剪） -->
             <div
-              class="pointer-events-none absolute left-0 top-full z-[100] mt-1.5 w-72 rounded px-3 py-2 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 bg-surface-subtle"
+              class="pointer-events-none absolute left-0 top-full z-[100] mt-1.5 w-72 rounded-control bg-inverse px-3 py-2 text-xs text-inverse-foreground opacity-0 shadow-floating transition-opacity group-hover:opacity-100"
             >
               {{ t('admin.accounts.mixedSchedulingTooltip') }}
               <div
@@ -2499,7 +2499,7 @@
               ?
             </span>
             <div
-              class="pointer-events-none absolute left-0 top-full z-[100] mt-1.5 w-72 rounded px-3 py-2 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 bg-surface-subtle"
+              class="pointer-events-none absolute left-0 top-full z-[100] mt-1.5 w-72 rounded-control bg-inverse px-3 py-2 text-xs text-inverse-foreground opacity-0 shadow-floating transition-opacity group-hover:opacity-100"
             >
               {{ t('admin.accounts.allowOveragesTooltip') }}
               <div
@@ -2907,28 +2907,28 @@ const codexImageToolOptions = computed<Array<{
     label: t('admin.accounts.openai.codexImageToolInherit'),
     description: t('admin.accounts.openai.codexImageToolInheritDesc'),
     selectedCardClass: 'shadow-sm ring-1 ring-info/20 border-info/30 bg-info/25 text-info-foreground',
-    selectedDotClass: 'border-info/30 bg-info text-white'
+    selectedDotClass: 'border-info/30 bg-info text-info-solid-foreground'
   },
   {
     value: 'enabled',
     label: t('admin.accounts.openai.codexImageToolEnabled'),
     description: t('admin.accounts.openai.codexImageToolEnabledDesc'),
     selectedCardClass: 'shadow-sm ring-1 ring-success/20 border-success/30 bg-success-subtle text-success-foreground',
-    selectedDotClass: 'border-success bg-success text-white'
+    selectedDotClass: 'border-success bg-success text-success-solid-foreground'
   },
   {
     value: 'disabled',
     label: t('admin.accounts.openai.codexImageToolDisabled'),
     description: t('admin.accounts.openai.codexImageToolDisabledDesc'),
     selectedCardClass: 'shadow-sm ring-1 border-warning/30 bg-warning-subtle text-warning-foreground ring-warning/20',
-    selectedDotClass: 'border-warning bg-warning text-white'
+    selectedDotClass: 'border-warning bg-warning text-warning-solid-foreground'
   },
   {
     value: 'block',
     label: t('admin.accounts.openai.codexImageToolBlock'),
     description: t('admin.accounts.openai.codexImageToolBlockDesc'),
     selectedCardClass: 'shadow-sm ring-1 ring-danger/20 border-danger/30 bg-danger/25 text-danger-foreground',
-    selectedDotClass: 'border-danger/30 bg-danger text-white'
+    selectedDotClass: 'border-danger/30 bg-danger text-danger-solid-foreground'
   }
 ])
 const codexImageToolBadgeLabel = computed(() => {

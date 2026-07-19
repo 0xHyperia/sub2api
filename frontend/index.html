@@ -2,6 +2,32 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <script data-theme-prepaint>
+      (() => {
+        const validPreferences = ['light', 'dark', 'system']
+        let preference = 'system'
+
+        try {
+          const storedPreference = localStorage.getItem('usa-zero-theme')
+          if (validPreferences.includes(storedPreference)) {
+            preference = storedPreference
+          } else {
+            const legacyPreference = localStorage.getItem('theme')
+            preference = validPreferences.includes(legacyPreference) ? legacyPreference : 'system'
+          }
+        } catch {
+          // Storage can be unavailable in privacy-restricted browser contexts.
+        }
+
+        const resolvedTheme = preference === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : preference
+        const root = document.documentElement
+        root.classList.toggle('dark', resolvedTheme === 'dark')
+        root.dataset.theme = resolvedTheme
+        root.style.colorScheme = resolvedTheme
+      })()
+    </script>
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sub2API - AI API Gateway</title>

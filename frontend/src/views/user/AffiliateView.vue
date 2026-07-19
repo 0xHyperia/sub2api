@@ -20,7 +20,7 @@
       </div>
 
       <template v-else-if="detail">
-        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" :aria-label="t('affiliate.title')">
+        <section class="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-4" :aria-label="t('affiliate.title')">
           <article class="card min-w-0 p-4 sm:p-5">
             <p class="flex items-center gap-2 text-sm text-foreground-subtle">
               <Icon name="dollar" size="sm" class="text-info-foreground" aria-hidden="true" />
@@ -39,7 +39,7 @@
               {{ formatCount(detail.aff_count) }}
             </p>
           </article>
-          <article class="card min-w-0 p-4 sm:p-5">
+          <article class="card order-first col-span-2 min-w-0 border-success/30 p-4 sm:p-5 xl:order-none xl:col-span-1">
             <p class="text-sm text-foreground-subtle">{{ t('affiliate.stats.availableQuota') }}</p>
             <p class="mt-2 break-words text-2xl font-semibold tabular-nums text-success-foreground">
               {{ formatCurrency(detail.aff_quota) }}
@@ -59,7 +59,7 @@
         <section class="card p-4 sm:p-5" aria-labelledby="affiliate-share-title">
           <h2 id="affiliate-share-title" class="text-base font-semibold text-foreground">{{ t('affiliate.yourCode') }}</h2>
           <div class="mt-4 grid gap-4 xl:grid-cols-2">
-            <div class="space-y-2">
+            <div class="min-w-0 space-y-2">
               <p class="text-sm font-medium text-foreground-muted">{{ t('affiliate.yourCode') }}</p>
               <div class="flex min-w-0 items-center gap-2 rounded-panel border border-outline-strong bg-surface-subtle p-2 pl-3">
                 <code class="min-w-0 flex-1 break-all text-sm font-semibold text-foreground">{{ detail.aff_code }}</code>
@@ -69,7 +69,7 @@
               </div>
             </div>
 
-            <div class="space-y-2">
+            <div class="min-w-0 space-y-2">
               <p class="text-sm font-medium text-foreground-muted">{{ t('affiliate.inviteLink') }}</p>
               <div class="flex min-w-0 items-center gap-2 rounded-panel border border-outline-strong bg-surface-subtle p-2 pl-3">
                 <code class="min-w-0 flex-1 truncate text-sm text-foreground-muted" :title="inviteLink">{{ inviteLink }}</code>
@@ -121,6 +121,24 @@
           </div>
           <div class="min-w-0 lg:overflow-hidden lg:rounded-panel lg:border lg:border-outline lg:bg-surface lg:shadow-card">
             <DataTable :columns="inviteeColumns" :data="detail.invitees" :loading="false" row-key="user_id">
+              <template #mobile-card="{ row }">
+                <div class="flex min-w-0 items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="break-all text-sm font-semibold text-foreground">{{ row.email || '-' }}</p>
+                    <p class="mt-0.5 break-words text-xs text-foreground-muted">{{ row.username || '-' }}</p>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <p class="text-xs text-foreground-subtle">{{ t('affiliate.invitees.columns.rebate') }}</p>
+                    <p class="mt-0.5 font-semibold tabular-nums text-success-foreground">
+                      {{ formatCurrency(row.total_rebate) }}
+                    </p>
+                  </div>
+                </div>
+                <div class="mt-3 flex items-center justify-between gap-3 border-t border-outline pt-2 text-xs">
+                  <span class="text-foreground-subtle">{{ t('affiliate.invitees.columns.joinedAt') }}</span>
+                  <time class="text-right text-foreground-muted">{{ formatDateTime(row.created_at) || '-' }}</time>
+                </div>
+              </template>
               <template #cell-email="{ value }">
                 <span class="break-all text-foreground">{{ value || '-' }}</span>
               </template>

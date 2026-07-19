@@ -1,5 +1,5 @@
 <template>
-  <component :is="isPopup ? 'div' : AppLayout" :class="isPopup ? 'min-h-screen bg-canvas text-foreground' : ''">
+  <component :is="isPopup ? 'div' : AppLayout" :class="isPopup ? 'min-h-[100dvh] bg-canvas text-foreground' : ''">
     <div class="mx-auto w-full max-w-lg space-y-4 py-4 sm:py-8" :class="isPopup ? 'px-4' : ''">
       <div v-if="loading" class="flex min-h-64 items-center justify-center" role="status" :aria-label="t('common.loading')">
         <Icon name="refresh" size="lg" class="animate-spin text-foreground-subtle" />

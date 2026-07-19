@@ -17,7 +17,69 @@
       </p>
       <div v-if="loading" class="py-10 text-center text-foreground-subtle">{{ t('common.loading') }}</div>
       <div v-else class="min-w-0 space-y-3">
-        <div class="max-w-full overflow-x-auto">
+        <div data-mobile-layout="platform-cards" class="space-y-2 sm:hidden">
+          <details
+            v-for="(row, rowIndex) in quotas"
+            :key="`mobile-${row.platform}`"
+            class="group overflow-hidden rounded-panel border border-outline bg-surface"
+            :open="rowIndex === 0"
+          >
+            <summary class="flex min-h-touch cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 marker:hidden">
+              <div class="min-w-0">
+                <div class="truncate font-mono text-sm font-semibold text-foreground">{{ row.platform }}</div>
+                <div class="mt-0.5 text-xs tabular-nums text-foreground-subtle">
+                  {{ formatUsage(row.daily_usage_usd) }} / {{ formatUsage(row.weekly_usage_usd) }} /
+                  {{ formatUsage(row.monthly_usage_usd) }}
+                </div>
+              </div>
+              <Icon name="chevronDown" size="sm" class="shrink-0 text-foreground-subtle transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+
+            <div class="space-y-3 border-t border-outline bg-surface-subtle/40 p-3">
+              <div
+                v-for="quotaWindow in QUOTA_WINDOWS"
+                :key="quotaWindow"
+                class="rounded-control border border-outline bg-surface p-3"
+              >
+                <div class="mb-2 flex items-center justify-between gap-3">
+                  <label
+                    :for="`mobile-${row.platform}-${quotaWindow}`"
+                    class="text-sm font-medium text-foreground"
+                  >
+                    {{ t(`admin.users.platformQuota.columns.${quotaWindow}`) }}
+                  </label>
+                  <span class="text-xs tabular-nums text-foreground-subtle">
+                    {{ t('admin.users.platformQuota.columns.usage') }}: {{ formatUsage(usageFor(row, quotaWindow)) }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input
+                    :id="`mobile-${row.platform}-${quotaWindow}`"
+                    v-model.number="row[`${quotaWindow}_limit_usd`]"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="input min-w-0 flex-1"
+                    :aria-label="limitInputLabel(row.platform, quotaWindow)"
+                    :placeholder="t('admin.users.platformQuota.placeholder')"
+                  />
+                  <button
+                    type="button"
+                    class="inline-flex h-10 w-10 flex-none items-center justify-center rounded-control text-foreground-subtle hover:bg-surface-subtle hover:text-warning-foreground focus:outline-none focus:ring-2 focus:ring-focus disabled:opacity-50"
+                    :disabled="!!resetting[`${row.platform}.${quotaWindow}`]"
+                    :aria-label="resetButtonLabel(row.platform, quotaWindow)"
+                    :title="resetButtonLabel(row.platform, quotaWindow)"
+                    @click="onReset(row.platform, quotaWindow)"
+                  >
+                    <Icon name="refresh" size="sm" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div data-desktop-layout="quota-table" class="hidden max-w-full overflow-x-auto sm:block">
           <table class="min-w-[48rem] text-sm">
             <thead>
               <tr class="border-b border-outline text-foreground-muted">
@@ -189,6 +251,10 @@ function normalize(items: PlatformQuotaItem[]): QuotaRow[] {
 function formatUsage(n: number): string {
   if (n == null || Number.isNaN(n)) return '-'
   return n.toFixed(2)
+}
+
+function usageFor(row: QuotaRow, quotaWindow: PlatformQuotaWindow): number {
+  return row[`${quotaWindow}_usage_usd`]
 }
 
 function windowLabel(quotaWindow: PlatformQuotaWindow): string {

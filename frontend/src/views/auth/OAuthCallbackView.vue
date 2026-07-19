@@ -126,14 +126,14 @@
             <label for="oauth-callback-code" class="input-label">
               {{ t('auth.oauth.code') }}
             </label>
-            <div class="flex gap-2">
+            <div class="flex flex-col gap-2 sm:flex-row">
               <input
                 id="oauth-callback-code"
                 class="input min-w-0 flex-1 font-mono text-sm"
                 :value="code"
                 readonly
               />
-              <button class="btn btn-secondary" type="button" :disabled="!code" @click="copy(code)">
+              <button class="btn btn-secondary w-full sm:w-auto" type="button" :disabled="!code" @click="copy(code)">
                 {{ t('common.copy') }}
               </button>
             </div>
@@ -143,7 +143,7 @@
             <label for="oauth-callback-state" class="input-label">
               {{ t('auth.oauth.state') }}
             </label>
-            <div class="flex gap-2">
+            <div class="flex flex-col gap-2 sm:flex-row">
               <input
                 id="oauth-callback-state"
                 class="input min-w-0 flex-1 font-mono text-sm"
@@ -151,7 +151,7 @@
                 readonly
               />
               <button
-                class="btn btn-secondary"
+                class="btn btn-secondary w-full sm:w-auto"
                 type="button"
                 :disabled="!state"
                 @click="copy(state)"
@@ -165,7 +165,7 @@
             <label for="oauth-callback-url" class="input-label">
               {{ t('auth.oauth.fullUrl') }}
             </label>
-            <div class="flex gap-2">
+            <div class="flex flex-col gap-2 sm:flex-row">
               <input
                 id="oauth-callback-url"
                 class="input min-w-0 flex-1 font-mono text-xs"
@@ -173,7 +173,7 @@
                 readonly
               />
               <button
-                class="btn btn-secondary"
+                class="btn btn-secondary w-full sm:w-auto"
                 type="button"
                 :disabled="!fullUrl"
                 @click="copy(fullUrl)"

@@ -26,26 +26,38 @@ export default {
           hover: 'rgb(var(--color-brand-hover) / <alpha-value>)',
           foreground: 'rgb(var(--color-brand-foreground) / <alpha-value>)'
         },
+        inverse: {
+          DEFAULT: 'rgb(var(--color-inverse) / <alpha-value>)',
+          foreground: 'rgb(var(--color-inverse-foreground) / <alpha-value>)'
+        },
+        code: {
+          DEFAULT: 'rgb(var(--color-code) / <alpha-value>)',
+          foreground: 'rgb(var(--color-code-foreground) / <alpha-value>)'
+        },
         focus: 'rgb(var(--color-focus) / <alpha-value>)',
         info: {
           DEFAULT: 'rgb(var(--color-info) / <alpha-value>)',
           subtle: 'rgb(var(--color-info-subtle) / <alpha-value>)',
-          foreground: 'rgb(var(--color-info-foreground) / <alpha-value>)'
+          foreground: 'rgb(var(--color-info-foreground) / <alpha-value>)',
+          'solid-foreground': 'rgb(var(--color-info-solid-foreground) / <alpha-value>)'
         },
         success: {
           DEFAULT: 'rgb(var(--color-success) / <alpha-value>)',
           subtle: 'rgb(var(--color-success-subtle) / <alpha-value>)',
-          foreground: 'rgb(var(--color-success-foreground) / <alpha-value>)'
+          foreground: 'rgb(var(--color-success-foreground) / <alpha-value>)',
+          'solid-foreground': 'rgb(var(--color-success-solid-foreground) / <alpha-value>)'
         },
         warning: {
           DEFAULT: 'rgb(var(--color-warning) / <alpha-value>)',
           subtle: 'rgb(var(--color-warning-subtle) / <alpha-value>)',
-          foreground: 'rgb(var(--color-warning-foreground) / <alpha-value>)'
+          foreground: 'rgb(var(--color-warning-foreground) / <alpha-value>)',
+          'solid-foreground': 'rgb(var(--color-warning-solid-foreground) / <alpha-value>)'
         },
         danger: {
           DEFAULT: 'rgb(var(--color-danger) / <alpha-value>)',
           subtle: 'rgb(var(--color-danger-subtle) / <alpha-value>)',
-          foreground: 'rgb(var(--color-danger-foreground) / <alpha-value>)'
+          foreground: 'rgb(var(--color-danger-foreground) / <alpha-value>)',
+          'solid-foreground': 'rgb(var(--color-danger-solid-foreground) / <alpha-value>)'
         },
         // 主色调 - Teal/Cyan 青色系
         primary: {

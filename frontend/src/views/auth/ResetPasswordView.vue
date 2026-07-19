@@ -56,7 +56,7 @@
           class="auth-flow-surface border-success/30 bg-success-subtle"
         >
           <div class="flex flex-col items-center gap-4 text-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-success/50">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
               <Icon name="checkCircle" size="lg" class="text-success-foreground" />
             </div>
             <div>

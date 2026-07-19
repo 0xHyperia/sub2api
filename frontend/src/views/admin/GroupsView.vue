@@ -145,6 +145,110 @@
           default-sort-order="asc"
           @sort="handleSort"
         >
+          <template #mobile-card="{ row }">
+            <article class="space-y-3">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="truncate text-sm font-semibold text-foreground">{{ row.name }}</h3>
+                  <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span class="badge badge-gray">
+                      <PlatformIcon :platform="row.platform" size="xs" />
+                      {{ t('admin.groups.platforms.' + row.platform) }}
+                    </span>
+                    <span :class="['badge', row.is_exclusive ? 'badge-primary' : 'badge-gray']">
+                      {{ row.is_exclusive ? t('admin.groups.exclusive') : t('admin.groups.public') }}
+                    </span>
+                  </div>
+                </div>
+                <span :class="['badge shrink-0', row.status === 'active' ? 'badge-success' : 'badge-danger']">
+                  {{ t('admin.accounts.status.' + row.status) }}
+                </span>
+              </header>
+
+              <div class="flex items-center justify-between gap-3 rounded-control bg-surface-subtle px-3 py-2 text-xs">
+                <span :class="['badge', row.subscription_type === 'subscription' ? 'badge-primary' : 'badge-gray']">
+                  {{ row.subscription_type === 'subscription' ? t('admin.groups.subscription.subscription') : t('admin.groups.subscription.standard') }}
+                </span>
+                <span class="font-mono font-semibold tabular-nums text-foreground">{{ row.rate_multiplier }}x</span>
+              </div>
+
+              <dl class="grid grid-cols-3 gap-px overflow-hidden rounded-panel border border-outline bg-outline">
+                <div class="bg-surface-subtle px-2.5 py-2">
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.groups.accountsAvailable') }}</dt>
+                  <dd class="mt-0.5 text-sm font-semibold tabular-nums text-success-foreground">{{ row.active_account_count || 0 }}</dd>
+                </div>
+                <div class="bg-surface-subtle px-2.5 py-2">
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.groups.accountsTotal') }}</dt>
+                  <dd class="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{{ row.account_count || 0 }}</dd>
+                </div>
+                <div class="bg-surface-subtle px-2.5 py-2">
+                  <dt class="text-[9px] text-foreground-subtle">{{ t('admin.groups.usageToday') }}</dt>
+                  <dd class="mt-0.5 whitespace-nowrap text-sm font-semibold tabular-nums text-foreground">
+                    {{ usageLoading ? '—' : `$${formatCost(usageMap.get(row.id)?.today_cost ?? 0)}` }}
+                  </dd>
+                </div>
+              </dl>
+
+              <div v-if="capacityMap.get(row.id)" class="rounded-panel border border-outline px-3 py-2.5">
+                <GroupCapacityBadge
+                  :concurrency-used="capacityMap.get(row.id)!.concurrencyUsed"
+                  :concurrency-max="capacityMap.get(row.id)!.concurrencyMax"
+                  :sessions-used="capacityMap.get(row.id)!.sessionsUsed"
+                  :sessions-max="capacityMap.get(row.id)!.sessionsMax"
+                  :rpm-used="capacityMap.get(row.id)!.rpmUsed"
+                  :rpm-max="capacityMap.get(row.id)!.rpmMax"
+                />
+              </div>
+
+              <details v-if="row.subscription_type === 'subscription'" class="group rounded-panel border border-outline bg-surface-subtle px-3 py-2">
+                <summary class="flex min-h-7 cursor-pointer list-none items-center justify-between text-xs font-medium text-foreground-muted">
+                  <span>{{ t('admin.groups.subscription.title') }}</span>
+                  <Icon name="chevronDown" size="xs" class="transition-transform group-open:rotate-180" />
+                </summary>
+                <dl class="mt-2 space-y-1.5 border-t border-outline pt-2 text-xs">
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-foreground-subtle">{{ t('admin.groups.limitDay') }}</dt>
+                    <dd class="font-mono text-foreground">{{ row.daily_limit_usd ? formatUsd(row.daily_limit_usd) : t('admin.groups.subscription.noLimit') }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-foreground-subtle">{{ t('admin.groups.limitWeek') }}</dt>
+                    <dd class="font-mono text-foreground">{{ row.weekly_limit_usd ? formatUsd(row.weekly_limit_usd) : t('admin.groups.subscription.noLimit') }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-foreground-subtle">{{ t('admin.groups.limitMonth') }}</dt>
+                    <dd class="font-mono text-foreground">{{ row.monthly_limit_usd ? formatUsd(row.monthly_limit_usd) : t('admin.groups.subscription.noLimit') }}</dd>
+                  </div>
+                </dl>
+              </details>
+
+              <footer class="flex items-center gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-secondary min-w-0 flex-1" @click="handleEdit(row)">
+                  <Icon name="edit" size="sm" />
+                  {{ t('common.edit') }}
+                </button>
+                <details class="group/menu relative" @click.stop>
+                  <summary class="inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-control border border-outline text-foreground-muted hover:bg-surface-subtle hover:text-foreground" :title="t('common.actions')" :aria-label="t('common.actions')">
+                    <Icon name="more" size="sm" />
+                  </summary>
+                  <div class="absolute bottom-full right-0 z-30 mb-1 w-48 overflow-hidden rounded-panel border border-outline bg-surface py-1 shadow-floating">
+                    <button type="button" class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground" :disabled="duplicatingGroupIds.has(row.id)" @click="handleDuplicate(row)">
+                      <Icon name="copy" size="sm" />{{ t('admin.groups.duplicate') }}
+                    </button>
+                    <button type="button" class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground" @click="handleRateMultipliers(row)">
+                      <Icon name="dollar" size="sm" />{{ t('admin.groups.rateMultipliers') }}
+                    </button>
+                    <button type="button" class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground" @click="handleRPMOverrides(row)">
+                      <Icon name="bolt" size="sm" />{{ t('admin.groups.rpmOverrides') }}
+                    </button>
+                    <button type="button" class="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger-foreground hover:bg-danger-subtle" @click="handleDelete(row)">
+                      <Icon name="trash" size="sm" />{{ t('common.delete') }}
+                    </button>
+                  </div>
+                </details>
+              </footer>
+            </article>
+          </template>
+
           <template #cell-name="{ value }">
             <span class="font-medium text-foreground">{{
               value

@@ -61,6 +61,66 @@
           default-sort-order="desc"
           @sort="handleSort"
         >
+          <template #mobile-card="{ row }">
+            <article class="space-y-3">
+              <header class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="truncate text-sm font-semibold text-foreground">{{ row.name }}</h3>
+                  <p class="mt-1 line-clamp-2 text-xs leading-5 text-foreground-subtle">{{ row.description || '-' }}</p>
+                </div>
+                <Toggle
+                  :modelValue="row.status === 'active'"
+                  :aria-label="`${t('admin.channels.form.status', 'Status')}: ${row.name}`"
+                  @update:modelValue="toggleChannelStatus(row)"
+                />
+              </header>
+
+              <div class="flex min-h-7 flex-wrap items-center gap-1.5">
+                <span
+                  v-for="item in channelPlatforms(row)"
+                  :key="item"
+                  class="badge badge-gray"
+                >
+                  <PlatformIcon :platform="item" size="xs" />
+                  {{ t('admin.groups.platforms.' + item, item) }}
+                </span>
+                <span v-if="channelPlatforms(row).length === 0" class="text-xs text-foreground-subtle">-</span>
+              </div>
+
+              <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-outline bg-outline">
+                <div class="bg-surface-subtle px-3 py-2.5">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.channels.columns.groups', 'Groups') }}</dt>
+                  <dd class="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{{ (row.group_ids || []).length }}</dd>
+                </div>
+                <div class="bg-surface-subtle px-3 py-2.5">
+                  <dt class="text-[10px] text-foreground-subtle">{{ t('admin.channels.columns.pricing', 'Pricing') }}</dt>
+                  <dd class="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{{ (row.model_pricing || []).length }}</dd>
+                </div>
+              </dl>
+
+              <div class="flex items-center justify-between gap-3 text-[10px] text-foreground-subtle">
+                <span>{{ t('admin.channels.columns.createdAt', 'Created') }}</span>
+                <time>{{ formatDate(row.created_at) }}</time>
+              </div>
+
+              <footer class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 border-t border-outline pt-3">
+                <button type="button" class="btn btn-secondary min-w-0" @click="openEditDialog(row)">
+                  <Icon name="edit" size="sm" />
+                  {{ t('common.edit', 'Edit') }}
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-10 w-10 items-center justify-center rounded-control border border-danger/30 text-danger-foreground transition-colors hover:bg-danger-subtle"
+                  :title="t('common.delete', 'Delete')"
+                  :aria-label="t('common.delete', 'Delete')"
+                  @click="handleDelete(row)"
+                >
+                  <Icon name="trash" size="sm" />
+                </button>
+              </footer>
+            </article>
+          </template>
+
           <template #cell-name="{ value }">
             <span class="font-medium text-foreground">{{ value }}</span>
           </template>
@@ -742,6 +802,9 @@ const columns = computed<Column[]>(() => [
   { key: 'created_at', label: t('admin.channels.columns.createdAt', 'Created'), sortable: true },
   { key: 'actions', label: t('admin.channels.columns.actions', 'Actions'), sortable: false }
 ])
+
+const channelPlatforms = (channel: Channel): GroupPlatform[] =>
+  [...new Set((channel.model_pricing || []).map((item) => item.platform as GroupPlatform).filter(Boolean))]
 
 const statusFilterOptions = computed(() => [
   { value: '', label: t('admin.channels.allStatus', 'All Status') },

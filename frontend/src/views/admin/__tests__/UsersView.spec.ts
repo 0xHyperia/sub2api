@@ -97,6 +97,7 @@ const DataTableStub = {
         <slot :name="'header-' + col.key" :column="col" />
       </template>
       <div v-for="row in data" :key="row.id">
+        <slot name="mobile-card" :row="row" :index="0" :selected="false" :expanded="false" />
         <slot name="cell-last_used_at" :value="row.last_used_at" :row="row" />
       </div>
     </div>
@@ -368,5 +369,93 @@ describe('admin UsersView', () => {
     expect(wrapper.get('[data-test="row-order"]').text()).toBe('refreshed-page-two@example.com')
     expect(wrapper.find('[data-test="bulk-edit-limits"]').exists()).toBe(false)
     expect(wrapper.get('[data-test="selected-keys"]').text()).toBe('')
+  })
+
+  it('renders a business-focused mobile card with expandable metadata and primary actions', async () => {
+    const originalInnerWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
+
+    listUsers.mockResolvedValue({
+      items: [createAdminUser({
+        balance: 12.34,
+        concurrency: 4,
+        current_concurrency: 2,
+        notes: 'Priority customer'
+      })],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1
+    })
+    getBatchUsersUsage.mockResolvedValue({
+      stats: {
+        42: { user_id: 42, today_actual_cost: 1.2345, total_actual_cost: 9, by_platform: [] }
+      }
+    })
+
+    const wrapper = mount(UsersView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: true,
+          EmptyState: true,
+          GroupBadge: true,
+          Select: true,
+          UserAttributesConfigModal: true,
+          UserConcurrencyCell: true,
+          UserCreateModal: true,
+          UserEditModal: {
+            props: ['show'],
+            template: '<div v-if="show" data-test="mobile-edit-modal" />'
+          },
+          BulkEditUserModal: BulkEditUserModalStub,
+          UserPlatformQuotaModal: true,
+          UserApiKeysModal: true,
+          UserAllowedGroupsModal: true,
+          UserBalanceModal: {
+            props: ['show'],
+            template: '<div v-if="show" data-test="mobile-balance-modal" />'
+          },
+          UserBalanceHistoryModal: true,
+          GroupReplaceModal: true,
+          Icon: true,
+          Teleport: { template: '<div><slot /></div>' }
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const card = wrapper.get('[data-test="user-mobile-card-42"]')
+    expect(card.text()).toContain('scoped@example.com')
+    expect(card.text()).toContain('admin.users.roles.user')
+    expect(card.text()).toContain('common.active')
+    expect(card.text()).toContain('$12.34')
+    await vi.waitFor(() => expect(card.text()).toContain('$1.2345'))
+    expect(getBatchUsersUsage).toHaveBeenCalledWith([42])
+
+    expect(wrapper.find('[data-test="user-mobile-details-42"]').exists()).toBe(false)
+    await wrapper.get('[data-test="user-mobile-details-toggle-42"]').trigger('click')
+    expect(wrapper.get('[data-test="user-mobile-details-42"]').text()).toContain('#42')
+    expect(wrapper.get('[data-test="user-mobile-details-42"]').text()).toContain('2 / 4')
+    expect(wrapper.get('[data-test="user-mobile-details-42"]').text()).toContain('Priority customer')
+
+    await wrapper.get('[data-test="user-mobile-deposit-42"]').trigger('click')
+    expect(wrapper.find('[data-test="mobile-balance-modal"]').exists()).toBe(true)
+
+    await wrapper.get('[data-test="user-mobile-edit-42"]').trigger('click')
+    expect(wrapper.find('[data-test="mobile-edit-modal"]').exists()).toBe(true)
+
+    await wrapper.get('[data-test="user-mobile-more-42"]').trigger('click')
+    expect(wrapper.get('.action-menu-content').text()).toContain('admin.users.disable')
+    expect(wrapper.get('.action-menu-content').text()).toContain('common.delete')
+
+    wrapper.unmount()
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth })
   })
 })

@@ -1,9 +1,9 @@
 <template>
   <section class="space-y-4" aria-labelledby="dashboard-analytics-title">
-    <div class="flex flex-col gap-3 border-b border-outline pb-4 lg:flex-row lg:items-end lg:justify-end">
+    <div class="border-b border-outline pb-4">
       <h2 id="dashboard-analytics-title" class="sr-only">{{ t('dashboard.tokenUsageTrend') }}</h2>
 
-      <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_112px_40px] items-end gap-2 sm:flex sm:flex-wrap">
         <div class="min-w-0" role="group" :aria-label="t('dashboard.timeRange')">
           <span class="mb-1.5 block text-xs font-medium text-foreground-muted">{{ t('dashboard.timeRange') }}</span>
           <DateRangePicker
@@ -15,7 +15,7 @@
           />
         </div>
 
-        <div class="w-full sm:w-32">
+        <div class="min-w-0 sm:w-32">
           <span class="mb-1.5 block text-xs font-medium text-foreground-muted">{{ t('dashboard.granularity') }}</span>
           <Select
             :model-value="granularity"
@@ -63,7 +63,26 @@
             <Doughnut v-if="modelData" :data="modelData" :options="doughnutOptions" />
             <div v-else class="flex h-full items-center justify-center text-center text-sm text-foreground-subtle">{{ t('dashboard.noDataAvailable') }}</div>
           </div>
-          <div class="max-h-48 w-full min-w-0 flex-1 overflow-auto">
+          <div class="w-full min-w-0 flex-1">
+            <ol v-if="mobileModels.length" class="divide-y divide-outline sm:hidden" :aria-label="t('dashboard.modelDistribution')">
+              <li v-for="(model, index) in mobileModels" :key="model.model" class="flex min-w-0 items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-control bg-surface-subtle text-xs font-semibold tabular-nums text-foreground-subtle" aria-hidden="true">
+                  {{ index + 1 }}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium text-foreground" :title="model.model">{{ model.model }}</p>
+                  <p class="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-foreground-subtle">
+                    <span>{{ formatNumber(model.requests) }} {{ t('dashboard.requests') }}</span>
+                    <span>{{ formatTokens(model.total_tokens) }} {{ t('dashboard.tokens') }}</span>
+                  </p>
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="text-sm font-semibold tabular-nums text-success-foreground">${{ formatCost(model.actual_cost) }}</p>
+                  <p class="text-[10px] text-foreground-subtle">{{ t('dashboard.actual') }}</p>
+                </div>
+              </li>
+            </ol>
+            <div class="hidden max-h-48 overflow-auto sm:block">
             <table class="w-full min-w-[30rem] text-xs">
               <thead>
                 <tr class="text-foreground-subtle">
@@ -84,6 +103,7 @@
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>
@@ -118,6 +138,12 @@ const modelData = computed(() => !props.models?.length ? null : {
     backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
   }]
 })
+
+const mobileModels = computed(() =>
+  [...(props.models ?? [])]
+    .sort((a, b) => (b.actual_cost ?? 0) - (a.actual_cost ?? 0))
+    .slice(0, 5)
+)
 
 const doughnutOptions = {
   responsive: true,
