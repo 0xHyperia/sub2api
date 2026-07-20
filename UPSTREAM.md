@@ -2,6 +2,48 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.1.162 同步（待发布）
+
+- 集成分支：`codex/merge-upstream-v0.1.162`
+- 官方基线版本：v0.1.162
+- 官方基线提交：`27f094e0960ebd8e52de7ff7e763c6fec2ff4057`
+- 上一官方基线：v0.1.161（`19149ca196eeae4a4482e5299dc6fa4ba0b06c8c`）
+- 上一 USA0 版本：v1.0.7
+- USA0 发布版本：待确认
+- 同步状态：已完成冲突解决、USA0 适配、完整代码验证和本地 Docker 健康检查；尚未生成合并提交、合入或推送 `usa0/main`，尚未创建 USA0 发布 tag
+- 记录日期：2026-07-20
+
+### 同步范围
+
+- 从官方 v0.1.161 同步至 v0.1.162，共纳入 114 个上游提交、190 个变更文件。
+- 客户端真实 IP 解析改为可配置可信代理、转发链和自定义请求头，并为安全设置、审计记录和反向代理部署补齐完整契约。
+- 异步生图对象存储迁移至后台备份页面配置，保存后即时生效，同时修复环境变量凭证加载与 S3 临时加密密钥重启失效问题。
+- Grok 新增客户端工具缓存、动态 Free 配额、连接测试与代理质量改进，并完善视频代理、Claude prompt cache 和本地 token 估算。
+- OpenAI/Codex 完善标准模型列表兼容、配额错误、HTTP/SSE/WebSocket failover、Responses 事件解析和生图意图性能优化。
+- 更新检查支持 GitHub Token，订阅到期精确到分钟、剩余天数向上取整，并修复自定义货币符号、API Key IP 列表及提示词审计关闭等问题。
+- 批量生图指引接入中英文多语言，统一暗色主题细节；dev/local Compose 的 Redis 与 PostgreSQL 参数恢复实际生效。
+
+### 保留与适配的 USA0 内容
+
+- 31 个文本冲突均按业务语义合并，保留 USA0 首页、登录页、语义设计令牌、移动卡片、响应式布局和无障碍约束。
+- 保留 ZeroBox/App JWT、OAuth 用户授权、工单、分销结算、模型广场、模型监控及支付功能门控，并将其与上游新增路由、中间件和设置契约共同接入。
+- Wire 同时保留 USA0 工单存储提供器和上游图片存储工厂；重新生成 `wire_gen.go` 后无额外漂移。
+- 为 Viper 环境变量配置补齐默认结构，新增工单与图片存储凭证测试，避免仅通过环境变量配置时字段不可达。
+- dev Compose 保留 USA0 服务配置并加入 `UPDATE_GITHUB_TOKEN`；批量生图移动端操作补齐中英文翻译及完整性测试。
+- 保持 USA0 `VERSION` 在已发布的 `1.0.7`，在发布版本确认前不预先推断或写入下一版本号。
+
+### 验证结果
+
+- `go generate ./ent` 与 `go generate ./cmd/server` 通过，生成后无漂移。
+- 后端 `go test ./...`、`go test -tags=unit ./...` 通过，`golangci-lint run ./...` 为 0 issues。
+- 前端全量 Vitest、`pnpm run lint:check`、`pnpm run typecheck` 和 `pnpm run build` 通过；Lint 仅保留 1 条既有 warning。
+- 语义设计令牌、Toggle 无障碍守卫、四份 Compose 配置渲染和 `deploy/tests/install-github-token-test.sh` 均通过。
+- 官方 v0.1.162 未新增迁移或 Ent schema 变更；USA0 已发布迁移保持不变且编号唯一。
+- Docker 镜像构建成功，并以 `--no-deps` 仅替换 `sub2api-dev`；PostgreSQL 与 Redis 未重启，`http://localhost:8081/health` 返回 `{"status":"ok"}`。
+- 当前 Codex 会话没有可连接的浏览器实例，因此尚未补做本次发布候选的桌面端、390px 移动端及登录态页面复核；不得将此项表述为已验证。
+
+---
+
 ## USA0 v1.0.7
 
 - 发布版本：v1.0.7

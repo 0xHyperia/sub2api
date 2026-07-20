@@ -38,10 +38,10 @@
                 <div class="min-w-0 px-3 py-2.5">
                   <dt class="text-[11px] text-foreground-subtle">{{ t('payment.admin.price') }}</dt>
                   <dd class="mt-1 text-base font-semibold tabular-nums text-foreground">
-                    ${{ (row.price ?? 0).toFixed(2) }}
+                    {{ planCurrencySymbol(row.currency) }}{{ (row.price ?? 0).toFixed(2) }}
                     <span v-if="row.currency" class="text-xs font-normal text-foreground-subtle">{{ row.currency }}</span>
                   </dd>
-                  <p v-if="row.original_price" class="mt-0.5 text-xs text-foreground-subtle line-through">${{ row.original_price.toFixed(2) }}</p>
+                  <p v-if="row.original_price" class="mt-0.5 text-xs text-foreground-subtle line-through">{{ planCurrencySymbol(row.currency) }}{{ row.original_price.toFixed(2) }}</p>
                 </div>
                 <div class="min-w-0 border-l border-outline px-3 py-2.5">
                   <dt class="text-[11px] text-foreground-subtle">{{ t('payment.admin.validity') }}</dt>
@@ -112,9 +112,9 @@
           </template>
           <template #cell-price="{ value, row }">
             <div class="text-sm tabular-nums">
-              <span class="font-semibold text-foreground">${{ (value ?? 0).toFixed(2) }}</span>
+              <span class="font-semibold text-foreground">{{ planCurrencySymbol(row.currency) }}{{ (value ?? 0).toFixed(2) }}</span>
               <span v-if="row.currency" class="ml-1 text-xs text-foreground-subtle">{{ row.currency }}</span>
-              <span v-if="row.original_price" class="ml-1 text-xs text-foreground-subtle line-through">${{ row.original_price.toFixed(2) }}</span>
+              <span v-if="row.original_price" class="ml-1 text-xs text-foreground-subtle line-through">{{ planCurrencySymbol(row.currency) }}{{ row.original_price.toFixed(2) }}</span>
             </div>
           </template>
           <template #cell-validity_days="{ value, row }">
@@ -179,10 +179,15 @@ import Toggle from '@/components/common/Toggle.vue'
 import Icon from '@/components/icons/Icon.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import PlanEditDialog from './PlanEditDialog.vue'
+import { currencySymbol } from '@/components/payment/currency'
 import { platformTextClass } from '@/utils/platformColors'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+
+function planCurrencySymbol(currency?: string): string {
+  return currencySymbol(currency || 'USD')
+}
 
 // ==================== Groups ====================
 

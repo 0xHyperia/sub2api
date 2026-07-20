@@ -103,7 +103,7 @@
             </div>
             <div>
               <label :for="`easypay-method-name-${index}`" class="text-xs text-foreground-muted">{{ t('admin.settings.payment.customMethodDisplayName') }}</label>
-              <input :id="`easypay-method-name-${index}`" v-model="method.displayName" type="text" class="input mt-0.5" placeholder="信用卡" />
+              <input :id="`easypay-method-name-${index}`" v-model="method.displayName" type="text" class="input mt-0.5" :placeholder="t('admin.settings.payment.customMethodDisplayNamePlaceholder')" />
             </div>
             <button
               type="button"

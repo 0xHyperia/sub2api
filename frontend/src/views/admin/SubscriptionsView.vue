@@ -250,7 +250,7 @@
                 <div class="shrink-0 text-right">
                   <p class="text-[10px] text-foreground-subtle">{{ t('admin.subscriptions.columns.expires') }}</p>
                   <p class="mt-0.5 text-xs font-medium" :class="row.expires_at && isExpiringSoon(row.expires_at) ? 'text-warning-foreground' : 'text-foreground'">
-                    {{ row.expires_at ? formatDateOnly(row.expires_at) : t('admin.subscriptions.noExpiration') }}
+                    {{ row.expires_at ? formatDateTimeToMinute(row.expires_at) : t('admin.subscriptions.noExpiration') }}
                   </p>
                   <p v-if="row.expires_at && getDaysRemaining(row.expires_at) !== null" class="text-[10px] text-foreground-subtle">
                     {{ getDaysRemaining(row.expires_at) }} {{ t('admin.subscriptions.daysRemaining') }}
@@ -510,7 +510,7 @@
                     : 'text-foreground-muted'
                 "
               >
-                {{ formatDateOnly(value) }}
+                {{ formatDateTimeToMinute(value) }}
               </span>
               <div v-if="getDaysRemaining(value) !== null" class="text-xs text-foreground-subtle">
                 {{ getDaysRemaining(value) }} {{ t('admin.subscriptions.daysRemaining') }}
@@ -781,7 +781,7 @@
             <span class="font-medium text-foreground">
               {{
                 extendingSubscription.expires_at
-                  ? formatDateOnly(extendingSubscription.expires_at)
+                  ? formatDateTimeToMinute(extendingSubscription.expires_at)
                   : t('admin.subscriptions.noExpiration')
               }}
             </span>
@@ -942,7 +942,7 @@ import { adminAPI } from '@/api/admin'
 import type { UserSubscription, Group, GroupPlatform, SubscriptionType } from '@/types'
 import type { SimpleUser } from '@/api/admin/usage'
 import type { Column } from '@/components/common/types'
-import { formatDateOnly } from '@/utils/format'
+import { formatDateTimeToMinute } from '@/utils/format'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import AppLayout from '@/components/layout/AppLayout.vue'

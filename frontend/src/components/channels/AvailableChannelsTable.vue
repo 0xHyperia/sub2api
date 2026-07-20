@@ -124,7 +124,8 @@
     </article>
   </div>
 
-  <div class="table-wrapper hidden max-w-full overflow-x-auto lg:block" role="region" :aria-label="columns.name" tabindex="0">
+  <!-- Keep the TablePageLayout scroll hook while retaining the responsive card view. -->
+  <div class="table-wrapper hidden max-w-full overflow-auto lg:block" role="region" :aria-label="columns.name" tabindex="0">
     <table class="min-w-[960px] w-full border-collapse text-sm">
       <thead>
         <tr class="border-b border-outline text-xs font-medium uppercase tracking-wide text-foreground-subtle bg-surface/50">

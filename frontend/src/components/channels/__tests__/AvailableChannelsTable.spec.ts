@@ -1,4 +1,7 @@
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 
 import AvailableChannelsTable from '../AvailableChannelsTable.vue'
@@ -95,5 +98,13 @@ describe('AvailableChannelsTable responsive layouts', () => {
     expect(desktopRegion.classes()).toContain('lg:block')
     expect(desktopRegion.get('table').classes()).toContain('min-w-[960px]')
     expect(desktopRegion.text()).toContain('Primary route')
+  })
+
+  it('keeps the desktop table on the scroll hook without clipping content', () => {
+    const componentPath = resolve(dirname(fileURLToPath(import.meta.url)), '../AvailableChannelsTable.vue')
+    const componentSource = readFileSync(componentPath, 'utf8')
+
+    expect(componentSource).toMatch(/class="table-wrapper[^\"]*overflow-auto[^\"]*"/)
+    expect(componentSource).not.toMatch(/<div class="card overflow-hidden">/)
   })
 })

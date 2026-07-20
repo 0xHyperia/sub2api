@@ -147,7 +147,6 @@ function formatUSDQuota(value: number): string {
 }
 
 const appStore = useAppStore()
-
 const hasPeakRate = computed(() => groupHasPeakRate(props.plan))
 
 const peakRateDisplay = computed(() => {

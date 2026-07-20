@@ -24,7 +24,7 @@
       >
         <img
           v-if="settingsLoaded"
-          :src="siteLogo || '/logo.png'"
+          :src="siteLogo || '/logo.svg'"
           alt=""
           class="h-full w-full object-contain"
         >

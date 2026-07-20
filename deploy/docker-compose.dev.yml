@@ -43,6 +43,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-}
       - SETUP_MIGRATION_TIMEOUT_SECONDS=${SETUP_MIGRATION_TIMEOUT_SECONDS:-0}
       - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY:-}
+      - UPDATE_GITHUB_TOKEN=${UPDATE_GITHUB_TOKEN:-}
       - TZ=${TZ:-Asia/Shanghai}
       # Local mainland-China development proxy. Containers cannot use
       # 127.0.0.1 for the host proxy, so default to Docker Desktop's host name.
@@ -114,12 +115,16 @@ services:
     restart: unless-stopped
     volumes:
       - ./redis_data:/data:Z
+    # The command is one quoted script for the inner `sh -c`. Compose keeps
+    # the newlines inside the quoted string, so every line needs a trailing
+    # `\` — without it, `redis-server` on the first line runs with no flags
+    # at all, and the --save/--appendonly/--appendfsync lines are never read.
     command: >
         sh -c '
-          redis-server
-          --save 60 1
-          --appendonly yes
-          --appendfsync everysec
+          redis-server \
+          --save 60 1 \
+          --appendonly yes \
+          --appendfsync everysec \
           ${REDIS_PASSWORD:+--requirepass "$REDIS_PASSWORD"}'
     environment:
       - TZ=${TZ:-Asia/Shanghai}

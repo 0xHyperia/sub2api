@@ -72,7 +72,13 @@ vi.mock('vue-i18n', async () => {
     ...actual,
     useI18n: () => ({
       locale: { value: 'zh-CN' },
-      t: (key: string) => key,
+      t: (key: string) => ({
+        'batchImage.messages.selectAllJobs': '选择本页全部任务',
+        'batchImage.actions.moreActions': '更多操作',
+        'batchImage.actions.viewDetail': '查看详情',
+        'batchImage.messages.deleteTitle': '删除任务记录',
+        'batchImage.messages.deleteConfirm': '删除后这个任务会从你的列表隐藏，但账务记录仍会保留。确定删除吗？',
+      })[key] ?? key,
     }),
   }
 })

@@ -6,7 +6,7 @@
           <template v-if="settings">
           <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-panel border border-outline bg-surface-raised shadow-card">
             <img
-              :src="siteLogo || '/logo.png'"
+              :src="siteLogo || '/logo.svg'"
               :alt="t('legal.siteLogoAlt', { siteName })"
               class="h-full w-full object-contain"
             />
