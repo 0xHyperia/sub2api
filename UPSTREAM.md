@@ -11,6 +11,7 @@
 - 上一 USA0 版本：v1.0.7
 - USA0 发布版本：待确认
 - 集成提交：`1ae4c01bda2e496fd7fd6c0004e061ee521e320e`
+- 主分支修复提交：`86fb718e38120e7b49680e753083bc0ec97bd19a`
 - 同步状态：已完成冲突解决、USA0 适配、完整代码验证和本地 Docker 健康检查，集成提交已快进合入并推送至 `origin/usa0/main`；尚未创建 USA0 发布 tag
 - 记录日期：2026-07-20
 
@@ -36,11 +37,12 @@
 ### 验证结果
 
 - `go generate ./ent` 与 `go generate ./cmd/server` 通过，生成后无漂移。
-- 后端 `go test ./...`、`go test -tags=unit ./...` 通过，`golangci-lint run ./...` 为 0 issues。
+- 后端 `go test ./...`、`go test -tags=unit ./...`、`go test -tags=integration ./...` 通过，`golangci-lint run ./...` 为 0 issues。
 - 前端全量 Vitest、`pnpm run lint:check`、`pnpm run typecheck` 和 `pnpm run build` 通过；Lint 仅保留 1 条既有 warning。
 - 语义设计令牌、Toggle 无障碍守卫、四份 Compose 配置渲染和 `deploy/tests/install-github-token-test.sh` 均通过。
 - 官方 v0.1.162 未新增迁移或 Ent schema 变更；USA0 已发布迁移保持不变且编号唯一。
 - Docker 镜像构建成功，并以 `--no-deps` 仅替换 `sub2api-dev`；PostgreSQL 与 Redis 未重启，`http://localhost:8081/health` 返回 `{"status":"ok"}`。
+- 首次远程 integration job 暴露 USA0 分销查询未及时关闭结果集及测试清理吞掉外键错误；修复后 [CI 29744196424](https://github.com/0xHyperia/sub2api/actions/runs/29744196424) 和 [Security Scan 29744196499](https://github.com/0xHyperia/sub2api/actions/runs/29744196499) 均通过。
 - 当前 Codex 会话没有可连接的浏览器实例，因此尚未补做本次发布候选的桌面端、390px 移动端及登录态页面复核；不得将此项表述为已验证。
 
 ---
