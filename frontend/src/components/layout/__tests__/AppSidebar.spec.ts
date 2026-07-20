@@ -55,6 +55,12 @@ describe('AppSidebar header styles', () => {
 })
 
 describe('AppSidebar admin shell behavior', () => {
+  it('mounts the configurable contact panel in the authenticated shell footer', () => {
+    expect(componentSource).toContain("import ContactUsPanel from '@/components/layout/ContactUsPanel.vue'")
+    expect(componentSource).toContain(':settings="appStore.cachedPublicSettings"')
+    expect(componentSource).toContain(':collapsed="sidebarCollapsed"')
+  })
+
   it('uses a quiet full-surface selection and avoids double-highlighting expanded groups', () => {
     expect(componentSource).toContain("'sidebar-group-active': isGroupActive(item) && !sidebarCollapsed")
     expect(componentSource).toContain("'sidebar-link-active': isGroupActive(item) && sidebarCollapsed")

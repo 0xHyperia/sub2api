@@ -627,6 +627,35 @@ func TestSettingService_ParseSettings_APIKeyACLTrustForwardedIPFallsBackToConfig
 	require.True(t, got.APIKeyACLTrustForwardedIP)
 }
 
+func TestSettingService_ParseSettings_ContactUs(t *testing.T) {
+	svc := NewSettingService(&settingUpdateRepoStub{}, &config.Config{})
+
+	defaults := svc.parseSettings(map[string]string{})
+	require.False(t, defaults.ContactUsEnabled)
+	require.False(t, defaults.ContactQQEnabled)
+	require.False(t, defaults.ContactTelegramEnabled)
+	require.True(t, defaults.ContactTicketEnabled)
+
+	configured := svc.parseSettings(map[string]string{
+		SettingKeyContactUsEnabled:       "true",
+		SettingKeyContactQQEnabled:       "true",
+		SettingKeyContactQQName:          "  用户交流群  ",
+		SettingKeyContactQQURL:           "  https://qm.qq.com/example  ",
+		SettingKeyContactTelegramEnabled: "true",
+		SettingKeyContactTelegramName:    "  Telegram updates  ",
+		SettingKeyContactTelegramURL:     "  https://t.me/example  ",
+		SettingKeyContactTicketEnabled:   "false",
+	})
+	require.True(t, configured.ContactUsEnabled)
+	require.True(t, configured.ContactQQEnabled)
+	require.Equal(t, "用户交流群", configured.ContactQQName)
+	require.Equal(t, "https://qm.qq.com/example", configured.ContactQQURL)
+	require.True(t, configured.ContactTelegramEnabled)
+	require.Equal(t, "Telegram updates", configured.ContactTelegramName)
+	require.Equal(t, "https://t.me/example", configured.ContactTelegramURL)
+	require.False(t, configured.ContactTicketEnabled)
+}
+
 func TestSettingService_ParseSettings_APIKeyACLTrustForwardedIPUsesStoredValue(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.SetTrustForwardedIPForAPIKeyACL(true)

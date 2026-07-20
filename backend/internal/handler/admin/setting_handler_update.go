@@ -313,8 +313,16 @@ type UpdateSettingsRequest struct {
 	AvailableChannelsEnabled *bool `json:"available_channels_enabled"`
 
 	// Model Marketplace feature switch (user-facing)
-	ModelMarketplaceEnabled *bool `json:"model_marketplace_enabled"`
-	ModelMonitorEnabled     *bool `json:"model_monitor_enabled"`
+	ModelMarketplaceEnabled *bool   `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled     *bool   `json:"model_monitor_enabled"`
+	ContactUsEnabled        *bool   `json:"contact_us_enabled"`
+	ContactQQEnabled        *bool   `json:"contact_qq_enabled"`
+	ContactQQName           *string `json:"contact_qq_name"`
+	ContactQQURL            *string `json:"contact_qq_url"`
+	ContactTelegramEnabled  *bool   `json:"contact_telegram_enabled"`
+	ContactTelegramName     *string `json:"contact_telegram_name"`
+	ContactTelegramURL      *string `json:"contact_telegram_url"`
+	ContactTicketEnabled    *bool   `json:"contact_ticket_enabled"`
 
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
@@ -988,6 +996,31 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
+	for label, value := range map[string]*string{
+		"QQ group URL":       req.ContactQQURL,
+		"Telegram group URL": req.ContactTelegramURL,
+	} {
+		if value == nil {
+			continue
+		}
+		trimmed := strings.TrimSpace(*value)
+		*value = trimmed
+		if trimmed != "" {
+			if err := config.ValidateAbsoluteHTTPURL(trimmed); err != nil {
+				response.BadRequest(c, label+" must be an absolute http(s) URL")
+				return
+			}
+		}
+	}
+	if req.ContactQQName != nil {
+		trimmed := strings.TrimSpace(*req.ContactQQName)
+		req.ContactQQName = &trimmed
+	}
+	if req.ContactTelegramName != nil {
+		trimmed := strings.TrimSpace(*req.ContactTelegramName)
+		req.ContactTelegramName = &trimmed
+	}
+
 	// 自定义菜单项验证
 	const (
 		maxCustomMenuItems    = 20
@@ -1593,6 +1626,54 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.ModelMonitorEnabled
 		}(),
+		ContactUsEnabled: func() bool {
+			if req.ContactUsEnabled != nil {
+				return *req.ContactUsEnabled
+			}
+			return previousSettings.ContactUsEnabled
+		}(),
+		ContactQQEnabled: func() bool {
+			if req.ContactQQEnabled != nil {
+				return *req.ContactQQEnabled
+			}
+			return previousSettings.ContactQQEnabled
+		}(),
+		ContactQQName: func() string {
+			if req.ContactQQName != nil {
+				return *req.ContactQQName
+			}
+			return previousSettings.ContactQQName
+		}(),
+		ContactQQURL: func() string {
+			if req.ContactQQURL != nil {
+				return *req.ContactQQURL
+			}
+			return previousSettings.ContactQQURL
+		}(),
+		ContactTelegramEnabled: func() bool {
+			if req.ContactTelegramEnabled != nil {
+				return *req.ContactTelegramEnabled
+			}
+			return previousSettings.ContactTelegramEnabled
+		}(),
+		ContactTelegramName: func() string {
+			if req.ContactTelegramName != nil {
+				return *req.ContactTelegramName
+			}
+			return previousSettings.ContactTelegramName
+		}(),
+		ContactTelegramURL: func() string {
+			if req.ContactTelegramURL != nil {
+				return *req.ContactTelegramURL
+			}
+			return previousSettings.ContactTelegramURL
+		}(),
+		ContactTicketEnabled: func() bool {
+			if req.ContactTicketEnabled != nil {
+				return *req.ContactTicketEnabled
+			}
+			return previousSettings.ContactTicketEnabled
+		}(),
 		AffiliateEnabled: func() bool {
 			if req.AffiliateEnabled != nil {
 				return *req.AffiliateEnabled
@@ -1991,6 +2072,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 		ModelMarketplaceEnabled: updatedSettings.ModelMarketplaceEnabled,
 		ModelMonitorEnabled:     updatedSettings.ModelMonitorEnabled,
+		ContactUsEnabled:        updatedSettings.ContactUsEnabled,
+		ContactQQEnabled:        updatedSettings.ContactQQEnabled,
+		ContactQQName:           updatedSettings.ContactQQName,
+		ContactQQURL:            updatedSettings.ContactQQURL,
+		ContactTelegramEnabled:  updatedSettings.ContactTelegramEnabled,
+		ContactTelegramName:     updatedSettings.ContactTelegramName,
+		ContactTelegramURL:      updatedSettings.ContactTelegramURL,
+		ContactTicketEnabled:    updatedSettings.ContactTicketEnabled,
 
 		AffiliateEnabled: updatedSettings.AffiliateEnabled,
 

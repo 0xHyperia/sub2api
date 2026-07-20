@@ -348,6 +348,14 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	// Model marketplace feature switch
 	updates[SettingKeyModelMarketplaceEnabled] = strconv.FormatBool(settings.ModelMarketplaceEnabled)
 	updates[SettingKeyModelMonitorEnabled] = strconv.FormatBool(settings.ModelMonitorEnabled)
+	updates[SettingKeyContactUsEnabled] = strconv.FormatBool(settings.ContactUsEnabled)
+	updates[SettingKeyContactQQEnabled] = strconv.FormatBool(settings.ContactQQEnabled)
+	updates[SettingKeyContactQQName] = strings.TrimSpace(settings.ContactQQName)
+	updates[SettingKeyContactQQURL] = strings.TrimSpace(settings.ContactQQURL)
+	updates[SettingKeyContactTelegramEnabled] = strconv.FormatBool(settings.ContactTelegramEnabled)
+	updates[SettingKeyContactTelegramName] = strings.TrimSpace(settings.ContactTelegramName)
+	updates[SettingKeyContactTelegramURL] = strings.TrimSpace(settings.ContactTelegramURL)
+	updates[SettingKeyContactTicketEnabled] = strconv.FormatBool(settings.ContactTicketEnabled)
 
 	// Affiliate (邀请返利) feature switch
 	updates[SettingKeyAffiliateEnabled] = strconv.FormatBool(settings.AffiliateEnabled)

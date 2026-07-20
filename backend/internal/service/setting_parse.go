@@ -191,6 +191,14 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// Model marketplace feature (default disabled; opt-in)
 		SettingKeyModelMarketplaceEnabled: "false",
 		SettingKeyModelMonitorEnabled:     "false",
+		SettingKeyContactUsEnabled:        "false",
+		SettingKeyContactQQEnabled:        "false",
+		SettingKeyContactQQName:           "",
+		SettingKeyContactQQURL:            "",
+		SettingKeyContactTelegramEnabled:  "false",
+		SettingKeyContactTelegramName:     "",
+		SettingKeyContactTelegramURL:      "",
+		SettingKeyContactTicketEnabled:    "true",
 
 		// Affiliate (邀请返利) feature (default disabled; opt-in)
 		SettingKeyAffiliateEnabled:              "false",
@@ -765,6 +773,14 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	// Model marketplace feature (default: disabled; strict true)
 	result.ModelMarketplaceEnabled = settings[SettingKeyModelMarketplaceEnabled] == "true"
 	result.ModelMonitorEnabled = settings[SettingKeyModelMonitorEnabled] == "true"
+	result.ContactUsEnabled = settings[SettingKeyContactUsEnabled] == "true"
+	result.ContactQQEnabled = settings[SettingKeyContactQQEnabled] == "true"
+	result.ContactQQName = strings.TrimSpace(settings[SettingKeyContactQQName])
+	result.ContactQQURL = strings.TrimSpace(settings[SettingKeyContactQQURL])
+	result.ContactTelegramEnabled = settings[SettingKeyContactTelegramEnabled] == "true"
+	result.ContactTelegramName = strings.TrimSpace(settings[SettingKeyContactTelegramName])
+	result.ContactTelegramURL = strings.TrimSpace(settings[SettingKeyContactTelegramURL])
+	result.ContactTicketEnabled = !isFalseSettingValue(settings[SettingKeyContactTicketEnabled])
 
 	// Affiliate (邀请返利) feature (default: disabled; strict true)
 	result.AffiliateEnabled = settings[SettingKeyAffiliateEnabled] == "true"

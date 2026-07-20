@@ -250,6 +250,14 @@ export interface PublicSettings {
   available_channels_enabled: boolean
   model_marketplace_enabled: boolean
   model_monitor_enabled: boolean
+  contact_us_enabled: boolean
+  contact_qq_enabled: boolean
+  contact_qq_name: string
+  contact_qq_url: string
+  contact_telegram_enabled: boolean
+  contact_telegram_name: string
+  contact_telegram_url: string
+  contact_ticket_enabled: boolean
   service_quota_enabled: boolean
   affiliate_enabled: boolean
   allow_user_view_error_requests?: boolean

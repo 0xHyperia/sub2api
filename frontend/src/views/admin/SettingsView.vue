@@ -6216,6 +6216,74 @@
 
         <div class="card">
           <div class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">{{ localText('联系我们', 'Contact us') }}</h2>
+            <p class="mt-1 text-sm text-foreground-subtle">
+              {{ localText('为登录用户提供社群和工单入口。', 'Offer community and support links to signed-in users.') }}
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-foreground-muted">{{ localText('启用联系我们', 'Enable contact us') }}</label>
+                <p class="mt-0.5 text-xs text-foreground-subtle">{{ localText('开启后在侧栏底部显示入口。', 'Shows an entry in the sidebar footer.') }}</p>
+              </div>
+              <Toggle v-model="form.contact_us_enabled" :aria-label="localText('启用联系我们', 'Enable contact us')" />
+            </div>
+
+            <div v-if="form.contact_us_enabled" class="space-y-4 border-t border-outline pt-5">
+              <div class="rounded-control border border-outline p-4">
+                <div class="flex items-center justify-between gap-4">
+                  <div>
+                    <label class="text-sm font-medium text-foreground">{{ localText('QQ 群', 'QQ group') }}</label>
+                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ localText('使用 HTTPS 加群链接。', 'Use an HTTPS group invitation URL.') }}</p>
+                  </div>
+                  <Toggle v-model="form.contact_qq_enabled" :aria-label="localText('启用 QQ 群入口', 'Enable QQ group entry')" />
+                </div>
+                <div v-if="form.contact_qq_enabled" class="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label class="input-label">{{ localText('显示名称', 'Display name') }}</label>
+                    <input v-model.trim="form.contact_qq_name" class="input" type="text" :placeholder="localText('加入 QQ 群', 'Join QQ group')" />
+                  </div>
+                  <div>
+                    <label class="input-label">{{ localText('加群链接', 'Invitation URL') }}</label>
+                    <input v-model.trim="form.contact_qq_url" class="input" type="url" placeholder="https://qm.qq.com/..." />
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-control border border-outline p-4">
+                <div class="flex items-center justify-between gap-4">
+                  <div>
+                    <label class="text-sm font-medium text-foreground">Telegram</label>
+                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ localText('配置群组或频道邀请链接。', 'Configure a group or channel invitation URL.') }}</p>
+                  </div>
+                  <Toggle v-model="form.contact_telegram_enabled" aria-label="Enable Telegram entry" />
+                </div>
+                <div v-if="form.contact_telegram_enabled" class="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label class="input-label">{{ localText('显示名称', 'Display name') }}</label>
+                    <input v-model.trim="form.contact_telegram_name" class="input" type="text" :placeholder="localText('加入 TG 群', 'Join Telegram group')" />
+                  </div>
+                  <div>
+                    <label class="input-label">{{ localText('邀请链接', 'Invitation URL') }}</label>
+                    <input v-model.trim="form.contact_telegram_url" class="input" type="url" placeholder="https://t.me/..." />
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between gap-4 rounded-control border border-outline p-4">
+                <div>
+                  <label class="text-sm font-medium text-foreground">{{ localText('提交问题 / 建议', 'Submit an issue or suggestion') }}</label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">{{ localText('跳转到现有工单支持页面。', 'Opens the existing support ticket page.') }}</p>
+                </div>
+                <Toggle v-model="form.contact_ticket_enabled" :aria-label="localText('启用工单入口', 'Enable ticket entry')" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="border-b border-outline px-6 py-4">
             <h2 class="text-lg font-semibold text-foreground">
               {{ t('admin.settings.features.channelMonitor.title') }}
             </h2>
@@ -9128,6 +9196,14 @@ const form = reactive<SettingsForm>({
   // Model Marketplace feature switch
   model_marketplace_enabled: false,
   model_monitor_enabled: false,
+  contact_us_enabled: false,
+  contact_qq_enabled: false,
+  contact_qq_name: "",
+  contact_qq_url: "",
+  contact_telegram_enabled: false,
+  contact_telegram_name: "",
+  contact_telegram_url: "",
+  contact_ticket_enabled: true,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
   // Allow user view error requests
@@ -10745,6 +10821,14 @@ async function saveSettings() {
       // Model Marketplace feature switch
       model_marketplace_enabled: form.model_marketplace_enabled,
       model_monitor_enabled: form.model_marketplace_enabled && form.model_monitor_enabled,
+      contact_us_enabled: form.contact_us_enabled,
+      contact_qq_enabled: form.contact_qq_enabled,
+      contact_qq_name: form.contact_qq_name.trim(),
+      contact_qq_url: form.contact_qq_url.trim(),
+      contact_telegram_enabled: form.contact_telegram_enabled,
+      contact_telegram_name: form.contact_telegram_name.trim(),
+      contact_telegram_url: form.contact_telegram_url.trim(),
+      contact_ticket_enabled: form.contact_ticket_enabled,
       // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,

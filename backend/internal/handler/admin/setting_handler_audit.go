@@ -525,6 +525,30 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.ModelMonitorEnabled != after.ModelMonitorEnabled {
 		changed = append(changed, "model_monitor_enabled")
 	}
+	if before.ContactUsEnabled != after.ContactUsEnabled {
+		changed = append(changed, "contact_us_enabled")
+	}
+	if before.ContactQQEnabled != after.ContactQQEnabled {
+		changed = append(changed, "contact_qq_enabled")
+	}
+	if before.ContactQQName != after.ContactQQName {
+		changed = append(changed, "contact_qq_name")
+	}
+	if before.ContactQQURL != after.ContactQQURL {
+		changed = append(changed, "contact_qq_url")
+	}
+	if before.ContactTelegramEnabled != after.ContactTelegramEnabled {
+		changed = append(changed, "contact_telegram_enabled")
+	}
+	if before.ContactTelegramName != after.ContactTelegramName {
+		changed = append(changed, "contact_telegram_name")
+	}
+	if before.ContactTelegramURL != after.ContactTelegramURL {
+		changed = append(changed, "contact_telegram_url")
+	}
+	if before.ContactTicketEnabled != after.ContactTicketEnabled {
+		changed = append(changed, "contact_ticket_enabled")
+	}
 	if before.AffiliateEnabled != after.AffiliateEnabled {
 		changed = append(changed, "affiliate_enabled")
 	}

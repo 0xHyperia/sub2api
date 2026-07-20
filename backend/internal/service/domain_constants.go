@@ -384,6 +384,15 @@ const (
 	SettingKeyModelMarketplaceEnabled = "model_marketplace_enabled"
 	// SettingKeyModelMonitorEnabled controls independent platform-model probes.
 	SettingKeyModelMonitorEnabled = "model_monitor_enabled"
+	// Contact-us entries shown to authenticated users.
+	SettingKeyContactUsEnabled       = "contact_us_enabled"
+	SettingKeyContactQQEnabled       = "contact_qq_enabled"
+	SettingKeyContactQQName          = "contact_qq_name"
+	SettingKeyContactQQURL           = "contact_qq_url"
+	SettingKeyContactTelegramEnabled = "contact_telegram_enabled"
+	SettingKeyContactTelegramName    = "contact_telegram_name"
+	SettingKeyContactTelegramURL     = "contact_telegram_url"
+	SettingKeyContactTicketEnabled   = "contact_ticket_enabled"
 	// SettingKeyUpstreamBillingProbeSettings stores the global enable switch and interval
 	// for probing remote Sub2API API-key billing metadata.
 	SettingKeyUpstreamBillingProbeSettings = "upstream_billing_probe_settings"

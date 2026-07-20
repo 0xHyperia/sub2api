@@ -663,6 +663,14 @@ export interface SystemSettings {
   // Model Marketplace feature switch
   model_marketplace_enabled: boolean;
   model_monitor_enabled: boolean;
+  contact_us_enabled: boolean;
+  contact_qq_enabled: boolean;
+  contact_qq_name: string;
+  contact_qq_url: string;
+  contact_telegram_enabled: boolean;
+  contact_telegram_name: string;
+  contact_telegram_url: string;
+  contact_ticket_enabled: boolean;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: boolean;
@@ -941,6 +949,14 @@ export interface UpdateSettingsRequest {
   // Model Marketplace feature switch
   model_marketplace_enabled?: boolean;
   model_monitor_enabled?: boolean;
+  contact_us_enabled?: boolean;
+  contact_qq_enabled?: boolean;
+  contact_qq_name?: string;
+  contact_qq_url?: string;
+  contact_telegram_enabled?: boolean;
+  contact_telegram_name?: string;
+  contact_telegram_url?: string;
+  contact_ticket_enabled?: boolean;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled?: boolean;

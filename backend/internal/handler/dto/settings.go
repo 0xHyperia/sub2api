@@ -288,8 +288,16 @@ type SystemSettings struct {
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
 	// Model Marketplace feature switch (user-facing model catalog)
-	ModelMarketplaceEnabled bool `json:"model_marketplace_enabled"`
-	ModelMonitorEnabled     bool `json:"model_monitor_enabled"`
+	ModelMarketplaceEnabled bool   `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled     bool   `json:"model_monitor_enabled"`
+	ContactUsEnabled        bool   `json:"contact_us_enabled"`
+	ContactQQEnabled        bool   `json:"contact_qq_enabled"`
+	ContactQQName           string `json:"contact_qq_name"`
+	ContactQQURL            string `json:"contact_qq_url"`
+	ContactTelegramEnabled  bool   `json:"contact_telegram_enabled"`
+	ContactTelegramName     string `json:"contact_telegram_name"`
+	ContactTelegramURL      string `json:"contact_telegram_url"`
+	ContactTicketEnabled    bool   `json:"contact_ticket_enabled"`
 
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
@@ -373,8 +381,16 @@ type PublicSettings struct {
 
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
-	ModelMarketplaceEnabled bool `json:"model_marketplace_enabled"`
-	ModelMonitorEnabled     bool `json:"model_monitor_enabled"`
+	ModelMarketplaceEnabled bool   `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled     bool   `json:"model_monitor_enabled"`
+	ContactUsEnabled        bool   `json:"contact_us_enabled"`
+	ContactQQEnabled        bool   `json:"contact_qq_enabled"`
+	ContactQQName           string `json:"contact_qq_name"`
+	ContactQQURL            string `json:"contact_qq_url"`
+	ContactTelegramEnabled  bool   `json:"contact_telegram_enabled"`
+	ContactTelegramName     string `json:"contact_telegram_name"`
+	ContactTelegramURL      string `json:"contact_telegram_url"`
+	ContactTicketEnabled    bool   `json:"contact_ticket_enabled"`
 
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 

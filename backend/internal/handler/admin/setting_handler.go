@@ -351,6 +351,14 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 
 		ModelMarketplaceEnabled: settings.ModelMarketplaceEnabled,
 		ModelMonitorEnabled:     settings.ModelMonitorEnabled,
+		ContactUsEnabled:        settings.ContactUsEnabled,
+		ContactQQEnabled:        settings.ContactQQEnabled,
+		ContactQQName:           settings.ContactQQName,
+		ContactQQURL:            settings.ContactQQURL,
+		ContactTelegramEnabled:  settings.ContactTelegramEnabled,
+		ContactTelegramName:     settings.ContactTelegramName,
+		ContactTelegramURL:      settings.ContactTelegramURL,
+		ContactTicketEnabled:    settings.ContactTicketEnabled,
 
 		AffiliateEnabled: settings.AffiliateEnabled,
 

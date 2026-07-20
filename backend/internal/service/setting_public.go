@@ -221,6 +221,14 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyAvailableChannelsEnabled,
 		SettingKeyModelMarketplaceEnabled,
 		SettingKeyModelMonitorEnabled,
+		SettingKeyContactUsEnabled,
+		SettingKeyContactQQEnabled,
+		SettingKeyContactQQName,
+		SettingKeyContactQQURL,
+		SettingKeyContactTelegramEnabled,
+		SettingKeyContactTelegramName,
+		SettingKeyContactTelegramURL,
+		SettingKeyContactTicketEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyAllowUserViewErrorRequests,
@@ -334,6 +342,14 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		ModelMarketplaceEnabled: settings[SettingKeyModelMarketplaceEnabled] == "true",
 		ModelMonitorEnabled:     settings[SettingKeyModelMonitorEnabled] == "true",
+		ContactUsEnabled:        settings[SettingKeyContactUsEnabled] == "true",
+		ContactQQEnabled:        settings[SettingKeyContactQQEnabled] == "true",
+		ContactQQName:           strings.TrimSpace(settings[SettingKeyContactQQName]),
+		ContactQQURL:            strings.TrimSpace(settings[SettingKeyContactQQURL]),
+		ContactTelegramEnabled:  settings[SettingKeyContactTelegramEnabled] == "true",
+		ContactTelegramName:     strings.TrimSpace(settings[SettingKeyContactTelegramName]),
+		ContactTelegramURL:      strings.TrimSpace(settings[SettingKeyContactTelegramURL]),
+		ContactTicketEnabled:    !isFalseSettingValue(settings[SettingKeyContactTicketEnabled]),
 
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
@@ -523,14 +539,22 @@ type PublicSettingsInjectionPayload struct {
 	// Feature flags — MUST match the opt-in/opt-out registry in
 	// frontend/src/utils/featureFlags.ts. Missing a field here is the bug
 	// that hid the "可用渠道" menu on page refresh.
-	ChannelMonitorEnabled                bool `json:"channel_monitor_enabled"`
-	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
-	AvailableChannelsEnabled             bool `json:"available_channels_enabled"`
-	ModelMarketplaceEnabled              bool `json:"model_marketplace_enabled"`
-	ModelMonitorEnabled                  bool `json:"model_monitor_enabled"`
-	AffiliateEnabled                     bool `json:"affiliate_enabled"`
-	RiskControlEnabled                   bool `json:"risk_control_enabled"`
-	AllowUserViewErrorRequests           bool `json:"allow_user_view_error_requests"`
+	ChannelMonitorEnabled                bool   `json:"channel_monitor_enabled"`
+	ChannelMonitorDefaultIntervalSeconds int    `json:"channel_monitor_default_interval_seconds"`
+	AvailableChannelsEnabled             bool   `json:"available_channels_enabled"`
+	ModelMarketplaceEnabled              bool   `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled                  bool   `json:"model_monitor_enabled"`
+	ContactUsEnabled                     bool   `json:"contact_us_enabled"`
+	ContactQQEnabled                     bool   `json:"contact_qq_enabled"`
+	ContactQQName                        string `json:"contact_qq_name"`
+	ContactQQURL                         string `json:"contact_qq_url"`
+	ContactTelegramEnabled               bool   `json:"contact_telegram_enabled"`
+	ContactTelegramName                  string `json:"contact_telegram_name"`
+	ContactTelegramURL                   string `json:"contact_telegram_url"`
+	ContactTicketEnabled                 bool   `json:"contact_ticket_enabled"`
+	AffiliateEnabled                     bool   `json:"affiliate_enabled"`
+	RiskControlEnabled                   bool   `json:"risk_control_enabled"`
+	AllowUserViewErrorRequests           bool   `json:"allow_user_view_error_requests"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -594,6 +618,14 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
 		ModelMarketplaceEnabled:              settings.ModelMarketplaceEnabled,
 		ModelMonitorEnabled:                  settings.ModelMonitorEnabled,
+		ContactUsEnabled:                     settings.ContactUsEnabled,
+		ContactQQEnabled:                     settings.ContactQQEnabled,
+		ContactQQName:                        settings.ContactQQName,
+		ContactQQURL:                         settings.ContactQQURL,
+		ContactTelegramEnabled:               settings.ContactTelegramEnabled,
+		ContactTelegramName:                  settings.ContactTelegramName,
+		ContactTelegramURL:                   settings.ContactTelegramURL,
+		ContactTicketEnabled:                 settings.ContactTicketEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,

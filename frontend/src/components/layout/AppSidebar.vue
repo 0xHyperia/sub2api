@@ -202,6 +202,13 @@
     </nav>
 
     <div class="admin-sidebar-footer">
+      <ContactUsPanel
+        v-if="appStore.cachedPublicSettings"
+        :settings="appStore.cachedPublicSettings"
+        :collapsed="sidebarCollapsed"
+        :locale="locale"
+        @open="closeMobile"
+      />
       <button
         type="button"
         class="sidebar-link hidden w-full lg:flex"
@@ -239,6 +246,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
 import VersionBadge from '@/components/common/VersionBadge.vue'
+import ContactUsPanel from '@/components/layout/ContactUsPanel.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
