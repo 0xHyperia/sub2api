@@ -604,6 +604,7 @@ func (h *AuthHandler) createOIDCOAuthChoicePendingSession(
 type completeOIDCOAuthRequest struct {
 	InvitationCode   string `json:"invitation_code" binding:"required"`
 	AffCode          string `json:"aff_code,omitempty"`
+	DistributionCode string `json:"distribution_code,omitempty"`
 	AdoptDisplayName *bool  `json:"adopt_display_name,omitempty"`
 	AdoptAvatar      *bool  `json:"adopt_avatar,omitempty"`
 }
@@ -687,12 +688,13 @@ func (h *AuthHandler) CompleteOIDCOAuthRegistration(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPairAndPromoCode(
+	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPairAndPromotionCodes(
 		c.Request.Context(),
 		email,
 		username,
 		req.InvitationCode,
 		req.AffCode,
+		req.DistributionCode,
 		pendingOAuthPromoCode(session),
 		"oidc",
 	)

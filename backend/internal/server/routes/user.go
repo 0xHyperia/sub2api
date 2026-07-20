@@ -91,6 +91,23 @@ func RegisterUserRoutes(
 			models.GET("/marketplace", h.AvailableChannel.ListMarketplace)
 		}
 
+		distribution := authenticated.Group("/distribution")
+		{
+			distribution.GET("/access", h.Distribution.GetAccess)
+			distribution.GET("/overview", h.Distribution.GetOverview)
+			distribution.GET("/payout-account", h.Distribution.GetPayoutAccount)
+			distribution.GET("/settlement-rules", h.Distribution.GetSettlementRules)
+			distribution.PUT("/payout-account", h.Distribution.UpdatePayoutAccount)
+			distribution.POST("/withdrawals", h.Distribution.RequestWithdrawal)
+			distribution.GET("/withdrawals", h.Distribution.ListWithdrawals)
+			distribution.POST("/convert-to-balance", h.Distribution.ConvertToBalance)
+			distribution.POST("/team", h.Distribution.GrantL2Agent)
+			distribution.GET("/team", h.Distribution.ListTeam)
+			distribution.PUT("/team/:agent_id/status", h.Distribution.UpdateTeamAgentStatus)
+			distribution.GET("/customers", h.Distribution.ListCustomers)
+			distribution.GET("/commissions", h.Distribution.ListCommissions)
+		}
+
 		// 使用记录
 		usage := authenticated.Group("/usage")
 		{

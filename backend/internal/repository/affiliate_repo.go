@@ -79,6 +79,17 @@ func (r *affiliateRepository) GetAffiliateByCode(ctx context.Context, code strin
 func (r *affiliateRepository) BindInviter(ctx context.Context, userID, inviterID int64) (bool, error) {
 	var bound bool
 	err := r.withTx(ctx, func(txCtx context.Context, txClient *dbent.Client) error {
+		rows, err := txClient.QueryContext(txCtx, `SELECT EXISTS(SELECT 1 FROM distribution_agents WHERE user_id IN ($1,$2) AND status <> 'revoked')`, userID, inviterID)
+		if err == nil {
+			defer func() { _ = rows.Close() }()
+			var isAgent bool
+			if rows.Next() {
+				_ = rows.Scan(&isAgent)
+			}
+			if isAgent {
+				return service.ErrDistributionCodeConflict
+			}
+		}
 		if _, err := ensureUserAffiliateWithClient(txCtx, txClient, userID); err != nil {
 			return err
 		}
@@ -128,7 +139,8 @@ func (r *affiliateRepository) AccrueQuota(ctx context.Context, inviterID, invite
 		} else {
 			updateSQL = "UPDATE user_affiliates SET aff_quota = aff_quota + $1, aff_history_quota = aff_history_quota + $1, updated_at = NOW() WHERE user_id = $2"
 		}
-		res, err := txClient.ExecContext(txCtx, updateSQL, amount, inviterID)
+		updateSQL += " AND NOT EXISTS (SELECT 1 FROM distribution_agents WHERE user_id IN ($2, $3) AND status <> 'revoked')"
+		res, err := txClient.ExecContext(txCtx, updateSQL, amount, inviterID, inviteeUserID)
 		if err != nil {
 			return err
 		}

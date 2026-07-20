@@ -6365,6 +6365,8 @@
           </div>
         </div>
 
+        <DistributionSettingsCard @success="appStore.showSuccess" @error="appStore.showError" />
+
         <!-- Affiliate (邀请返利) feature card -->
         <div class="card">
           <div class="border-b border-outline px-6 py-4">
@@ -8063,6 +8065,7 @@ import PaymentProviderDialog from "@/components/payment/PaymentProviderDialog.vu
 import GroupBadge from "@/components/common/GroupBadge.vue";
 import GroupOptionItem from "@/components/common/GroupOptionItem.vue";
 import Toggle from "@/components/common/Toggle.vue";
+import DistributionSettingsCard from "@/components/admin/DistributionSettingsCard.vue";
 import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
 import BackupSettings from "@/views/admin/BackupView.vue";

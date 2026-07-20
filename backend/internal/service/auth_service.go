@@ -78,8 +78,13 @@ type AuthService struct {
 	emailQueueService     *EmailQueueService
 	promoService          *PromoService
 	affiliateService      *AffiliateService
+	distributionService   *DistributionService
 	defaultSubAssigner    DefaultSubscriptionAssigner
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+}
+
+func (s *AuthService) SetDistributionService(distributionService *DistributionService) {
+	s.distributionService = distributionService
 }
 
 type DefaultSubscriptionAssigner interface {
@@ -140,6 +145,23 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (str
 
 // RegisterWithVerification 用户注册（支持邮件验证、优惠码、邀请码和邀请返利码），返回token和用户。
 func (s *AuthService) RegisterWithVerification(ctx context.Context, email, password, verifyCode, promoCode, invitationCode, affiliateCode string) (string, *User, error) {
+	return s.RegisterWithVerificationAndDistribution(ctx, email, password, verifyCode, promoCode, invitationCode, affiliateCode, "")
+}
+
+// RegisterWithVerificationAndDistribution keeps invitation rebates and agent
+// promotion mutually exclusive while binding both only at registration time.
+func (s *AuthService) RegisterWithVerificationAndDistribution(ctx context.Context, email, password, verifyCode, promoCode, invitationCode, affiliateCode, distributionCode string) (string, *User, error) {
+	if strings.TrimSpace(affiliateCode) != "" && strings.TrimSpace(distributionCode) != "" {
+		return "", nil, ErrDistributionCodeConflict
+	}
+	if strings.TrimSpace(distributionCode) != "" {
+		if s.distributionService == nil {
+			return "", nil, ErrServiceUnavailable
+		}
+		if err := s.distributionService.ValidatePromotionCode(ctx, distributionCode); err != nil {
+			return "", nil, err
+		}
+	}
 	// 检查是否开放注册（默认关闭：settingService 未配置时不允许注册）
 	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 		return "", nil, ErrRegDisabled
@@ -246,6 +268,12 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 				// 邀请返利码绑定失败不影响注册，只记录日志
 				logger.LegacyPrintf("service.auth", "[Auth] Failed to bind affiliate inviter for user %d: %v", user.ID, err)
 			}
+		}
+	}
+	if s.distributionService != nil && strings.TrimSpace(distributionCode) != "" {
+		if err := s.distributionService.BindCustomerByCode(ctx, user.ID, distributionCode); err != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] Failed to bind distribution agent for user %d: %v", user.ID, err)
+			return "", nil, err
 		}
 	}
 
@@ -592,17 +620,21 @@ func (s *AuthService) canBypassRegistrationDisabledForOAuth(ctx context.Context,
 // affiliateCode 用于邀请返利绑定，仅在新用户注册时使用。
 // signupSource 标识来源渠道（"dingtalk"/"linuxdo"/"wechat"/"oidc" 等），仅用于豁免检查。
 func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, email, username, invitationCode, affiliateCode, signupSource string) (*TokenPair, *User, error) {
-	return s.loginOrRegisterOAuthWithTokenPair(ctx, email, username, invitationCode, affiliateCode, "", signupSource)
+	return s.loginOrRegisterOAuthWithTokenPair(ctx, email, username, invitationCode, affiliateCode, "", "", signupSource)
 }
 
 // LoginOrRegisterOAuthWithTokenPairAndPromoCode behaves like
 // LoginOrRegisterOAuthWithTokenPair and applies promoCode only when a new user
 // is created.
 func (s *AuthService) LoginOrRegisterOAuthWithTokenPairAndPromoCode(ctx context.Context, email, username, invitationCode, affiliateCode, promoCode, signupSource string) (*TokenPair, *User, error) {
-	return s.loginOrRegisterOAuthWithTokenPair(ctx, email, username, invitationCode, affiliateCode, promoCode, signupSource)
+	return s.loginOrRegisterOAuthWithTokenPair(ctx, email, username, invitationCode, affiliateCode, "", promoCode, signupSource)
 }
 
-func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, email, username, invitationCode, affiliateCode, promoCode, signupSource string) (*TokenPair, *User, error) {
+func (s *AuthService) LoginOrRegisterOAuthWithTokenPairAndPromotionCodes(ctx context.Context, email, username, invitationCode, affiliateCode, distributionCode, promoCode, signupSource string) (*TokenPair, *User, error) {
+	return s.loginOrRegisterOAuthWithTokenPair(ctx, email, username, invitationCode, affiliateCode, distributionCode, promoCode, signupSource)
+}
+
+func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, email, username, invitationCode, affiliateCode, distributionCode, promoCode, signupSource string) (*TokenPair, *User, error) {
 	// 检查 refreshTokenCache 是否可用
 	if s.refreshTokenCache == nil {
 		return nil, nil, errors.New("refresh token cache not configured")
@@ -625,6 +657,17 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	created := false
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
+			if strings.TrimSpace(affiliateCode) != "" && strings.TrimSpace(distributionCode) != "" {
+				return nil, nil, ErrDistributionCodeConflict
+			}
+			if strings.TrimSpace(distributionCode) != "" {
+				if s.distributionService == nil {
+					return nil, nil, ErrServiceUnavailable
+				}
+				if err := s.distributionService.ValidatePromotionCode(ctx, distributionCode); err != nil {
+					return nil, nil, err
+				}
+			}
 			// OAuth 首次登录视为注册
 			if s.settingService == nil || (!s.settingService.IsRegistrationEnabled(ctx) && !s.canBypassRegistrationDisabledForOAuth(ctx, signupSource)) {
 				return nil, nil, ErrRegDisabled
@@ -713,7 +756,7 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					// snapshot user × platform quota（fail-open）
 					_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
+					s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode)
 				}
 			} else {
 				if err := s.userRepo.Create(ctx, newUser); err != nil {
@@ -734,7 +777,7 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					// snapshot user × platform quota（fail-open）
 					_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
+					s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode)
 					if invitationRedeemCode != nil {
 						if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
 							return nil, nil, ErrInvitationCodeInvalid
@@ -895,6 +938,18 @@ func (s *AuthService) bindOAuthAffiliate(ctx context.Context, userID int64, affi
 			logger.LegacyPrintf("service.auth", "[Auth] Failed to bind affiliate inviter for user %d: %v", userID, err)
 		}
 	}
+}
+
+func (s *AuthService) bindOAuthPromotion(ctx context.Context, userID int64, affiliateCode, distributionCode string) {
+	if code := strings.TrimSpace(distributionCode); code != "" {
+		if s.distributionService != nil {
+			if err := s.distributionService.BindCustomerByCode(ctx, userID, code); err != nil {
+				logger.LegacyPrintf("service.auth", "[Auth] Failed to bind distribution agent for user %d: %v", userID, err)
+			}
+		}
+		return
+	}
+	s.bindOAuthAffiliate(ctx, userID, affiliateCode)
 }
 
 func (s *AuthService) postAuthUserBootstrap(ctx context.Context, user *User, signupSource string, touchLogin bool) {

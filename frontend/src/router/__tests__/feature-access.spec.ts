@@ -31,6 +31,8 @@ const appStore = vi.hoisted(() => ({
   fetchPublicSettings: vi.fn(),
 }))
 
+const getDistributionAccess = vi.hoisted(() => vi.fn())
+
 vi.mock('vue-router', () => ({
   createWebHistory: vi.fn(() => ({})),
   createRouter: vi.fn(() => ({
@@ -60,6 +62,10 @@ vi.mock('@/stores/adminCompliance', () => ({
     fetchStatus: vi.fn(),
     requireAcknowledgement: vi.fn(),
   }),
+}))
+
+vi.mock('@/api/distribution', () => ({
+  getDistributionAccess,
 }))
 
 vi.mock('@/composables/useNavigationLoading', () => ({
@@ -118,6 +124,8 @@ describe('feature route guard', () => {
     appStore.publicSettingsLoaded = false
     appStore.cachedPublicSettings = null
     appStore.fetchPublicSettings.mockReset()
+    getDistributionAccess.mockReset()
+    getDistributionAccess.mockResolvedValue({ enabled: true, is_agent: true })
   })
 
   it('waits for the first public-settings request before deciding payment access', async () => {
@@ -181,5 +189,46 @@ describe('feature route guard', () => {
     expect(appStore.fetchPublicSettings).not.toHaveBeenCalled()
     expect(next).toHaveBeenCalledOnce()
     expect(next).toHaveBeenCalledWith(target)
+  })
+
+  it('allows an enabled distribution agent route', async () => {
+    const { navigation, next } = runGuard(
+      { requiresDistributionAgent: true },
+      '/distribution/team'
+    )
+    await navigation
+
+    expect(getDistributionAccess).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledWith()
+  })
+
+  it.each([
+    ['disabled', { enabled: false, is_agent: true }],
+    ['non-agent', { enabled: true, is_agent: false }],
+  ])('redirects a %s distribution user', async (_name, access) => {
+    getDistributionAccess.mockResolvedValue(access)
+
+    const { navigation, next } = runGuard(
+      { requiresDistributionAgent: true },
+      '/distribution'
+    )
+    await navigation
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledWith('/dashboard')
+  })
+
+  it('fails closed when distribution access cannot be checked', async () => {
+    getDistributionAccess.mockRejectedValue(new Error('network unavailable'))
+
+    const { navigation, next } = runGuard(
+      { requiresDistributionAgent: true },
+      '/distribution/withdrawals'
+    )
+    await navigation
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledWith('/dashboard')
   })
 })

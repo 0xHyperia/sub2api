@@ -188,7 +188,12 @@ type PaymentService struct {
 	groupRepo                GroupRepository
 	resumeService            *PaymentResumeService
 	affiliateService         *AffiliateService
+	distributionService      *DistributionService
 	notificationEmailService *NotificationEmailService
+}
+
+func (s *PaymentService) SetDistributionService(distributionService *DistributionService) {
+	s.distributionService = distributionService
 }
 
 func NewPaymentService(entClient *dbent.Client, registry *payment.Registry, loadBalancer payment.LoadBalancer, redeemService *RedeemService, subscriptionSvc *SubscriptionService, configService *PaymentConfigService, userRepo UserRepository, groupRepo GroupRepository, affiliateService *AffiliateService) *PaymentService {

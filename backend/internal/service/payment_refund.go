@@ -20,6 +20,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/servertiming"
+	"github.com/shopspring/decimal"
 )
 
 // --- Refund Flow ---
@@ -567,6 +568,12 @@ func (s *PaymentService) markRefundOk(ctx context.Context, p *RefundPlan) (*Refu
 	_, err := s.entClient.PaymentOrder.UpdateOneID(p.OrderID).SetStatus(fs).SetRefundAmount(p.RefundAmount).SetRefundReason(p.Reason).SetRefundAt(now).SetForceRefund(p.Force).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("mark refund: %w", err)
+	}
+	if s.distributionService != nil && p.RefundAmount > 0 {
+		if err := s.distributionService.ReverseRefund(ctx, p.OrderID, decimal.NewFromFloat(p.RefundAmount)); err != nil {
+			s.writeAuditLog(ctx, p.OrderID, "DISTRIBUTION_REFUND_REVERSAL_FAILED", "system", map[string]any{"error": err.Error(), "refundAmount": p.RefundAmount})
+			return nil, fmt.Errorf("reverse distribution commission: %w", err)
+		}
 	}
 	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "force": p.Force})
 	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct}, nil

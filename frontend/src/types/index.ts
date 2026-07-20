@@ -132,6 +132,8 @@ export interface RegisterRequest {
   promo_code?: string
   invitation_code?: string
   aff_code?: string
+	/** Dedicated agent promotion code; mutually exclusive with aff_code. */
+	distribution_code?: string
 }
 
 export interface AffiliateInvitee {

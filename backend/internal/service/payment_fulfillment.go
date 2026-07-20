@@ -18,6 +18,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/shopspring/decimal"
 )
 
 // ErrOrderNotFound is returned by HandlePaymentNotification when the webhook
@@ -337,6 +338,9 @@ func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder, l
 		if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
 			return err
 		}
+		if err := s.applyDistributionCommissionForOrder(ctx, o); err != nil {
+			return err
+		}
 		// Code already created and redeemed — just mark completed
 		return s.markCompleted(ctx, o, lease, "RECHARGE_SUCCESS")
 	case redeemActionCreate:
@@ -353,7 +357,37 @@ func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder, l
 	if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
 		return err
 	}
+	if err := s.applyDistributionCommissionForOrder(ctx, o); err != nil {
+		return err
+	}
 	return s.markCompleted(ctx, o, lease, "RECHARGE_SUCCESS")
+}
+
+func (s *PaymentService) applyDistributionCommissionForOrder(ctx context.Context, o *dbent.PaymentOrder) error {
+	baseAmount := commissionableOrderAmount(o)
+	if s == nil || s.distributionService == nil || baseAmount <= 0 {
+		return nil
+	}
+	snapshot, _ := json.Marshal(o.ProviderSnapshot)
+	paidAt := time.Now()
+	if o.PaidAt != nil {
+		paidAt = *o.PaidAt
+	}
+	result, err := s.distributionService.AccruePaidOrder(ctx, DistributionCommissionInput{
+		PaymentOrderID: o.ID, CustomerUserID: o.UserID, PaymentType: o.PaymentType,
+		PaymentCurrency: PaymentOrderCurrency(o), ActualPaid: decimal.NewFromFloat(baseAmount),
+		ProviderSnapshot: snapshot, PaidAt: paidAt,
+	})
+	if err != nil {
+		s.writeAuditLog(ctx, o.ID, "DISTRIBUTION_COMMISSION_FAILED", "system", map[string]any{"error": err.Error()})
+		return fmt.Errorf("accrue distribution commission: %w", err)
+	}
+	if result != nil && result.Created {
+		s.writeAuditLog(ctx, o.ID, "DISTRIBUTION_COMMISSION_CREATED", "system", map[string]any{
+			"sourceID": result.SourceID, "status": result.Status, "baseCNY": result.BaseCNY.String(), "commissionCNY": result.Commission.String(),
+		})
+	}
+	return nil
 }
 
 func (s *PaymentService) markCompleted(ctx context.Context, o *dbent.PaymentOrder, lease *paymentFulfillmentLease, auditAction string) error {
@@ -508,6 +542,9 @@ func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder, lease
 	if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
 		return err
 	}
+	if err := s.applyDistributionCommissionForOrder(ctx, o); err != nil {
+		return err
+	}
 	return s.markCompleted(ctx, o, lease, "SUBSCRIPTION_SUCCESS")
 }
 
@@ -625,6 +662,9 @@ func (s *PaymentService) applyAffiliateRebateForOrder(ctx context.Context, o *db
 	if s.affiliateService == nil {
 		return nil
 	}
+	if s.distributionService != nil && s.distributionService.IsAgent(ctx, o.UserID) {
+		return nil
+	}
 
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
@@ -695,6 +735,10 @@ func (s *PaymentService) applyAffiliateRebateForOrder(ctx context.Context, o *db
 }
 
 func affiliateRebateBaseAmount(o *dbent.PaymentOrder) float64 {
+	return commissionableOrderAmount(o)
+}
+
+func commissionableOrderAmount(o *dbent.PaymentOrder) float64 {
 	if o == nil {
 		return 0
 	}

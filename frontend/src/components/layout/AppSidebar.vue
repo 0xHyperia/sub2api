@@ -244,6 +244,7 @@ import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
+import { getDistributionAccess } from '@/api/distribution'
 import {
   filterNavigationItems,
   resolveGroupClickAction,
@@ -286,6 +287,8 @@ const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagModelMarketplace = makeSidebarFlag(FeatureFlags.modelMarketplace)
 const flagModelMonitor = makeSidebarFlag(FeatureFlags.modelMonitor)
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
+const distributionAccess = ref(false)
+const flagDistribution = () => distributionAccess.value
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
@@ -375,6 +378,7 @@ function buildSelfNavItems(): ShellNavItem[] {
       hideInSimpleMode: true,
       featureFlag: flagAffiliate
     },
+	{ path: '/distribution', label: localText('代理中心', 'Agent center'), icon: 'trendingUp', hideInSimpleMode: true, featureFlag: flagDistribution },
     { path: '/profile', label: t('nav.profile'), icon: 'user' },
     { path: '/support', label: localText('工单支持', 'Support tickets'), icon: 'clipboard' },
     ...customMenuItemsForUser.value.map((item): ShellNavItem => ({
@@ -474,6 +478,21 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
         },
         { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: 'badge', hideInSimpleMode: true },
         { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: 'gift', hideInSimpleMode: true },
+		{
+		  path: '/admin/distribution',
+		  label: localText('分销管理', 'Distribution'),
+		  icon: 'trendingUp',
+		  hideInSimpleMode: true,
+		  expandOnly: true,
+		  children: [
+		    { path: '/admin/distribution/overview', label: localText('分销总览', 'Overview'), icon: 'chart' },
+		    { path: '/admin/distribution/anomalies', label: localText('异常对账', 'Reconciliation'), icon: 'shield' },
+		    { path: '/admin/distribution/agents', label: localText('代理管理', 'Agents'), icon: 'users' },
+		    { path: '/admin/distribution/customers', label: localText('代理客户', 'Customers'), icon: 'user' },
+		    { path: '/admin/distribution/commissions', label: localText('佣金记录', 'Commissions'), icon: 'gift' },
+		    { path: '/admin/distribution/withdrawals', label: localText('提现管理', 'Withdrawals'), icon: 'creditCard' }
+		  ]
+		},
         {
           path: '/admin/affiliates',
           label: t('nav.affiliateManagement'),
@@ -695,6 +714,9 @@ onMounted(() => {
   desktopMediaQuery.addEventListener('change', handleDesktopMediaChange)
   document.addEventListener('keydown', handleGlobalKeydown)
   void refreshBatchImageAccess()
+  void getDistributionAccess()
+    .then((access) => { distributionAccess.value = access.enabled && access.is_agent })
+    .catch(() => { distributionAccess.value = false })
   if (appStore.sidebarScrollTop > 0 && sidebarNavRef.value) {
     void nextTick(() => {
       if (sidebarNavRef.value) sidebarNavRef.value.scrollTop = appStore.sidebarScrollTop

@@ -1,4 +1,5 @@
 const OAUTH_AFFILIATE_CODE_KEY = 'oauth_aff_code'
+const OAUTH_DISTRIBUTION_CODE_KEY = 'oauth_distribution_code'
 const AFFILIATE_REFERRAL_CODE_KEY = 'affiliate_referral_code'
 const AFFILIATE_REFERRAL_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -122,12 +123,29 @@ export function clearOAuthAffiliateCode(): void {
   }
 }
 
+export function storeOAuthDistributionCode(value?: unknown): void {
+	if (typeof window === 'undefined') return
+	const code = normalizeOAuthAffiliateCode(value).toUpperCase()
+	try { if (code) window.sessionStorage.setItem(OAUTH_DISTRIBUTION_CODE_KEY, code); else window.sessionStorage.removeItem(OAUTH_DISTRIBUTION_CODE_KEY) } catch { /* storage unavailable */ }
+}
+export function loadOAuthDistributionCode(): string {
+	if (typeof window === 'undefined') return ''
+	try { return normalizeOAuthAffiliateCode(window.sessionStorage.getItem(OAUTH_DISTRIBUTION_CODE_KEY)).toUpperCase() } catch { return '' }
+}
+export function clearOAuthDistributionCode(): void {
+	if (typeof window === 'undefined') return
+	try { window.sessionStorage.removeItem(OAUTH_DISTRIBUTION_CODE_KEY) } catch { /* storage unavailable */ }
+}
+
 export function clearAllAffiliateReferralCodes(): void {
-  clearOAuthAffiliateCode()
+	clearOAuthAffiliateCode()
+	clearOAuthDistributionCode()
   clearAffiliateReferralCode()
 }
 
-export function oauthAffiliatePayload(value?: unknown): { aff_code?: string } {
+export function oauthAffiliatePayload(value?: unknown): { aff_code?: string; distribution_code?: string } {
+	const distributionCode = loadOAuthDistributionCode()
+	if (distributionCode) return { distribution_code: distributionCode }
   const code = normalizeOAuthAffiliateCode(value)
   return code ? { aff_code: code } : {}
 }

@@ -11,6 +11,7 @@ import { useAdminComplianceStore } from '@/stores/adminCompliance'
 import { useNavigationLoadingState } from '@/composables/useNavigationLoading'
 import { useRoutePrefetch } from '@/composables/useRoutePrefetch'
 import { getSetupStatus } from '@/api/setup'
+import { getDistributionAccess } from '@/api/distribution'
 import { resolveCompletedSetupRedirectPath } from './setupRedirect'
 import { resolveRouteDocumentTitle } from './title'
 
@@ -275,6 +276,72 @@ const routes: RouteRecordRaw[] = [
       title: 'Affiliate',
       titleKey: 'affiliate.title',
       descriptionKey: 'affiliate.description'
+    }
+  },
+  {
+    path: '/distribution',
+    name: 'Distribution',
+    component: () => import('@/views/user/DistributionView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      requiresDistributionAgent: true,
+      title: '代理中心'
+    }
+  },
+  {
+    path: '/distribution/customers',
+    name: 'DistributionCustomers',
+    component: () => import('@/views/user/DistributionCustomersView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      requiresDistributionAgent: true,
+      title: '代理客户'
+    }
+  },
+  {
+    path: '/distribution/promotion',
+    name: 'DistributionPromotion',
+    component: () => import('@/views/user/DistributionPromotionView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      requiresDistributionAgent: true,
+      title: '代理推广'
+    }
+  },
+  {
+    path: '/distribution/commissions',
+    name: 'DistributionCommissions',
+    component: () => import('@/views/user/DistributionCommissionsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      requiresDistributionAgent: true,
+      title: '代理佣金'
+    }
+  },
+  {
+    path: '/distribution/team',
+    name: 'DistributionTeam',
+    component: () => import('@/views/user/DistributionTeamView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      requiresDistributionAgent: true,
+      title: '代理团队'
+    }
+  },
+  {
+    path: '/distribution/withdrawals',
+    name: 'DistributionWithdrawals',
+    component: () => import('@/views/user/DistributionWithdrawalsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      requiresDistributionAgent: true,
+      title: '代理提现'
     }
   },
   {
@@ -702,6 +769,46 @@ const routes: RouteRecordRaw[] = [
     redirect: '/admin/affiliates/invites'
   },
   {
+    path: '/admin/distribution',
+	redirect: '/admin/distribution/overview'
+  },
+	{
+	  path: '/admin/distribution/overview',
+	  name: 'AdminDistributionOverview',
+	  component: () => import('@/views/admin/distribution/AdminDistributionOverviewView.vue'),
+	  meta: { requiresAuth: true, requiresAdmin: true, title: '分销总览' }
+	},
+	{
+	  path: '/admin/distribution/anomalies',
+	  name: 'AdminDistributionAnomalies',
+	  component: () => import('@/views/admin/distribution/AdminDistributionAnomaliesView.vue'),
+	  meta: { requiresAuth: true, requiresAdmin: true, title: '异常对账' }
+	},
+  {
+    path: '/admin/distribution/agents',
+    name: 'AdminDistributionAgents',
+    component: () => import('@/views/admin/distribution/AdminDistributionAgentsView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: '代理管理' }
+  },
+  {
+    path: '/admin/distribution/customers',
+    name: 'AdminDistributionCustomers',
+    component: () => import('@/views/admin/distribution/AdminDistributionCustomersView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: '代理客户' }
+  },
+  {
+    path: '/admin/distribution/commissions',
+    name: 'AdminDistributionCommissions',
+    component: () => import('@/views/admin/distribution/AdminDistributionCommissionsView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: '分销佣金' }
+  },
+  {
+    path: '/admin/distribution/withdrawals',
+    name: 'AdminDistributionWithdrawals',
+    component: () => import('@/views/admin/distribution/AdminDistributionWithdrawalsView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: '代理提现' }
+  },
+  {
     path: '/admin/affiliates/invites',
     name: 'AdminAffiliateInvites',
     component: () => import('@/views/admin/affiliates/AdminAffiliateInvitesView.vue'),
@@ -934,6 +1041,20 @@ router.beforeEach(async (to, _from, next) => {
       }
     }
   }
+
+  if (to.meta.requiresDistributionAgent) {
+    try {
+      const access = await getDistributionAccess()
+      if (!access.enabled || !access.is_agent) {
+        next('/dashboard')
+        return
+      }
+    } catch {
+      next('/dashboard')
+      return
+    }
+  }
+
   // 公共设置可能尚未加载（App.vue 的 onMounted 异步拉取晚于首次导航，且纯静态部署
   // 无 __APP_CONFIG__ 注入）。此时 cachedPublicSettings 为空会把 payment/risk_control
   // 误判为“未启用”而错误拦截，故这里先确保设置加载完成。

@@ -382,7 +382,8 @@ import {
 import {
   clearAffiliateReferralCode,
   loadAffiliateReferralCode,
-  resolveAffiliateReferralCode
+	  resolveAffiliateReferralCode,
+	  storeOAuthDistributionCode
 } from '@/utils/oauthAffiliate'
 import type { LoginAgreementDocument } from '@/types'
 
@@ -460,7 +461,8 @@ const formData = reactive({
   password: '',
   promo_code: '',
   invitation_code: '',
-  aff_code: ''
+	  aff_code: '',
+	  distribution_code: ''
 })
 
 const errors = reactive({
@@ -504,6 +506,13 @@ watch(validationToastMessage, (value, previousValue) => {
 })
 
 function syncAffiliateReferralCode(): string {
+	const distributionCode = String(route.query.agent || route.query.distribution_code || '').trim().toUpperCase()
+	if (distributionCode) {
+		storeOAuthDistributionCode(distributionCode)
+		formData.distribution_code = distributionCode
+		formData.aff_code = ''
+		return ''
+	}
   const code = resolveAffiliateReferralCode(route.query.aff, route.query.aff_code)
   if (code) {
     formData.aff_code = code
@@ -561,7 +570,7 @@ onMounted(() => {
 })
 
 watch(
-  () => [route.query.aff, route.query.aff_code],
+	  () => [route.query.aff, route.query.aff_code, route.query.agent, route.query.distribution_code],
   () => {
     syncAffiliateReferralCode()
   }
@@ -942,6 +951,7 @@ async function handleRegister(): Promise<void> {
 
   try {
     const affCode = formData.aff_code.trim() || loadAffiliateReferralCode()
+	const distributionCode = formData.distribution_code.trim()
     if (affCode) {
       formData.aff_code = affCode
     }
@@ -957,7 +967,8 @@ async function handleRegister(): Promise<void> {
           turnstile_token: turnstileToken.value,
           promo_code: formData.promo_code || undefined,
           invitation_code: formData.invitation_code || undefined,
-          ...(affCode ? { aff_code: affCode } : {})
+	          ...(affCode && !distributionCode ? { aff_code: affCode } : {}),
+	          ...(distributionCode ? { distribution_code: distributionCode } : {})
         })
       )
 
@@ -976,7 +987,8 @@ async function handleRegister(): Promise<void> {
       turnstile_token: turnstileEnabled.value ? turnstileToken.value : undefined,
       promo_code: formData.promo_code || undefined,
       invitation_code: formData.invitation_code || undefined,
-      ...(affCode ? { aff_code: affCode } : {})
+	      ...(affCode && !distributionCode ? { aff_code: affCode } : {}),
+	      ...(distributionCode ? { distribution_code: distributionCode } : {})
     })
     clearAffiliateReferralCode()
 

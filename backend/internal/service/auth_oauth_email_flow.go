@@ -265,8 +265,23 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 	signupSource string,
 	affiliateCode string,
 ) error {
+	return s.FinalizeOAuthEmailAccountWithDistribution(ctx, user, invitationCode, signupSource, affiliateCode, "")
+}
+
+func (s *AuthService) FinalizeOAuthEmailAccountWithDistribution(ctx context.Context, user *User, invitationCode, signupSource, affiliateCode, distributionCode string) error {
 	if s == nil || user == nil || user.ID <= 0 {
 		return ErrServiceUnavailable
+	}
+	if strings.TrimSpace(affiliateCode) != "" && strings.TrimSpace(distributionCode) != "" {
+		return ErrDistributionCodeConflict
+	}
+	if strings.TrimSpace(distributionCode) != "" {
+		if s.distributionService == nil {
+			return ErrServiceUnavailable
+		}
+		if err := s.distributionService.ValidatePromotionCode(ctx, distributionCode); err != nil {
+			return err
+		}
 	}
 
 	signupSource = normalizeOAuthSignupSource(signupSource)
@@ -285,7 +300,7 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-	s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
+	s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode)
 	return nil
 }
 

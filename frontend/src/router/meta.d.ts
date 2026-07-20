@@ -59,6 +59,9 @@ declare module 'vue-router' {
     /** Whether the user-facing model marketplace must be enabled. */
     requiresModelMarketplace?: boolean
 
+    /** Whether distribution is enabled and the current user is an active agent. */
+    requiresDistributionAgent?: boolean
+
     /**
      * i18n key for the page title
      */

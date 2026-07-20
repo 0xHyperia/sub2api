@@ -41,6 +41,7 @@ type AdminHandlers struct {
 	PromptAudit            *securityaudit.PromptAdminHandler
 	Payment                *admin.PaymentHandler
 	Affiliate              *admin.AffiliateHandler
+	Distribution           *admin.DistributionHandler
 	Compliance             *admin.ComplianceHandler
 	AuditLog               *admin.AuditLogHandler
 }
@@ -56,6 +57,7 @@ type Handlers struct {
 	Announcement     *AnnouncementHandler
 	Ticket           *TicketHandler
 	ChannelMonitor   *ChannelMonitorUserHandler
+	Distribution     *DistributionHandler
 	Admin            *AdminHandlers
 	Gateway          *GatewayHandler
 	OpenAIGateway    *OpenAIGatewayHandler

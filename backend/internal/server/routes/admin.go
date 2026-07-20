@@ -115,9 +115,46 @@ func RegisterAdminRoutes(
 
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
+		registerDistributionRoutes(admin, h)
 
 		// 操作审计日志
 		registerAuditLogRoutes(admin, h, stepUpAuth)
+	}
+}
+
+func registerDistributionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	distribution := admin.Group("/distribution")
+	{
+		distribution.GET("/overview", h.Admin.Distribution.GetOverview)
+		distribution.GET("/maturity-status", h.Admin.Distribution.GetMaturityStatus)
+		distribution.GET("/anomalies", h.Admin.Distribution.ListAnomalies)
+		distribution.GET("/settings", h.Admin.Distribution.GetSettings)
+		distribution.PUT("/settings", h.Admin.Distribution.UpdateSettings)
+		distribution.PUT("/fx-rate", h.Admin.Distribution.SetFXRate)
+		distribution.POST("/agents", h.Admin.Distribution.GrantAgent)
+		distribution.GET("/agent-candidates", h.Admin.Distribution.LookupAgentCandidates)
+		distribution.GET("/agents/lookup", h.Admin.Distribution.LookupAgents)
+		distribution.PUT("/agents/:agent_id/status", h.Admin.Distribution.UpdateAgentStatus)
+		distribution.PUT("/agents/:agent_id/rate", h.Admin.Distribution.UpdateAgentRate)
+		distribution.PUT("/agents/:agent_id/recruitment-permission", h.Admin.Distribution.UpdateAgentRecruitmentPermission)
+		distribution.GET("/agents/:agent_id/events", h.Admin.Distribution.ListAgentEvents)
+		distribution.GET("/withdrawals/evidence-capabilities", h.Admin.Distribution.GetWithdrawalEvidenceCapabilities)
+		distribution.GET("/withdrawals/export", h.Admin.Distribution.ExportWithdrawals)
+		distribution.POST("/withdrawals/batch-review", h.Admin.Distribution.BatchReviewWithdrawals)
+		distribution.PUT("/withdrawals/:withdrawal_id/status", h.Admin.Distribution.ReviewWithdrawal)
+		distribution.POST("/withdrawals/:withdrawal_id/attachments", h.Admin.Distribution.UploadWithdrawalEvidence)
+		distribution.GET("/withdrawals/:withdrawal_id/attachments/:attachment_id/url", h.Admin.Distribution.GetWithdrawalEvidenceURL)
+		distribution.GET("/withdrawals/:withdrawal_id", h.Admin.Distribution.GetWithdrawal)
+		distribution.GET("/withdrawals", h.Admin.Distribution.ListWithdrawals)
+		distribution.PUT("/levels/:depth", h.Admin.Distribution.UpdateLevel)
+		distribution.PUT("/customer-binding", h.Admin.Distribution.CorrectBinding)
+		distribution.GET("/agents/export", h.Admin.Distribution.ExportAgents)
+		distribution.GET("/agents", h.Admin.Distribution.ListAgents)
+		distribution.GET("/customers/export", h.Admin.Distribution.ExportCustomers)
+		distribution.GET("/customers", h.Admin.Distribution.ListCustomers)
+		distribution.GET("/customers/:user_id/events", h.Admin.Distribution.ListBindingEvents)
+		distribution.GET("/commissions/export", h.Admin.Distribution.ExportCommissions)
+		distribution.GET("/commissions", h.Admin.Distribution.ListCommissions)
 	}
 }
 
