@@ -16,7 +16,8 @@ vi.mock('@/api/admin/tickets', () => ({
     list: listTickets,
     categories: listCategories,
     updateCategory: vi.fn(),
-    createCategory: vi.fn()
+    createCategory: vi.fn(),
+    reorderCategories: vi.fn()
   }
 }))
 
@@ -69,7 +70,7 @@ const mountView = () => mount(TicketsView, {
   global: {
     stubs: {
       AppLayout: { template: '<div><slot /></div>' },
-      BaseDialog: { template: '<div><slot /></div>' },
+      BaseDialog: { props: ['show'], template: '<div v-if="show"><slot /></div>' },
       Icon: true
     }
   }
@@ -131,5 +132,23 @@ describe('admin TicketsView responsive inbox', () => {
     await paginationButtons[1].trigger('click')
     await flushPromises()
     expect(listTickets).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }))
+  })
+
+  it('uses compact mobile controls and collapsed category editing', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.get('.sm\\:hidden').classes()).toContain('grid-cols-[minmax(0,1fr)_40px]')
+    expect(wrapper.text()).not.toContain('新增分类')
+
+    const manageButton = wrapper.get('button[title="管理分类"]')
+    await manageButton.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('新增分类')
+    expect(wrapper.find('[data-test="category-editor-3"]').exists()).toBe(false)
+    await wrapper.get('button[title="编辑"]').trigger('click')
+    const editor = wrapper.get('[data-test="category-editor-3"]')
+    expect((editor.findAll('input')[0].element as HTMLInputElement).value).toBe('账单问题')
   })
 })

@@ -15,7 +15,7 @@ describe('user mobile toolbar contracts', () => {
     expect(orders).toContain('page-header flex items-start justify-between gap-3')
     expect(subscriptions).toContain('page-header mb-0 flex items-start justify-between gap-3')
     expect(subscriptions).toContain('btn btn-primary btn-icon shrink-0')
-    expect(support).toContain('<div class="flex items-start justify-between gap-3">')
+    expect(support).toContain('grid-cols-[minmax(0,1fr)_auto]')
   })
 
   it('pairs search, filter, and refresh controls instead of stacking each control', () => {

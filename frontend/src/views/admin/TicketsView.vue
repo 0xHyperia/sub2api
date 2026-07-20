@@ -1,7 +1,22 @@
 <template>
   <AppLayout><div class="mx-auto w-full max-w-[1440px] space-y-4">
-    <header class="page-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 class="page-title">{{ localText('工单队列', 'Ticket queue') }}</h1><p class="page-description">{{ localText('查看并回复所有用户工单。', 'Review and reply to user tickets.') }}</p></div><button type="button" class="btn btn-secondary" @click="openCategories"><Icon name="cog" size="sm" />{{ localText('管理分类', 'Manage categories') }}</button></header>
-    <section class="rounded-panel border border-outline bg-surface p-3 shadow-card"><div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_160px_180px_auto]"><input v-model="search" class="input" :placeholder="localText('搜索工单号、标题或用户', 'Search ticket or user')" @keyup.enter="load"><select v-model="status" class="input" @change="load"><option value="">{{ localText('全部状态', 'All statuses') }}</option><option value="open">{{ localText('待处理', 'Open') }}</option><option value="answered">{{ localText('已回复', 'Answered') }}</option><option value="closed">{{ localText('已关闭', 'Closed') }}</option></select><select v-model.number="categoryId" class="input" @change="load"><option :value="0">{{ localText('全部分类', 'All categories') }}</option><option v-for="category in categories" :key="category.id" :value="category.id">{{ categoryName(category) }}</option></select><button class="btn btn-secondary" @click="load"><Icon name="refresh" size="sm" />{{ localText('刷新', 'Refresh') }}</button></div></section>
+    <header class="page-header grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"><div class="min-w-0"><h1 class="page-title">{{ localText('工单队列', 'Ticket queue') }}</h1><p class="page-description">{{ localText('查看并回复所有用户工单。', 'Review and reply to user tickets.') }}</p></div><button type="button" class="btn btn-secondary btn-icon sm:w-auto sm:px-4" :title="localText('管理分类', 'Manage categories')" @click="openCategories"><Icon name="cog" size="sm" /><span class="sr-only sm:not-sr-only">{{ localText('管理分类', 'Manage categories') }}</span></button></header>
+    <section class="rounded-panel border border-outline bg-surface p-3 shadow-card">
+      <div class="grid grid-cols-[minmax(0,1fr)_40px] gap-2 sm:hidden">
+        <input v-model="search" class="input min-w-0" :placeholder="localText('搜索工单号、标题或用户', 'Search ticket or user')" @keyup.enter="load">
+        <button class="btn btn-secondary btn-icon" :title="localText('刷新', 'Refresh')" :aria-label="localText('刷新', 'Refresh')" @click="load"><Icon name="refresh" size="sm" /></button>
+        <div class="col-span-2 grid min-w-0 grid-cols-2 gap-2">
+          <select v-model="status" class="input min-w-0" @change="load"><option value="">{{ localText('全部状态', 'All statuses') }}</option><option value="open">{{ localText('待处理', 'Open') }}</option><option value="answered">{{ localText('已回复', 'Answered') }}</option><option value="closed">{{ localText('已关闭', 'Closed') }}</option></select>
+          <select v-model.number="categoryId" class="input min-w-0" @change="load"><option :value="0">{{ localText('全部分类', 'All categories') }}</option><option v-for="category in categories" :key="category.id" :value="category.id">{{ categoryName(category) }}</option></select>
+        </div>
+      </div>
+      <div class="hidden gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_160px_180px_auto]">
+        <input v-model="search" class="input min-w-0" :placeholder="localText('搜索工单号、标题或用户', 'Search ticket or user')" @keyup.enter="load">
+        <select v-model="status" class="input" @change="load"><option value="">{{ localText('全部状态', 'All statuses') }}</option><option value="open">{{ localText('待处理', 'Open') }}</option><option value="answered">{{ localText('已回复', 'Answered') }}</option><option value="closed">{{ localText('已关闭', 'Closed') }}</option></select>
+        <select v-model.number="categoryId" class="input" @change="load"><option :value="0">{{ localText('全部分类', 'All categories') }}</option><option v-for="category in categories" :key="category.id" :value="category.id">{{ categoryName(category) }}</option></select>
+        <button class="btn btn-secondary" @click="load"><Icon name="refresh" size="sm" />{{ localText('刷新', 'Refresh') }}</button>
+      </div>
+    </section>
     <section class="overflow-hidden rounded-panel border border-outline bg-surface shadow-card">
       <div class="md:hidden" data-test="mobile-ticket-list">
         <div v-if="loading" class="flex min-h-32 items-center justify-center gap-2 px-4 py-10 text-sm text-foreground-muted" role="status">
@@ -56,20 +71,40 @@
     </section>
     <nav v-if="pages > 1" class="flex items-center justify-end gap-2" :aria-label="localText('分页', 'Pagination')"><button class="btn btn-secondary btn-sm" :disabled="page <= 1" @click="page--; load()"><Icon name="chevronLeft" size="sm" /></button><span class="text-sm text-foreground-muted">{{ page }} / {{ pages }}</span><button class="btn btn-secondary btn-sm" :disabled="page >= pages" @click="page++; load()"><Icon name="chevronRight" size="sm" /></button></nav>
   </div>
-  <BaseDialog :show="showCategories" :title="localText('工单分类', 'Ticket categories')" width="wide" @close="showCategories = false">
-    <div class="space-y-3">
-      <div v-for="category in categoryDrafts" :key="category.id" class="grid gap-2 rounded-control border border-outline p-3 sm:grid-cols-[1fr_1fr_100px_auto_auto]">
-        <input v-model="category.name_zh" class="input" placeholder="中文名称">
-        <input v-model="category.name_en" class="input" placeholder="English name">
-        <input v-model.number="category.sort_order" type="number" class="input" min="0" :aria-label="localText('排序', 'Sort order')">
-        <label class="inline-flex items-center gap-2 text-sm"><input v-model="category.active" type="checkbox">{{ localText('启用', 'Active') }}</label>
-        <button class="btn btn-secondary btn-sm" @click="saveCategory(category)">{{ localText('保存', 'Save') }}</button>
+  <BaseDialog :show="showCategories" :title="localText('工单分类', 'Ticket categories')" width="wide" @close="closeCategories">
+    <div class="space-y-4">
+      <div class="space-y-2">
+        <section v-for="(category, index) in categoryDrafts" :key="category.id" class="rounded-control border border-outline bg-surface">
+          <div class="flex min-w-0 items-center gap-2 p-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex min-w-0 items-center gap-2"><span class="truncate text-sm font-semibold text-foreground">{{ categoryName(category) }}</span><span class="status-badge flex-none" :class="category.active ? 'status-badge-success' : 'status-badge-neutral'">{{ category.active ? localText('启用', 'Active') : localText('停用', 'Inactive') }}</span></div>
+              <p class="mt-1 truncate text-xs text-foreground-subtle">{{ category.code }} · {{ localText('排序', 'Order') }} {{ category.sort_order }}</p>
+            </div>
+            <div class="flex flex-none items-center gap-1">
+              <button type="button" class="btn btn-ghost btn-icon h-8 w-8" :disabled="index === 0" :title="localText('上移', 'Move up')" @click="moveCategory(index, -1)"><Icon name="arrowUp" size="sm" /></button>
+              <button type="button" class="btn btn-ghost btn-icon h-8 w-8" :disabled="index === categoryDrafts.length - 1" :title="localText('下移', 'Move down')" @click="moveCategory(index, 1)"><Icon name="arrowDown" size="sm" /></button>
+              <button type="button" class="btn btn-secondary btn-icon h-8 w-8" :title="localText('编辑', 'Edit')" @click="editingCategoryId = editingCategoryId === category.id ? null : category.id"><Icon name="edit" size="sm" /></button>
+            </div>
+          </div>
+          <div v-if="editingCategoryId === category.id" class="border-t border-outline bg-surface-subtle p-3" :data-test="`category-editor-${category.id}`">
+            <div class="grid grid-cols-2 gap-3">
+              <label class="col-span-2 min-w-0 sm:col-span-1"><span class="input-label">{{ localText('中文名称', 'Chinese name') }}</span><input v-model="category.name_zh" class="input min-w-0"></label>
+              <label class="col-span-2 min-w-0 sm:col-span-1"><span class="input-label">{{ localText('英文名称', 'English name') }}</span><input v-model="category.name_en" class="input min-w-0"></label>
+              <label class="min-w-0"><span class="input-label">{{ localText('排序', 'Sort order') }}</span><input v-model.number="category.sort_order" type="number" class="input min-w-0" min="0"></label>
+              <label class="flex min-w-0 items-end gap-2 pb-2 text-sm"><input v-model="category.active" type="checkbox">{{ localText('启用分类', 'Category active') }}</label>
+            </div>
+            <div class="mt-3 flex justify-end gap-2"><button type="button" class="btn btn-secondary" @click="cancelCategoryEdit">{{ localText('取消', 'Cancel') }}</button><button type="button" class="btn btn-primary" @click="saveCategory(category)">{{ localText('保存', 'Save') }}</button></div>
+          </div>
+        </section>
       </div>
-      <form class="grid gap-2 border-t border-outline pt-4 sm:grid-cols-[160px_1fr_1fr_auto]" @submit.prevent="createCategory">
-        <input v-model="newCategory.code" class="input" pattern="[a-z][a-z0-9_-]+" placeholder="code" required>
-        <input v-model="newCategory.name_zh" class="input" placeholder="中文名称" required>
-        <input v-model="newCategory.name_en" class="input" placeholder="English name">
-        <button class="btn btn-primary" type="submit"><Icon name="plus" size="sm" />{{ localText('添加', 'Add') }}</button>
+      <form class="border-t border-outline pt-4" @submit.prevent="createCategory">
+        <h4 class="mb-3 text-sm font-semibold text-foreground">{{ localText('新增分类', 'Add category') }}</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="min-w-0"><span class="input-label">Code</span><input v-model="newCategory.code" class="input min-w-0" pattern="[a-z][a-z0-9_-]+" placeholder="billing" required></label>
+          <label class="min-w-0"><span class="input-label">{{ localText('中文名称', 'Chinese name') }}</span><input v-model="newCategory.name_zh" class="input min-w-0" required></label>
+          <label class="col-span-2 min-w-0"><span class="input-label">{{ localText('英文名称', 'English name') }}</span><input v-model="newCategory.name_en" class="input min-w-0"></label>
+        </div>
+        <button class="btn btn-primary mt-3 w-full sm:w-auto" type="submit"><Icon name="plus" size="sm" />{{ localText('添加分类', 'Add category') }}</button>
       </form>
     </div>
   </BaseDialog>
@@ -91,6 +126,7 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 const router = useRouter(); const { locale } = useI18n(); const app = useAppStore()
 const tickets = ref<Ticket[]>([]); const categories = ref<TicketCategory[]>([]); const categoryDrafts = ref<TicketCategory[]>([]); const loading = ref(false)
 const search = ref(''); const status = ref(''); const categoryId = ref(0); const showCategories = ref(false)
+const editingCategoryId = ref<number | null>(null)
 const page = ref(1); const pages = ref(1)
 const newCategory = reactive({ code: '', name_zh: '', name_en: '', active: true, sort_order: 0 })
 const localText = (zh: string, en: string) => locale.value.startsWith('zh') ? zh : en
@@ -100,8 +136,11 @@ const statusClass = (value: TicketStatus) => value === 'open' ? 'status-badge-wa
 const formatDate = (value: string) => new Intl.DateTimeFormat(locale.value, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
 async function load() { loading.value = true; try { const result = await adminTicketsAPI.list({ page: page.value, page_size: 20, status: status.value, category_id: categoryId.value || undefined, search: search.value }); tickets.value = result.items; pages.value = result.pages } catch (error) { app.showError(extractApiErrorMessage(error, localText('加载失败', 'Load failed'))) } finally { loading.value = false } }
 async function loadCategories() { categories.value = await adminTicketsAPI.categories(); categoryDrafts.value = categories.value.map(category => ({ ...category })) }
-async function openCategories() { await loadCategories(); showCategories.value = true }
-async function saveCategory(category: TicketCategory) { try { await adminTicketsAPI.updateCategory(category.id, category); await loadCategories(); app.showSuccess(localText('分类已保存', 'Category saved')) } catch (error) { app.showError(extractApiErrorMessage(error, localText('保存失败', 'Save failed'))) } }
+async function openCategories() { await loadCategories(); editingCategoryId.value = null; showCategories.value = true }
+function closeCategories() { showCategories.value = false; editingCategoryId.value = null }
+function cancelCategoryEdit() { categoryDrafts.value = categories.value.map(category => ({ ...category })); editingCategoryId.value = null }
+async function saveCategory(category: TicketCategory) { try { await adminTicketsAPI.updateCategory(category.id, category); await loadCategories(); editingCategoryId.value = null; app.showSuccess(localText('分类已保存', 'Category saved')) } catch (error) { app.showError(extractApiErrorMessage(error, localText('保存失败', 'Save failed'))) } }
+async function moveCategory(index: number, offset: number) { const target = index + offset; if (target < 0 || target >= categoryDrafts.value.length) return; const reordered = [...categoryDrafts.value]; [reordered[index], reordered[target]] = [reordered[target], reordered[index]]; categoryDrafts.value = reordered; try { await adminTicketsAPI.reorderCategories(reordered.map(category => category.id)); await loadCategories() } catch (error) { await loadCategories(); app.showError(extractApiErrorMessage(error, localText('排序失败', 'Failed to reorder categories'))) } }
 async function createCategory() { try { newCategory.sort_order = categories.value.reduce((max, category) => Math.max(max, category.sort_order), 0) + 10; await adminTicketsAPI.createCategory(newCategory); Object.assign(newCategory, { code: '', name_zh: '', name_en: '', active: true, sort_order: 0 }); await loadCategories() } catch (error) { app.showError(extractApiErrorMessage(error, localText('创建失败', 'Create failed'))) } }
 onMounted(async () => { await loadCategories(); await load() })
 </script>

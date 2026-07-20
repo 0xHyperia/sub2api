@@ -30,18 +30,21 @@ describe('redeem, affiliate, and support mobile experience', () => {
   })
 
   it('presents tickets as a conversation inbox with compact phone controls', () => {
-    expect(supportSource).toContain('<div class="flex items-start justify-between gap-3">')
+    expect(supportSource).toContain('grid-cols-[minmax(0,1fr)_auto]')
     expect(supportSource).toContain('class="btn btn-primary shrink-0"')
     expect(supportSource).toContain('grid-cols-[minmax(0,1fr)_104px_40px]')
+    expect(supportSource).toContain('ticket.user_unread_count')
     expect(supportSource).toContain('name="chevronRight"')
     expect(supportSource).toContain('router.push(`/support/${ticket.number}`)')
   })
 
-  it('stacks conversation metadata and reply actions without changing desktop flow', () => {
-    expect(conversationSource).toContain('flex flex-col items-start gap-0.5')
-    expect(conversationSource).toContain('sm:flex-row sm:items-center sm:justify-between')
-    expect(conversationSource).toContain('btn btn-secondary w-full cursor-pointer sm:w-auto')
-    expect(conversationSource).toContain('grid w-full gap-2 sm:flex sm:w-auto sm:justify-end')
-    expect(conversationSource).toContain('btn btn-primary w-full sm:w-auto')
+  it('keeps the conversation scrollable while the reply composer remains visible', () => {
+    expect(conversationSource).toContain('data-test="ticket-message-viewport"')
+    expect(conversationSource).toContain('data-test="ticket-composer"')
+    expect(conversationSource).toContain('min-h-0 flex-1')
+    expect(conversationSource).toContain('setInterval(() =>')
+    expect(conversationSource).toContain('}, 5000)')
+    expect(conversationSource).toContain("localText('客服', 'Support')")
+    expect(conversationSource).toContain("localText('用户', 'Customer')")
   })
 })
