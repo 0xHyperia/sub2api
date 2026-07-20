@@ -12,7 +12,7 @@ const legacyDarkVariant =
   /dark:(?:bg|text|border|divide|ring|shadow|from|to|via|outline|fill|stroke)-/g
 const hardcodedThemeBranch = /(?:isDark|isDarkMode)\.value\s*\?\s*['"]#/g
 const unsafeSemanticPair =
-  /(?:bg-brand\b[^'"\n]*\btext-white\b|text-white\b[^'"\n]*\bbg-brand\b|bg-surface-subtle\b[^'"\n]*\btext-white\b|text-white\b[^'"\n]*\bbg-surface-subtle\b|bg-(?:info|success|warning|danger)\b[^'"\n]*\btext-white\b|text-white\b[^'"\n]*\bbg-(?:info|success|warning|danger)\b)/g
+  /(?:bg-brand\b[^'"\n]*\btext-white\b|text-white\b[^'"\n]*\bbg-brand\b|bg-surface-subtle\b[^'"\n]*\btext-white\b|text-white\b[^'"\n]*\bbg-surface-subtle\b|bg-(?:info|success|warning|danger)\b[^'"\n]*\btext-white\b|text-white\b[^'"\n]*\bbg-(?:info|success|warning|danger)\b|bg-foreground(?:\/\d+)?\b[^'"\n]*\btext-foreground-(?:muted|subtle)\b|text-foreground-(?:muted|subtle)\b[^'"\n]*\bbg-foreground(?:\/\d+)?\b)/g
 const malformedUtility = /(?:^|\s)\/\d+\b|\bbg-[a-z-]+(?:subtle|foreground)\d+\b/gm
 
 const collectVueFiles = (directory: string): string[] =>

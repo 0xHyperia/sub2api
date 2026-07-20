@@ -28,6 +28,9 @@ describe('PlatformTypeBadge Grok plans', () => {
     expect(wrapper.find('[data-testid="grok-free-plan-icon"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="grok-plan-icon"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('2027-01-01')
+    expect(wrapper.findAll('.bg-inverse')).toHaveLength(3)
+    expect(wrapper.findAll('.text-inverse-foreground')).toHaveLength(3)
+    expect(wrapper.find('.bg-foreground').exists()).toBe(false)
 
     await wrapper.setProps({ planType: 'FREE' })
     expect(wrapper.text()).toContain('Grok Free')

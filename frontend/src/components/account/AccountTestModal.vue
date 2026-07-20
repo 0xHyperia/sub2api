@@ -81,7 +81,7 @@
       <div class="group relative">
         <div
           ref="terminalRef"
-          class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-panel border border-outline-strong bg-foreground p-4 font-mono text-sm text-surface"
+          class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-panel border border-outline-strong bg-surface-subtle p-4 font-mono text-sm text-foreground-muted"
         >
           <!-- Status Line -->
           <div v-if="status === 'idle'" class="flex items-center gap-2 text-foreground-subtle">
@@ -124,7 +124,7 @@
         <button
           v-if="outputLines.length > 0"
           @click="copyOutput"
-          class="absolute right-2 top-2 rounded-panel bg-foreground/80 p-1.5 text-foreground-subtle opacity-0 transition-all hover:bg-surface/20 hover:text-white group-hover:opacity-100"
+          class="absolute right-2 top-2 rounded-panel bg-surface p-1.5 text-foreground-muted opacity-0 shadow-card transition-all hover:bg-surface-raised hover:text-foreground group-hover:opacity-100"
           :title="t('admin.accounts.copyOutput')"
         >
           <Icon name="link" size="sm" :stroke-width="2" />

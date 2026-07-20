@@ -38,6 +38,6 @@ const statusClass = computed(() => {
     return 'bg-warning-subtle text-warning-foreground'
   }
   // Idle: gray
-  return 'bg-foreground text-foreground-subtle'
+  return 'bg-surface-subtle text-foreground-muted'
 })
 </script>

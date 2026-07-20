@@ -116,6 +116,17 @@ describe('AccountTestModal', () => {
     vi.restoreAllMocks()
   })
 
+  it('uses a theme-aware surface for test output', () => {
+    const wrapper = mountModal()
+    const output = wrapper.get('[data-testid="account-test-output"]')
+
+    expect(output.classes()).toEqual(expect.arrayContaining([
+      'bg-surface-subtle',
+      'text-foreground-muted',
+    ]))
+    expect(output.classes()).not.toContain('bg-foreground')
+  })
+
   it('gemini 图片模型测试会携带提示词并渲染图片预览', async () => {
     const wrapper = mountModal()
     await wrapper.setProps({ show: true })

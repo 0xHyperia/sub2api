@@ -173,7 +173,7 @@ const platformClass = computed(() => {
     return 'bg-brand/30 text-brand'
   }
   if (props.platform === 'grok') {
-    return 'bg-foreground text-foreground-subtle'
+    return 'bg-inverse text-inverse-foreground'
   }
   return 'bg-info-subtle text-info-foreground'
 })
@@ -189,7 +189,7 @@ const typeClass = computed(() => {
     return 'bg-brand/30 text-brand'
   }
   if (props.platform === 'grok') {
-    return 'bg-foreground text-foreground-subtle'
+    return 'bg-inverse text-inverse-foreground'
   }
   return 'bg-info-subtle text-info-foreground'
 })

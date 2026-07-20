@@ -45,14 +45,15 @@
       </svg>
       <!-- Tooltip - 向下显示 -->
       <div
-        class="invisible absolute left-0 top-full z-[100] mt-1.5 min-w-[200px] max-w-[300px] rounded-panel px-3 py-2 text-xs text-white opacity-0 shadow-floating transition-all duration-200 group-hover/error:visible group-hover/error:opacity-100 bg-foreground"
+        data-testid="account-error-tooltip"
+        class="invisible absolute left-0 top-full z-[100] mt-1.5 min-w-[200px] max-w-[300px] rounded-panel bg-inverse px-3 py-2 text-xs text-inverse-foreground opacity-0 shadow-floating transition-all duration-200 group-hover/error:visible group-hover/error:opacity-100"
       >
-        <div class="whitespace-pre-wrap break-words leading-relaxed text-foreground-subtle">
+        <div class="whitespace-pre-wrap break-words leading-relaxed">
           {{ account.error_message }}
         </div>
         <!-- 上方小三角 -->
         <div
-          class="absolute bottom-full left-3 border-[6px] border-transparent border-b-foreground"
+          class="absolute bottom-full left-3 border-[6px] border-transparent border-b-inverse"
         ></div>
       </div>
     </div>

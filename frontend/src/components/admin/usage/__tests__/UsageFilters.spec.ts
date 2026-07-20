@@ -129,6 +129,14 @@ describe('UsageFilters — user search dropdown', () => {
     vi.advanceTimersByTime(300)
     await flushPromises()
 
+    const menu = wrapper.get('.usage-search-menu')
+    expect(menu.classes()).toEqual(expect.arrayContaining([
+      'bg-surface-raised',
+      'text-foreground',
+      'border-outline',
+    ]))
+    expect(menu.classes()).not.toContain('bg-foreground')
+
     // --- (b) Sort: active user should appear BEFORE deleted user ---
     // Check the underlying component state via rendered DOM order
     const buttons = wrapper.findAll('.usage-filter-dropdown button[type="button"]')

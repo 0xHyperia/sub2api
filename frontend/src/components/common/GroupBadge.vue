@@ -160,7 +160,7 @@ const labelClass = computed(() => {
     return `${base} bg-brand-subtle/60 text-brand bg-brand/40 text-brand`
   }
   if (props.platform === 'grok') {
-    return `${base} bg-surface-subtle/70 text-foreground bg-foreground/60 text-foreground-subtle`
+    return `${base} bg-inverse text-inverse-foreground`
   }
   return `${base} bg-brand-subtle/60 text-brand bg-brand/40 text-brand`
 })
@@ -193,9 +193,7 @@ const badgeClass = computed(() => {
       : 'bg-brand-subtle text-brand'
   }
   if (props.platform === 'grok') {
-    return isSubscription.value
-      ? 'bg-foreground text-foreground-subtle'
-      : 'bg-foreground text-foreground-subtle'
+    return 'bg-inverse text-inverse-foreground'
   }
   // Fallback: original colors
   return isSubscription.value

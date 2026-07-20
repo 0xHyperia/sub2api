@@ -51,6 +51,30 @@ function makeAccount(overrides: Partial<Account>): Account {
 }
 
 describe('AccountStatusIndicator', () => {
+  it('uses a matched inverse surface for account error details', () => {
+    const wrapper = mount(AccountStatusIndicator, {
+      props: {
+        account: makeAccount({
+          status: 'error',
+          error_message: 'Token revoked',
+        })
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    const tooltip = wrapper.get('[data-testid="account-error-tooltip"]')
+    expect(tooltip.classes()).toEqual(expect.arrayContaining([
+      'bg-inverse',
+      'text-inverse-foreground',
+    ]))
+    expect(tooltip.classes()).not.toContain('bg-foreground')
+    expect(tooltip.text()).toContain('Token revoked')
+  })
+
   it('Grok 账号额度限流时显示自动恢复时间而非临时不可调度', () => {
     const wrapper = mount(AccountStatusIndicator, {
       props: {

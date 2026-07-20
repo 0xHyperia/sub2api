@@ -93,7 +93,8 @@
       <div class="group relative">
         <div
           ref="terminalRef"
-          class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-panel border border-outline-strong bg-foreground p-4 font-mono text-sm text-foreground-muted"
+          data-testid="account-test-output"
+          class="max-h-[240px] min-h-[120px] overflow-y-auto rounded-panel border border-outline-strong bg-surface-subtle p-4 font-mono text-sm text-foreground-muted"
         >
           <!-- Status Line -->
           <div v-if="status === 'idle'" class="flex items-center gap-2 text-foreground-subtle">

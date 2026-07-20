@@ -26,14 +26,14 @@
           </button>
           <div
             v-if="showUserDropdown && (userResults.length > 0 || userKeyword)"
-            class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-panel border shadow-floating bg-foreground"
+            class="usage-search-menu absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-panel border border-outline bg-surface-raised text-foreground shadow-floating"
           >
             <button
               v-for="u in userResults"
               :key="u.id"
               type="button"
               @click="selectUser(u)"
-              class="w-full px-4 py-2 text-left hover:bg-surface/20"
+              class="w-full px-4 py-2 text-left text-foreground transition-colors hover:bg-surface-subtle"
             >
               <span>{{ u.email }}<span v-if="u.deleted" class="ml-1 text-xs text-foreground-subtle">（{{ t('admin.usage.userDeletedBadge') }}）</span></span>
               <span class="ml-2 text-xs text-foreground-subtle">#{{ u.id }}</span>
@@ -63,14 +63,14 @@
           </button>
           <div
             v-if="showApiKeyDropdown && apiKeyResults.length > 0"
-            class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-panel border shadow-floating bg-foreground"
+            class="usage-search-menu absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-panel border border-outline bg-surface-raised text-foreground shadow-floating"
           >
             <button
               v-for="k in apiKeyResults"
               :key="k.id"
               type="button"
               @click="selectApiKey(k)"
-              class="w-full px-4 py-2 text-left hover:bg-surface/20"
+              class="w-full px-4 py-2 text-left text-foreground transition-colors hover:bg-surface-subtle"
             >
               <span class="truncate">{{ k.name || `#${k.id}` }}</span>
               <span class="ml-2 text-xs text-foreground-subtle">#{{ k.id }}</span>
@@ -106,14 +106,14 @@
           </button>
           <div
             v-if="showAccountDropdown && (accountResults.length > 0 || accountKeyword)"
-            class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-panel border shadow-floating bg-foreground"
+            class="usage-search-menu absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-panel border border-outline bg-surface-raised text-foreground shadow-floating"
           >
             <button
               v-for="a in accountResults"
               :key="a.id"
               type="button"
               @click="selectAccount(a)"
-              class="w-full px-4 py-2 text-left hover:bg-surface/20"
+              class="w-full px-4 py-2 text-left text-foreground transition-colors hover:bg-surface-subtle"
             >
               <span class="truncate">{{ a.name }}</span>
               <span class="ml-2 text-xs text-foreground-subtle">#{{ a.id }}</span>
