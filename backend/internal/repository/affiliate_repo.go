@@ -79,16 +79,18 @@ func (r *affiliateRepository) GetAffiliateByCode(ctx context.Context, code strin
 func (r *affiliateRepository) BindInviter(ctx context.Context, userID, inviterID int64) (bool, error) {
 	var bound bool
 	err := r.withTx(ctx, func(txCtx context.Context, txClient *dbent.Client) error {
-		rows, err := txClient.QueryContext(txCtx, `SELECT EXISTS(SELECT 1 FROM distribution_agents WHERE user_id IN ($1,$2) AND status <> 'revoked')`, userID, inviterID)
-		if err == nil {
-			defer func() { _ = rows.Close() }()
-			var isAgent bool
-			if rows.Next() {
-				_ = rows.Scan(&isAgent)
-			}
-			if isAgent {
-				return service.ErrDistributionCodeConflict
-			}
+		var isAgent bool
+		if err := scanSingleRow(
+			txCtx,
+			txClient,
+			`SELECT EXISTS(SELECT 1 FROM distribution_agents WHERE user_id IN ($1,$2) AND status <> 'revoked')`,
+			[]any{userID, inviterID},
+			&isAgent,
+		); err != nil {
+			return fmt.Errorf("check distribution agent conflict: %w", err)
+		}
+		if isAgent {
+			return service.ErrDistributionCodeConflict
 		}
 		if _, err := ensureUserAffiliateWithClient(txCtx, txClient, userID); err != nil {
 			return err
