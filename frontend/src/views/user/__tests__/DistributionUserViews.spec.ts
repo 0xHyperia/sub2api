@@ -73,4 +73,81 @@ describe("distribution user view contracts", () => {
     expect(template).toContain("下载二维码");
     expect(source).toContain("QRCode.toCanvas");
   });
+
+  it("keeps historical promotion data visible and degrades independent requests", () => {
+    const { template, source } = view("DistributionPromotionView.vue");
+    expect(template).toContain("历史数据保留");
+    expect(template).toContain("statsError");
+    expect(template).toContain("visitsError");
+    expect(template).not.toContain('v-else-if="trackingEnabled"');
+    expect(source).toContain("async function loadStats");
+    expect(source).toContain("async function loadVisits");
+    expect(source).toContain("statsSequence");
+    expect(source).toContain("visitsSequence");
+    expect(source).toContain("sequence !== statsSequence");
+  });
+
+  it("aggregates the 90 day promotion trend by week", () => {
+    const { template, source } = view("DistributionPromotionView.vue");
+    expect(template).toContain("按周");
+    expect(source).toContain("days.value !== 90");
+    expect(source).toContain("grouped.set");
+    expect(source).toContain("parseLocalDate");
+    expect(source).toContain("formatLocalDate");
+    expect(source).not.toContain("toISOString().slice(0, 10)");
+    expect(source).not.toContain("slice(days.value > 30 ? -30");
+  });
+
+  it("lists promotion trend dates from newest to oldest", () => {
+    const { source } = view("DistributionPromotionView.vue");
+    expect(source).toContain("right.date.localeCompare(left.date)");
+  });
+
+  it("does not truncate money or promotion links on small screens", () => {
+    const { template } = view("DistributionPromotionView.vue");
+    expect(template).toContain("break-all");
+    expect(template).toContain("whitespace-nowrap");
+    expect(template).toContain("团队付费客户");
+    expect(template).toContain("团队累计实付");
+    expect(template).not.toContain("累计实付</dt><dd class=\"mt-1 truncate");
+  });
+
+  it("reports clipboard failures instead of silently rejecting", () => {
+    const { source } = view("DistributionPromotionView.vue");
+    expect(source).toContain("navigator.clipboard.writeText");
+    expect(source).toContain("复制失败，请手动选择内容复制");
+  });
+
+  it("keeps failure, disabled assets and conversion semantics explicit", () => {
+    const { template, source } = view("DistributionPromotionView.vue");
+    expect(template).toContain("overviewError");
+    expect(template).toContain('v-if="linkEnabled"');
+    expect(template).toContain('role="img"');
+    expect(source).toContain("有效访问");
+    expect(source).toContain("访客转化率");
+    expect(source).toContain("已转化访客");
+    expect(source).toContain("已转化访客 ÷ 独立访客");
+    expect(template).toContain("注册结果");
+    expect(template).toContain("携推广码注册但未匹配到有效访问");
+    expect(template).toContain("source.conversions");
+    expect(template).not.toContain("source.registrations }} 注册");
+    expect(template).toContain("数据质量");
+    expect(source).toContain("timeZone: 'Asia/Hong_Kong'");
+  });
+
+  it("isolates QR failures, explains attribution and progressively reveals visits", () => {
+    const { template, source } = view("DistributionPromotionView.vue");
+    expect(template).toContain("二维码生成失败");
+    expect(source).toContain("qrError.value = true");
+    expect(source).toContain("void renderQr()");
+    expect(template).toContain("归因规则");
+    expect(source).toContain("attributionPolicyText");
+    expect(template).toContain("筛选采用访问批次口径");
+    expect(template).toContain("注册显示在获归因的推广访问日期");
+    expect(template).toContain("默认展示最新 8 条");
+    expect(template).toContain("查看更多访问");
+    expect(source).toContain("async function loadMoreVisits");
+    expect(template).toContain("bg-info");
+    expect(template).toContain("bg-success");
+  });
 });

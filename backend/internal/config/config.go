@@ -72,6 +72,7 @@ type Config struct {
 	Redis                   RedisConfig                   `mapstructure:"redis"`
 	Ops                     OpsConfig                     `mapstructure:"ops"`
 	JWT                     JWTConfig                     `mapstructure:"jwt"`
+	DistributionTracking    DistributionTrackingConfig    `mapstructure:"distribution_tracking"`
 	AppAuth                 AppAuthConfig                 `mapstructure:"app_auth"`
 	Totp                    TotpConfig                    `mapstructure:"totp"`
 	LinuxDo                 LinuxDoConnectConfig          `mapstructure:"linuxdo_connect"`
@@ -1503,6 +1504,16 @@ type JWTConfig struct {
 	RefreshWindowMinutes int `mapstructure:"refresh_window_minutes"`
 }
 
+// DistributionTrackingConfig keeps promotion tracking identifiers stable when
+// JWT signing keys rotate. The first secret writes new hashes; every secret is
+// accepted when resolving an existing visitor cookie.
+type DistributionTrackingConfig struct {
+	HashSecrets            []string `mapstructure:"hash_secrets"`
+	CleanupEnabled         bool     `mapstructure:"cleanup_enabled"`
+	CleanupIntervalMinutes int      `mapstructure:"cleanup_interval_minutes"`
+	CleanupBatchSize       int      `mapstructure:"cleanup_batch_size"`
+}
+
 type AppAuthConfig struct {
 	SigningSecret string `mapstructure:"signing_secret"`
 }
@@ -1681,6 +1692,7 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	}
 	trustedProxiesEnv, trustedProxiesEnvConfigured := os.LookupEnv("SERVER_TRUSTED_PROXIES")
 	forwardedClientIPHeadersEnv, forwardedClientIPHeadersEnvConfigured := os.LookupEnv("SECURITY_FORWARDED_CLIENT_IP_HEADERS")
+	distributionHashSecretsEnv, distributionHashSecretsEnvConfigured := os.LookupEnv("DISTRIBUTION_TRACKING_HASH_SECRETS")
 	trustedProxiesConfigured := viper.InConfig("server.trusted_proxies") ||
 		viper.IsSet("server.trusted_proxies") || trustedProxiesEnvConfigured
 
@@ -1693,6 +1705,11 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	}
 	if forwardedClientIPHeadersEnvConfigured {
 		cfg.Security.ForwardedClientIPHeaders = normalizeStringSlice(strings.Split(forwardedClientIPHeadersEnv, ","))
+	}
+	if distributionHashSecretsEnvConfigured {
+		cfg.DistributionTracking.HashSecrets = normalizeUniqueStringSlice(strings.Split(distributionHashSecretsEnv, ","))
+	} else {
+		cfg.DistributionTracking.HashSecrets = normalizeUniqueStringSlice(cfg.DistributionTracking.HashSecrets)
 	}
 	cfg.Server.TrustedProxiesConfigured = trustedProxiesConfigured
 	if cfg.Gateway.OpenAIScheduler.StickyEscapeTTFTMs == 0 {
@@ -1846,6 +1863,10 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 
 func setDefaults() {
 	viper.SetDefault("run_mode", RunModeStandard)
+	viper.SetDefault("distribution_tracking.hash_secrets", []string{})
+	viper.SetDefault("distribution_tracking.cleanup_enabled", false)
+	viper.SetDefault("distribution_tracking.cleanup_interval_minutes", 10)
+	viper.SetDefault("distribution_tracking.cleanup_batch_size", 5000)
 
 	// Server
 	viper.SetDefault("server.host", "0.0.0.0")
@@ -1912,7 +1933,7 @@ func setDefaults() {
 	viper.SetDefault("security.csp.enabled", true)
 	viper.SetDefault("security.csp.policy", DefaultCSPPolicy)
 	viper.SetDefault("security.proxy_probe.insecure_skip_verify", false)
-	viper.SetDefault("security.trust_forwarded_ip_for_api_key_acl", true)
+	viper.SetDefault("security.trust_forwarded_ip_for_api_key_acl", false)
 
 	// Security - disable direct fallback on proxy error
 	viper.SetDefault("security.proxy_fallback.allow_direct_on_error", false)
@@ -2535,6 +2556,17 @@ func (c *Config) Validate() error {
 	// 选择 bytes 而不是 rune 计数，确保二进制/随机串的长度语义更接近“熵”而非“字符数”。
 	if len([]byte(jwtSecret)) < 32 {
 		return fmt.Errorf("jwt.secret must be at least 32 bytes")
+	}
+	for _, secret := range c.DistributionTracking.HashSecrets {
+		if len([]byte(secret)) < 32 {
+			return fmt.Errorf("distribution_tracking.hash_secrets entries must be at least 32 bytes")
+		}
+	}
+	if c.DistributionTracking.CleanupIntervalMinutes <= 0 {
+		return fmt.Errorf("distribution_tracking.cleanup_interval_minutes must be positive")
+	}
+	if c.DistributionTracking.CleanupBatchSize <= 0 || c.DistributionTracking.CleanupBatchSize > 10000 {
+		return fmt.Errorf("distribution_tracking.cleanup_batch_size must be between 1 and 10000")
 	}
 	appAuthSecret := strings.TrimSpace(c.AppAuth.SigningSecret)
 	if appAuthSecret != "" && len([]byte(appAuthSecret)) < 32 {
@@ -3473,6 +3505,20 @@ func normalizeStringSlice(values []string) []string {
 		normalized = append(normalized, trimmed)
 	}
 	return normalized
+}
+
+func normalizeUniqueStringSlice(values []string) []string {
+	normalized := normalizeStringSlice(values)
+	out := make([]string, 0, len(normalized))
+	seen := make(map[string]struct{}, len(normalized))
+	for _, value := range normalized {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return out
 }
 
 func isWeakJWTSecret(secret string) bool {

@@ -47,7 +47,9 @@
           <Icon name="book" size="md" />
         </a>
 
-        <LocaleSwitcher />
+        <div class="hidden min-[340px]:block">
+          <LocaleSwitcher />
+        </div>
 
         <button
           type="button"

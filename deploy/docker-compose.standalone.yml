@@ -37,6 +37,8 @@ services:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
       - SERVER_MODE=${SERVER_MODE:-release}
+      - SERVER_TRUSTED_PROXIES=${SERVER_TRUSTED_PROXIES:-}
+      - SECURITY_TRUST_FORWARDED_IP_FOR_API_KEY_ACL=${SECURITY_TRUST_FORWARDED_IP_FOR_API_KEY_ACL:-false}
       - ENABLE_SERVER_TIMING=${ENABLE_SERVER_TIMING:-false}
       - RUN_MODE=${RUN_MODE:-standard}
       - UPDATE_GITHUB_TOKEN=${UPDATE_GITHUB_TOKEN:-}
@@ -49,7 +51,7 @@ services:
       - DATABASE_USER=${DATABASE_USER:-sub2api}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
       - DATABASE_DBNAME=${DATABASE_DBNAME:-sub2api}
-      - DATABASE_SSLMODE=${DATABASE_SSLMODE:-disable}
+      - DATABASE_SSLMODE=${DATABASE_SSLMODE:?Set verify-full for remote PostgreSQL, or explicitly set disable only for a protected private network}
       - DATABASE_MAX_OPEN_CONNS=${DATABASE_MAX_OPEN_CONNS:-50}
       - DATABASE_MAX_IDLE_CONNS=${DATABASE_MAX_IDLE_CONNS:-10}
       - DATABASE_CONN_MAX_LIFETIME_MINUTES=${DATABASE_CONN_MAX_LIFETIME_MINUTES:-30}
@@ -64,7 +66,7 @@ services:
       - REDIS_DB=${REDIS_DB:-0}
       - REDIS_POOL_SIZE=${REDIS_POOL_SIZE:-1024}
       - REDIS_MIN_IDLE_CONNS=${REDIS_MIN_IDLE_CONNS:-10}
-      - REDIS_ENABLE_TLS=${REDIS_ENABLE_TLS:-false}
+      - REDIS_ENABLE_TLS=${REDIS_ENABLE_TLS:?Set true for remote Redis, or explicitly set false only for a protected private network}
 
       # =======================================================================
       # Admin Account (auto-created on first run)
@@ -76,6 +78,10 @@ services:
       # JWT Configuration
       # =======================================================================
       - JWT_SECRET=${JWT_SECRET:-}
+      - DISTRIBUTION_TRACKING_HASH_SECRETS=${DISTRIBUTION_TRACKING_HASH_SECRETS:?Set an independent 32-byte promotion tracking secret}
+      - DISTRIBUTION_TRACKING_CLEANUP_ENABLED=${DISTRIBUTION_TRACKING_CLEANUP_ENABLED:-false}
+      - DISTRIBUTION_TRACKING_CLEANUP_INTERVAL_MINUTES=${DISTRIBUTION_TRACKING_CLEANUP_INTERVAL_MINUTES:-10}
+      - DISTRIBUTION_TRACKING_CLEANUP_BATCH_SIZE=${DISTRIBUTION_TRACKING_CLEANUP_BATCH_SIZE:-5000}
       - JWT_EXPIRE_HOUR=${JWT_EXPIRE_HOUR:-24}
 
       # =======================================================================

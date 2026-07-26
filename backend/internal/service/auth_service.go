@@ -151,6 +151,14 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 // RegisterWithVerificationAndDistribution keeps invitation rebates and agent
 // promotion mutually exclusive while binding both only at registration time.
 func (s *AuthService) RegisterWithVerificationAndDistribution(ctx context.Context, email, password, verifyCode, promoCode, invitationCode, affiliateCode, distributionCode string) (string, *User, error) {
+	if s.distributionService != nil {
+		preparedCtx, resolvedCode, err := s.distributionService.PrepareRegistrationAttribution(ctx, distributionCode, affiliateCode)
+		if err != nil {
+			return "", nil, err
+		}
+		ctx = preparedCtx
+		distributionCode = resolvedCode
+	}
 	if strings.TrimSpace(affiliateCode) != "" && strings.TrimSpace(distributionCode) != "" {
 		return "", nil, ErrDistributionCodeConflict
 	}
@@ -255,6 +263,18 @@ func (s *AuthService) RegisterWithVerificationAndDistribution(ctx context.Contex
 		logger.LegacyPrintf("service.auth", "[Auth] Database error creating user: %v", err)
 		return "", nil, ErrServiceUnavailable
 	}
+	if code := strings.TrimSpace(distributionCode); code != "" {
+		durable, bindErr := s.queueAndTryDistributionBinding(ctx, user.ID, code, "email")
+		if bindErr != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] Failed to bind distribution agent for user %d (durable=%t): %v", user.ID, durable, bindErr)
+			if !durable {
+				if deleteErr := s.userRepo.Delete(ctx, user.ID); deleteErr != nil {
+					logger.LegacyPrintf("service.auth", "[Auth] Failed to compensate user %d after distribution binding failure: %v", user.ID, deleteErr)
+				}
+				return "", nil, bindErr
+			}
+		}
+	}
 	s.postAuthUserBootstrap(ctx, user, "email", true)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
@@ -270,13 +290,6 @@ func (s *AuthService) RegisterWithVerificationAndDistribution(ctx context.Contex
 			}
 		}
 	}
-	if s.distributionService != nil && strings.TrimSpace(distributionCode) != "" {
-		if err := s.distributionService.BindCustomerByCode(ctx, user.ID, distributionCode); err != nil {
-			logger.LegacyPrintf("service.auth", "[Auth] Failed to bind distribution agent for user %d: %v", user.ID, err)
-			return "", nil, err
-		}
-	}
-
 	// 标记邀请码为已使用（如果使用了邀请码）
 	if invitationRedeemCode != nil {
 		if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
@@ -652,6 +665,13 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	if len([]rune(username)) > 100 {
 		username = string([]rune(username)[:100])
 	}
+	if s.distributionService != nil {
+		preparedCtx, resolvedCode, prepareErr := s.distributionService.PrepareRegistrationAttribution(ctx, distributionCode, affiliateCode)
+		if prepareErr != nil {
+			return nil, nil, prepareErr
+		}
+		ctx, distributionCode = preparedCtx, resolvedCode
+	}
 
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	created := false
@@ -756,7 +776,12 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					// snapshot user × platform quota（fail-open）
 					_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-					s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode)
+					if bindErr := s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode); bindErr != nil {
+						if rollbackErr := s.RollbackOAuthEmailAccountCreation(ctx, user.ID, invitationCode); rollbackErr != nil {
+							logger.LegacyPrintf("service.auth", "[Auth] Failed to compensate oauth user %d after distribution claim failure: %v", user.ID, rollbackErr)
+						}
+						return nil, nil, bindErr
+					}
 				}
 			} else {
 				if err := s.userRepo.Create(ctx, newUser); err != nil {
@@ -777,7 +802,12 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					// snapshot user × platform quota（fail-open）
 					_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-					s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode)
+					if bindErr := s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode); bindErr != nil {
+						if rollbackErr := s.RollbackOAuthEmailAccountCreation(ctx, user.ID, invitationCode); rollbackErr != nil {
+							logger.LegacyPrintf("service.auth", "[Auth] Failed to compensate oauth user %d after distribution claim failure: %v", user.ID, rollbackErr)
+						}
+						return nil, nil, bindErr
+					}
 					if invitationRedeemCode != nil {
 						if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
 							return nil, nil, ErrInvitationCodeInvalid
@@ -940,16 +970,19 @@ func (s *AuthService) bindOAuthAffiliate(ctx context.Context, userID int64, affi
 	}
 }
 
-func (s *AuthService) bindOAuthPromotion(ctx context.Context, userID int64, affiliateCode, distributionCode string) {
+func (s *AuthService) bindOAuthPromotion(ctx context.Context, userID int64, affiliateCode, distributionCode string) error {
 	if code := strings.TrimSpace(distributionCode); code != "" {
-		if s.distributionService != nil {
-			if err := s.distributionService.BindCustomerByCode(ctx, userID, code); err != nil {
-				logger.LegacyPrintf("service.auth", "[Auth] Failed to bind distribution agent for user %d: %v", userID, err)
+		durable, err := s.queueAndTryDistributionBinding(ctx, userID, code, "oauth")
+		if err != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] Failed to bind distribution agent for user %d (durable=%t): %v", userID, durable, err)
+			if !durable {
+				return err
 			}
 		}
-		return
+		return nil
 	}
 	s.bindOAuthAffiliate(ctx, userID, affiliateCode)
+	return nil
 }
 
 func (s *AuthService) postAuthUserBootstrap(ctx context.Context, user *User, signupSource string, touchLogin bool) {
@@ -1261,6 +1294,9 @@ func isReservedEmail(email string) bool {
 // 使用新的access_token_expire_minutes配置项（如果配置了），否则回退到expire_hour。
 // 会话指纹（IP/UA）从 ctx 中提取（由 HTTP 入口中间件注入），缺失时生成不带绑定的 token。
 func (s *AuthService) GenerateToken(ctx context.Context, user *User) (string, error) {
+	if user != nil {
+		s.retryPendingDistributionBinding(ctx, user.ID)
+	}
 	sessionID, err := randomHexString(8)
 	if err != nil {
 		return "", fmt.Errorf("generate session id: %w", err)
@@ -1537,6 +1573,9 @@ type TokenPairWithUser struct {
 // GenerateTokenPair 生成Access Token和Refresh Token对
 // familyID: 可选的Token家族ID，用于Token轮转时保持家族关系
 func (s *AuthService) GenerateTokenPair(ctx context.Context, user *User, familyID string) (*TokenPair, error) {
+	if user != nil {
+		s.retryPendingDistributionBinding(ctx, user.ID)
+	}
 	// 检查 refreshTokenCache 是否可用
 	if s.refreshTokenCache == nil {
 		return nil, errors.New("refresh token cache not configured")

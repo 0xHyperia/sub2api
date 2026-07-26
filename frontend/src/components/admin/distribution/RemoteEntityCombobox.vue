@@ -15,7 +15,7 @@
       </div>
       <button
         type="button"
-        class="btn btn-ghost btn-icon btn-sm shrink-0"
+        class="btn btn-ghost btn-icon h-11 w-11 shrink-0"
         aria-label="更换选择"
         title="更换选择"
         @click="clearSelection"
@@ -31,16 +31,18 @@
         class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
       />
       <input
+        ref="inputRef"
         :id="inputId"
         v-model="query"
         type="search"
-        class="input pl-9"
+        class="input min-h-11 pl-9"
         :placeholder="placeholder"
         role="combobox"
         aria-autocomplete="list"
         :aria-controls="listboxId"
         :aria-expanded="open"
         :aria-activedescendant="activeOptionId"
+        :aria-busy="loading"
         autocomplete="off"
         @input="scheduleSearch"
         @focus="handleFocus"
@@ -54,7 +56,7 @@
         role="listbox"
       >
         <p v-if="loading" class="px-3 py-3 text-sm text-foreground-subtle">正在搜索...</p>
-        <p v-else-if="error" class="px-3 py-3 text-sm text-danger-foreground">{{ error }}</p>
+        <p v-else-if="error" class="px-3 py-3 text-sm text-danger-foreground" role="alert">{{ error }}</p>
         <p
           v-else-if="query.trim().length < minChars"
           class="px-3 py-3 text-sm text-foreground-subtle"
@@ -69,7 +71,7 @@
           :id="optionId(index)"
           :key="option.id"
           type="button"
-          class="flex w-full min-w-0 items-start justify-between gap-3 px-3 py-2 text-left"
+          class="flex min-h-11 w-full min-w-0 items-start justify-between gap-3 px-3 py-2 text-left"
           :class="[
             index === activeIndex && option.selectable !== false ? 'bg-surface-subtle' : '',
             option.selectable === false ? 'cursor-not-allowed opacity-60' : 'hover:bg-surface-subtle',
@@ -95,12 +97,13 @@
           </span>
         </button>
       </div>
+      <p class="sr-only" role="status" aria-live="polite">{{ statusMessage }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import Icon from '@/components/icons/Icon.vue'
 import type {
   DistributionPickerOption,
@@ -123,6 +126,7 @@ const emit = defineEmits<{
 }>()
 
 const rootRef = ref<HTMLElement | null>(null)
+const inputRef = ref<HTMLInputElement | null>(null)
 const query = ref('')
 const options = ref<DistributionPickerOption[]>([])
 const loading = ref(false)
@@ -134,7 +138,14 @@ let timer: number | null = null
 let requestSequence = 0
 
 const optionId = (index: number) => `${props.inputId}-option-${index}`
-const activeOptionId = computed(() => activeIndex.value >= 0 ? optionId(activeIndex.value) : undefined)
+const activeOptionId = computed(() => open.value && activeIndex.value >= 0 ? optionId(activeIndex.value) : undefined)
+const statusMessage = computed(() => {
+  if (!open.value) return ''
+  if (loading.value) return '正在搜索'
+  if (error.value) return error.value
+  if (query.value.trim().length < props.minChars) return `至少输入 ${props.minChars} 个字符`
+  return options.value.length ? `找到 ${options.value.length} 个结果` : '没有匹配结果'
+})
 
 function firstSelectableIndex() {
   return options.value.findIndex((option) => option.selectable !== false)
@@ -144,6 +155,7 @@ function scheduleSearch() {
   emit('update:modelValue', null)
   error.value = ''
   open.value = true
+  requestSequence += 1
   if (timer) window.clearTimeout(timer)
   if (query.value.trim().length < props.minChars) {
     options.value = []
@@ -151,6 +163,7 @@ function scheduleSearch() {
     loading.value = false
     return
   }
+  loading.value = true
   timer = window.setTimeout(runSearch, 250)
 }
 
@@ -189,6 +202,7 @@ function clearSelection() {
   options.value = []
   activeIndex.value = -1
   open.value = false
+  void nextTick(() => inputRef.value?.focus())
 }
 
 function handleFocus() {
@@ -221,6 +235,7 @@ function handleKeydown(event: KeyboardEvent) {
     if (option) selectOption(option)
   } else if (event.key === 'Escape') {
     open.value = false
+    activeIndex.value = -1
   }
 }
 

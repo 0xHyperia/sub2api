@@ -25,8 +25,16 @@ func RegisterAuthRoutes(
 	rateLimiter := middleware.NewRateLimiter(redisClient)
 
 	// 公开接口
+	v1.GET("/distribution/tracking-status", rateLimiter.LimitWithOptions("distribution-tracking-status", 120, time.Minute, middleware.RateLimitOptions{
+		FailureMode: middleware.RateLimitFailClose,
+	}), h.Distribution.GetPromotionTrackingStatus)
+	v1.POST("/distribution/track", servermiddleware.RequestBodyLimit(16*1024), rateLimiter.LimitWithOptions("distribution-track", 120, time.Minute, middleware.RateLimitOptions{
+		FailureMode: middleware.RateLimitFailClose,
+	}), h.Distribution.TrackPromotionVisit)
+
 	auth := v1.Group("/auth")
 	auth.Use(servermiddleware.BackendModeAuthGuard(settingService))
+	auth.Use(handler.DistributionVisitorContextMiddleware())
 	// 认证事件（登录/注册/2FA/token 刷新失败）入审计
 	auth.Use(gin.HandlerFunc(auditLog))
 	{

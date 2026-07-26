@@ -9,8 +9,11 @@ const {
   showErrorMock,
   showSuccessMock,
   registerMock,
+  getPromotionTrackingStatusMock,
+  trackPromotionVisitMock,
   validatePromoCodeMock,
-  validateInvitationCodeMock
+  validateInvitationCodeMock,
+  routeQuery
 } = vi.hoisted(() => ({
   getPublicSettingsMock: vi.fn(),
   pushMock: vi.fn(),
@@ -18,13 +21,21 @@ const {
   showErrorMock: vi.fn(),
   showSuccessMock: vi.fn(),
   registerMock: vi.fn(),
+  getPromotionTrackingStatusMock: vi.fn(),
+  trackPromotionVisitMock: vi.fn(),
   validatePromoCodeMock: vi.fn(),
-  validateInvitationCodeMock: vi.fn()
+  validateInvitationCodeMock: vi.fn(),
+  routeQuery: {} as Record<string, string>
 }))
 
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ path: '/register', query: {} }),
+  useRoute: () => ({ path: '/register', fullPath: '/register', query: routeQuery }),
   useRouter: () => ({ push: pushMock, replace: replaceMock })
+}))
+
+vi.mock('@/api/distribution', () => ({
+  getPromotionTrackingStatus: (...args: unknown[]) => getPromotionTrackingStatusMock(...args),
+  trackPromotionVisit: (...args: unknown[]) => trackPromotionVisitMock(...args)
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -98,13 +109,95 @@ describe('RegisterView', () => {
     showErrorMock.mockReset()
     showSuccessMock.mockReset()
     registerMock.mockReset()
+    getPromotionTrackingStatusMock.mockReset()
+    trackPromotionVisitMock.mockReset()
     validatePromoCodeMock.mockReset()
     validateInvitationCodeMock.mockReset()
+    for (const key of Object.keys(routeQuery)) delete routeQuery[key]
     localStorage.clear()
   })
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('loads public settings before checking promotion tracking and skips the tracking POST when disabled', async () => {
+    routeQuery.agent = 'AGENT001'
+    getPublicSettingsMock.mockResolvedValue(enabledSettings)
+    getPromotionTrackingStatusMock.mockResolvedValue({ enabled: false })
+
+    mountRegisterView()
+    await flushPromises()
+
+    expect(getPublicSettingsMock).toHaveBeenCalledOnce()
+    expect(getPromotionTrackingStatusMock).toHaveBeenCalledOnce()
+    expect(getPublicSettingsMock.mock.invocationCallOrder[0]).toBeLessThan(
+      getPromotionTrackingStatusMock.mock.invocationCallOrder[0],
+    )
+    expect(trackPromotionVisitMock).not.toHaveBeenCalled()
+  })
+
+  it('tracks an enabled promotion only after public settings have loaded', async () => {
+    routeQuery.agent = 'AGENT001'
+    getPublicSettingsMock.mockResolvedValue(enabledSettings)
+    getPromotionTrackingStatusMock.mockResolvedValue({ enabled: true })
+    trackPromotionVisitMock.mockResolvedValue({ tracked: true, attribution_days: 30 })
+
+    mountRegisterView()
+    await flushPromises()
+
+    expect(trackPromotionVisitMock).toHaveBeenCalledOnce()
+    expect(getPublicSettingsMock.mock.invocationCallOrder[0]).toBeLessThan(
+      trackPromotionVisitMock.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('does not delay registration UI while tracking status is pending', async () => {
+    routeQuery.agent = 'AGENT001'
+    getPublicSettingsMock.mockResolvedValue(enabledSettings)
+    getPromotionTrackingStatusMock.mockReturnValue(new Promise(() => {}))
+
+    const wrapper = mountRegisterView()
+    await flushPromises()
+
+    expect(wrapper.find('form').exists()).toBe(true)
+  })
+
+  it('retries one transient tracking failure and stops after success', async () => {
+    vi.useFakeTimers()
+    routeQuery.agent = 'AGENT001'
+    getPublicSettingsMock.mockResolvedValue(enabledSettings)
+    getPromotionTrackingStatusMock.mockResolvedValue({ enabled: true })
+    trackPromotionVisitMock
+      .mockRejectedValueOnce(new Error('temporary network failure'))
+      .mockResolvedValueOnce({ tracked: true, attribution_days: 30 })
+
+    mountRegisterView()
+    await flushPromises()
+    expect(trackPromotionVisitMock).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(1000)
+    await flushPromises()
+    expect(trackPromotionVisitMock).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(trackPromotionVisitMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('cancels the bounded tracking retry when leaving the page', async () => {
+    vi.useFakeTimers()
+    routeQuery.agent = 'AGENT001'
+    getPublicSettingsMock.mockResolvedValue(enabledSettings)
+    getPromotionTrackingStatusMock.mockResolvedValue({ enabled: true })
+    trackPromotionVisitMock.mockRejectedValue(new Error('temporary network failure'))
+
+    const wrapper = mountRegisterView()
+    await flushPromises()
+    expect(trackPromotionVisitMock).toHaveBeenCalledOnce()
+
+    wrapper.unmount()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(trackPromotionVisitMock).toHaveBeenCalledOnce()
   })
 
   it('does not override the cached backend site name while settings are loading', () => {

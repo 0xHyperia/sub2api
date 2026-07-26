@@ -373,6 +373,7 @@ import {
   validatePromoCode,
   validateInvitationCode
 } from '@/api/auth'
+import { getPromotionTrackingStatus, trackPromotionVisit } from '@/api/distribution'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import {
   formatRegistrationEmailSuffixWhitelistForMessage,
@@ -430,6 +431,8 @@ const loginAgreementRevision = ref<string>('')
 const loginAgreementDocuments = ref<LoginAgreementDocument[]>([])
 const agreementAccepted = ref<boolean>(false)
 const showAgreementModal = ref<boolean>(false)
+const promotionTrackingEnabled = ref<boolean>(false)
+const promotionTrackingStatusLoaded = ref<boolean>(false)
 
 // Turnstile
 const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
@@ -522,6 +525,81 @@ function syncAffiliateReferralCode(): string {
 
 // ==================== Lifecycle ====================
 
+// Tracking is best-effort and never gates registration. The backend also
+// deduplicates visits, but the page avoids duplicate successful submissions.
+const trackedPromotionVisitKeys = new Set<string>()
+const promotionTrackingAttempts = new Map<string, number>()
+let promotionTrackingInFlightKey = ''
+let promotionTrackingRetryTimer: ReturnType<typeof setTimeout> | null = null
+const PROMOTION_TRACKING_MAX_ATTEMPTS = 2
+const PROMOTION_TRACKING_RETRY_DELAY_MS = 1000
+const promotionTrackingText = (value: unknown) => String(value || '').trim().slice(0, 128)
+
+function currentPromotionVisitKey(): string {
+  const promotionCode = String(route.query.agent || route.query.distribution_code || '').trim().toUpperCase()
+  if (!promotionCode) return ''
+  return [promotionCode, promotionTrackingText(route.query.utm_source), promotionTrackingText(route.query.utm_medium), promotionTrackingText(route.query.utm_campaign)].join('|')
+}
+
+function isRetryablePromotionTrackingError(error: unknown): boolean {
+  const status = Number((error as { response?: { status?: number } })?.response?.status || 0)
+  return !status || status === 408 || status === 429 || status >= 500
+}
+
+async function trackCurrentPromotionVisit(): Promise<void> {
+  const promotionCode = String(route.query.agent || route.query.distribution_code || '').trim().toUpperCase()
+  if (!promotionCode) return
+  if (!promotionTrackingStatusLoaded.value || !promotionTrackingEnabled.value || agreementGateActive.value) return
+  const key = currentPromotionVisitKey()
+  if (!key || trackedPromotionVisitKeys.has(key) || promotionTrackingInFlightKey === key || (promotionTrackingAttempts.get(key) || 0) >= PROMOTION_TRACKING_MAX_ATTEMPTS) return
+  if (promotionTrackingRetryTimer) {
+    clearTimeout(promotionTrackingRetryTimer)
+    promotionTrackingRetryTimer = null
+  }
+  const attempt = (promotionTrackingAttempts.get(key) || 0) + 1
+  promotionTrackingAttempts.set(key, attempt)
+  promotionTrackingInFlightKey = key
+  try {
+    await trackPromotionVisit({
+      promotion_code: promotionCode,
+      landing_path: route.fullPath.split('?')[0] || '/register',
+      referrer: document.referrer,
+      utm_source: promotionTrackingText(route.query.utm_source),
+      utm_medium: promotionTrackingText(route.query.utm_medium),
+      utm_campaign: promotionTrackingText(route.query.utm_campaign),
+    })
+    trackedPromotionVisitKeys.add(key)
+    promotionTrackingAttempts.delete(key)
+  } catch (error) {
+    if (isRetryablePromotionTrackingError(error) && attempt < PROMOTION_TRACKING_MAX_ATTEMPTS) {
+      promotionTrackingRetryTimer = setTimeout(() => {
+        promotionTrackingRetryTimer = null
+        if (currentPromotionVisitKey() === key) void trackCurrentPromotionVisit()
+      }, PROMOTION_TRACKING_RETRY_DELAY_MS)
+    } else if (!isRetryablePromotionTrackingError(error)) {
+      promotionTrackingAttempts.set(key, PROMOTION_TRACKING_MAX_ATTEMPTS)
+    }
+  } finally {
+    if (promotionTrackingInFlightKey === key) promotionTrackingInFlightKey = ''
+  }
+}
+
+async function loadPromotionTrackingStatus(): Promise<void> {
+  const promotionCode = String(route.query.agent || route.query.distribution_code || '').trim()
+  if (!promotionCode) return
+  promotionTrackingStatusLoaded.value = false
+  promotionTrackingEnabled.value = false
+  try {
+    const status = await getPromotionTrackingStatus()
+    promotionTrackingEnabled.value = status.enabled === true
+  } catch {
+    // Fail closed: registration remains available without promotion telemetry.
+  } finally {
+    promotionTrackingStatusLoaded.value = true
+  }
+  void trackCurrentPromotionVisit()
+}
+
 async function loadRegistrationSettings(): Promise<void> {
   settingsLoaded.value = false
   settingsLoadError.value = ''
@@ -546,7 +624,6 @@ async function loadRegistrationSettings(): Promise<void> {
       settings.registration_email_suffix_whitelist || []
     )
     applyLoginAgreementSettings(settings)
-
     // Read promo code from URL parameter only if promo code is enabled
     if (promoCodeEnabled.value) {
       const promoParam = route.query.promo as string
@@ -558,6 +635,7 @@ async function loadRegistrationSettings(): Promise<void> {
     }
     syncAffiliateReferralCode()
     settingsLoaded.value = true
+    void loadPromotionTrackingStatus()
   } catch {
     settingsLoadError.value = t('auth.settingsLoadFailed')
     loginAgreementEnabled.value = false
@@ -573,6 +651,11 @@ watch(
 	  () => [route.query.aff, route.query.aff_code, route.query.agent, route.query.distribution_code],
   () => {
     syncAffiliateReferralCode()
+    if (promotionTrackingStatusLoaded.value) {
+      void trackCurrentPromotionVisit()
+    } else if (settingsLoaded.value) {
+      void loadPromotionTrackingStatus()
+    }
   }
 )
 
@@ -585,6 +668,11 @@ onUnmounted(() => {
   if (invitationValidateTimeout) {
     clearTimeout(invitationValidateTimeout)
   }
+  if (promotionTrackingRetryTimer) {
+    clearTimeout(promotionTrackingRetryTimer)
+    promotionTrackingRetryTimer = null
+  }
+  promotionTrackingInFlightKey = ''
 })
 
 // ==================== Login Agreement ====================
@@ -640,6 +728,7 @@ function acceptLoginAgreement(): void {
   }
   agreementAccepted.value = true
   showAgreementModal.value = false
+  void trackCurrentPromotionVisit()
 }
 
 function rejectLoginAgreement(): void {

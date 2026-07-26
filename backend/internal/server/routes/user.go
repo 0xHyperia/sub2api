@@ -106,6 +106,8 @@ func RegisterUserRoutes(
 			distribution.PUT("/team/:agent_id/status", h.Distribution.UpdateTeamAgentStatus)
 			distribution.GET("/customers", h.Distribution.ListCustomers)
 			distribution.GET("/commissions", h.Distribution.ListCommissions)
+			distribution.GET("/promotion/analytics", h.Distribution.GetPromotionAnalytics)
+			distribution.GET("/promotion/visits", h.Distribution.ListPromotionVisits)
 		}
 
 		// 使用记录

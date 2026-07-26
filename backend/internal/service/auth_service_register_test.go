@@ -79,6 +79,19 @@ type userPlatformQuotaRepoStub struct {
 	bulkInsertErr   error
 }
 
+type failingNonDurableDistributionRepoStub struct {
+	DistributionRepository
+	err error
+}
+
+func (s *failingNonDurableDistributionRepoStub) ValidatePromotionCode(context.Context, string) error {
+	return nil
+}
+
+func (s *failingNonDurableDistributionRepoStub) QueueDistributionBindingClaim(context.Context, int64, string, string) error {
+	return s.err
+}
+
 func (s *userPlatformQuotaRepoStub) BulkInsertInitial(_ context.Context, records []UserPlatformQuotaRecord) error {
 	cloned := make([]UserPlatformQuotaRecord, len(records))
 	copy(cloned, records)
@@ -262,6 +275,20 @@ func TestAuthService_Register_Disabled(t *testing.T) {
 
 	_, _, err := service.Register(context.Background(), "user@test.com", "password")
 	require.ErrorIs(t, err, ErrRegDisabled)
+}
+
+func TestAuthServiceRegisterCompensatesWhenDistributionBindingIsNotDurable(t *testing.T) {
+	repo := &userRepoStub{nextID: 42}
+	svc := newAuthService(repo, map[string]string{SettingKeyRegistrationEnabled: "true"}, nil, nil)
+	bindErr := errors.New("binding database unavailable")
+	svc.SetDistributionService(NewDistributionService(&failingNonDurableDistributionRepoStub{err: bindErr}))
+
+	_, user, err := svc.RegisterWithVerificationAndDistribution(
+		context.Background(), "binding-compensation@example.com", "password123", "", "", "", "", "AGENT42",
+	)
+	require.ErrorIs(t, err, bindErr)
+	require.Nil(t, user)
+	require.Equal(t, []int64{42}, repo.deletedIDs)
 }
 
 func TestAuthService_Register_DisabledByDefault(t *testing.T) {
@@ -785,6 +812,68 @@ func TestAuthService_LoginOrRegisterOAuthWithTokenPair_ExistingUserDoesNotGrantA
 	require.Equal(t, 1, user.Concurrency)
 	require.Empty(t, repo.created)
 	require.Empty(t, assigner.calls)
+}
+
+func TestAuthServiceOAuthSignupRollsBackWhenDistributionClaimIsNotDurable(t *testing.T) {
+	repo := &userRepoStub{nextID: 89}
+	queueErr := errors.New("claim queue unavailable")
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil, nil)
+	service.refreshTokenCache = &refreshTokenCacheStub{}
+	service.distributionService = NewDistributionService(&durableDistributionBindingRepoStub{queueErr: queueErr})
+
+	tokenPair, user, err := service.LoginOrRegisterOAuthWithTokenPairAndPromotionCodes(
+		context.Background(),
+		"new-distribution-oauth@example.com",
+		"new-user",
+		"",
+		"",
+		"AGENT42",
+		"",
+		"oidc",
+	)
+
+	require.Nil(t, tokenPair)
+	require.Nil(t, user)
+	require.ErrorIs(t, err, queueErr)
+	require.Equal(t, []int64{89}, repo.deletedIDs)
+}
+
+func TestAuthServiceOAuthExistingUserIgnoresDistributionClaimQueueFailure(t *testing.T) {
+	existing := &User{
+		ID:           90,
+		Email:        "existing-distribution-oauth@example.com",
+		Username:     "existing-user",
+		Role:         RoleUser,
+		Status:       StatusActive,
+		TokenVersion: 1,
+	}
+	repo := &userRepoStub{user: existing}
+	queueErr := errors.New("claim queue unavailable")
+	distributionRepo := &durableDistributionBindingRepoStub{queueErr: queueErr}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil, nil)
+	service.refreshTokenCache = &refreshTokenCacheStub{}
+	service.distributionService = NewDistributionService(distributionRepo)
+
+	tokenPair, user, err := service.LoginOrRegisterOAuthWithTokenPairAndPromotionCodes(
+		context.Background(),
+		existing.Email,
+		"existing-user",
+		"",
+		"",
+		"AGENT42",
+		"",
+		"oidc",
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, tokenPair)
+	require.Equal(t, existing.ID, user.ID)
+	require.NotContains(t, distributionRepo.events, "queue")
+	require.NotContains(t, distributionRepo.events, "bind")
 }
 
 // newAuthServiceWithDingTalkCfg 构建一个含完整 DingTalk config 的 AuthService，

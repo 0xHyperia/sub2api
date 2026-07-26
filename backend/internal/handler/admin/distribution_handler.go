@@ -49,6 +49,52 @@ func (h *DistributionHandler) GetOverview(c *gin.Context) {
 	response.Success(c, v)
 }
 
+func adminPromotionStatsFilter(c *gin.Context) service.DistributionPromotionStatsFilter {
+	page, pageSize := response.ParsePagination(c)
+	filter := service.DistributionPromotionStatsFilter{Page: page, PageSize: pageSize,
+		Source: strings.TrimSpace(c.Query("source")), Device: strings.TrimSpace(c.Query("device")),
+		AttributionType: strings.TrimSpace(c.Query("attribution_type"))}
+	if rawAgentID := strings.TrimSpace(c.Query("agent_id")); rawAgentID != "" {
+		filter.AgentID, _ = strconv.ParseInt(rawAgentID, 10, 64)
+		if filter.AgentID <= 0 {
+			// Preserve 0 exclusively as the intentional all-agent view. Invalid
+			// input must not silently broaden an administrator's data scope.
+			filter.AgentID = -1
+		}
+	}
+	location := time.FixedZone("Asia/Hong_Kong", 8*60*60)
+	if value, err := time.ParseInLocation("2006-01-02", c.Query("date_from"), location); err == nil {
+		filter.From = value
+	} else if c.Query("date_from") != "" {
+		filter.From, filter.To = time.Unix(1, 0), time.Unix(1, 0)
+	}
+	if value, err := time.ParseInLocation("2006-01-02", c.Query("date_to"), location); err == nil {
+		filter.To = value.Add(24 * time.Hour)
+	} else if c.Query("date_to") != "" {
+		filter.From, filter.To = time.Unix(1, 0), time.Unix(1, 0)
+	}
+	return filter
+}
+
+func (h *DistributionHandler) GetPromotionAnalytics(c *gin.Context) {
+	value, err := h.service.GetPromotionAnalytics(c.Request.Context(), adminSubjectID(c), adminPromotionStatsFilter(c), true)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, value)
+}
+
+func (h *DistributionHandler) ListPromotionVisits(c *gin.Context) {
+	filter := adminPromotionStatsFilter(c)
+	items, total, err := h.service.ListPromotionVisits(c.Request.Context(), adminSubjectID(c), filter, true)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, items, total, filter.Page, filter.PageSize)
+}
+
 func (h *DistributionHandler) GetMaturityStatus(c *gin.Context) {
 	response.Success(c, h.service.MaturityStatus())
 }
@@ -174,6 +220,27 @@ func (h *DistributionHandler) UpdateAgentRecruitmentPermission(c *gin.Context) {
 		return
 	}
 	if err := h.service.AdminUpdateAgentRecruitmentPermission(c.Request.Context(), agentID, adminSubjectID(c), req.Enabled, req.Reason); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"updated": true})
+}
+
+func (h *DistributionHandler) UpdateAgentPromotionStatsPermission(c *gin.Context) {
+	agentID, err := strconv.ParseInt(c.Param("agent_id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "invalid agent id")
+		return
+	}
+	var req struct {
+		Enabled bool   `json:"enabled"`
+		Reason  string `json:"reason" binding:"required"`
+	}
+	if err = c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if err = h.service.AdminUpdateAgentPromotionStatsPermission(c.Request.Context(), agentID, adminSubjectID(c), req.Enabled, req.Reason); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -386,7 +453,8 @@ func (h *DistributionHandler) LookupAgentCandidates(c *gin.Context) {
 }
 
 func (h *DistributionHandler) LookupAgents(c *gin.Context) {
-	items, err := h.service.AdminLookupAgents(c.Request.Context(), c.Query("q"))
+	includeInactive, _ := strconv.ParseBool(c.Query("include_inactive"))
+	items, err := h.service.AdminLookupAgents(c.Request.Context(), c.Query("q"), includeInactive)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

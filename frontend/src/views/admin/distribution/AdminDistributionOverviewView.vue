@@ -27,7 +27,8 @@
         <LoadingSpinner />
       </div>
       <template v-else-if="overview">
-        <section class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <section class="grid grid-cols-2 gap-3 xl:grid-cols-5">
+          <router-link to="/admin/distribution/promotion" class="card p-4 transition-colors hover:border-outline-strong"><div class="flex items-start justify-between gap-2"><p class="text-sm text-foreground-subtle">推广追踪</p><Icon name="link" size="sm" class="text-brand" /></div><p class="mt-2 text-sm font-semibold">访问与注册归因</p><p class="mt-1 text-xs text-foreground-subtle">查看推广链接转化表现</p></router-link>
           <router-link
             to="/admin/distribution/agents"
             class="card p-4 transition-colors hover:border-outline-strong"

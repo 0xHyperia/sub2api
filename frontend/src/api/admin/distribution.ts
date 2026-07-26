@@ -22,6 +22,14 @@ export interface DistributionSettings {
   monthly_withdrawal_limit_cny: string;
   cny_per_platform_usd: string;
   usd_to_cny: string;
+  promotion_tracking_enabled: boolean;
+  promotion_attribution_enabled: boolean;
+  promotion_attribution_days: number;
+  promotion_attribution_model: 'first_touch' | 'last_touch';
+  promotion_collect_source: boolean;
+  promotion_collect_device: boolean;
+  promotion_bot_filter_enabled: boolean;
+  promotion_detail_retention_days: number;
 }
 
 export interface DistributionAdminOverview {
@@ -311,10 +319,10 @@ export async function lookupAgentCandidates(query: string) {
   return data;
 }
 
-export async function lookupAgents(query: string) {
+export async function lookupAgents(query: string, options: { include_inactive?: boolean } = {}) {
   const { data } = await apiClient.get<DistributionAgentOption[]>(
     "/admin/distribution/agents/lookup",
-    { params: { q: query } },
+    { params: { q: query, include_inactive: options.include_inactive || undefined } },
   );
   return data;
 }
@@ -358,6 +366,37 @@ export async function updateAgentRecruitmentPermission(
     `/admin/distribution/agents/${id}/recruitment-permission`,
     payload,
   );
+}
+
+export async function updateAgentPromotionStatsPermission(
+  id: number,
+  payload: { enabled: boolean; reason: string },
+) {
+  await apiClient.put(`/admin/distribution/agents/${id}/promotion-stats-permission`, payload);
+}
+
+export interface DistributionPromotionListParams {
+  page?: number;
+  page_size?: number;
+  agent_id?: number;
+  date_from?: string;
+  date_to?: string;
+  source?: string;
+  device?: string;
+  attribution_type?: string;
+}
+
+export type DistributionPromotionAnalytics = import('../distribution').DistributionPromotionAnalytics;
+export type DistributionPromotionVisit = import('../distribution').DistributionPromotionVisit;
+
+export async function getPromotionAnalytics(params: DistributionPromotionListParams = {}) {
+  const { data } = await apiClient.get<DistributionPromotionAnalytics>('/admin/distribution/promotion/analytics', { params });
+  return data;
+}
+
+export async function listPromotionVisits(params: DistributionPromotionListParams = {}) {
+  const { data } = await apiClient.get<PaginatedResponse<DistributionPromotionVisit>>('/admin/distribution/promotion/visits', { params });
+  return data;
 }
 
 export async function listCommissions(params: DistributionListParams = {}) {

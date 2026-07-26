@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -11,6 +15,19 @@ import (
 )
 
 type DistributionHandler struct{ service *service.DistributionService }
+
+const distributionVisitorCookie = "sub2api_distribution_visitor"
+
+// DistributionVisitorContextMiddleware makes promotion attribution available
+// to every registration path, including multi-step OAuth callbacks.
+func DistributionVisitorContextMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if token, err := c.Cookie(distributionVisitorCookie); err == nil {
+			c.Request = c.Request.WithContext(service.WithDistributionVisitorToken(c.Request.Context(), token))
+		}
+		c.Next()
+	}
+}
 
 func NewDistributionHandler(distributionService *service.DistributionService) *DistributionHandler {
 	return &DistributionHandler{service: distributionService}
@@ -48,6 +65,100 @@ func (h *DistributionHandler) GetAccess(c *gin.Context) {
 		return
 	}
 	response.Success(c, access)
+}
+
+func (h *DistributionHandler) TrackPromotionVisit(c *gin.Context) {
+	var req service.DistributionPromotionVisitInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if _, ok := extractMaxBytesError(err); ok {
+			response.Error(c, http.StatusRequestEntityTooLarge, "request body exceeds 16 KiB limit")
+			return
+		}
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if token, err := c.Cookie(distributionVisitorCookie); err == nil {
+		req.VisitorToken = token
+	}
+	// Match the public rate limiter's Gin trusted-proxy chain. Promotion
+	// fingerprints must never accept the legacy raw forwarded-header override.
+	req.ClientIP = ip.GetTrustedClientIP(c)
+	req.UserAgent = c.GetHeader("User-Agent")
+	result, err := h.service.TrackPromotionVisit(c.Request.Context(), req)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if result.Tracked && result.VisitorToken != "" {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie(distributionVisitorCookie, result.VisitorToken, result.AttributionDays*24*60*60, "/", "", isRequestHTTPS(c), true)
+	} else if !result.Tracked {
+		clearDistributionVisitorCookie(c)
+	}
+	response.Success(c, result)
+}
+
+func (h *DistributionHandler) GetPromotionTrackingStatus(c *gin.Context) {
+	enabled, err := h.service.PromotionTrackingEnabled(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if !enabled {
+		clearDistributionVisitorCookie(c)
+	}
+	response.Success(c, gin.H{"enabled": enabled})
+}
+
+func clearDistributionVisitorCookie(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(distributionVisitorCookie, "", -1, "/", "", isRequestHTTPS(c), true)
+}
+
+func parsePromotionStatsFilter(c *gin.Context) service.DistributionPromotionStatsFilter {
+	page, pageSize := response.ParsePagination(c)
+	filter := service.DistributionPromotionStatsFilter{Page: page, PageSize: pageSize,
+		Source: strings.TrimSpace(c.Query("source")), Device: strings.TrimSpace(c.Query("device")),
+		AttributionType: strings.TrimSpace(c.Query("attribution_type"))}
+	location := time.FixedZone("Asia/Hong_Kong", 8*60*60)
+	if value, err := time.ParseInLocation("2006-01-02", c.Query("date_from"), location); err == nil {
+		filter.From = value
+	} else if c.Query("date_from") != "" {
+		filter.From, filter.To = time.Unix(1, 0), time.Unix(1, 0)
+	}
+	if value, err := time.ParseInLocation("2006-01-02", c.Query("date_to"), location); err == nil {
+		filter.To = value.Add(24 * time.Hour)
+	} else if c.Query("date_to") != "" {
+		filter.From, filter.To = time.Unix(1, 0), time.Unix(1, 0)
+	}
+	return filter
+}
+
+func (h *DistributionHandler) GetPromotionAnalytics(c *gin.Context) {
+	uid, ok := distributionAgentUserID(c, h.service)
+	if !ok {
+		return
+	}
+	value, err := h.service.GetPromotionAnalytics(c.Request.Context(), uid, parsePromotionStatsFilter(c), false)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, value)
+}
+
+func (h *DistributionHandler) ListPromotionVisits(c *gin.Context) {
+	uid, ok := distributionAgentUserID(c, h.service)
+	if !ok {
+		return
+	}
+	filter := parsePromotionStatsFilter(c)
+	items, total, err := h.service.ListPromotionVisits(c.Request.Context(), uid, filter, false)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, items, total, filter.Page, filter.PageSize)
 }
 func (h *DistributionHandler) GetPayoutAccount(c *gin.Context) {
 	uid, ok := distributionAgentUserID(c, h.service)

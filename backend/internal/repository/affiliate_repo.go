@@ -79,6 +79,9 @@ func (r *affiliateRepository) GetAffiliateByCode(ctx context.Context, code strin
 func (r *affiliateRepository) BindInviter(ctx context.Context, userID, inviterID int64) (bool, error) {
 	var bound bool
 	err := r.withTx(ctx, func(txCtx context.Context, txClient *dbent.Client) error {
+		if _, err := txClient.ExecContext(txCtx, `SELECT pg_advisory_xact_lock(hashtextextended('promotion-ownership:' || $1::text,0))`, userID); err != nil {
+			return fmt.Errorf("lock promotion ownership: %w", err)
+		}
 		var isAgent bool
 		if err := scanSingleRow(
 			txCtx,
@@ -90,6 +93,15 @@ func (r *affiliateRepository) BindInviter(ctx context.Context, userID, inviterID
 			return fmt.Errorf("check distribution agent conflict: %w", err)
 		}
 		if isAgent {
+			return service.ErrDistributionCodeConflict
+		}
+		var isDistributionCustomer bool
+		if err := scanSingleRow(txCtx, txClient,
+			`SELECT EXISTS(SELECT 1 FROM distribution_customer_bindings WHERE user_id=$1)`,
+			[]any{userID}, &isDistributionCustomer); err != nil {
+			return fmt.Errorf("check distribution customer conflict: %w", err)
+		}
+		if isDistributionCustomer {
 			return service.ErrDistributionCodeConflict
 		}
 		if _, err := ensureUserAffiliateWithClient(txCtx, txClient, userID); err != nil {
@@ -104,6 +116,10 @@ func (r *affiliateRepository) BindInviter(ctx context.Context, userID, inviterID
 			inviterID, userID,
 		)
 		if err != nil {
+			var pqErr *pq.Error
+			if errors.As(err, &pqErr) && pqErr.Code == "23514" {
+				return service.ErrDistributionCodeConflict
+			}
 			return fmt.Errorf("bind inviter: %w", err)
 		}
 		affected, _ := res.RowsAffected()

@@ -25,8 +25,8 @@
             <button
               v-if="showCloseButton"
               @click="emit('close')"
-              class="-mr-1 inline-flex h-10 w-10 items-center justify-center rounded-control text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
-              aria-label="Close modal"
+              class="-mr-1 inline-flex h-11 w-11 items-center justify-center rounded-control text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
+              aria-label="关闭弹窗"
             >
               <Icon name="x" size="md" />
             </button>

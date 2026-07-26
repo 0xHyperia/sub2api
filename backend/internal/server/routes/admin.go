@@ -137,6 +137,7 @@ func registerDistributionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		distribution.PUT("/agents/:agent_id/status", h.Admin.Distribution.UpdateAgentStatus)
 		distribution.PUT("/agents/:agent_id/rate", h.Admin.Distribution.UpdateAgentRate)
 		distribution.PUT("/agents/:agent_id/recruitment-permission", h.Admin.Distribution.UpdateAgentRecruitmentPermission)
+		distribution.PUT("/agents/:agent_id/promotion-stats-permission", h.Admin.Distribution.UpdateAgentPromotionStatsPermission)
 		distribution.GET("/agents/:agent_id/events", h.Admin.Distribution.ListAgentEvents)
 		distribution.GET("/withdrawals/evidence-capabilities", h.Admin.Distribution.GetWithdrawalEvidenceCapabilities)
 		distribution.GET("/withdrawals/export", h.Admin.Distribution.ExportWithdrawals)
@@ -155,6 +156,8 @@ func registerDistributionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		distribution.GET("/customers/:user_id/events", h.Admin.Distribution.ListBindingEvents)
 		distribution.GET("/commissions/export", h.Admin.Distribution.ExportCommissions)
 		distribution.GET("/commissions", h.Admin.Distribution.ListCommissions)
+		distribution.GET("/promotion/analytics", h.Admin.Distribution.GetPromotionAnalytics)
+		distribution.GET("/promotion/visits", h.Admin.Distribution.ListPromotionVisits)
 	}
 }
 

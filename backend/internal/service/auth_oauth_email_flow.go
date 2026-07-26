@@ -272,6 +272,13 @@ func (s *AuthService) FinalizeOAuthEmailAccountWithDistribution(ctx context.Cont
 	if s == nil || user == nil || user.ID <= 0 {
 		return ErrServiceUnavailable
 	}
+	if s.distributionService != nil {
+		preparedCtx, resolvedCode, err := s.distributionService.PrepareRegistrationAttribution(ctx, distributionCode, affiliateCode)
+		if err != nil {
+			return err
+		}
+		ctx, distributionCode = preparedCtx, resolvedCode
+	}
 	if strings.TrimSpace(affiliateCode) != "" && strings.TrimSpace(distributionCode) != "" {
 		return ErrDistributionCodeConflict
 	}
@@ -300,8 +307,7 @@ func (s *AuthService) FinalizeOAuthEmailAccountWithDistribution(ctx context.Cont
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-	s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode)
-	return nil
+	return s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode)
 }
 
 // RollbackOAuthEmailAccountCreation removes a partially-created local account

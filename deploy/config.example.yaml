@@ -967,6 +967,18 @@ jwt:
   # - =0: 回退使用 expire_hour
   access_token_expire_minutes: 0
 
+# Required before enabling promotion tracking in production. Each secret must
+# contain at least 32 bytes. The first secret writes new hashes; keep previous
+# secrets until their attribution windows expire. An empty list disables
+# tracking; JWT keys are never reused for promotion identifiers.
+distribution_tracking:
+  hash_secrets: []
+  # Privacy scrubbing always runs. Only irreversible archive/deletion is
+  # opt-in; verify a restorable backup and archive metrics before enabling it.
+  cleanup_enabled: false
+  cleanup_interval_minutes: 10
+  cleanup_batch_size: 5000
+
 # ZeroBox/App OAuth tokens use a separate signing trust domain. If omitted,
 # SUB2API generates and persists a random secret in the database on first boot.
 app_auth:

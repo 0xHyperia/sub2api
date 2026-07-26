@@ -1,5 +1,34 @@
 \set ON_ERROR_STOP on
 
+\if :{?ALLOW_DISTRIBUTION_DEMO_SEED}
+\else
+\echo 'Refusing to seed: pass -v ALLOW_DISTRIBUTION_DEMO_SEED=I_UNDERSTAND_NON_PRODUCTION_ONLY'
+\quit 3
+\endif
+
+\if :{?DISTRIBUTION_DEMO_DATABASE}
+\else
+\echo 'Refusing to seed: pass -v DISTRIBUTION_DEMO_DATABASE=<exact development database name>'
+\quit 3
+\endif
+
+SELECT :'ALLOW_DISTRIBUTION_DEMO_SEED' = 'I_UNDERSTAND_NON_PRODUCTION_ONLY' AS demo_seed_confirmed,
+       current_database() = :'DISTRIBUTION_DEMO_DATABASE'
+         AND current_database() ~* '(^|_)(dev|development|test|local|demo)(_|$)' AS demo_database_allowed
+\gset
+
+\if :demo_seed_confirmed
+\else
+\echo 'Refusing to seed: confirmation token is invalid'
+\quit 3
+\endif
+
+\if :demo_database_allowed
+\else
+\echo 'Refusing to seed: current database is not the exact allowlisted development/test/local/demo database'
+\quit 3
+\endif
+
 BEGIN;
 
 DO $$
@@ -51,15 +80,13 @@ INSERT INTO distribution_demo_users (email, username, kind) VALUES
     ('demo.distribution.customer.08@sub2api.local', '演示客户-南星', 'customer');
 
 INSERT INTO users (email, password_hash, username, role, status, notes)
-SELECT d.email, admin.password_hash, d.username, 'user', 'active', '[distribution-demo]'
+SELECT d.email, '!distribution-demo-disabled!', d.username, 'user', 'disabled', '[distribution-demo]'
 FROM distribution_demo_users d
-CROSS JOIN LATERAL (
-    SELECT password_hash FROM users WHERE email = 'admin@sub2api.local' AND deleted_at IS NULL LIMIT 1
-) admin
 WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.email = d.email AND u.deleted_at IS NULL);
 
 UPDATE users u
-SET username = d.username, status = 'active', notes = '[distribution-demo]', updated_at = NOW()
+SET password_hash = '!distribution-demo-disabled!', username = d.username,
+    status = 'disabled', notes = '[distribution-demo]', updated_at = NOW()
 FROM distribution_demo_users d
 WHERE u.email = d.email AND u.deleted_at IS NULL;
 

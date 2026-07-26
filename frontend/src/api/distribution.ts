@@ -11,6 +11,7 @@ export interface DistributionAgent {
   effective_rate_bps: number;
   max_child_rate_bps: number;
   can_recruit_subagents: boolean;
+  can_view_promotion_stats: boolean;
   status: "active" | "suspended" | "revoked";
   available_cny: string;
   frozen_cny: string;
@@ -33,6 +34,8 @@ export interface DistributionAgent {
 
 export interface DistributionOverview {
   agent: DistributionAgent;
+  distribution_enabled: boolean;
+  promotion_tracking_enabled: boolean;
   customer_count: number;
   team_count: number;
   paying_customer_count: number;
@@ -48,6 +51,64 @@ export interface DistributionAccess {
   depth?: 1 | 2;
   status?: DistributionAgent["status"];
   can_recruit_subagents: boolean;
+  can_view_promotion_stats: boolean;
+}
+
+export interface DistributionPromotionSummary {
+  total_visits: number;
+  unique_visitors: number;
+  bot_visits: number;
+  converted_visitors: number;
+  tracked_registrations: number;
+  registrations: number;
+  direct_registrations: number;
+  persisted_registrations: number;
+  untracked_direct: number;
+  conversion_rate: number;
+}
+export interface DistributionPromotionAnalytics {
+  summary: DistributionPromotionSummary;
+  daily: DistributionPromotionDailyStat[];
+  sources: DistributionPromotionSourceStat[];
+  meta?: DistributionPromotionAnalyticsMeta;
+}
+export interface DistributionPromotionAnalyticsMeta {
+  cohort: 'visit';
+  tracking_enabled: boolean;
+  attribution_enabled: boolean;
+  attribution_days: number;
+  attribution_model: 'first_touch' | 'last_touch';
+  bot_filter_enabled: boolean;
+  detail_retention_days: number;
+  raw_retention_days: number;
+  timezone: string;
+  generated_at?: string;
+}
+export interface DistributionPromotionDailyStat {
+  date: string;
+  visits: number;
+  visitors: number;
+  conversions: number;
+  registrations: number;
+}
+export interface DistributionPromotionSourceStat {
+  source: string;
+  visits: number;
+  conversions: number;
+  registrations: number;
+}
+export interface DistributionPromotionVisit {
+  id: number;
+  agent_id: number;
+  promotion_code: string;
+  landing_path: string;
+  source: string;
+  device_type: string;
+  is_bot: boolean;
+  visited_at: string;
+  registered_at?: string;
+  attribution_type?: 'direct' | 'persisted' | 'unregistered';
+  agent_email?: string;
 }
 
 export interface DistributionPayoutAccount {
@@ -142,6 +203,32 @@ export async function getDistributionAccess() {
   return data;
 }
 
+export async function trackPromotionVisit(payload: {
+  promotion_code: string;
+  landing_path?: string;
+  referrer?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+}) {
+  const { data } = await apiClient.post<DistributionPromotionTrackResult>(
+    '/distribution/track', payload,
+  );
+  return data;
+}
+
+export async function getPromotionTrackingStatus(): Promise<{ enabled: boolean }> {
+  const { data } = await apiClient.get<{ enabled: boolean }>(
+    '/distribution/tracking-status',
+  );
+  return data;
+}
+
+export interface DistributionPromotionTrackResult {
+  tracked: boolean;
+  attribution_days: number;
+}
+
 export async function getDistributionOverview() {
   const { data } = await apiClient.get<DistributionOverview>(
     "/distribution/overview",
@@ -229,5 +316,23 @@ export async function listCustomers(params: DistributionListParams = {}) {
     "/distribution/customers",
     { params },
   );
+  return data;
+}
+
+export interface DistributionPromotionListParams extends DistributionListParams {
+  date_from?: string;
+  date_to?: string;
+  source?: string;
+  device?: string;
+  attribution_type?: string;
+}
+
+export async function getPromotionAnalytics(params: DistributionPromotionListParams = {}) {
+  const { data } = await apiClient.get<DistributionPromotionAnalytics>('/distribution/promotion/analytics', { params });
+  return data;
+}
+
+export async function listPromotionVisits(params: DistributionPromotionListParams = {}) {
+  const { data } = await apiClient.get<PaginatedResponse<DistributionPromotionVisit>>('/distribution/promotion/visits', { params });
   return data;
 }

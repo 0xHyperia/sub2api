@@ -58,4 +58,28 @@ describe('RemoteEntityCombobox', () => {
       expect.objectContaining({ id: 2, email: 'eligible@example.com' }),
     ])
   })
+
+  it('announces results and clears active descendant when dismissed', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(RemoteEntityCombobox, {
+      props: {
+        modelValue: null,
+        label: '选择代理',
+        placeholder: '输入代理',
+        inputId: 'promotion-agent',
+        search: vi.fn().mockResolvedValue([{ id: 1, email: 'agent@example.com' }]),
+      },
+      global: { stubs: { Icon: true } },
+    })
+    const input = wrapper.get('input[role="combobox"]')
+    await input.setValue('agent')
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+
+    expect(wrapper.get('[role="status"]').text()).toContain('找到 1 个结果')
+    expect(input.attributes('aria-activedescendant')).toContain('promotion-agent-option-0')
+    await input.trigger('keydown', { key: 'Escape' })
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+    expect(input.attributes('aria-expanded')).toBe('false')
+  })
 })

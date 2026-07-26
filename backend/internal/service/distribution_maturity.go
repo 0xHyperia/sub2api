@@ -124,8 +124,14 @@ func (r *distributionMaturityRuntime) runOnce() {
 }
 
 func (s *DistributionService) Stop() {
-	if s != nil && s.maturity != nil {
+	if s == nil {
+		return
+	}
+	if s.maturity != nil {
 		s.maturity.Stop()
+	}
+	if s.promotionCleanup != nil {
+		s.promotionCleanup.Stop()
 	}
 }
 

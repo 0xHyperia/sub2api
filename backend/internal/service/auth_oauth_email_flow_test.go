@@ -398,6 +398,30 @@ func TestRollbackOAuthEmailAccountCreationPropagatesDeleteError(t *testing.T) {
 	require.Contains(t, err.Error(), "delete created oauth user")
 }
 
+func TestFinalizeOAuthEmailAccountWithDistributionReturnsNonDurableClaimFailure(t *testing.T) {
+	queueErr := errors.New("claim queue unavailable")
+	authService := newOAuthEmailFlowAuthService(
+		&userRepoStub{},
+		&redeemCodeRepoStub{},
+		&refreshTokenCacheStub{},
+		map[string]string{SettingKeyRegistrationEnabled: "true"},
+		&emailCacheStub{},
+		nil,
+	)
+	authService.distributionService = NewDistributionService(&durableDistributionBindingRepoStub{queueErr: queueErr})
+
+	err := authService.FinalizeOAuthEmailAccountWithDistribution(
+		context.Background(),
+		&User{ID: 42, Email: "pending-oauth@example.com", Status: StatusActive},
+		"",
+		"oidc",
+		"",
+		"AGENT42",
+	)
+
+	require.ErrorIs(t, err, queueErr)
+}
+
 func TestFinalizeOAuthEmailAccount_SnapshotsPlatformQuotaDefaults(t *testing.T) {
 	userRepo := &userRepoStub{nextID: 99}
 	quotaRepo := &userPlatformQuotaRepoStub{}

@@ -58,6 +58,14 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	if s == nil || s.userRepo == nil || s.entClient == nil {
 		return nil, nil, ErrServiceUnavailable
 	}
+	distributionCode := ""
+	if s.distributionService != nil {
+		preparedCtx, resolvedCode, err := s.distributionService.PrepareRegistrationAttribution(ctx, "", affiliateCode)
+		if err != nil {
+			return nil, nil, err
+		}
+		ctx, distributionCode = preparedCtx, resolvedCode
+	}
 
 	providerType := normalizeOAuthSignupSource(input.ProviderType)
 	if providerType != "github" && providerType != "google" && providerType != "oidc" {
@@ -103,7 +111,7 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 		user, err = s.userRepo.GetByEmail(ctx, email)
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
-				user, err = s.createEmailOAuthUser(ctx, email, input.Username, providerType, invitationCode, affiliateCode)
+				user, err = s.createEmailOAuthUser(ctx, email, input.Username, providerType, invitationCode, affiliateCode, distributionCode)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -154,7 +162,7 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	return tokenPair, user, nil
 }
 
-func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username, providerType, invitationCode, affiliateCode string) (*User, error) {
+func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username, providerType, invitationCode, affiliateCode, distributionCode string) (*User, error) {
 	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 		return nil, ErrRegDisabled
 	}
@@ -204,7 +212,12 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-	s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
+	if bindErr := s.bindOAuthPromotion(ctx, user.ID, affiliateCode, distributionCode); bindErr != nil {
+		if rollbackErr := s.RollbackOAuthEmailAccountCreation(ctx, user.ID, invitationCode); rollbackErr != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] Failed to compensate oauth user %d after distribution claim failure: %v", user.ID, rollbackErr)
+		}
+		return nil, bindErr
+	}
 	if invitationRedeemCode != nil {
 		if err := s.useOAuthRegistrationInvitation(ctx, invitationRedeemCode.ID, user.ID); err != nil {
 			_ = s.RollbackOAuthEmailAccountCreation(ctx, user.ID, invitationCode)

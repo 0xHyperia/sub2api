@@ -446,6 +446,10 @@
               </span>
             </dd>
           </div>
+          <div>
+            <dt class="text-foreground-subtle">推广统计</dt>
+            <dd class="mt-1"><span class="badge" :class="managedAgent.can_view_promotion_stats ? 'badge-success' : 'badge-gray'">{{ managedAgent.can_view_promotion_stats ? '可查看' : '无权限' }}</span></dd>
+          </div>
         </dl>
         <section>
           <div class="flex items-center justify-between gap-3">
@@ -480,6 +484,7 @@
           <p v-else class="mt-3 text-sm text-foreground-subtle">暂无变更记录</p>
         </section>
         <div class="flex flex-wrap justify-end gap-2">
+          <button type="button" class="btn btn-secondary" @click="openPromotionStatsPermissionDialog"><Icon name="chart" size="sm" />{{ managedAgent.can_view_promotion_stats ? '关闭统计权限' : '开通统计权限' }}</button>
           <button
             v-if="managedAgent.depth === 1"
             type="button"
@@ -527,6 +532,11 @@
           </button>
         </div>
       </div>
+    </BaseDialog>
+
+    <BaseDialog :show="promotionStatsPermissionDialog" :title="managedAgent?.can_view_promotion_stats ? '关闭推广统计权限' : '开通推广统计权限'" width="narrow" @close="promotionStatsPermissionDialog = false">
+      <div class="space-y-4"><p class="text-sm text-foreground-subtle">{{ managedAgent?.can_view_promotion_stats ? '关闭后代理仍可使用推广链接，但不能查看访问和转化数据。' : '开通后代理可以查看自己推广链接的匿名访问和注册转化数据。' }}</p><div><label for="distribution-promotion-stats-reason" class="input-label">操作原因</label><textarea id="distribution-promotion-stats-reason" v-model="promotionStatsPermissionReason" class="input min-h-24 resize-y" maxlength="200" placeholder="记录开通或关闭依据"></textarea></div></div>
+      <template #footer><div class="flex justify-end gap-2"><button class="btn btn-secondary" @click="promotionStatsPermissionDialog = false">取消</button><button class="btn btn-primary" :disabled="promotionStatsPermissionSaving || !promotionStatsPermissionReason.trim()" @click="savePromotionStatsPermission">{{ promotionStatsPermissionSaving ? '保存中...' : '确认' }}</button></div></template>
     </BaseDialog>
 
     <BaseDialog
@@ -732,6 +742,7 @@ import {
   lookupAgentCandidates,
   updateAgentRate,
   updateAgentRecruitmentPermission,
+  updateAgentPromotionStatsPermission,
   updateAgentStatus,
   type DistributionAgentEvent,
   type DistributionSettings,
@@ -777,6 +788,9 @@ const rateSaving = ref(false);
 const recruitmentPermissionDialog = ref(false);
 const recruitmentPermissionReason = ref("");
 const recruitmentPermissionSaving = ref(false);
+const promotionStatsPermissionDialog = ref(false);
+const promotionStatsPermissionReason = ref("");
+const promotionStatsPermissionSaving = ref(false);
 
 const columns: Column[] = [
   { key: "email", label: "代理用户", sortable: true },
@@ -1045,9 +1059,9 @@ function closeManageDialog() {
 function agentEventTitle(event: DistributionAgentEvent) {
   if (event.event_type === "created") return "创建代理";
   if (event.event_type === "permission_changed")
-    return event.new_status === "true"
-      ? "授予下级招募权限"
-      : "撤销下级招募权限";
+    return event.new_status?.startsWith("promotion_stats:")
+      ? (event.new_status.endsWith("true") ? "开通推广统计权限" : "关闭推广统计权限")
+      : (event.new_status === "true" ? "授予下级招募权限" : "撤销下级招募权限");
   if (event.event_type === "status_changed")
     return `${statusText(event.old_status || "")} → ${statusText(event.new_status || "")}`;
   const before =
@@ -1083,6 +1097,28 @@ async function saveRecruitmentPermission() {
     app.showError(extractApiErrorMessage(error, "更新招募权限失败"));
   } finally {
     recruitmentPermissionSaving.value = false;
+  }
+}
+
+function openPromotionStatsPermissionDialog() {
+  promotionStatsPermissionReason.value = "";
+  promotionStatsPermissionDialog.value = true;
+}
+
+async function savePromotionStatsPermission() {
+  if (!managedAgent.value || !promotionStatsPermissionReason.value.trim()) return;
+  promotionStatsPermissionSaving.value = true;
+  try {
+    const enabled = !managedAgent.value.can_view_promotion_stats;
+    await updateAgentPromotionStatsPermission(managedAgent.value.id, { enabled, reason: promotionStatsPermissionReason.value.trim() });
+    app.showSuccess(enabled ? "已开通推广统计权限" : "已关闭推广统计权限");
+    promotionStatsPermissionDialog.value = false;
+    manageDialog.value = false;
+    await load();
+  } catch (error) {
+    app.showError(extractApiErrorMessage(error, "更新推广统计权限失败"));
+  } finally {
+    promotionStatsPermissionSaving.value = false;
   }
 }
 

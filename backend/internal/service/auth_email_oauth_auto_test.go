@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
@@ -47,6 +48,31 @@ func newEmailOAuthAutoAuthService(
 	)
 }
 
+func TestEmailOAuthAuto_RollsBackWhenDistributionClaimIsNotDurable(t *testing.T) {
+	userRepo := &userRepoStub{nextID: 89}
+	queueErr := errors.New("claim queue unavailable")
+	svc := newEmailOAuthAutoAuthService(
+		userRepo,
+		map[string]string{SettingKeyRegistrationEnabled: "true"},
+		nil,
+	)
+	svc.distributionService = NewDistributionService(&durableDistributionBindingRepoStub{queueErr: queueErr})
+
+	user, err := svc.createEmailOAuthUser(
+		context.Background(),
+		"failed-oauth@example.com",
+		"failed-oauth",
+		"github",
+		"",
+		"",
+		"AGENT42",
+	)
+
+	require.Nil(t, user)
+	require.ErrorIs(t, err, queueErr)
+	require.Equal(t, []int64{89}, userRepo.deletedIDs)
+}
+
 func TestEmailOAuthAuto_SnapshotsPlatformQuotaDefaults(t *testing.T) {
 	userRepo := &userRepoStub{nextID: 88}
 	quotaRepo := &userPlatformQuotaRepoStub{}
@@ -67,6 +93,7 @@ func TestEmailOAuthAuto_SnapshotsPlatformQuotaDefaults(t *testing.T) {
 		"github",
 		"", // invitationCode
 		"", // affiliateCode
+		"", // distributionCode
 	)
 	require.NoError(t, err)
 	require.NotNil(t, user)

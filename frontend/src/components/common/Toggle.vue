@@ -56,7 +56,7 @@ function toggle() {
   position: relative;
   display: inline-flex;
   width: 52px;
-  height: 40px;
+  height: 44px;
   flex-shrink: 0;
   padding: 0;
   border: 0;
@@ -68,7 +68,7 @@ function toggle() {
 
 .toggle-control::before {
   position: absolute;
-  inset: 8px 0;
+  inset: 10px 0;
   border: 1px solid var(--ui-border-strong, #c7d3e2);
   border-radius: 999px;
   background: var(--ui-surface-subtle, #f4f7fb);
@@ -83,7 +83,7 @@ function toggle() {
 
 .toggle-thumb {
   position: absolute;
-  top: 10px;
+  top: 12px;
   left: 2px;
   width: 20px;
   height: 20px;

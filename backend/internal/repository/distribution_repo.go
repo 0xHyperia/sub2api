@@ -45,6 +45,9 @@ func (r *distributionRepository) BindCustomerByCode(ctx context.Context, userID 
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
+	if _, err = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('promotion-ownership:' || $1::text,0))`, userID); err != nil {
+		return fmt.Errorf("lock promotion ownership: %w", err)
+	}
 
 	var enabled bool
 	if err = tx.QueryRowContext(ctx, `SELECT enabled FROM distribution_settings WHERE id = 1`).Scan(&enabled); err != nil {
@@ -84,14 +87,91 @@ func (r *distributionRepository) BindCustomerByCode(ctx context.Context, userID 
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
 			return service.ErrDistributionAlreadyBound
 		}
+		if errors.As(err, &pqErr) && pqErr.Code == "23514" {
+			return service.ErrDistributionCodeConflict
+		}
+		if errors.As(err, &pqErr) && pqErr.Code == "40001" {
+			return service.ErrDistributionCodeConflict
+		}
 		return fmt.Errorf("bind distribution customer: %w", err)
+	}
+	attr, ok := service.DistributionRegistrationAttributionFromContext(ctx)
+	if !ok || attr.Code != code {
+		attr = service.DistributionRegistrationAttribution{Code: code, Type: "direct"}
+	}
+	if attr.Type != "persisted" {
+		attr.Type = "direct"
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT INTO distribution_promotion_conversions
+		(user_id,agent_id,promotion_code,visitor_token_hash,first_visit_id,last_visit_id,attribution_type,
+		 attribution_visit_id,attribution_source,attribution_model,attribution_device_type,attribution_is_bot)
+		VALUES($1,$2,$3,NULLIF($4,''),$5,$6,$7,$8,COALESCE(NULLIF($9,''),'直接注册'),COALESCE(NULLIF($10,''),'untracked'),
+		 (SELECT device_type FROM distribution_promotion_visits WHERE id=$8 AND agent_id=$2),
+		 (SELECT is_bot FROM distribution_promotion_visits WHERE id=$8 AND agent_id=$2))
+		ON CONFLICT(user_id) DO NOTHING`, userID, agentID, code, attr.VisitorTokenHash, attr.FirstVisitID, attr.LastVisitID,
+		attr.Type, attr.AttributionVisitID, attr.AttributionSource, attr.AttributionModel); err != nil {
+		return fmt.Errorf("record distribution conversion: %w", err)
+	}
+	if attr.VisitorTokenHash != "" {
+		if _, err = tx.ExecContext(ctx, `UPDATE distribution_promotion_attributions p SET converted_user_id=$2,updated_at=NOW()
+			FROM distribution_agents a WHERE p.agent_id=a.id AND p.visitor_token_hash=$1
+			AND p.converted_user_id IS NULL AND p.promotion_code=$3 AND a.id=$4`, attr.VisitorTokenHash, userID, code, agentID); err != nil {
+			return fmt.Errorf("complete distribution attribution: %w", err)
+		}
 	}
 	return tx.Commit()
 }
 
+func (r *distributionRepository) QueueDistributionBindingClaim(ctx context.Context, userID int64, code, signupSource string) error {
+	_, err := r.db.ExecContext(ctx, `INSERT INTO distribution_binding_claims
+		(user_id,promotion_code,signup_source,status,attempts,last_error,updated_at,completed_at)
+		VALUES($1,$2,$3,'pending',0,NULL,NOW(),NULL)
+		ON CONFLICT(user_id) DO UPDATE SET
+			promotion_code=EXCLUDED.promotion_code,
+			signup_source=EXCLUDED.signup_source,
+			status=CASE WHEN distribution_binding_claims.status='completed' THEN 'completed' ELSE 'pending' END,
+			last_error=CASE WHEN distribution_binding_claims.status='completed' THEN distribution_binding_claims.last_error ELSE NULL END,
+			updated_at=NOW()
+		WHERE distribution_binding_claims.status<>'completed'`, userID, code, signupSource)
+	if err != nil {
+		return fmt.Errorf("queue distribution binding claim: %w", err)
+	}
+	return nil
+}
+
+func (r *distributionRepository) PendingDistributionBindingClaim(ctx context.Context, userID int64) (string, bool, error) {
+	var code string
+	err := r.db.QueryRowContext(ctx, `SELECT promotion_code FROM distribution_binding_claims
+		WHERE user_id=$1 AND status='pending'`, userID).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, fmt.Errorf("get pending distribution binding claim: %w", err)
+	}
+	return code, true, nil
+}
+
+func (r *distributionRepository) FinishDistributionBindingClaim(ctx context.Context, userID int64, bindErr error) error {
+	status, lastError := "completed", ""
+	if bindErr != nil {
+		status, lastError = "pending", bindErr.Error()
+		if errors.Is(bindErr, service.ErrDistributionCodeConflict) || errors.Is(bindErr, service.ErrDistributionAlreadyBound) || errors.Is(bindErr, service.ErrDistributionCodeInvalid) {
+			status = "conflict"
+		}
+	}
+	_, err := r.db.ExecContext(ctx, `UPDATE distribution_binding_claims SET status=$2,attempts=attempts+1,
+		last_error=NULLIF($3,''),updated_at=NOW(),completed_at=CASE WHEN $2='completed' THEN NOW() ELSE NULL END
+		WHERE user_id=$1`, userID, status, lastError)
+	if err != nil {
+		return fmt.Errorf("finish distribution binding claim: %w", err)
+	}
+	return nil
+}
+
 const distributionAgentSelect = `
 	SELECT a.id, a.user_id, a.level_id, l.depth, a.parent_agent_id, a.promotion_code,
-	       COALESCE(a.rate_override_bps, l.default_rate_bps), l.max_child_rate_bps, a.can_recruit_subagents, a.status,
+	       COALESCE(a.rate_override_bps, l.default_rate_bps), l.max_child_rate_bps, a.can_recruit_subagents, a.can_view_promotion_stats, a.status,
 	       COALESCE(w.available_cny, 0), COALESCE(w.frozen_cny, 0), COALESCE(w.reserved_cny, 0),
 	       COALESCE(w.debt_cny, 0), COALESCE(w.total_earned_cny, 0), COALESCE(w.total_withdrawn_cny, 0)
 	FROM distribution_agents a
@@ -101,7 +181,7 @@ const distributionAgentSelect = `
 func scanDistributionAgent(row *sql.Row) (*service.DistributionAgent, error) {
 	var a service.DistributionAgent
 	err := row.Scan(&a.ID, &a.UserID, &a.LevelID, &a.Depth, &a.ParentAgentID, &a.PromotionCode,
-		&a.EffectiveRateBPS, &a.MaxChildRateBPS, &a.CanRecruitSubagents, &a.Status, &a.AvailableCNY, &a.FrozenCNY,
+		&a.EffectiveRateBPS, &a.MaxChildRateBPS, &a.CanRecruitSubagents, &a.CanViewPromotionStats, &a.Status, &a.AvailableCNY, &a.FrozenCNY,
 		&a.ReservedCNY, &a.DebtCNY, &a.TotalEarnedCNY, &a.TotalWithdrawnCNY)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, service.ErrDistributionNotAgent
@@ -130,10 +210,14 @@ func (r *distributionRepository) AdminGetSettings(ctx context.Context) (*service
 		(SELECT default_rate_bps FROM distribution_agent_levels WHERE depth=2),
 		s.freeze_hours,s.withdrawal_enabled,s.withdrawal_dual_approval_enabled,s.minimum_withdrawal_cny,s.maximum_withdrawal_cny,
 		s.withdrawal_fee_rate_bps,s.withdrawal_fee_fixed_cny,s.daily_withdrawal_limit_cny,s.monthly_withdrawal_limit_cny,s.cny_per_platform_usd,
-		COALESCE((SELECT rate_to_cny FROM distribution_fx_rates WHERE currency='USD'), 7)
+		COALESCE((SELECT rate_to_cny FROM distribution_fx_rates WHERE currency='USD'), 7),
+		s.promotion_tracking_enabled,s.promotion_attribution_enabled,s.promotion_attribution_days,s.promotion_attribution_model,
+		s.promotion_collect_source,s.promotion_collect_device,s.promotion_bot_filter_enabled,s.promotion_detail_retention_days
 		FROM distribution_settings s WHERE s.id=1`).Scan(&s.Enabled, &s.L1DefaultRateBPS, &s.L1MaxChildRateBPS, &s.L2DefaultRateBPS,
 		&s.FreezeHours, &s.WithdrawalEnabled, &s.WithdrawalDualApproval, &s.MinimumWithdrawalCNY, &s.MaximumWithdrawalCNY, &s.WithdrawalFeeRateBPS,
-		&s.WithdrawalFeeFixedCNY, &s.DailyWithdrawalLimitCNY, &s.MonthlyWithdrawalLimitCNY, &s.CNYPerPlatformUSD, &s.USDToCNY)
+		&s.WithdrawalFeeFixedCNY, &s.DailyWithdrawalLimitCNY, &s.MonthlyWithdrawalLimitCNY, &s.CNYPerPlatformUSD, &s.USDToCNY,
+		&s.PromotionTrackingEnabled, &s.PromotionAttributionEnabled, &s.PromotionAttributionDays, &s.PromotionAttributionModel,
+		&s.PromotionCollectSource, &s.PromotionCollectDevice, &s.PromotionBotFilterEnabled, &s.PromotionDetailRetentionDays)
 	return &s, err
 }
 
@@ -184,9 +268,14 @@ func (r *distributionRepository) AdminUpdateSettings(ctx context.Context, s serv
 	defer func() { _ = tx.Rollback() }()
 	if _, err = tx.ExecContext(ctx, `UPDATE distribution_settings SET enabled=$1,freeze_hours=$2,withdrawal_enabled=$3,
 		minimum_withdrawal_cny=$4,maximum_withdrawal_cny=$5,withdrawal_fee_rate_bps=$6,withdrawal_fee_fixed_cny=$7,
-		daily_withdrawal_limit_cny=$8,monthly_withdrawal_limit_cny=$9,cny_per_platform_usd=$10,withdrawal_dual_approval_enabled=$11,updated_by=$12,updated_at=NOW() WHERE id=1`,
+		daily_withdrawal_limit_cny=$8,monthly_withdrawal_limit_cny=$9,cny_per_platform_usd=$10,withdrawal_dual_approval_enabled=$11,
+		promotion_tracking_enabled=$12,promotion_attribution_enabled=$13,promotion_attribution_days=$14,promotion_attribution_model=$15,
+		promotion_collect_source=$16,promotion_collect_device=$17,promotion_bot_filter_enabled=$18,promotion_detail_retention_days=$19,
+		updated_by=$20,updated_at=NOW() WHERE id=1`,
 		s.Enabled, s.FreezeHours, s.WithdrawalEnabled, s.MinimumWithdrawalCNY, s.MaximumWithdrawalCNY, s.WithdrawalFeeRateBPS, s.WithdrawalFeeFixedCNY,
-		s.DailyWithdrawalLimitCNY, s.MonthlyWithdrawalLimitCNY, s.CNYPerPlatformUSD, s.WithdrawalDualApproval, adminID); err != nil {
+		s.DailyWithdrawalLimitCNY, s.MonthlyWithdrawalLimitCNY, s.CNYPerPlatformUSD, s.WithdrawalDualApproval,
+		s.PromotionTrackingEnabled, s.PromotionAttributionEnabled, s.PromotionAttributionDays, s.PromotionAttributionModel,
+		s.PromotionCollectSource, s.PromotionCollectDevice, s.PromotionBotFilterEnabled, s.PromotionDetailRetentionDays, adminID); err != nil {
 		return err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE distribution_agent_levels SET default_rate_bps=CASE depth WHEN 1 THEN $1::integer ELSE $3::integer END,max_child_rate_bps=CASE depth WHEN 1 THEN $2::integer ELSE 0 END,updated_at=NOW() WHERE depth IN (1,2)`, s.L1DefaultRateBPS, s.L1MaxChildRateBPS, s.L2DefaultRateBPS); err != nil {
@@ -433,6 +522,33 @@ func (r *distributionRepository) AdminUpdateAgentRecruitmentPermission(ctx conte
 	return tx.Commit()
 }
 
+func (r *distributionRepository) AdminUpdateAgentPromotionStatsPermission(ctx context.Context, agentID, adminID int64, enabled bool, reason string) error {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	var current bool
+	err = tx.QueryRowContext(ctx, `SELECT can_view_promotion_stats FROM distribution_agents WHERE id=$1 FOR UPDATE`, agentID).Scan(&current)
+	if errors.Is(err, sql.ErrNoRows) {
+		return service.ErrDistributionNotAgent
+	}
+	if err != nil {
+		return err
+	}
+	if current == enabled {
+		return infraBadRequest("PROMOTION_STATS_PERMISSION_UNCHANGED", "agent already has requested promotion statistics permission")
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE distribution_agents SET can_view_promotion_stats=$2,updated_at=NOW() WHERE id=$1`, agentID, enabled); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT INTO distribution_agent_events(agent_id,event_type,old_status,new_status,reason,actor_user_id)
+		VALUES($1,'permission_changed',$2,$3,$4,$5)`, agentID, fmt.Sprintf("promotion_stats:%t", current), fmt.Sprintf("promotion_stats:%t", enabled), reason, adminID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 func (r *distributionRepository) AdminUpdateLevel(ctx context.Context, depth, defaultRateBPS, maxChildRateBPS int, active bool) error {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
@@ -528,7 +644,7 @@ func (r *distributionRepository) AdminListAgents(ctx context.Context, filter ser
 	}
 
 	const selectColumns = `SELECT a.id,a.user_id,a.level_id,l.depth,a.parent_agent_id,a.promotion_code,a.rate_override_bps,
-		COALESCE(a.rate_override_bps,l.default_rate_bps),l.max_child_rate_bps,a.can_recruit_subagents,a.status,
+		COALESCE(a.rate_override_bps,l.default_rate_bps),l.max_child_rate_bps,a.can_recruit_subagents,a.can_view_promotion_stats,a.status,
 		COALESCE(w.available_cny,0),COALESCE(w.frozen_cny,0),COALESCE(w.reserved_cny,0),
 		COALESCE(w.debt_cny,0),COALESCE(w.total_earned_cny,0),COALESCE(w.total_withdrawn_cny,0),
 		COALESCE(u.email,''),COALESCE(u.username,''),u.status,
@@ -557,7 +673,7 @@ func (r *distributionRepository) AdminListAgents(ctx context.Context, filter ser
 	for rows.Next() {
 		var a service.DistributionAgent
 		if err = rows.Scan(&a.ID, &a.UserID, &a.LevelID, &a.Depth, &a.ParentAgentID, &a.PromotionCode, &a.RateOverrideBPS,
-			&a.EffectiveRateBPS, &a.MaxChildRateBPS, &a.CanRecruitSubagents, &a.Status, &a.AvailableCNY, &a.FrozenCNY,
+			&a.EffectiveRateBPS, &a.MaxChildRateBPS, &a.CanRecruitSubagents, &a.CanViewPromotionStats, &a.Status, &a.AvailableCNY, &a.FrozenCNY,
 			&a.ReservedCNY, &a.DebtCNY, &a.TotalEarnedCNY, &a.TotalWithdrawnCNY,
 			&a.Email, &a.Username, &a.UserStatus, &a.ParentUserID, &a.ParentEmail, &a.ParentUsername,
 			&a.CustomerCount, &a.TeamCount, &a.PayingCustomerCount, &a.CustomerPaidCNY,
@@ -710,16 +826,16 @@ func (r *distributionRepository) LookupEligibleUserByExactEmail(ctx context.Cont
 	return userID, err
 }
 
-func (r *distributionRepository) AdminLookupAgents(ctx context.Context, query string) ([]service.DistributionAgentOption, error) {
+func (r *distributionRepository) AdminLookupAgents(ctx context.Context, query string, includeInactive bool) ([]service.DistributionAgentOption, error) {
 	like := "%" + query + "%"
 	rows, err := r.db.QueryContext(ctx, `SELECT a.id,a.user_id,COALESCE(u.email,''),COALESCE(u.username,''),a.promotion_code,l.depth,a.status
 		FROM distribution_agents a
 		JOIN users u ON u.id=a.user_id
 		JOIN distribution_agent_levels l ON l.id=a.level_id
-		WHERE a.status='active' AND u.deleted_at IS NULL
+		WHERE ($3 OR (a.status='active' AND u.deleted_at IS NULL))
 		  AND (u.email ILIKE $1 OR u.username ILIKE $1 OR a.promotion_code ILIKE $1)
 		ORDER BY CASE WHEN LOWER(u.email)=LOWER($2) THEN 0 ELSE 1 END,u.email
-		LIMIT 20`, like, query)
+		LIMIT 20`, like, query, includeInactive)
 	if err != nil {
 		return nil, err
 	}
@@ -1432,6 +1548,11 @@ func (r *distributionRepository) GetOverview(ctx context.Context, userID int64) 
 	}
 	var overview service.DistributionOverview
 	overview.Agent = a
+	if err = r.db.QueryRowContext(ctx, `SELECT enabled,promotion_tracking_enabled FROM distribution_settings WHERE id=1`).Scan(
+		&overview.DistributionEnabled, &overview.PromotionTrackingEnabled,
+	); err != nil {
+		return nil, err
+	}
 	err = r.db.QueryRowContext(ctx, `
 		SELECT (SELECT COUNT(*) FROM distribution_customer_bindings WHERE agent_id = $1),
 		       (SELECT COUNT(*) FROM distribution_agents WHERE parent_agent_id = $1 AND status <> 'revoked'),
@@ -1507,7 +1628,7 @@ func (r *distributionRepository) ListTeam(ctx context.Context, userID int64, fil
 	if err != nil {
 		return nil, 0, err
 	}
-	rows, err := r.db.QueryContext(ctx, `SELECT a.id,a.user_id,a.level_id,l.depth,a.parent_agent_id,a.promotion_code,COALESCE(a.rate_override_bps,l.default_rate_bps),l.max_child_rate_bps,a.can_recruit_subagents,a.status,COALESCE(w.available_cny,0),COALESCE(w.frozen_cny,0),COALESCE(w.reserved_cny,0),COALESCE(w.debt_cny,0),COALESCE(w.total_earned_cny,0),COALESCE(w.total_withdrawn_cny,0),COALESCE(u.email,''),COALESCE(u.username,''),u.status,(SELECT COUNT(*) FROM distribution_customer_bindings b WHERE b.agent_id=a.id),a.created_at`+from+` ORDER BY a.created_at DESC LIMIT $5 OFFSET $6`, userID, filter.Status, filter.Search, like, filter.PageSize, (filter.Page-1)*filter.PageSize)
+	rows, err := r.db.QueryContext(ctx, `SELECT a.id,a.user_id,a.level_id,l.depth,a.parent_agent_id,a.promotion_code,COALESCE(a.rate_override_bps,l.default_rate_bps),l.max_child_rate_bps,a.can_recruit_subagents,a.can_view_promotion_stats,a.status,COALESCE(w.available_cny,0),COALESCE(w.frozen_cny,0),COALESCE(w.reserved_cny,0),COALESCE(w.debt_cny,0),COALESCE(w.total_earned_cny,0),COALESCE(w.total_withdrawn_cny,0),COALESCE(u.email,''),COALESCE(u.username,''),u.status,(SELECT COUNT(*) FROM distribution_customer_bindings b WHERE b.agent_id=a.id),a.created_at`+from+` ORDER BY a.created_at DESC LIMIT $5 OFFSET $6`, userID, filter.Status, filter.Search, like, filter.PageSize, (filter.Page-1)*filter.PageSize)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1515,7 +1636,7 @@ func (r *distributionRepository) ListTeam(ctx context.Context, userID int64, fil
 	items := make([]service.DistributionAgent, 0)
 	for rows.Next() {
 		var a service.DistributionAgent
-		if err = rows.Scan(&a.ID, &a.UserID, &a.LevelID, &a.Depth, &a.ParentAgentID, &a.PromotionCode, &a.EffectiveRateBPS, &a.MaxChildRateBPS, &a.CanRecruitSubagents, &a.Status, &a.AvailableCNY, &a.FrozenCNY, &a.ReservedCNY, &a.DebtCNY, &a.TotalEarnedCNY, &a.TotalWithdrawnCNY, &a.Email, &a.Username, &a.UserStatus, &a.CustomerCount, &a.CreatedAt); err != nil {
+		if err = rows.Scan(&a.ID, &a.UserID, &a.LevelID, &a.Depth, &a.ParentAgentID, &a.PromotionCode, &a.EffectiveRateBPS, &a.MaxChildRateBPS, &a.CanRecruitSubagents, &a.CanViewPromotionStats, &a.Status, &a.AvailableCNY, &a.FrozenCNY, &a.ReservedCNY, &a.DebtCNY, &a.TotalEarnedCNY, &a.TotalWithdrawnCNY, &a.Email, &a.Username, &a.UserStatus, &a.CustomerCount, &a.CreatedAt); err != nil {
 			return nil, 0, err
 		}
 		items = append(items, a)

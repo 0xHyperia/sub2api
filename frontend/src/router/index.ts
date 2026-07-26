@@ -772,8 +772,8 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/distribution',
 	redirect: '/admin/distribution/overview'
   },
-	{
-	  path: '/admin/distribution/overview',
+  {
+    path: '/admin/distribution/overview',
 	  name: 'AdminDistributionOverview',
 	  component: () => import('@/views/admin/distribution/AdminDistributionOverviewView.vue'),
 	  meta: { requiresAuth: true, requiresAdmin: true, title: '分销总览' }
@@ -789,6 +789,12 @@ const routes: RouteRecordRaw[] = [
     name: 'AdminDistributionAgents',
     component: () => import('@/views/admin/distribution/AdminDistributionAgentsView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true, title: '代理管理' }
+  },
+  {
+    path: '/admin/distribution/promotion',
+    name: 'AdminDistributionPromotion',
+    component: () => import('@/views/admin/distribution/AdminDistributionPromotionView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: '推广追踪' }
   },
   {
     path: '/admin/distribution/customers',

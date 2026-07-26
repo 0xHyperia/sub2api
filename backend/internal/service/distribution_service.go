@@ -2,14 +2,20 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
+	"log/slog"
 	"net/mail"
+	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
@@ -21,6 +27,8 @@ var (
 	ErrDistributionDisabled         = infraerrors.Forbidden("DISTRIBUTION_DISABLED", "distribution is disabled")
 	ErrSubagentRecruitmentDenied    = infraerrors.Forbidden("SUBAGENT_RECRUITMENT_DENIED", "subagent recruitment permission is required")
 	ErrSubagentCandidateUnavailable = infraerrors.BadRequest("SUBAGENT_CANDIDATE_UNAVAILABLE", "unable to add this user; verify the email and user eligibility")
+	ErrPromotionTrackingInput       = infraerrors.BadRequest("INVALID_PROMOTION_TRACKING_INPUT", "invalid promotion tracking input")
+	ErrPromotionArchiveUnavailable  = infraerrors.BadRequest("PROMOTION_ARCHIVE_UNAVAILABLE", "the requested archived promotion range cannot be reported exactly")
 )
 
 type DistributionAgent struct {
@@ -34,6 +42,7 @@ type DistributionAgent struct {
 	EffectiveRateBPS       int             `json:"effective_rate_bps"`
 	MaxChildRateBPS        int             `json:"max_child_rate_bps"`
 	CanRecruitSubagents    bool            `json:"can_recruit_subagents"`
+	CanViewPromotionStats  bool            `json:"can_view_promotion_stats"`
 	Status                 string          `json:"status"`
 	AvailableCNY           decimal.Decimal `json:"available_cny"`
 	FrozenCNY              decimal.Decimal `json:"frozen_cny"`
@@ -180,14 +189,16 @@ type DistributionCommissionResult struct {
 }
 
 type DistributionOverview struct {
-	Agent                  *DistributionAgent `json:"agent"`
-	CustomerCount          int64              `json:"customer_count"`
-	TeamCount              int64              `json:"team_count"`
-	PayingCustomerCount    int64              `json:"paying_customer_count"`
-	NewCustomersThisMonth  int64              `json:"new_customers_this_month"`
-	CustomerPaidCNY        decimal.Decimal    `json:"customer_paid_cny"`
-	ThisMonthCustomerPaid  decimal.Decimal    `json:"this_month_customer_paid_cny"`
-	ThisMonthCommissionCNY decimal.Decimal    `json:"this_month_commission_cny"`
+	Agent                    *DistributionAgent `json:"agent"`
+	DistributionEnabled      bool               `json:"distribution_enabled"`
+	PromotionTrackingEnabled bool               `json:"promotion_tracking_enabled"`
+	CustomerCount            int64              `json:"customer_count"`
+	TeamCount                int64              `json:"team_count"`
+	PayingCustomerCount      int64              `json:"paying_customer_count"`
+	NewCustomersThisMonth    int64              `json:"new_customers_this_month"`
+	CustomerPaidCNY          decimal.Decimal    `json:"customer_paid_cny"`
+	ThisMonthCustomerPaid    decimal.Decimal    `json:"this_month_customer_paid_cny"`
+	ThisMonthCommissionCNY   decimal.Decimal    `json:"this_month_commission_cny"`
 }
 
 type DistributionAdminOverview struct {
@@ -215,21 +226,170 @@ type DistributionAdminOverview struct {
 }
 
 type DistributionSettings struct {
-	Enabled                   bool            `json:"enabled"`
-	L1DefaultRateBPS          int             `json:"l1_default_rate_bps"`
-	L1MaxChildRateBPS         int             `json:"l1_max_child_rate_bps"`
-	L2DefaultRateBPS          int             `json:"l2_default_rate_bps"`
-	FreezeHours               int             `json:"freeze_hours"`
-	WithdrawalEnabled         bool            `json:"withdrawal_enabled"`
-	WithdrawalDualApproval    bool            `json:"withdrawal_dual_approval_enabled"`
-	MinimumWithdrawalCNY      decimal.Decimal `json:"minimum_withdrawal_cny"`
-	MaximumWithdrawalCNY      decimal.Decimal `json:"maximum_withdrawal_cny"`
-	WithdrawalFeeRateBPS      int             `json:"withdrawal_fee_rate_bps"`
-	WithdrawalFeeFixedCNY     decimal.Decimal `json:"withdrawal_fee_fixed_cny"`
-	DailyWithdrawalLimitCNY   decimal.Decimal `json:"daily_withdrawal_limit_cny"`
-	MonthlyWithdrawalLimitCNY decimal.Decimal `json:"monthly_withdrawal_limit_cny"`
-	CNYPerPlatformUSD         decimal.Decimal `json:"cny_per_platform_usd"`
-	USDToCNY                  decimal.Decimal `json:"usd_to_cny"`
+	Enabled                      bool            `json:"enabled"`
+	L1DefaultRateBPS             int             `json:"l1_default_rate_bps"`
+	L1MaxChildRateBPS            int             `json:"l1_max_child_rate_bps"`
+	L2DefaultRateBPS             int             `json:"l2_default_rate_bps"`
+	FreezeHours                  int             `json:"freeze_hours"`
+	WithdrawalEnabled            bool            `json:"withdrawal_enabled"`
+	WithdrawalDualApproval       bool            `json:"withdrawal_dual_approval_enabled"`
+	MinimumWithdrawalCNY         decimal.Decimal `json:"minimum_withdrawal_cny"`
+	MaximumWithdrawalCNY         decimal.Decimal `json:"maximum_withdrawal_cny"`
+	WithdrawalFeeRateBPS         int             `json:"withdrawal_fee_rate_bps"`
+	WithdrawalFeeFixedCNY        decimal.Decimal `json:"withdrawal_fee_fixed_cny"`
+	DailyWithdrawalLimitCNY      decimal.Decimal `json:"daily_withdrawal_limit_cny"`
+	MonthlyWithdrawalLimitCNY    decimal.Decimal `json:"monthly_withdrawal_limit_cny"`
+	CNYPerPlatformUSD            decimal.Decimal `json:"cny_per_platform_usd"`
+	USDToCNY                     decimal.Decimal `json:"usd_to_cny"`
+	PromotionTrackingEnabled     bool            `json:"promotion_tracking_enabled"`
+	PromotionAttributionEnabled  bool            `json:"promotion_attribution_enabled"`
+	PromotionAttributionDays     int             `json:"promotion_attribution_days"`
+	PromotionAttributionModel    string          `json:"promotion_attribution_model"`
+	PromotionCollectSource       bool            `json:"promotion_collect_source"`
+	PromotionCollectDevice       bool            `json:"promotion_collect_device"`
+	PromotionBotFilterEnabled    bool            `json:"promotion_bot_filter_enabled"`
+	PromotionDetailRetentionDays int             `json:"promotion_detail_retention_days"`
+}
+
+type DistributionPromotionVisitInput struct {
+	PromotionCode string `json:"promotion_code"`
+	VisitorToken  string `json:"-"`
+	ClientIP      string `json:"-"`
+	UserAgent     string `json:"-"`
+	LandingPath   string `json:"landing_path"`
+	Referrer      string `json:"referrer"`
+	UTMSource     string `json:"utm_source"`
+	UTMMedium     string `json:"utm_medium"`
+	UTMCampaign   string `json:"utm_campaign"`
+}
+
+type DistributionPromotionVisitResult struct {
+	Tracked         bool   `json:"tracked"`
+	Deduplicated    bool   `json:"deduplicated,omitempty"`
+	VisitorToken    string `json:"-"`
+	AttributionDays int    `json:"attribution_days"`
+}
+
+type distributionRegistrationContextKey struct{}
+type distributionVisitorTokenContextKey struct{}
+
+func WithDistributionVisitorToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, distributionVisitorTokenContextKey{}, strings.TrimSpace(token))
+}
+
+func distributionVisitorTokenFromContext(ctx context.Context) string {
+	if value, ok := ctx.Value(distributionVisitorTokenContextKey{}).(string); ok {
+		return strings.TrimSpace(value)
+	}
+	return ""
+}
+
+func DistributionVisitorTokenFromContext(ctx context.Context) string {
+	return distributionVisitorTokenFromContext(ctx)
+}
+
+func WithDistributionRegistrationAttribution(ctx context.Context, value DistributionRegistrationAttribution) context.Context {
+	return context.WithValue(ctx, distributionRegistrationContextKey{}, value)
+}
+
+func DistributionRegistrationAttributionFromContext(ctx context.Context) (DistributionRegistrationAttribution, bool) {
+	value, ok := ctx.Value(distributionRegistrationContextKey{}).(DistributionRegistrationAttribution)
+	return value, ok
+}
+
+type DistributionRegistrationAttribution struct {
+	Code               string
+	Type               string
+	VisitorTokenHash   string
+	FirstVisitID       *int64
+	LastVisitID        *int64
+	AttributionVisitID *int64
+	AttributionSource  string
+	AttributionModel   string
+}
+
+type DistributionPromotionStatsFilter struct {
+	AgentID         int64
+	From            time.Time
+	To              time.Time
+	Page            int
+	PageSize        int
+	Source          string
+	Device          string
+	AttributionType string
+}
+
+type DistributionPromotionSummary struct {
+	TotalVisits            int64   `json:"total_visits"`
+	UniqueVisitors         int64   `json:"unique_visitors"`
+	BotVisits              int64   `json:"bot_visits"`
+	ConvertedVisitors      int64   `json:"converted_visitors"`
+	TrackedRegistrations   int64   `json:"tracked_registrations"`
+	Registrations          int64   `json:"registrations"`
+	DirectRegistrations    int64   `json:"direct_registrations"`
+	PersistedRegistrations int64   `json:"persisted_registrations"`
+	UntrackedDirect        int64   `json:"untracked_direct"`
+	ConversionRate         float64 `json:"conversion_rate"`
+}
+
+type DistributionPromotionDailyStat struct {
+	Date          string `json:"date"`
+	Visits        int64  `json:"visits"`
+	Visitors      int64  `json:"visitors"`
+	Conversions   int64  `json:"conversions"`
+	Registrations int64  `json:"registrations"`
+}
+
+type DistributionPromotionSourceStat struct {
+	Source        string `json:"source"`
+	Visits        int64  `json:"visits"`
+	Conversions   int64  `json:"conversions"`
+	Registrations int64  `json:"registrations"`
+}
+
+type DistributionPromotionAnalyticsMeta struct {
+	Cohort              string    `json:"cohort"`
+	BotFilterEnabled    bool      `json:"bot_filter_enabled"`
+	TrackingEnabled     bool      `json:"tracking_enabled"`
+	AttributionEnabled  bool      `json:"attribution_enabled"`
+	AttributionDays     int       `json:"attribution_days"`
+	AttributionModel    string    `json:"attribution_model"`
+	DetailRetentionDays int       `json:"detail_retention_days"`
+	RawRetentionDays    int       `json:"raw_retention_days"`
+	Timezone            string    `json:"timezone"`
+	GeneratedAt         time.Time `json:"generated_at"`
+}
+
+type DistributionPromotionAnalytics struct {
+	Summary DistributionPromotionSummary       `json:"summary"`
+	Daily   []DistributionPromotionDailyStat   `json:"daily"`
+	Sources []DistributionPromotionSourceStat  `json:"sources"`
+	Meta    DistributionPromotionAnalyticsMeta `json:"meta"`
+}
+
+type DistributionPromotionCleanupResult struct {
+	ScrubbedRows int
+	DeletedRows  int
+	SkippedDays  int
+}
+
+type DistributionPromotionPrivacyScrubResult struct {
+	ScrubbedRows        int
+	ExpiredAttributions int
+}
+
+type DistributionPromotionVisit struct {
+	ID              int64      `json:"id"`
+	AgentID         int64      `json:"agent_id"`
+	AgentEmail      string     `json:"agent_email,omitempty"`
+	PromotionCode   string     `json:"promotion_code"`
+	LandingPath     string     `json:"landing_path"`
+	Source          string     `json:"source"`
+	DeviceType      string     `json:"device_type"`
+	IsBot           bool       `json:"is_bot"`
+	VisitedAt       time.Time  `json:"visited_at"`
+	RegisteredAt    *time.Time `json:"registered_at,omitempty"`
+	AttributionType string     `json:"attribution_type,omitempty"`
 }
 
 type DistributionGrantAgentInput struct {
@@ -388,6 +548,12 @@ type DistributionSettlementRules struct {
 type DistributionRepository interface {
 	ValidatePromotionCode(ctx context.Context, promotionCode string) error
 	BindCustomerByCode(ctx context.Context, userID int64, promotionCode string) error
+	TrackPromotionVisit(ctx context.Context, input DistributionPromotionVisitInput, visitorTokenHash, ipHash, deviceType string, isBot bool) (*DistributionPromotionVisitResult, error)
+	ResolvePromotionAttribution(ctx context.Context, visitorTokenHash string, promotionCode ...string) (*DistributionRegistrationAttribution, error)
+	GetPromotionAnalytics(ctx context.Context, userID int64, filter DistributionPromotionStatsFilter, admin bool) (*DistributionPromotionAnalytics, error)
+	ListPromotionVisits(ctx context.Context, userID int64, filter DistributionPromotionStatsFilter, admin bool) ([]DistributionPromotionVisit, int64, error)
+	ScrubPromotionDetails(ctx context.Context, batchSize int) (DistributionPromotionPrivacyScrubResult, error)
+	CleanupPromotionDetails(ctx context.Context, batchSize int) (DistributionPromotionCleanupResult, error)
 	GetAgentByUserID(ctx context.Context, userID int64) (*DistributionAgent, error)
 	IsAgent(ctx context.Context, userID int64) (bool, error)
 	GetOverview(ctx context.Context, userID int64) (*DistributionOverview, error)
@@ -401,6 +567,7 @@ type DistributionRepository interface {
 	AdminUpdateAgentStatus(ctx context.Context, agentID, adminID int64, status, reason string) error
 	AdminUpdateAgentRate(ctx context.Context, agentID, adminID int64, rateOverrideBPS *int, reason string) error
 	AdminUpdateAgentRecruitmentPermission(ctx context.Context, agentID, adminID int64, enabled bool, reason string) error
+	AdminUpdateAgentPromotionStatsPermission(ctx context.Context, agentID, adminID int64, enabled bool, reason string) error
 	AdminReviewWithdrawal(ctx context.Context, withdrawalID, adminID int64, status, note, reference string) error
 	AdminBatchReviewWithdrawals(ctx context.Context, withdrawalIDs []int64, adminID int64, status, note string) error
 	AdminListWithdrawals(ctx context.Context, filter DistributionAdminWithdrawalListFilter) ([]DistributionWithdrawal, int64, error)
@@ -421,7 +588,7 @@ type DistributionRepository interface {
 	AdminListCustomers(ctx context.Context, filter DistributionAdminListFilter) ([]DistributionCustomer, int64, error)
 	AdminLookupAgentCandidates(ctx context.Context, query string) ([]DistributionUserOption, error)
 	LookupEligibleUserByExactEmail(ctx context.Context, email string) (int64, error)
-	AdminLookupAgents(ctx context.Context, query string) ([]DistributionAgentOption, error)
+	AdminLookupAgents(ctx context.Context, query string, includeInactive bool) ([]DistributionAgentOption, error)
 	AdminListAgentEvents(ctx context.Context, agentID int64) ([]DistributionAgentEvent, error)
 	AdminListBindingEvents(ctx context.Context, customerUserID int64) ([]DistributionBindingEvent, error)
 	AdminListCommissions(ctx context.Context, filter DistributionAdminCommissionListFilter) ([]DistributionCommission, int64, error)
@@ -530,6 +697,13 @@ func (s *DistributionService) AdminUpdateLevel(ctx context.Context, depth, defau
 		return infraerrors.BadRequest("INVALID_AGENT_LEVEL", "invalid agent level")
 	}
 	return s.repo.AdminUpdateLevel(ctx, depth, defaultRateBPS, maxChildRateBPS, active)
+}
+
+func (s *DistributionService) AdminUpdateAgentPromotionStatsPermission(ctx context.Context, agentID, adminID int64, enabled bool, reason string) error {
+	if agentID <= 0 || strings.TrimSpace(reason) == "" {
+		return infraerrors.BadRequest("INVALID_PROMOTION_STATS_PERMISSION", "agent and reason are required")
+	}
+	return s.repo.AdminUpdateAgentPromotionStatsPermission(ctx, agentID, adminID, enabled, strings.TrimSpace(reason))
 }
 func (s *DistributionService) AdminCorrectCustomerBinding(ctx context.Context, userID, agentID, adminID int64, reason string) error {
 	if userID <= 0 || agentID <= 0 || strings.TrimSpace(reason) == "" {
@@ -642,12 +816,12 @@ func (s *DistributionService) AdminLookupAgentCandidates(ctx context.Context, qu
 	}
 	return s.repo.AdminLookupAgentCandidates(ctx, query)
 }
-func (s *DistributionService) AdminLookupAgents(ctx context.Context, query string) ([]DistributionAgentOption, error) {
+func (s *DistributionService) AdminLookupAgents(ctx context.Context, query string, includeInactive ...bool) ([]DistributionAgentOption, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return []DistributionAgentOption{}, nil
 	}
-	return s.repo.AdminLookupAgents(ctx, query)
+	return s.repo.AdminLookupAgents(ctx, query, len(includeInactive) > 0 && includeInactive[0])
 }
 func (s *DistributionService) AdminListCommissions(ctx context.Context, filter DistributionAdminCommissionListFilter) ([]DistributionCommission, int64, error) {
 	return s.repo.AdminListCommissions(ctx, normalizeAdminCommissionFilter(filter))
@@ -657,21 +831,39 @@ func (s *DistributionService) AdminListAnomalies(ctx context.Context, filter Dis
 }
 
 type DistributionService struct {
-	repo            DistributionRepository
-	evidenceStorage TicketStorage
-	evidenceConfig  config.TicketStorageConfig
-	maturity        *distributionMaturityRuntime
+	repo                DistributionRepository
+	evidenceStorage     TicketStorage
+	evidenceConfig      config.TicketStorageConfig
+	maturity            *distributionMaturityRuntime
+	promotionCleanup    *distributionPromotionCleanupRuntime
+	trackingHashSecrets []string
 }
 
-func NewDistributionService(repo DistributionRepository) *DistributionService {
-	return &DistributionService{repo: repo}
+func NewDistributionService(repo DistributionRepository, trackingHashSecrets ...string) *DistributionService {
+	return &DistributionService{repo: repo, trackingHashSecrets: normalizeTrackingHashSecrets(trackingHashSecrets)}
 }
 
 func ProvideDistributionService(repo DistributionRepository, storage TicketStorage, cfg *config.Config, lockCache LeaderLockCache, db *sql.DB) *DistributionService {
-	svc := &DistributionService{repo: repo, evidenceStorage: storage, evidenceConfig: cfg.TicketStorage}
+	secrets := normalizeTrackingHashSecrets(cfg.DistributionTracking.HashSecrets)
+	if len(secrets) == 0 {
+		slog.Error("distribution tracking disabled: an independent distribution_tracking.hash_secrets value is required")
+	}
+	svc := &DistributionService{repo: repo, evidenceStorage: storage, evidenceConfig: cfg.TicketStorage, trackingHashSecrets: secrets}
 	if db != nil {
 		svc.maturity = newDistributionMaturityRuntime(repo, lockCache, db, time.Minute)
 		svc.maturity.Start()
+		svc.promotionCleanup = newDistributionPromotionCleanupRuntime(
+			repo,
+			lockCache,
+			db,
+			time.Duration(cfg.DistributionTracking.CleanupIntervalMinutes)*time.Minute,
+			cfg.DistributionTracking.CleanupBatchSize,
+			cfg.DistributionTracking.CleanupEnabled,
+		)
+		svc.promotionCleanup.Start()
+		if !cfg.DistributionTracking.CleanupEnabled {
+			slog.Info("distribution promotion physical cleanup disabled; archived visit rows will not be deleted")
+		}
 	}
 	return svc
 }
@@ -706,6 +898,240 @@ func (s *DistributionService) BindCustomerByCode(ctx context.Context, userID int
 	return s.repo.BindCustomerByCode(ctx, userID, code)
 }
 
+func (s *DistributionService) ResolveRegistrationAttribution(ctx context.Context, explicitCode, affiliateCode string) (string, error) {
+	explicitCode = normalizeDistributionCode(explicitCode)
+	if explicitCode != "" {
+		if err := s.ValidatePromotionCode(ctx, explicitCode); err != nil {
+			return "", err
+		}
+		return explicitCode, nil
+	}
+	if strings.TrimSpace(affiliateCode) != "" || s == nil || s.repo == nil {
+		return "", nil
+	}
+	token := distributionVisitorTokenFromContext(ctx)
+	if token == "" {
+		return "", nil
+	}
+	for _, hash := range s.hashVisitorTokenCandidates(token) {
+		attr, err := s.repo.ResolvePromotionAttribution(ctx, hash)
+		if err != nil {
+			return "", err
+		}
+		if attr != nil {
+			return attr.Code, nil
+		}
+	}
+	return "", nil
+}
+
+func (s *DistributionService) PrepareRegistrationAttribution(ctx context.Context, explicitCode, affiliateCode string) (context.Context, string, error) {
+	code, err := s.ResolveRegistrationAttribution(ctx, explicitCode, affiliateCode)
+	if err != nil {
+		return ctx, "", err
+	}
+	if code == "" {
+		return ctx, "", nil
+	}
+	attr := DistributionRegistrationAttribution{Code: code, Type: "direct"}
+	hashes := s.hashVisitorTokenCandidates(distributionVisitorTokenFromContext(ctx))
+	if len(hashes) > 0 && strings.TrimSpace(affiliateCode) == "" {
+		lookupCode := ""
+		if strings.TrimSpace(explicitCode) != "" {
+			lookupCode = code
+		}
+		for _, hash := range hashes {
+			resolved, resolveErr := s.repo.ResolvePromotionAttribution(ctx, hash, lookupCode)
+			if resolveErr != nil {
+				return ctx, "", resolveErr
+			}
+			if resolved != nil {
+				attr = *resolved
+				break
+			}
+		}
+	}
+	return WithDistributionRegistrationAttribution(ctx, attr), code, nil
+}
+
+func (s *DistributionService) hashVisitorToken(value string) string {
+	candidates := s.hashVisitorTokenCandidates(value)
+	if len(candidates) == 0 {
+		return ""
+	}
+	return candidates[0]
+}
+
+func normalizeTrackingHashSecrets(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return out
+}
+
+func (s *DistributionService) hashVisitorTokenCandidates(value string) []string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	secrets := s.trackingHashSecrets
+	if len(secrets) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(secrets))
+	for _, secret := range secrets {
+		h := sha256.Sum256([]byte(secret + "\n" + value))
+		out = append(out, hex.EncodeToString(h[:]))
+	}
+	return out
+}
+
+func (s *DistributionService) TrackPromotionVisit(ctx context.Context, input DistributionPromotionVisitInput) (*DistributionPromotionVisitResult, error) {
+	if s == nil || len(s.trackingHashSecrets) == 0 {
+		return nil, infraerrors.ServiceUnavailable("PROMOTION_TRACKING_NOT_CONFIGURED", "promotion tracking is not configured")
+	}
+	input.PromotionCode = normalizeDistributionCode(input.PromotionCode)
+	if !validDistributionCode(input.PromotionCode) {
+		return nil, ErrDistributionCodeInvalid
+	}
+	input.LandingPath = normalizeTrackingLandingPath(input.LandingPath)
+	input.Referrer = normalizeTrackingReferrerHost(input.Referrer)
+	input.UTMSource = strings.TrimSpace(input.UTMSource)
+	input.UTMMedium = strings.TrimSpace(input.UTMMedium)
+	input.UTMCampaign = strings.TrimSpace(input.UTMCampaign)
+	if !validTrackingText(input.LandingPath, 512) || !validTrackingText(input.Referrer, 2048) ||
+		!validTrackingText(input.UTMSource, 128) || !validTrackingText(input.UTMMedium, 128) ||
+		!validTrackingText(input.UTMCampaign, 128) {
+		return nil, ErrPromotionTrackingInput
+	}
+	if input.VisitorToken == "" {
+		input.VisitorToken = uuid.NewString()
+	}
+	if input.LandingPath == "" {
+		input.LandingPath = "/register"
+	}
+	if !validTrackingText(input.Referrer, 255) {
+		return nil, ErrPromotionTrackingInput
+	}
+	device := "desktop"
+	lowerUA := strings.ToLower(input.UserAgent)
+	isBot := strings.Contains(lowerUA, "bot") || strings.Contains(lowerUA, "crawler") || strings.Contains(lowerUA, "spider") || strings.Contains(lowerUA, "headless")
+	if isBot {
+		device = "bot"
+	} else if strings.Contains(lowerUA, "ipad") || strings.Contains(lowerUA, "tablet") {
+		device = "tablet"
+	} else if strings.Contains(lowerUA, "mobile") || strings.Contains(lowerUA, "android") || strings.Contains(lowerUA, "iphone") {
+		device = "mobile"
+	}
+	result, err := s.repo.TrackPromotionVisit(ctx, input, s.hashVisitorToken(input.VisitorToken), s.hashVisitorToken(input.ClientIP), device, isBot)
+	if result != nil {
+		result.VisitorToken = input.VisitorToken
+	}
+	return result, err
+}
+
+func normalizeTrackingLandingPath(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Path == "" || !strings.HasPrefix(parsed.Path, "/") {
+		return ""
+	}
+	return parsed.Path
+}
+
+func normalizeTrackingReferrerHost(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Hostname() == "" {
+		return ""
+	}
+	return strings.ToLower(parsed.Hostname())
+}
+
+type promotionTrackingStatusRepository interface {
+	PromotionTrackingEnabled(ctx context.Context) (bool, error)
+}
+
+func (s *DistributionService) PromotionTrackingEnabled(ctx context.Context) (bool, error) {
+	if s == nil || s.repo == nil {
+		return false, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "distribution service unavailable")
+	}
+	if len(s.trackingHashSecrets) == 0 {
+		return false, nil
+	}
+	repo, ok := s.repo.(promotionTrackingStatusRepository)
+	if !ok {
+		return false, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "promotion tracking status unavailable")
+	}
+	return repo.PromotionTrackingEnabled(ctx)
+}
+
+func validTrackingText(value string, maxRunes int) bool {
+	return utf8.ValidString(value) && utf8.RuneCountInString(value) <= maxRunes && !strings.ContainsRune(value, '\x00')
+}
+
+func (s *DistributionService) GetPromotionAnalytics(ctx context.Context, userID int64, filter DistributionPromotionStatsFilter, admin bool) (*DistributionPromotionAnalytics, error) {
+	if err := normalizePromotionStatsFilter(&filter, false); err != nil {
+		return nil, err
+	}
+	return s.repo.GetPromotionAnalytics(ctx, userID, filter, admin)
+}
+
+func (s *DistributionService) ListPromotionVisits(ctx context.Context, userID int64, filter DistributionPromotionStatsFilter, admin bool) ([]DistributionPromotionVisit, int64, error) {
+	if err := normalizePromotionStatsFilter(&filter, true); err != nil {
+		return nil, 0, err
+	}
+	return s.repo.ListPromotionVisits(ctx, userID, filter, admin)
+}
+
+func normalizePromotionStatsFilter(filter *DistributionPromotionStatsFilter, paginate bool) error {
+	now := time.Now()
+	if filter.From.IsZero() {
+		filter.From = now.AddDate(0, 0, -30)
+	}
+	if filter.To.IsZero() {
+		filter.To = now
+	}
+	filter.Source = strings.TrimSpace(filter.Source)
+	filter.Device = strings.TrimSpace(filter.Device)
+	filter.AttributionType = strings.TrimSpace(filter.AttributionType)
+	validDevice := filter.Device == "" || filter.Device == "desktop" || filter.Device == "mobile" || filter.Device == "tablet" || filter.Device == "bot" || filter.Device == "unknown"
+	validAttribution := filter.AttributionType == "" || filter.AttributionType == "direct" || filter.AttributionType == "persisted" || filter.AttributionType == "unregistered"
+	if !filter.To.After(filter.From) || filter.To.Sub(filter.From) > 366*24*time.Hour || !validTrackingText(filter.Source, 255) || !validDevice || !validAttribution {
+		return ErrPromotionTrackingInput
+	}
+	if !paginate {
+		return nil
+	}
+	if filter.Page < 1 {
+		filter.Page = 1
+	}
+	if filter.PageSize <= 0 || filter.PageSize > 100 {
+		filter.PageSize = 20
+	}
+	const maxPromotionVisitOffset = 10_000_000
+	if filter.Page > 1+maxPromotionVisitOffset/filter.PageSize {
+		return ErrPromotionTrackingInput
+	}
+	return nil
+}
+
 func (s *DistributionService) ValidatePromotionCode(ctx context.Context, rawCode string) error {
 	code := normalizeDistributionCode(rawCode)
 	if !validDistributionCode(code) {
@@ -733,11 +1159,12 @@ func (s *DistributionService) IsAgent(ctx context.Context, userID int64) bool {
 }
 
 type DistributionAccess struct {
-	Enabled             bool   `json:"enabled"`
-	IsAgent             bool   `json:"is_agent"`
-	Depth               int    `json:"depth,omitempty"`
-	Status              string `json:"status,omitempty"`
-	CanRecruitSubagents bool   `json:"can_recruit_subagents"`
+	Enabled               bool   `json:"enabled"`
+	IsAgent               bool   `json:"is_agent"`
+	Depth                 int    `json:"depth,omitempty"`
+	Status                string `json:"status,omitempty"`
+	CanRecruitSubagents   bool   `json:"can_recruit_subagents"`
+	CanViewPromotionStats bool   `json:"can_view_promotion_stats"`
 }
 
 func (s *DistributionService) GetAccess(ctx context.Context, userID int64) (*DistributionAccess, error) {
@@ -758,6 +1185,7 @@ func (s *DistributionService) GetAccess(ctx context.Context, userID int64) (*Dis
 		access.Depth = agent.Depth
 		access.Status = agent.Status
 		access.CanRecruitSubagents = agent.CanRecruitSubagents
+		access.CanViewPromotionStats = agent.CanViewPromotionStats
 	}
 	return access, nil
 }
@@ -780,7 +1208,7 @@ func (s *DistributionService) AdminGetSettings(ctx context.Context) (*Distributi
 	return s.repo.AdminGetSettings(ctx)
 }
 func (s *DistributionService) AdminUpdateSettings(ctx context.Context, v DistributionSettings, adminID int64) error {
-	if v.L1DefaultRateBPS < 0 || v.L1DefaultRateBPS > 10000 || v.L1MaxChildRateBPS < 0 || v.L1MaxChildRateBPS > v.L1DefaultRateBPS || v.L2DefaultRateBPS < 0 || v.L2DefaultRateBPS > v.L1MaxChildRateBPS || v.FreezeHours < 0 || v.MinimumWithdrawalCNY.IsNegative() || v.MaximumWithdrawalCNY.LessThan(v.MinimumWithdrawalCNY) || v.WithdrawalFeeRateBPS < 0 || v.WithdrawalFeeRateBPS > 10000 || !v.CNYPerPlatformUSD.Equal(decimal.NewFromInt(1)) || !v.USDToCNY.IsPositive() {
+	if v.L1DefaultRateBPS < 0 || v.L1DefaultRateBPS > 10000 || v.L1MaxChildRateBPS < 0 || v.L1MaxChildRateBPS > v.L1DefaultRateBPS || v.L2DefaultRateBPS < 0 || v.L2DefaultRateBPS > v.L1MaxChildRateBPS || v.FreezeHours < 0 || v.MinimumWithdrawalCNY.IsNegative() || v.MaximumWithdrawalCNY.LessThan(v.MinimumWithdrawalCNY) || v.WithdrawalFeeRateBPS < 0 || v.WithdrawalFeeRateBPS > 10000 || !v.CNYPerPlatformUSD.Equal(decimal.NewFromInt(1)) || !v.USDToCNY.IsPositive() || v.PromotionAttributionDays < 1 || v.PromotionAttributionDays > 365 || (v.PromotionAttributionModel != "first_touch" && v.PromotionAttributionModel != "last_touch") || v.PromotionDetailRetentionDays < 30 || v.PromotionDetailRetentionDays > 730 {
 		return infraerrors.BadRequest("INVALID_DISTRIBUTION_SETTINGS", "invalid distribution settings")
 	}
 	return s.repo.AdminUpdateSettings(ctx, v, adminID)

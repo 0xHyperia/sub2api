@@ -172,8 +172,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	requestCtx := c.Request.Context()
+	if token, cookieErr := c.Cookie(distributionVisitorCookie); cookieErr == nil {
+		requestCtx = service.WithDistributionVisitorToken(requestCtx, token)
+	}
 	_, user, err := h.authService.RegisterWithVerificationAndDistribution(
-		c.Request.Context(),
+		requestCtx,
 		req.Email,
 		req.Password,
 		req.VerifyCode,

@@ -494,6 +494,7 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
 		  expandOnly: true,
 		  children: [
 		    { path: '/admin/distribution/overview', label: localText('分销总览', 'Overview'), icon: 'chart' },
+		    { path: '/admin/distribution/promotion', label: localText('推广追踪', 'Promotion tracking'), icon: 'trendingUp' },
 		    { path: '/admin/distribution/anomalies', label: localText('异常对账', 'Reconciliation'), icon: 'shield' },
 		    { path: '/admin/distribution/agents', label: localText('代理管理', 'Agents'), icon: 'users' },
 		    { path: '/admin/distribution/customers', label: localText('代理客户', 'Customers'), icon: 'user' },

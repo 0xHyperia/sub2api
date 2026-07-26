@@ -22,8 +22,9 @@ func newAuthRoutesTestRouter(redisClient *redis.Client) *gin.Engine {
 	RegisterAuthRoutes(
 		v1,
 		&handler.Handlers{
-			Auth:    &handler.AuthHandler{},
-			Setting: &handler.SettingHandler{},
+			Auth:         &handler.AuthHandler{},
+			Setting:      &handler.SettingHandler{},
+			Distribution: handler.NewDistributionHandler(nil),
 		},
 		servermiddleware.JWTAuthMiddleware(func(c *gin.Context) {
 			c.Next()
@@ -51,6 +52,7 @@ func TestAuthRoutesRateLimitFailCloseWhenRedisUnavailable(t *testing.T) {
 
 	router := newAuthRoutesTestRouter(rdb)
 	paths := []string{
+		"/api/v1/distribution/track",
 		"/api/v1/auth/register",
 		"/api/v1/auth/login",
 		"/api/v1/auth/login/2fa",

@@ -112,4 +112,18 @@ describe("enterprise distribution administration contracts", () => {
       expect(template, name).toContain('type="date"');
     }
   });
+
+  it("uses scalable promotion analysis with independent snapshot failures", () => {
+    const { template, source } = view("AdminDistributionPromotionView.vue");
+    expect(source).toContain("lookupAgents");
+    expect(source).not.toContain("listAgents");
+    expect(source).toContain("snapshotSequence");
+    expect(source).toMatch(/await Promise\.allSettled\(\[\s*getPromotionAnalytics[\s\S]*listPromotionVisits/);
+    expect(source).toContain("analyticsError");
+    expect(source).toContain("visitsError");
+    expect(source).toContain("if (sequence !== snapshotSequence) return");
+    expect(template).toContain("当前筛选条件");
+    expect(template).toContain("香港时间");
+    expect(template).toContain("转化耗时");
+  });
 });

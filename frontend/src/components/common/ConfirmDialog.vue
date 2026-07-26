@@ -10,7 +10,7 @@
         <button
           @click="handleCancel"
           type="button"
-          class="rounded-control border border-outline-strong px-4 py-2 text-sm font-medium text-foreground-muted hover:bg-surface-subtle focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2 bg-surface-subtle focus:ring-offset-canvas"
+          class="min-h-11 rounded-control border border-outline-strong bg-surface-subtle px-4 py-2 text-sm font-medium text-foreground-muted hover:bg-surface-subtle focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2 focus:ring-offset-canvas"
         >
           {{ cancelText }}
         </button>
@@ -18,7 +18,7 @@
           @click="handleConfirm"
           type="button"
           :class="[
-            'rounded-control px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas',
+            'min-h-11 rounded-control px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas',
             danger
               ? 'bg-danger hover:bg-danger/90 focus:ring-danger'
               : 'bg-brand hover:bg-brand-hover focus:ring-focus'
