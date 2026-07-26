@@ -88,7 +88,7 @@ func (s *failingNonDurableDistributionRepoStub) ValidatePromotionCode(context.Co
 	return nil
 }
 
-func (s *failingNonDurableDistributionRepoStub) QueueDistributionBindingClaim(context.Context, int64, string, string) error {
+func (s *failingNonDurableDistributionRepoStub) BindCustomerByCode(context.Context, int64, string) error {
 	return s.err
 }
 

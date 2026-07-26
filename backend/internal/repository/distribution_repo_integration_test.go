@@ -38,6 +38,8 @@ func TestDistributionDifferentialCommissionAndRefund(t *testing.T) {
 		require.NoError(t, err)
 		_, err = integrationDB.ExecContext(cleanupCtx, `DELETE FROM payment_orders WHERE user_id=$1`, customerID)
 		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(cleanupCtx, `DELETE FROM distribution_promotion_conversions WHERE user_id=$1`, customerID)
+		require.NoError(t, err)
 		_, err = integrationDB.ExecContext(cleanupCtx, `DELETE FROM distribution_binding_events WHERE customer_user_id=$1`, customerID)
 		require.NoError(t, err)
 		_, err = integrationDB.ExecContext(cleanupCtx, `DELETE FROM distribution_customer_bindings WHERE user_id=$1`, customerID)
