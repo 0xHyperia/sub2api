@@ -1,20 +1,20 @@
 <template>
   <BaseDialog
-    :show="!!announcementStore.currentPopup"
-    :title="announcementStore.currentPopup?.title || t('announcements.title')"
+    :show="!!displayedAnnouncement"
+    :title="displayedAnnouncement?.title || t('announcements.title')"
     width="wide"
     :z-index="120"
-    :close-on-escape="false"
-    :show-close-button="false"
+    :close-on-escape="preview"
+    :show-close-button="preview"
     @close="handleDismiss"
   >
-    <div v-if="announcementStore.currentPopup" class="min-w-0">
+    <div v-if="displayedAnnouncement" class="min-w-0">
       <div class="mb-4 flex items-center gap-2 text-xs text-foreground-muted">
         <Icon name="bell" size="sm" aria-hidden="true" />
         <span class="rounded-control bg-warning-subtle px-2 py-1 font-semibold text-warning-foreground">
           {{ t('announcements.unread') }}
         </span>
-        <time>{{ formatRelativeWithDateTime(announcementStore.currentPopup.created_at) }}</time>
+        <time>{{ formatRelativeWithDateTime(displayedAnnouncement.created_at) }}</time>
       </div>
       <div
         class="announcement-popup-content markdown-body max-h-[55vh] overflow-y-auto pr-2"
@@ -24,9 +24,14 @@
 
     <template #footer>
       <div class="flex justify-end">
-        <button type="button" class="btn btn-primary" @click="handleDismiss">
-          <Icon name="check" size="sm" />
-          {{ t('announcements.markRead') }}
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-testid="announcement-popup-dismiss"
+          @click="handleDismiss"
+        >
+          <Icon :name="preview ? 'x' : 'check'" size="sm" />
+          {{ preview ? t('common.close') : t('announcements.markRead') }}
         </button>
       </div>
     </template>
@@ -42,9 +47,29 @@ import { useAnnouncementStore } from '@/stores/announcements'
 import { formatRelativeWithDateTime } from '@/utils/format'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
+import type { Announcement, UserAnnouncement } from '@/types'
+import '@/styles/announcement-markdown.css'
+
+type PreviewAnnouncement = Pick<Announcement | UserAnnouncement, 'title' | 'content' | 'created_at'>
+
+const props = withDefaults(defineProps<{
+  announcement?: PreviewAnnouncement | null
+  preview?: boolean
+}>(), {
+  announcement: null,
+  preview: false,
+})
+
+const emit = defineEmits<{
+  close: []
+}>()
 
 const { t } = useI18n()
-const announcementStore = useAnnouncementStore()
+// Admin preview is self-contained and must not require the user announcement store.
+const announcementStore = props.preview ? null : useAnnouncementStore()
+const displayedAnnouncement = computed(() => (
+  props.preview ? props.announcement : announcementStore?.currentPopup ?? null
+))
 
 marked.setOptions({
   breaks: true,
@@ -52,14 +77,18 @@ marked.setOptions({
 })
 
 const renderedContent = computed(() => {
-  const content = announcementStore.currentPopup?.content
+  const content = displayedAnnouncement.value?.content
   if (!content) return ''
   const html = marked.parse(content) as string
   return DOMPurify.sanitize(html)
 })
 
 function handleDismiss() {
-  announcementStore.dismissPopup()
+  if (props.preview) {
+    emit('close')
+    return
+  }
+  announcementStore?.dismissPopup()
 }
 </script>
 

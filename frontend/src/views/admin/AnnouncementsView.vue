@@ -194,12 +194,21 @@
             <div class="flex items-center gap-1">
               <button
                 type="button"
+                @click="openPreview(row)"
+                class="announcement-action"
+                :title="t('admin.announcements.preview')"
+                :aria-label="`${t('admin.announcements.preview')}: ${row.title}`"
+              >
+                <Icon name="eye" size="sm" />
+              </button>
+              <button
+                type="button"
                 @click="openReadStatus(row)"
                 class="announcement-action"
                 :title="t('admin.announcements.readStatus')"
                 :aria-label="`${t('admin.announcements.readStatus')}: ${row.title}`"
               >
-                <Icon name="eye" size="sm" />
+                <Icon name="chartBar" size="sm" />
               </button>
               <button
                 type="button"
@@ -325,6 +334,12 @@
       :announcement-id="readStatusAnnouncementId"
       @close="showReadStatusDialog = false"
     />
+
+    <AnnouncementPopup
+      :announcement="previewAnnouncement"
+      preview
+      @close="previewAnnouncement = null"
+    />
   </AppLayout>
 </template>
 
@@ -350,6 +365,7 @@ import Icon from '@/components/icons/Icon.vue'
 
 import AnnouncementTargetingEditor from '@/components/admin/announcements/AnnouncementTargetingEditor.vue'
 import AnnouncementReadStatusDialog from '@/components/admin/announcements/AnnouncementReadStatusDialog.vue'
+import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -676,6 +692,11 @@ async function confirmDelete() {
 // ===== Read status =====
 const showReadStatusDialog = ref(false)
 const readStatusAnnouncementId = ref<number | null>(null)
+const previewAnnouncement = ref<Announcement | null>(null)
+
+function openPreview(row: Announcement) {
+  previewAnnouncement.value = row
+}
 
 function openReadStatus(row: Announcement) {
   readStatusAnnouncementId.value = row.id

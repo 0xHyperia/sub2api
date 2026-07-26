@@ -169,6 +169,7 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 import type { UserAnnouncement } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
+import '@/styles/announcement-markdown.css'
 
 const { t, locale } = useI18n()
 const router = useRouter()

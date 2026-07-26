@@ -178,7 +178,7 @@ function downloadChart() {
 
 <template>
   <section class="flex h-full min-h-[320px] flex-col rounded-panel border border-outline bg-surface p-4 shadow-card sm:min-h-0 sm:p-5" aria-labelledby="ops-throughput-title">
-    <div class="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div data-testid="throughput-chart-header" class="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h3 id="ops-throughput-title" class="flex items-center gap-2 text-sm font-semibold text-foreground">
         <svg class="h-4 w-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -186,13 +186,13 @@ function downloadChart() {
         {{ t('admin.ops.throughputTrend') }}
         <HelpTooltip v-if="!props.fullscreen" :content="t('admin.ops.tooltips.throughputTrend')" />
       </h3>
-      <div class="flex flex-wrap items-center gap-2 text-xs text-foreground-muted">
+      <div data-testid="throughput-chart-toolbar" class="flex w-full flex-wrap items-center gap-2 text-xs text-foreground-muted sm:w-auto sm:justify-end">
         <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-info"></span>QPS</span>
         <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-success"></span>{{ t('admin.ops.tpsK') }}</span>
         <template v-if="!props.fullscreen">
           <button
             type="button"
-            class="btn btn-secondary btn-sm ml-1 px-2"
+            class="btn btn-secondary btn-sm shrink-0 px-2"
             :disabled="state !== 'ready'"
             :title="t('admin.ops.requestDetails.title')"
             @click="emit('openDetails')"
@@ -201,7 +201,7 @@ function downloadChart() {
           </button>
           <button
             type="button"
-            class="btn btn-secondary btn-sm ml-1 px-2"
+            class="btn btn-secondary btn-sm shrink-0 px-2"
             :disabled="state !== 'ready'"
             :title="t('admin.ops.charts.resetZoomHint')"
             @click="resetZoom"
@@ -210,7 +210,7 @@ function downloadChart() {
           </button>
           <button
             type="button"
-            class="btn btn-secondary btn-sm px-2"
+            class="btn btn-secondary btn-sm shrink-0 px-2"
             :disabled="state !== 'ready'"
             :title="t('admin.ops.charts.downloadChartHint')"
             @click="downloadChart"
@@ -248,7 +248,7 @@ function downloadChart() {
       </button>
     </div>
 
-    <div class="min-h-0 flex-1">
+    <div class="min-h-0 min-w-0 flex-1">
       <Line v-if="state === 'ready' && chartData" ref="throughputChartRef" :data="chartData" :options="options" />
       <div v-else class="flex h-full items-center justify-center">
         <div v-if="state === 'loading'" class="animate-pulse text-sm text-foreground-subtle">{{ t('common.loading') }}</div>

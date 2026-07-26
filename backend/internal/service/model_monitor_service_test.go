@@ -118,6 +118,24 @@ func TestModelMonitorCatalogModelsRequiresAccountRestrictionEvenWithGroupList(t 
 	require.Empty(t, ModelCatalogModels(group, accounts))
 }
 
+func TestModelMonitorDiscoverCatalogSkipsCompositeAliases(t *testing.T) {
+	group := Group{ID: 7, Name: "Composite", Platform: PlatformComposite, Status: StatusActive}
+	service := NewModelMonitorService(
+		modelMonitorTestRepo{},
+		modelMonitorTestGroupRepo{groups: []Group{group}},
+		modelMonitorTestAccountRepo{accounts: map[int64][]Account{
+			group.ID: {{Platform: PlatformOpenAI, Credentials: map[string]any{"model_mapping": map[string]any{"public-alias": "gpt-upstream"}}}},
+		}},
+		nil,
+		nil,
+		nil,
+	)
+
+	catalog, err := service.DiscoverCatalog(context.Background())
+	require.NoError(t, err)
+	require.Empty(t, catalog)
+}
+
 func TestModelMonitorListRowsHidesConfigsOutsideCurrentAccountRestrictions(t *testing.T) {
 	group := Group{ID: 1, Name: "OpenAI", Platform: PlatformOpenAI, Status: StatusActive}
 	account := Account{

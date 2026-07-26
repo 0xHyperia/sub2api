@@ -84,12 +84,13 @@
             <div
               v-for="column in mobileDataColumns"
               :key="column.key"
+              :data-field="column.key"
               class="flex min-w-0 items-start justify-between gap-3"
             >
               <span class="max-w-[42%] flex-shrink-0 text-xs font-medium text-foreground-muted">
                 {{ column.label }}
               </span>
-              <div class="min-w-0 max-w-[58%] break-words text-right text-sm text-foreground">
+              <div class="min-w-0 max-w-full break-words text-right text-sm text-foreground">
                 <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :expanded="actionsExpanded">
                   {{ column.formatter ? column.formatter(row[column.key], row) : row[column.key] }}
                 </slot>

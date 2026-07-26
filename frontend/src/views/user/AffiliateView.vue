@@ -61,20 +61,22 @@
           <div class="mt-4 grid gap-4 xl:grid-cols-2">
             <div class="min-w-0 space-y-2">
               <p class="text-sm font-medium text-foreground-muted">{{ t('affiliate.yourCode') }}</p>
-              <div class="flex min-w-0 items-center gap-2 rounded-panel border border-outline-strong bg-surface-subtle p-2 pl-3">
-                <code class="min-w-0 flex-1 break-all text-sm font-semibold text-foreground">{{ detail.aff_code }}</code>
-                <button type="button" class="btn btn-secondary btn-icon shrink-0" :title="t('affiliate.copyCode')" :aria-label="t('affiliate.copyCode')" @click="copyCode">
+              <div class="flex min-w-0 flex-col items-stretch gap-2 rounded-panel border border-outline-strong bg-surface-subtle p-2 pl-3 sm:flex-row sm:items-center">
+                <code class="min-w-0 break-all text-sm font-semibold text-foreground sm:flex-1 sm:truncate">{{ detail.aff_code }}</code>
+                <button type="button" class="btn btn-secondary btn-sm w-full sm:w-auto sm:shrink-0" :title="t('affiliate.copyCode')" :aria-label="t('affiliate.copyCode')" @click="copyCode">
                   <Icon name="copy" size="sm" aria-hidden="true" />
+                  <span>{{ t('affiliate.copyCode') }}</span>
                 </button>
               </div>
             </div>
 
             <div class="min-w-0 space-y-2">
               <p class="text-sm font-medium text-foreground-muted">{{ t('affiliate.inviteLink') }}</p>
-              <div class="flex min-w-0 items-center gap-2 rounded-panel border border-outline-strong bg-surface-subtle p-2 pl-3">
-                <code class="min-w-0 flex-1 truncate text-sm text-foreground-muted" :title="inviteLink">{{ inviteLink }}</code>
-                <button type="button" class="btn btn-secondary btn-icon shrink-0" :title="t('affiliate.copyLink')" :aria-label="t('affiliate.copyLink')" @click="copyInviteLink">
+              <div class="flex min-w-0 flex-col items-stretch gap-2 rounded-panel border border-outline-strong bg-surface-subtle p-2 pl-3 sm:flex-row sm:items-center">
+                <code class="min-w-0 break-all text-sm text-foreground-muted sm:flex-1 sm:truncate" :title="inviteLink">{{ inviteLink }}</code>
+                <button type="button" class="btn btn-secondary btn-sm w-full sm:w-auto sm:shrink-0" :title="t('affiliate.copyLink')" :aria-label="t('affiliate.copyLink')" @click="copyInviteLink">
                   <Icon name="copy" size="sm" aria-hidden="true" />
+                  <span>{{ t('affiliate.copyLink') }}</span>
                 </button>
               </div>
             </div>

@@ -45,8 +45,11 @@ func TestDistributionPromotionTrackingBaselineContainsFinalSchema(t *testing.T) 
 
 func TestDistributionPromotionTrackingUsesSingleUnpublishedBaseline(t *testing.T) {
 	for version := 193; version <= 201; version++ {
-		matches, err := fs.Glob(FS, fmt.Sprintf("%d_*", version))
+		distributionMatches, err := fs.Glob(FS, fmt.Sprintf("%d_*distribution*.sql", version))
 		require.NoError(t, err)
+		promotionMatches, err := fs.Glob(FS, fmt.Sprintf("%d_*promotion*.sql", version))
+		require.NoError(t, err)
+		matches := append(distributionMatches, promotionMatches...)
 		require.Emptyf(t, matches, "development patch migration %d must stay squashed into 192", version)
 	}
 }

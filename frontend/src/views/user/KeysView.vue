@@ -1811,7 +1811,6 @@ const openGroupSelector = (key: ApiKey) => {
       )
       const spaceBelow = window.innerHeight - rect.bottom
       const spaceAbove = rect.top
-
       if (spaceBelow < dropdownEstHeight && spaceAbove > spaceBelow) {
         // Not enough space below, pop upward
         dropdownPosition.value = {

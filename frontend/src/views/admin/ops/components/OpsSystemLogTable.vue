@@ -8,9 +8,12 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
+import { extractApiErrorMessage } from '@/utils/apiError'
 
 const appStore = useAppStore()
 const { t } = useI18n()
+
+// 与 DataTable 一致：< 768px 切换为卡片视图，避免宽表在移动端被截断。
 
 const props = withDefaults(defineProps<{
   platformFilter?: string
@@ -367,7 +370,11 @@ const applyCleanupCurrentFilter = async () => {
     await Promise.all([fetchLogs(), fetchHealth()])
   } catch (err: any) {
     console.error('[OpsSystemLogTable] Failed to cleanup logs', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.systemLogs.cleanupFailed'))
+    appStore.showError(
+      extractApiErrorMessage(err, t('admin.ops.systemLogs.cleanupFailed'), {
+        OPS_SYSTEM_LOG_CLEANUP_FILTER_REQUIRED: t('admin.ops.systemLogs.cleanupFilterRequired')
+      })
+    )
   }
 }
 

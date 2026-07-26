@@ -669,6 +669,7 @@ const tokenTooltipData = ref<AdminUsageLog | null>(null)
 const getRequestTypeLabel = (row: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(row)
   if (requestType === 'cyber') return t('usage.cyber')
+  if (requestType === 'live') return t('usage.live')
   if (requestType === 'ws_v2') return t('usage.ws')
   if (requestType === 'stream') return t('usage.stream')
   if (requestType === 'sync') return t('usage.sync')
@@ -678,6 +679,7 @@ const getRequestTypeLabel = (row: AdminUsageLog): string => {
 const getRequestTypeBadgeClass = (row: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(row)
   if (requestType === 'cyber') return 'border-danger/20 bg-danger-subtle text-danger-foreground'
+  if (requestType === 'live') return 'border-success/20 bg-success-subtle text-success-foreground'
   if (requestType === 'ws_v2') return 'border-outline bg-brand-subtle text-brand'
   if (requestType === 'stream') return 'border-info/20 bg-info-subtle text-info-foreground'
   if (requestType === 'sync') return 'border-outline bg-surface-subtle text-foreground-muted'

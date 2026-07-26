@@ -102,6 +102,16 @@ func TestMarketplaceModelIDs_UsesOnlyExplicitAccountMappings(t *testing.T) {
 	require.Equal(t, []string{"gpt-marketplace-only"}, models)
 }
 
+func TestMarketplaceModelIDs_CompositeCollectsConcreteAccountMappings(t *testing.T) {
+	group := service.Group{Platform: service.PlatformComposite}
+	accounts := []service.Account{
+		{Platform: service.PlatformOpenAI, Credentials: map[string]any{"model_mapping": map[string]any{"gpt-public": "gpt-upstream"}}},
+		{Platform: service.PlatformAnthropic, Credentials: map[string]any{"model_mapping": map[string]any{"claude-public": "claude-upstream"}}},
+	}
+
+	require.Equal(t, []string{"claude-public", "gpt-public"}, marketplaceModelIDs(group, accounts))
+}
+
 func TestFilterUserVisibleGroups_IntersectionOnly(t *testing.T) {
 	// 渠道挂在 {g1, g2, g3}，用户只允许 {g1, g3} —— 响应必须仅含 g1/g3。
 	groups := []service.AvailableGroupRef{

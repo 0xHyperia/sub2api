@@ -35,7 +35,8 @@ func TestPromotionBaselineSchemaIsFinal(t *testing.T) {
 	ctx := context.Background()
 	var patchRows int
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM schema_migrations
-		WHERE filename ~ '^(19[3-9]|20[0-1])_'`).Scan(&patchRows))
+		WHERE filename ~ '^(19[3-9]|20[0-1])_'
+		  AND (filename ILIKE '%distribution%' OR filename ILIKE '%promotion%')`).Scan(&patchRows))
 	require.Zero(t, patchRows)
 
 	var dedupeDefinition string

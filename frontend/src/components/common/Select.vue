@@ -13,6 +13,7 @@
       :aria-controls="listboxId"
       :aria-activedescendant="!isSearchable ? focusedOptionId : undefined"
       :aria-label="triggerAriaLabel"
+      :aria-describedby="ariaDescribedby"
       :class="[
         'select-trigger',
         isOpen && 'select-trigger-open',
@@ -153,7 +154,7 @@ const triggerAttrs = computed(() => Object.fromEntries(
 // Instance ID for unique click-outside detection
 const instanceId = `select-${Math.random().toString(36).substring(2, 9)}`
 const triggerId = computed(() => {
-  const id = attrs.id
+  const id = props.id ?? attrs.id
   return typeof id === 'string' && id ? id : `${instanceId}-trigger`
 })
 const listboxId = `${instanceId}-listbox`
@@ -179,6 +180,9 @@ interface Props {
   creatable?: boolean
   creatablePrefix?: string
   clearable?: boolean
+  id?: string
+  ariaLabel?: string
+  ariaDescribedby?: string
 }
 
 interface Emits {
@@ -303,6 +307,7 @@ const hasValue = computed(
 
 const triggerAriaLabel = computed(() => {
   if (attrs['aria-labelledby']) return undefined
+  if (props.ariaLabel) return props.ariaLabel
   if (typeof attrs['aria-label'] === 'string' && attrs['aria-label']) return attrs['aria-label']
   return hasValue.value ? `${placeholderText.value}: ${selectedLabel.value}` : placeholderText.value
 })

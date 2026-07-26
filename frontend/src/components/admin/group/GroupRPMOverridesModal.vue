@@ -102,8 +102,8 @@
 
         <div v-else>
           <div class="overflow-hidden rounded-panel border border-outline-strong">
-            <div class="max-h-[420px] overflow-y-auto">
-              <table class="w-full text-sm">
+            <div class="max-h-[420px] overflow-auto">
+              <table class="w-full min-w-max text-sm">
                 <thead class="sticky top-0 z-[1]">
                   <tr class="border-b bg-surface-subtle border-outline-strong">
                     <th class="px-3 py-2 text-left text-xs font-medium text-foreground-subtle">{{ t('admin.groups.columns.userEmail') }}</th>

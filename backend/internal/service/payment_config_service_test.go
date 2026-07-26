@@ -73,6 +73,20 @@ func TestPcParseInt(t *testing.T) {
 	}
 }
 
+func TestAlipayMobilePrecreateEnvironmentOverride(t *testing.T) {
+	svc := &PaymentConfigService{}
+
+	t.Setenv(SettingAlipayMobilePrecreateDeepLink, "true")
+	if !svc.parsePaymentConfig(map[string]string{SettingAlipayMobilePrecreateDeepLink: "false"}).AlipayMobilePrecreateDeepLink {
+		t.Fatal("expected environment variable to enable mobile Alipay precreate")
+	}
+
+	t.Setenv(SettingAlipayMobilePrecreateDeepLink, "false")
+	if svc.parsePaymentConfig(map[string]string{SettingAlipayMobilePrecreateDeepLink: "true"}).AlipayMobilePrecreateDeepLink {
+		t.Fatal("expected environment variable to disable mobile Alipay precreate")
+	}
+}
+
 func TestParsePaymentConfig(t *testing.T) {
 	t.Parallel()
 
@@ -108,6 +122,9 @@ func TestParsePaymentConfig(t *testing.T) {
 		if got := cfg.RechargeFeeRateFor(payment.TypeWxpay); got != 3.8 {
 			t.Fatalf("WeChat Pay fee rate = %v, want 3.8", got)
 		}
+		if cfg.AlipayMobilePrecreateDeepLink {
+			t.Fatal("expected AlipayMobilePrecreateDeepLink=false by default")
+		}
 	})
 
 	t.Run("method fee rates override the legacy fallback", func(t *testing.T) {
@@ -131,17 +148,18 @@ func TestParsePaymentConfig(t *testing.T) {
 	t.Run("all values populated", func(t *testing.T) {
 		t.Parallel()
 		vals := map[string]string{
-			SettingPaymentEnabled:      "true",
-			SettingMinRechargeAmount:   "5.00",
-			SettingMaxRechargeAmount:   "1000.00",
-			SettingDailyRechargeLimit:  "5000.00",
-			SettingOrderTimeoutMinutes: "15",
-			SettingMaxPendingOrders:    "5",
-			SettingEnabledPaymentTypes: "alipay,wxpay,stripe",
-			SettingBalancePayDisabled:  "true",
-			SettingLoadBalanceStrategy: "least_amount",
-			SettingProductNamePrefix:   "PRE",
-			SettingProductNameSuffix:   "SUF",
+			SettingPaymentEnabled:                "true",
+			SettingMinRechargeAmount:             "5.00",
+			SettingMaxRechargeAmount:             "1000.00",
+			SettingDailyRechargeLimit:            "5000.00",
+			SettingOrderTimeoutMinutes:           "15",
+			SettingMaxPendingOrders:              "5",
+			SettingEnabledPaymentTypes:           "alipay,wxpay,stripe",
+			SettingBalancePayDisabled:            "true",
+			SettingLoadBalanceStrategy:           "least_amount",
+			SettingProductNamePrefix:             "PRE",
+			SettingProductNameSuffix:             "SUF",
+			SettingAlipayMobilePrecreateDeepLink: "true",
 		}
 		cfg := svc.parsePaymentConfig(vals)
 
@@ -180,6 +198,9 @@ func TestParsePaymentConfig(t *testing.T) {
 		}
 		if cfg.ProductNameSuffix != "SUF" {
 			t.Fatalf("ProductNameSuffix = %q, want %q", cfg.ProductNameSuffix, "SUF")
+		}
+		if !cfg.AlipayMobilePrecreateDeepLink {
+			t.Fatal("expected AlipayMobilePrecreateDeepLink=true")
 		}
 	})
 

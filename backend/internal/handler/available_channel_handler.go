@@ -212,7 +212,7 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 		if platform == "" {
 			continue
 		}
-		accounts, listErr := h.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, group.ID, platform)
+		accounts, listErr := marketplaceGroupAccounts(ctx, h.accountRepo, group.ID, platform)
 		if listErr != nil {
 			return nil, listErr
 		}
@@ -317,7 +317,7 @@ func (h *AvailableChannelHandler) showcaseForPublic(ctx context.Context) ([]publ
 		if platform == "" || group.IsExclusive {
 			continue
 		}
-		accounts, listErr := h.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, group.ID, platform)
+		accounts, listErr := marketplaceGroupAccounts(ctx, h.accountRepo, group.ID, platform)
 		if listErr != nil {
 			return nil, listErr
 		}
@@ -420,6 +420,19 @@ func showcasePlatformRank(platform string) int {
 
 func marketplaceModelIDs(group service.Group, accounts []service.Account) []string {
 	return service.ModelCatalogModels(group, accounts)
+}
+
+func marketplaceGroupAccounts(ctx context.Context, repo service.AccountRepository, groupID int64, platform string) ([]service.Account, error) {
+	if platform == service.PlatformComposite {
+		return repo.ListSchedulableByGroupIDAndPlatforms(ctx, groupID, []string{
+			service.PlatformAnthropic,
+			service.PlatformOpenAI,
+			service.PlatformGemini,
+			service.PlatformAntigravity,
+			service.PlatformGrok,
+		})
+	}
+	return repo.ListSchedulableByGroupIDAndPlatform(ctx, groupID, platform)
 }
 
 func toUserAvailableGroup(group service.Group) userAvailableGroup {

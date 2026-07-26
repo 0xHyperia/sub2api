@@ -33,7 +33,10 @@ func (s *ModelMonitorService) DiscoverCatalog(ctx context.Context) ([]ModelCatal
 	for i := range groups {
 		group := groups[i]
 		platform := strings.TrimSpace(group.Platform)
-		if platform == "" {
+		// Composite aliases span concrete providers and cannot be probed as a
+		// standalone upstream platform. Their concrete child groups remain in
+		// the catalog and retain independent monitoring histories.
+		if platform == "" || platform == PlatformComposite {
 			continue
 		}
 		accounts, listErr := s.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, group.ID, platform)

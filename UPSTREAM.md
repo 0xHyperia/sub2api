@@ -2,6 +2,51 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.1.165 同步（集成中）
+
+- 集成分支：`codex/merge-upstream-v0.1.165`
+- 官方基线版本：v0.1.165
+- 官方基线提交：`e9a58c1cb8b5ef626a75c93b4d953fde5e67aa29`
+- 上一官方基线：v0.1.162（`27f094e0960ebd8e52de7ff7e763c6fec2ff4057`）
+- 集成前 USA0 提交：`a9e0071e46723c250bbfad5f589131c38ea9291e`
+- 上一 USA0 版本：v1.0.7
+- USA0 发布版本：待确认
+- 同步状态：已完成无提交合并、冲突解决、USA0 适配、完整代码验证和本地 Docker 健康检查；尚未创建集成提交，尚未合入或推送 `usa0/main`，尚未创建 USA0 发布 tag
+- 记录日期：2026-07-27
+
+### 同步范围
+
+- 从官方 v0.1.162 同步至 v0.1.165，共纳入 166 个上游提交；当前集成相对 USA0 基线变更 426 个文件。
+- 新增 Composite 组合分组和模型路由，支持公开模型别名按端点、平台、优先级及推理策略路由到具体上游。
+- 新增 OpenAI ChatGPT Live 转发、平台能力探测、并发缓存隔离、使用记录类型和会话标识，并补齐跨平台 attestation 降级行为。
+- 新增分组级 reasoning effort 策略与 Claude Opus 5 模型支持，完善 OpenAI Responses、WebSocket、Grok 工具协议、图片用量和上游错误兼容。
+- 新增 Ollama Cloud 用量抓取、账号级与全局配置及后台账号页展示；账号模型目录和调度缓存同步适配新平台能力。
+- 支付新增支付宝手机网站唤起开关及支付结果有效期处理；公告支持后台预览和统一 Markdown/HTML 样式。
+- 注册与 OAuth 增加邮箱别名归一化和重复保护，使用日志新增 `session_id`，并完善认证缓存版本、调度快照和计费回退。
+
+### 保留与适配的 USA0 内容
+
+- 49 个文本冲突均按业务语义合并，保留 USA0 首页、登录页、语义设计令牌、响应式布局和无障碍约束；上游新增 Composite、Live、Ollama 和推理策略界面已迁入现有组件体系。
+- 保留 Contact Us、工单、分销与推广追踪、模型广场、模型监控、支付门控、App JWT/ZeroBox 和 OAuth 授权，并与上游新增设置、路由及 Wire 依赖共同接入。
+- Composite 分组在模型广场与首页展示中展开为具体平台账号；模型监控跳过 Composite 别名，继续按真实平台进行探测，避免别名污染监控目录。
+- 管理端分组页面对旧后端或局部 API mock 缺少 Live 能力接口时安全降级；公告预览不依赖用户公告 Pinia store；通用 Select 正确转发 `id` 和 `aria-label`。
+- 上游原迁移与 USA0 已发布编号冲突，因此保持 SQL 内容不变并顺延为 `193` 至 `200`；分销迁移守卫继续只禁止 `192` 之后出现新的 distribution/promotion 补丁。
+- Ent 与 Wire 已从合并后的 schema/provider 重新生成，生成结果同时保留 USA0 AppAuthorization、工单、分销、模型监控与上游 Composite、Ollama、Live 依赖。
+- 保持 USA0 `VERSION` 为已发布的 `1.0.7`，在发布版本确认前不预先推断下一版本号。
+
+### 验证结果
+
+- `go generate ./ent` 与 `go generate ./cmd/server` 通过，重新生成后无未暂存漂移。
+- 后端 `go test ./...`、`go test -tags=unit ./...`、`go test -tags=integration ./...` 全部通过，`golangci-lint run ./...` 为 0 issues。
+- 前端全量 Vitest、`pnpm run typecheck` 和 `pnpm run build` 通过；`pnpm run lint:check` 为 0 errors、1 条既有 warning。
+- 前端语义设计令牌守卫、Select/Toggle 无障碍、分组 Live 降级、公告预览、Composite/Ollama/推理策略及支付流程测试通过。
+- 迁移 `193` 至 `200` 编号连续且在新增区间内唯一；开发 PostgreSQL 已确认 8 个迁移全部应用。
+- `git diff --cached --check` 通过，源码无未解决冲突标记；Ent/Wire 再生成无漂移。
+- Docker 镜像构建成功，并以 `--no-deps` 仅替换 `sub2api-dev`；PostgreSQL 与 Redis 未重启，容器健康，`http://localhost:8081/health` 返回 `{"status":"ok"}`。
+- 浏览器在 `http://localhost:3000/dashboard` 被重定向至登录页；登录页 1280px 桌面与 390x844 移动视口均无横向溢出、文字裁切或控制台错误。当前浏览器会话无登录状态，因此本轮未完成管理员分组、账号、设置、公告、使用记录、支付及分销页面的登录态视觉复核，不得将这些页面表述为已验证。
+
+---
+
 ## 官方 v0.1.162 同步（待发布）
 
 - 集成分支：`codex/merge-upstream-v0.1.162`

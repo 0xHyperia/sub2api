@@ -15,6 +15,8 @@ import { formatDateTime } from '../utils/opsFormatters'
 const { t } = useI18n()
 const appStore = useAppStore()
 
+// 与 DataTable 一致：< 768px 切换为卡片视图，避免宽表在移动端被截断。
+
 const loading = ref(false)
 const loadError = ref('')
 const rules = ref<AlertRule[]>([])

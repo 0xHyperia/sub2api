@@ -200,6 +200,16 @@
 
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
+              <label for="setup-redis-username" class="input-label">{{ t('setup.redis.username') }}</label>
+              <input
+                id="setup-redis-username"
+                v-model="formData.redis.username"
+                type="text"
+                class="input"
+                :placeholder="t('setup.redis.usernamePlaceholder')"
+              />
+            </div>
+            <div>
               <label for="setup-redis-password" class="input-label">{{ t('setup.redis.password') }}</label>
               <input
                 id="setup-redis-password"
@@ -534,6 +544,7 @@ const formData = reactive<InstallRequest>({
   redis: {
     host: 'localhost',
     port: 6379,
+    username: '',
     password: '',
     db: 0,
     enable_tls: false
