@@ -80,7 +80,7 @@ const mountTable = () => mount(AvailableChannelsTable, {
 describe('AvailableChannelsTable responsive layouts', () => {
   it('renders a business-specific mobile channel card with collapsible platform details', () => {
     const wrapper = mountTable()
-    const mobileRegion = wrapper.get('.lg\\:hidden')
+    const mobileRegion = wrapper.get('[data-testid="mobile-channels"]')
 
     expect(mobileRegion.text()).toContain('Primary route')
     expect(mobileRegion.text()).toContain('Low latency production channel')
@@ -92,7 +92,7 @@ describe('AvailableChannelsTable responsive layouts', () => {
 
   it('keeps the dense desktop table outside the mobile experience', () => {
     const wrapper = mountTable()
-    const desktopRegion = wrapper.get('.table-wrapper')
+    const desktopRegion = wrapper.get('[data-testid="desktop-channels"]')
 
     expect(desktopRegion.classes()).toContain('hidden')
     expect(desktopRegion.classes()).toContain('lg:block')
@@ -106,5 +106,17 @@ describe('AvailableChannelsTable responsive layouts', () => {
 
     expect(componentSource).toMatch(/class="table-wrapper[^\"]*overflow-auto[^\"]*"/)
     expect(componentSource).not.toMatch(/<div class="card overflow-hidden">/)
+  })
+
+  it('renders loading and empty states in both responsive layouts', async () => {
+    const wrapper = mountTable()
+
+    await wrapper.setProps({ loading: true })
+    expect(wrapper.get('[data-testid="mobile-channels"]').findAll('.animate-pulse')).toHaveLength(3)
+    expect(wrapper.get('[data-testid="desktop-channels"]').find('.animate-spin').exists()).toBe(true)
+
+    await wrapper.setProps({ loading: false, rows: [] })
+    expect(wrapper.get('[data-testid="mobile-channels"]').text()).toContain('No channels')
+    expect(wrapper.get('[data-testid="desktop-channels"]').text()).toContain('No channels')
   })
 })

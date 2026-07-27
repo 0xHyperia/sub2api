@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 lg:hidden" role="region" :aria-label="columns.name">
+  <div data-testid="mobile-channels" class="space-y-3 lg:hidden" role="region" :aria-label="columns.name">
     <template v-if="loading">
       <div
         v-for="index in 3"
@@ -28,7 +28,7 @@
     >
       <header class="border-b border-outline px-4 py-3">
         <h2 class="text-sm font-semibold text-foreground">{{ channel.name }}</h2>
-        <p v-if="channel.description" class="mt-1 text-xs leading-5 text-foreground-subtle">
+        <p v-if="channel.description" class="mt-1 break-words text-xs leading-5 text-foreground-subtle [overflow-wrap:anywhere]">
           {{ channel.description }}
         </p>
       </header>
@@ -125,7 +125,7 @@
   </div>
 
   <!-- Keep the TablePageLayout scroll hook while retaining the responsive card view. -->
-  <div class="table-wrapper hidden max-w-full overflow-auto lg:block" role="region" :aria-label="columns.name" tabindex="0">
+  <div data-testid="desktop-channels" class="table-wrapper hidden max-w-full overflow-auto lg:block" role="region" :aria-label="columns.name" tabindex="0">
     <table class="min-w-[960px] w-full border-collapse text-sm">
       <thead>
         <tr class="border-b border-outline text-xs font-medium uppercase tracking-wide text-foreground-subtle bg-surface/50">

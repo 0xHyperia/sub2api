@@ -232,16 +232,17 @@ const dropdownStyle = computed(() => {
 
   const rect = triggerRect.value
   const viewportPadding = 8
-  const minimumDropdownWidth = Math.max(rect.width, 200)
-  const left = Math.max(
-    viewportPadding,
-    Math.min(rect.left, window.innerWidth - minimumDropdownWidth - viewportPadding)
-  )
+  const dropdownMinimumWidth = 200
+  const viewportRight = Math.max(viewportPadding, window.innerWidth - viewportPadding)
+  const left = Math.min(Math.max(viewportPadding, rect.left), viewportRight)
+  const availableWidth = Math.max(0, viewportRight - left)
+  const preferredMinWidth = Math.max(dropdownMinimumWidth, rect.width)
+  const minWidth = Math.min(preferredMinWidth, availableWidth)
   const style: Record<string, string> = {
     position: 'fixed',
     left: `${left}px`,
-    minWidth: `${rect.width}px`,
-    maxWidth: `calc(100vw - ${viewportPadding * 2}px)`,
+    minWidth: `${minWidth}px`,
+    maxWidth: `${availableWidth}px`,
     zIndex: '100000020'
   }
 

@@ -3759,6 +3759,9 @@
                 class="input"
                 placeholder="gpt-5"
               />
+              <p class="mt-1 text-xs text-foreground-subtle">
+                {{ t("admin.groups.compositeRoutes.upstreamModelHint") }}
+              </p>
             </div>
 
             <div>

@@ -8,7 +8,9 @@
         </div>
         <div class="min-w-0">
           <p class="text-xs font-medium text-foreground-muted">{{ t('payment.admin.todayRevenue') }}</p>
-          <p class="break-all text-xl font-bold text-foreground">${{ formatMoney(stats.today_amount) }}</p>
+          <p v-for="[currency, amount] in sortedAmounts(stats.today_amount)" :key="currency" class="break-all text-xl font-bold text-foreground">
+            {{ formatMoney(currency, amount) }}
+          </p>
           <p class="text-xs text-foreground-subtle">
             {{ stats.today_count }} {{ t('payment.admin.orders') }}
           </p>
@@ -24,7 +26,9 @@
         </div>
         <div class="min-w-0">
           <p class="text-xs font-medium text-foreground-muted">{{ t('payment.admin.totalRevenue') }}</p>
-          <p class="break-all text-xl font-bold text-foreground">${{ formatMoney(stats.total_amount) }}</p>
+          <p v-for="[currency, amount] in sortedAmounts(stats.total_amount)" :key="currency" class="break-all text-xl font-bold text-foreground">
+            {{ formatMoney(currency, amount) }}
+          </p>
           <p class="text-xs text-foreground-subtle">
             {{ stats.total_count }} {{ t('payment.admin.orders') }}
           </p>
@@ -53,7 +57,9 @@
         </div>
         <div class="min-w-0">
           <p class="text-xs font-medium text-foreground-muted">{{ t('payment.admin.avgAmount') }}</p>
-          <p class="break-all text-xl font-bold text-foreground">${{ formatMoney(stats.avg_amount) }}</p>
+          <p v-for="[currency, amount] in sortedAmounts(stats.avg_amount)" :key="currency" class="break-all text-xl font-bold text-foreground">
+            {{ formatMoney(currency, amount) }}
+          </p>
         </div>
       </div>
     </article>
@@ -63,7 +69,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
-import type { DashboardStats } from '@/types/payment'
+import type { CurrencyAmounts, DashboardStats } from '@/types/payment'
 
 const { t } = useI18n()
 
@@ -71,7 +77,11 @@ defineProps<{
   stats: DashboardStats
 }>()
 
-function formatMoney(value: number): string {
-  return value.toFixed(2)
+function sortedAmounts(amounts: CurrencyAmounts): [string, number][] {
+  return Object.entries(amounts).sort(([left], [right]) => left.localeCompare(right))
+}
+
+function formatMoney(currency: string, amount: number): string {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount)
 }
 </script>

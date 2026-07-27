@@ -67,7 +67,9 @@
                   <span>{{ t('payment.methods.' + method.type, method.type) }}</span>
                 </div>
                 <div class="text-right tabular-nums">
-                  <strong>&yen;{{ method.amount.toFixed(2) }}</strong>
+                  <strong v-for="[currency, amount] in sortedAmounts(method.amount)" :key="currency" class="block">
+                    {{ formatMoney(currency, amount) }}
+                  </strong>
                   <small>{{ method.count }} {{ t('payment.admin.orders') }}</small>
                 </div>
               </div>
@@ -75,16 +77,21 @@
           </section>
           <section class="payment-panel">
             <h2>{{ t('payment.admin.topUsers') }}</h2>
-            <div v-if="!stats.top_users?.length" class="payment-empty">{{ t('payment.admin.noData') }}</div>
-            <ol v-else class="payment-list">
-              <li v-for="(user, idx) in stats.top_users" :key="user.user_id">
-                <div class="flex min-w-0 items-center gap-3">
-                  <span class="payment-rank">{{ idx + 1 }}</span>
-                  <span class="truncate">{{ user.email }}</span>
-                </div>
-                <strong class="shrink-0 tabular-nums">&yen;{{ user.amount.toFixed(2) }}</strong>
-              </li>
-            </ol>
+            <div v-if="!hasTopUsers(stats.top_users)" class="payment-empty">{{ t('payment.admin.noData') }}</div>
+            <div v-else class="space-y-3">
+              <div v-for="[currency, users] in sortedTopUsers(stats.top_users)" :key="currency">
+                <p class="payment-currency">{{ currency }}</p>
+                <ol class="payment-list">
+                  <li v-for="(user, idx) in users" :key="user.user_id">
+                    <div class="flex min-w-0 items-center gap-3">
+                      <span class="payment-rank">{{ idx + 1 }}</span>
+                      <span class="truncate">{{ user.email }}</span>
+                    </div>
+                    <strong class="shrink-0 tabular-nums">{{ formatMoney(currency, user.amount) }}</strong>
+                  </li>
+                </ol>
+              </div>
+            </div>
           </section>
         </div>
       </template>
@@ -98,7 +105,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminPaymentAPI } from '@/api/admin/payment'
 import { extractI18nErrorMessage } from '@/utils/apiError'
-import type { DashboardStats } from '@/types/payment'
+import type { CurrencyAmounts, DashboardStats, TopUserPaymentStats } from '@/types/payment'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -122,6 +129,22 @@ function methodColor(type: string): string {
     stripe: 'bg-brand',
   }
   return c[type] || 'bg-outline-strong'
+}
+
+function sortedAmounts(amounts: CurrencyAmounts): [string, number][] {
+  return Object.entries(amounts).sort(([left], [right]) => left.localeCompare(right))
+}
+
+function sortedTopUsers(usersByCurrency: Record<string, TopUserPaymentStats[]>): [string, TopUserPaymentStats[]][] {
+  return Object.entries(usersByCurrency).sort(([left], [right]) => left.localeCompare(right))
+}
+
+function hasTopUsers(usersByCurrency: Record<string, TopUserPaymentStats[]>): boolean {
+  return Object.values(usersByCurrency).some(users => users.length > 0)
+}
+
+function formatMoney(currency: string, amount: number): string {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount)
 }
 
 async function loadDashboard() {
@@ -226,6 +249,13 @@ onMounted(() => loadDashboard())
   margin-bottom: 12px;
   color: var(--ui-text, #0f172a);
   font-size: 13px;
+  font-weight: 600;
+}
+
+.payment-currency {
+  margin-bottom: 4px;
+  color: var(--ui-text-subtle, #98a2b3);
+  font-size: 11px;
   font-weight: 600;
 }
 

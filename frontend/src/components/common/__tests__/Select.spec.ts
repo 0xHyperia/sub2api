@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import Select from '../Select.vue'
 
@@ -9,8 +10,12 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+const originalInnerWidth = window.innerWidth
+
 afterEach(() => {
   document.body.innerHTML = ''
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth })
+  vi.restoreAllMocks()
 })
 
 describe('Select', () => {
@@ -151,5 +156,59 @@ describe('Select', () => {
 
     await trigger.trigger('keydown', { key: 'Delete' })
     expect(wrapper.emitted('update:modelValue')).toEqual([[null], [null]])
+  })
+})
+
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+}
+
+function mockTriggerRect(left: number, width: number) {
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+    x: left,
+    y: 20,
+    top: 20,
+    right: left + width,
+    bottom: 60,
+    left,
+    width,
+    height: 40,
+    toJSON: () => ({})
+  })
+}
+
+async function openSelect() {
+  const wrapper = mount(Select, {
+    props: {
+      modelValue: null,
+      options: [{
+        value: 'example',
+        label: 'very-long-unbroken-option-value-that-must-not-overflow'
+      }]
+    }
+  })
+
+  await wrapper.get('button').trigger('click')
+  await nextTick()
+
+  return { wrapper, dropdown: document.body.querySelector<HTMLElement>('.select-dropdown-portal') }
+}
+
+describe('Select dropdown viewport constraints', () => {
+  it.each([
+    { viewport: 1024, left: 20, width: 80, expectedLeft: '20px', minWidth: '200px', maxWidth: '996px' },
+    { viewport: 320, left: 220, width: 80, expectedLeft: '220px', minWidth: '92px', maxWidth: '92px' },
+    { viewport: 320, left: -20, width: 80, expectedLeft: '8px', minWidth: '200px', maxWidth: '304px' },
+    { viewport: 320, left: 400, width: 80, expectedLeft: '312px', minWidth: '0px', maxWidth: '0px' }
+  ])('keeps the dropdown inside a $viewport px viewport', async ({ viewport, left, width, expectedLeft, minWidth, maxWidth }) => {
+    setViewportWidth(viewport)
+    mockTriggerRect(left, width)
+
+    const { wrapper, dropdown } = await openSelect()
+    expect(dropdown).not.toBeNull()
+    expect(dropdown?.style.left).toBe(expectedLeft)
+    expect(dropdown?.style.minWidth).toBe(minWidth)
+    expect(dropdown?.style.maxWidth).toBe(maxWidth)
+    wrapper.unmount()
   })
 })
