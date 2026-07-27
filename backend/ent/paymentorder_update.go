@@ -133,6 +133,27 @@ func (_u *PaymentOrderUpdate) AddPayAmount(v float64) *PaymentOrderUpdate {
 	return _u
 }
 
+// SetProviderAmount sets the "provider_amount" field.
+func (_u *PaymentOrderUpdate) SetProviderAmount(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetProviderAmount()
+	_u.mutation.SetProviderAmount(v)
+	return _u
+}
+
+// SetNillableProviderAmount sets the "provider_amount" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableProviderAmount(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetProviderAmount(*v)
+	}
+	return _u
+}
+
+// AddProviderAmount adds value to the "provider_amount" field.
+func (_u *PaymentOrderUpdate) AddProviderAmount(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddProviderAmount(v)
+	return _u
+}
+
 // SetFeeRate sets the "fee_rate" field.
 func (_u *PaymentOrderUpdate) SetFeeRate(v float64) *PaymentOrderUpdate {
 	_u.mutation.ResetFeeRate()
@@ -151,6 +172,20 @@ func (_u *PaymentOrderUpdate) SetNillableFeeRate(v *float64) *PaymentOrderUpdate
 // AddFeeRate adds value to the "fee_rate" field.
 func (_u *PaymentOrderUpdate) AddFeeRate(v float64) *PaymentOrderUpdate {
 	_u.mutation.AddFeeRate(v)
+	return _u
+}
+
+// SetFeeMode sets the "fee_mode" field.
+func (_u *PaymentOrderUpdate) SetFeeMode(v string) *PaymentOrderUpdate {
+	_u.mutation.SetFeeMode(v)
+	return _u
+}
+
+// SetNillableFeeMode sets the "fee_mode" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableFeeMode(v *string) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetFeeMode(*v)
+	}
 	return _u
 }
 
@@ -778,6 +813,11 @@ func (_u *PaymentOrderUpdate) check() error {
 			return &ValidationError{Name: "user_name", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.user_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.FeeMode(); ok {
+		if err := paymentorder.FeeModeValidator(v); err != nil {
+			return &ValidationError{Name: "fee_mode", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.fee_mode": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.RechargeCode(); ok {
 		if err := paymentorder.RechargeCodeValidator(v); err != nil {
 			return &ValidationError{Name: "recharge_code", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.recharge_code": %w`, err)}
@@ -875,11 +915,20 @@ func (_u *PaymentOrderUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.AddedPayAmount(); ok {
 		_spec.AddField(paymentorder.FieldPayAmount, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.ProviderAmount(); ok {
+		_spec.SetField(paymentorder.FieldProviderAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedProviderAmount(); ok {
+		_spec.AddField(paymentorder.FieldProviderAmount, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.FeeRate(); ok {
 		_spec.SetField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.AddedFeeRate(); ok {
 		_spec.AddField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.FeeMode(); ok {
+		_spec.SetField(paymentorder.FieldFeeMode, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.RechargeCode(); ok {
 		_spec.SetField(paymentorder.FieldRechargeCode, field.TypeString, value)
@@ -1196,6 +1245,27 @@ func (_u *PaymentOrderUpdateOne) AddPayAmount(v float64) *PaymentOrderUpdateOne 
 	return _u
 }
 
+// SetProviderAmount sets the "provider_amount" field.
+func (_u *PaymentOrderUpdateOne) SetProviderAmount(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetProviderAmount()
+	_u.mutation.SetProviderAmount(v)
+	return _u
+}
+
+// SetNillableProviderAmount sets the "provider_amount" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableProviderAmount(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetProviderAmount(*v)
+	}
+	return _u
+}
+
+// AddProviderAmount adds value to the "provider_amount" field.
+func (_u *PaymentOrderUpdateOne) AddProviderAmount(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddProviderAmount(v)
+	return _u
+}
+
 // SetFeeRate sets the "fee_rate" field.
 func (_u *PaymentOrderUpdateOne) SetFeeRate(v float64) *PaymentOrderUpdateOne {
 	_u.mutation.ResetFeeRate()
@@ -1214,6 +1284,20 @@ func (_u *PaymentOrderUpdateOne) SetNillableFeeRate(v *float64) *PaymentOrderUpd
 // AddFeeRate adds value to the "fee_rate" field.
 func (_u *PaymentOrderUpdateOne) AddFeeRate(v float64) *PaymentOrderUpdateOne {
 	_u.mutation.AddFeeRate(v)
+	return _u
+}
+
+// SetFeeMode sets the "fee_mode" field.
+func (_u *PaymentOrderUpdateOne) SetFeeMode(v string) *PaymentOrderUpdateOne {
+	_u.mutation.SetFeeMode(v)
+	return _u
+}
+
+// SetNillableFeeMode sets the "fee_mode" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableFeeMode(v *string) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetFeeMode(*v)
+	}
 	return _u
 }
 
@@ -1854,6 +1938,11 @@ func (_u *PaymentOrderUpdateOne) check() error {
 			return &ValidationError{Name: "user_name", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.user_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.FeeMode(); ok {
+		if err := paymentorder.FeeModeValidator(v); err != nil {
+			return &ValidationError{Name: "fee_mode", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.fee_mode": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.RechargeCode(); ok {
 		if err := paymentorder.RechargeCodeValidator(v); err != nil {
 			return &ValidationError{Name: "recharge_code", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.recharge_code": %w`, err)}
@@ -1968,11 +2057,20 @@ func (_u *PaymentOrderUpdateOne) sqlSave(ctx context.Context) (_node *PaymentOrd
 	if value, ok := _u.mutation.AddedPayAmount(); ok {
 		_spec.AddField(paymentorder.FieldPayAmount, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.ProviderAmount(); ok {
+		_spec.SetField(paymentorder.FieldProviderAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedProviderAmount(); ok {
+		_spec.AddField(paymentorder.FieldProviderAmount, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.FeeRate(); ok {
 		_spec.SetField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.AddedFeeRate(); ok {
 		_spec.AddField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.FeeMode(); ok {
+		_spec.SetField(paymentorder.FieldFeeMode, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.RechargeCode(); ok {
 		_spec.SetField(paymentorder.FieldRechargeCode, field.TypeString, value)

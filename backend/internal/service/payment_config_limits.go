@@ -42,7 +42,11 @@ func (s *PaymentConfigService) GetAvailableMethodLimits(ctx context.Context) (*M
 		ml := pcAggregateMethodLimits(pt, insts)
 		ml.DisplayName = s.pcAggregateMethodDisplayName(pt, insts)
 		ml.Currency = currency
-		ml.FeeRate = cfg.RechargeFeeRateFor(pt)
+		ml.FeeRateMin, ml.FeeRateMax = pcAggregateMethodFeeRates(pt, insts)
+		if cfg.EffectiveFeeMode() == PaymentFeeModeMerchant {
+			ml.FeeRateMin, ml.FeeRateMax = 0, 0
+		}
+		ml.FeeRate = ml.FeeRateMax
 		resp.Methods[ml.PaymentType] = ml
 	}
 	resp.GlobalMin, resp.GlobalMax = pcComputeGlobalRange(resp.Methods)
@@ -114,7 +118,11 @@ func (s *PaymentConfigService) GetMethodLimits(ctx context.Context, types []stri
 		ml := pcAggregateMethodLimits(pt, matching)
 		ml.DisplayName = s.pcAggregateMethodDisplayName(pt, matching)
 		ml.Currency = currency
-		ml.FeeRate = cfg.RechargeFeeRateFor(pt)
+		ml.FeeRateMin, ml.FeeRateMax = pcAggregateMethodFeeRates(pt, matching)
+		if cfg.EffectiveFeeMode() == PaymentFeeModeMerchant {
+			ml.FeeRateMin, ml.FeeRateMax = 0, 0
+		}
+		ml.FeeRate = ml.FeeRateMax
 		result = append(result, ml)
 	}
 	return result, nil
@@ -273,6 +281,27 @@ func pcInstanceTypeLimits(inst *dbent.PaymentProviderInstance, pt string) (payme
 	}
 	cl, ok := limits[pt]
 	return cl, ok
+}
+
+func pcAggregateMethodFeeRates(pt string, instances []*dbent.PaymentProviderInstance) (float64, float64) {
+	var minRate, maxRate float64
+	initialized := false
+	for _, inst := range instances {
+		rates := parseProviderFeeRates(inst.FeeRates)
+		key := NormalizeVisibleMethod(pt)
+		if inst.ProviderKey == payment.TypeStripe {
+			key = payment.TypeStripe
+		}
+		rate := rates[key]
+		if !initialized || rate < minRate {
+			minRate = rate
+		}
+		if !initialized || rate > maxRate {
+			maxRate = rate
+		}
+		initialized = true
+	}
+	return minRate, maxRate
 }
 
 // unionFloat merges a single limit value into the aggregate using UNION semantics.

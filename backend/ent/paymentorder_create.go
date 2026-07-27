@@ -67,6 +67,20 @@ func (_c *PaymentOrderCreate) SetPayAmount(v float64) *PaymentOrderCreate {
 	return _c
 }
 
+// SetProviderAmount sets the "provider_amount" field.
+func (_c *PaymentOrderCreate) SetProviderAmount(v float64) *PaymentOrderCreate {
+	_c.mutation.SetProviderAmount(v)
+	return _c
+}
+
+// SetNillableProviderAmount sets the "provider_amount" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableProviderAmount(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetProviderAmount(*v)
+	}
+	return _c
+}
+
 // SetFeeRate sets the "fee_rate" field.
 func (_c *PaymentOrderCreate) SetFeeRate(v float64) *PaymentOrderCreate {
 	_c.mutation.SetFeeRate(v)
@@ -77,6 +91,20 @@ func (_c *PaymentOrderCreate) SetFeeRate(v float64) *PaymentOrderCreate {
 func (_c *PaymentOrderCreate) SetNillableFeeRate(v *float64) *PaymentOrderCreate {
 	if v != nil {
 		_c.SetFeeRate(*v)
+	}
+	return _c
+}
+
+// SetFeeMode sets the "fee_mode" field.
+func (_c *PaymentOrderCreate) SetFeeMode(v string) *PaymentOrderCreate {
+	_c.mutation.SetFeeMode(v)
+	return _c
+}
+
+// SetNillableFeeMode sets the "fee_mode" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableFeeMode(v *string) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetFeeMode(*v)
 	}
 	return _c
 }
@@ -513,9 +541,17 @@ func (_c *PaymentOrderCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *PaymentOrderCreate) defaults() {
+	if _, ok := _c.mutation.ProviderAmount(); !ok {
+		v := paymentorder.DefaultProviderAmount
+		_c.mutation.SetProviderAmount(v)
+	}
 	if _, ok := _c.mutation.FeeRate(); !ok {
 		v := paymentorder.DefaultFeeRate
 		_c.mutation.SetFeeRate(v)
+	}
+	if _, ok := _c.mutation.FeeMode(); !ok {
+		v := paymentorder.DefaultFeeMode
+		_c.mutation.SetFeeMode(v)
 	}
 	if _, ok := _c.mutation.OutTradeNo(); !ok {
 		v := paymentorder.DefaultOutTradeNo
@@ -574,8 +610,19 @@ func (_c *PaymentOrderCreate) check() error {
 	if _, ok := _c.mutation.PayAmount(); !ok {
 		return &ValidationError{Name: "pay_amount", err: errors.New(`ent: missing required field "PaymentOrder.pay_amount"`)}
 	}
+	if _, ok := _c.mutation.ProviderAmount(); !ok {
+		return &ValidationError{Name: "provider_amount", err: errors.New(`ent: missing required field "PaymentOrder.provider_amount"`)}
+	}
 	if _, ok := _c.mutation.FeeRate(); !ok {
 		return &ValidationError{Name: "fee_rate", err: errors.New(`ent: missing required field "PaymentOrder.fee_rate"`)}
+	}
+	if _, ok := _c.mutation.FeeMode(); !ok {
+		return &ValidationError{Name: "fee_mode", err: errors.New(`ent: missing required field "PaymentOrder.fee_mode"`)}
+	}
+	if v, ok := _c.mutation.FeeMode(); ok {
+		if err := paymentorder.FeeModeValidator(v); err != nil {
+			return &ValidationError{Name: "fee_mode", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.fee_mode": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.RechargeCode(); !ok {
 		return &ValidationError{Name: "recharge_code", err: errors.New(`ent: missing required field "PaymentOrder.recharge_code"`)}
@@ -721,9 +768,17 @@ func (_c *PaymentOrderCreate) createSpec() (*PaymentOrder, *sqlgraph.CreateSpec)
 		_spec.SetField(paymentorder.FieldPayAmount, field.TypeFloat64, value)
 		_node.PayAmount = value
 	}
+	if value, ok := _c.mutation.ProviderAmount(); ok {
+		_spec.SetField(paymentorder.FieldProviderAmount, field.TypeFloat64, value)
+		_node.ProviderAmount = value
+	}
 	if value, ok := _c.mutation.FeeRate(); ok {
 		_spec.SetField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
 		_node.FeeRate = value
+	}
+	if value, ok := _c.mutation.FeeMode(); ok {
+		_spec.SetField(paymentorder.FieldFeeMode, field.TypeString, value)
+		_node.FeeMode = value
 	}
 	if value, ok := _c.mutation.RechargeCode(); ok {
 		_spec.SetField(paymentorder.FieldRechargeCode, field.TypeString, value)
@@ -1012,6 +1067,24 @@ func (u *PaymentOrderUpsert) AddPayAmount(v float64) *PaymentOrderUpsert {
 	return u
 }
 
+// SetProviderAmount sets the "provider_amount" field.
+func (u *PaymentOrderUpsert) SetProviderAmount(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldProviderAmount, v)
+	return u
+}
+
+// UpdateProviderAmount sets the "provider_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateProviderAmount() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldProviderAmount)
+	return u
+}
+
+// AddProviderAmount adds v to the "provider_amount" field.
+func (u *PaymentOrderUpsert) AddProviderAmount(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldProviderAmount, v)
+	return u
+}
+
 // SetFeeRate sets the "fee_rate" field.
 func (u *PaymentOrderUpsert) SetFeeRate(v float64) *PaymentOrderUpsert {
 	u.Set(paymentorder.FieldFeeRate, v)
@@ -1027,6 +1100,18 @@ func (u *PaymentOrderUpsert) UpdateFeeRate() *PaymentOrderUpsert {
 // AddFeeRate adds v to the "fee_rate" field.
 func (u *PaymentOrderUpsert) AddFeeRate(v float64) *PaymentOrderUpsert {
 	u.Add(paymentorder.FieldFeeRate, v)
+	return u
+}
+
+// SetFeeMode sets the "fee_mode" field.
+func (u *PaymentOrderUpsert) SetFeeMode(v string) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldFeeMode, v)
+	return u
+}
+
+// UpdateFeeMode sets the "fee_mode" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateFeeMode() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldFeeMode)
 	return u
 }
 
@@ -1690,6 +1775,27 @@ func (u *PaymentOrderUpsertOne) UpdatePayAmount() *PaymentOrderUpsertOne {
 	})
 }
 
+// SetProviderAmount sets the "provider_amount" field.
+func (u *PaymentOrderUpsertOne) SetProviderAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetProviderAmount(v)
+	})
+}
+
+// AddProviderAmount adds v to the "provider_amount" field.
+func (u *PaymentOrderUpsertOne) AddProviderAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddProviderAmount(v)
+	})
+}
+
+// UpdateProviderAmount sets the "provider_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateProviderAmount() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateProviderAmount()
+	})
+}
+
 // SetFeeRate sets the "fee_rate" field.
 func (u *PaymentOrderUpsertOne) SetFeeRate(v float64) *PaymentOrderUpsertOne {
 	return u.Update(func(s *PaymentOrderUpsert) {
@@ -1708,6 +1814,20 @@ func (u *PaymentOrderUpsertOne) AddFeeRate(v float64) *PaymentOrderUpsertOne {
 func (u *PaymentOrderUpsertOne) UpdateFeeRate() *PaymentOrderUpsertOne {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.UpdateFeeRate()
+	})
+}
+
+// SetFeeMode sets the "fee_mode" field.
+func (u *PaymentOrderUpsertOne) SetFeeMode(v string) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetFeeMode(v)
+	})
+}
+
+// UpdateFeeMode sets the "fee_mode" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateFeeMode() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateFeeMode()
 	})
 }
 
@@ -2622,6 +2742,27 @@ func (u *PaymentOrderUpsertBulk) UpdatePayAmount() *PaymentOrderUpsertBulk {
 	})
 }
 
+// SetProviderAmount sets the "provider_amount" field.
+func (u *PaymentOrderUpsertBulk) SetProviderAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetProviderAmount(v)
+	})
+}
+
+// AddProviderAmount adds v to the "provider_amount" field.
+func (u *PaymentOrderUpsertBulk) AddProviderAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddProviderAmount(v)
+	})
+}
+
+// UpdateProviderAmount sets the "provider_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateProviderAmount() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateProviderAmount()
+	})
+}
+
 // SetFeeRate sets the "fee_rate" field.
 func (u *PaymentOrderUpsertBulk) SetFeeRate(v float64) *PaymentOrderUpsertBulk {
 	return u.Update(func(s *PaymentOrderUpsert) {
@@ -2640,6 +2781,20 @@ func (u *PaymentOrderUpsertBulk) AddFeeRate(v float64) *PaymentOrderUpsertBulk {
 func (u *PaymentOrderUpsertBulk) UpdateFeeRate() *PaymentOrderUpsertBulk {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.UpdateFeeRate()
+	})
+}
+
+// SetFeeMode sets the "fee_mode" field.
+func (u *PaymentOrderUpsertBulk) SetFeeMode(v string) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetFeeMode(v)
+	})
+}
+
+// UpdateFeeMode sets the "fee_mode" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateFeeMode() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateFeeMode()
 	})
 }
 

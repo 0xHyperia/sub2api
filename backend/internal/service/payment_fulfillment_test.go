@@ -501,6 +501,24 @@ func TestIsValidProviderAmount(t *testing.T) {
 	assert.False(t, isValidProviderAmount(math.Inf(1)))
 }
 
+func TestProviderFeeModeAcceptsBaseOrDisplayedAmount(t *testing.T) {
+	t.Parallel()
+
+	order := &dbent.PaymentOrder{
+		PayAmount:      103,
+		ProviderAmount: 100,
+		FeeMode:        PaymentFeeModeProvider,
+	}
+	assert.True(t, paymentOrderAcceptsProviderPaidAmount(order, 100))
+	assert.True(t, paymentOrderAcceptsProviderPaidAmount(order, 103))
+	assert.False(t, paymentOrderAcceptsProviderPaidAmount(order, 101))
+	assert.False(t, paymentOrderShouldReplaceDisplayAmount(order))
+
+	order.FeeMode = PaymentFeeModePlatform
+	assert.False(t, paymentOrderAcceptsProviderPaidAmount(order, 100))
+	assert.True(t, paymentOrderShouldReplaceDisplayAmount(order))
+}
+
 func TestValidateProviderNotificationMetadataRejectsAlipaySnapshotMismatch(t *testing.T) {
 	t.Parallel()
 

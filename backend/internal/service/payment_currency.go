@@ -26,3 +26,20 @@ func PaymentOrderCurrency(order *dbent.PaymentOrder) string {
 	}
 	return payment.DefaultPaymentCurrency
 }
+
+func PaymentOrderProviderAmount(order *dbent.PaymentOrder) float64 {
+	if order == nil {
+		return 0
+	}
+	if order.ProviderAmount > 0 {
+		return order.ProviderAmount
+	}
+	return order.PayAmount
+}
+
+func PaymentOrderFeeMode(order *dbent.PaymentOrder) string {
+	if order == nil {
+		return PaymentFeeModePlatform
+	}
+	return normalizePaymentFeeMode(order.FeeMode)
+}

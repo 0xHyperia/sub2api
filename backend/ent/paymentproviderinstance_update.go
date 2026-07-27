@@ -147,6 +147,20 @@ func (_u *PaymentProviderInstanceUpdate) SetNillableLimits(v *string) *PaymentPr
 	return _u
 }
 
+// SetFeeRates sets the "fee_rates" field.
+func (_u *PaymentProviderInstanceUpdate) SetFeeRates(v string) *PaymentProviderInstanceUpdate {
+	_u.mutation.SetFeeRates(v)
+	return _u
+}
+
+// SetNillableFeeRates sets the "fee_rates" field if the given value is not nil.
+func (_u *PaymentProviderInstanceUpdate) SetNillableFeeRates(v *string) *PaymentProviderInstanceUpdate {
+	if v != nil {
+		_u.SetFeeRates(*v)
+	}
+	return _u
+}
+
 // SetRefundEnabled sets the "refund_enabled" field.
 func (_u *PaymentProviderInstanceUpdate) SetRefundEnabled(v bool) *PaymentProviderInstanceUpdate {
 	_u.mutation.SetRefundEnabled(v)
@@ -285,6 +299,9 @@ func (_u *PaymentProviderInstanceUpdate) sqlSave(ctx context.Context) (_node int
 	}
 	if value, ok := _u.mutation.Limits(); ok {
 		_spec.SetField(paymentproviderinstance.FieldLimits, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.FeeRates(); ok {
+		_spec.SetField(paymentproviderinstance.FieldFeeRates, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.RefundEnabled(); ok {
 		_spec.SetField(paymentproviderinstance.FieldRefundEnabled, field.TypeBool, value)
@@ -430,6 +447,20 @@ func (_u *PaymentProviderInstanceUpdateOne) SetLimits(v string) *PaymentProvider
 func (_u *PaymentProviderInstanceUpdateOne) SetNillableLimits(v *string) *PaymentProviderInstanceUpdateOne {
 	if v != nil {
 		_u.SetLimits(*v)
+	}
+	return _u
+}
+
+// SetFeeRates sets the "fee_rates" field.
+func (_u *PaymentProviderInstanceUpdateOne) SetFeeRates(v string) *PaymentProviderInstanceUpdateOne {
+	_u.mutation.SetFeeRates(v)
+	return _u
+}
+
+// SetNillableFeeRates sets the "fee_rates" field if the given value is not nil.
+func (_u *PaymentProviderInstanceUpdateOne) SetNillableFeeRates(v *string) *PaymentProviderInstanceUpdateOne {
+	if v != nil {
+		_u.SetFeeRates(*v)
 	}
 	return _u
 }
@@ -602,6 +633,9 @@ func (_u *PaymentProviderInstanceUpdateOne) sqlSave(ctx context.Context) (_node 
 	}
 	if value, ok := _u.mutation.Limits(); ok {
 		_spec.SetField(paymentproviderinstance.FieldLimits, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.FeeRates(); ok {
+		_spec.SetField(paymentproviderinstance.FieldFeeRates, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.RefundEnabled(); ok {
 		_spec.SetField(paymentproviderinstance.FieldRefundEnabled, field.TypeBool, value)

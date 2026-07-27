@@ -805,3 +805,20 @@ func validWxpayProviderConfigWithJSAPIAppID(t *testing.T) map[string]string {
 	cfg["mpAppId"] = "wx-mp-app-test"
 	return cfg
 }
+
+func TestNormalizeProviderFeeRates(t *testing.T) {
+	t.Parallel()
+
+	raw, err := normalizeProviderFeeRates(payment.TypeEasyPay, "alipay,wxpay,custom_method", map[string]float64{
+		"alipay": 3, "wxpay": 3.8, "custom_method": 2.555, "removed": 9,
+	})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"alipay":3,"wxpay":3.8,"custom_method":2.56}`, raw)
+
+	raw, err = normalizeProviderFeeRates(payment.TypeStripe, "card,link", map[string]float64{"stripe": 4.2})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"stripe":4.2}`, raw)
+
+	_, err = normalizeProviderFeeRates(payment.TypeAlipay, "alipay", map[string]float64{"alipay": 100.01})
+	require.Error(t, err)
+}

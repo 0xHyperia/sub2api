@@ -26,8 +26,12 @@ const (
 	FieldAmount = "amount"
 	// FieldPayAmount holds the string denoting the pay_amount field in the database.
 	FieldPayAmount = "pay_amount"
+	// FieldProviderAmount holds the string denoting the provider_amount field in the database.
+	FieldProviderAmount = "provider_amount"
 	// FieldFeeRate holds the string denoting the fee_rate field in the database.
 	FieldFeeRate = "fee_rate"
+	// FieldFeeMode holds the string denoting the fee_mode field in the database.
+	FieldFeeMode = "fee_mode"
 	// FieldRechargeCode holds the string denoting the recharge_code field in the database.
 	FieldRechargeCode = "recharge_code"
 	// FieldOutTradeNo holds the string denoting the out_trade_no field in the database.
@@ -114,7 +118,9 @@ var Columns = []string{
 	FieldUserNotes,
 	FieldAmount,
 	FieldPayAmount,
+	FieldProviderAmount,
 	FieldFeeRate,
+	FieldFeeMode,
 	FieldRechargeCode,
 	FieldOutTradeNo,
 	FieldPaymentType,
@@ -164,8 +170,14 @@ var (
 	UserEmailValidator func(string) error
 	// UserNameValidator is a validator for the "user_name" field. It is called by the builders before save.
 	UserNameValidator func(string) error
+	// DefaultProviderAmount holds the default value on creation for the "provider_amount" field.
+	DefaultProviderAmount float64
 	// DefaultFeeRate holds the default value on creation for the "fee_rate" field.
 	DefaultFeeRate float64
+	// DefaultFeeMode holds the default value on creation for the "fee_mode" field.
+	DefaultFeeMode string
+	// FeeModeValidator is a validator for the "fee_mode" field. It is called by the builders before save.
+	FeeModeValidator func(string) error
 	// RechargeCodeValidator is a validator for the "recharge_code" field. It is called by the builders before save.
 	RechargeCodeValidator func(string) error
 	// DefaultOutTradeNo holds the default value on creation for the "out_trade_no" field.
@@ -244,9 +256,19 @@ func ByPayAmount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPayAmount, opts...).ToFunc()
 }
 
+// ByProviderAmount orders the results by the provider_amount field.
+func ByProviderAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProviderAmount, opts...).ToFunc()
+}
+
 // ByFeeRate orders the results by the fee_rate field.
 func ByFeeRate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFeeRate, opts...).ToFunc()
+}
+
+// ByFeeMode orders the results by the fee_mode field.
+func ByFeeMode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFeeMode, opts...).ToFunc()
 }
 
 // ByRechargeCode orders the results by the recharge_code field.

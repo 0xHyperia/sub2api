@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -37,17 +38,18 @@ func (s *PaymentConfigService) ListProviderInstances(ctx context.Context) ([]*db
 
 // ProviderInstanceResponse is the API response for a provider instance.
 type ProviderInstanceResponse struct {
-	ID              int64             `json:"id"`
-	ProviderKey     string            `json:"provider_key"`
-	Name            string            `json:"name"`
-	Config          map[string]string `json:"config"`
-	SupportedTypes  []string          `json:"supported_types"`
-	Limits          string            `json:"limits"`
-	Enabled         bool              `json:"enabled"`
-	RefundEnabled   bool              `json:"refund_enabled"`
-	AllowUserRefund bool              `json:"allow_user_refund"`
-	SortOrder       int               `json:"sort_order"`
-	PaymentMode     string            `json:"payment_mode"`
+	ID              int64              `json:"id"`
+	ProviderKey     string             `json:"provider_key"`
+	Name            string             `json:"name"`
+	Config          map[string]string  `json:"config"`
+	SupportedTypes  []string           `json:"supported_types"`
+	Limits          string             `json:"limits"`
+	FeeRates        map[string]float64 `json:"fee_rates"`
+	Enabled         bool               `json:"enabled"`
+	RefundEnabled   bool               `json:"refund_enabled"`
+	AllowUserRefund bool               `json:"allow_user_refund"`
+	SortOrder       int                `json:"sort_order"`
+	PaymentMode     string             `json:"payment_mode"`
 }
 
 // ListProviderInstancesWithConfig returns provider instances with decrypted config.
@@ -59,19 +61,31 @@ func (s *PaymentConfigService) ListProviderInstancesWithConfig(ctx context.Conte
 	}
 	result := make([]ProviderInstanceResponse, 0, len(instances))
 	for _, inst := range instances {
-		resp := ProviderInstanceResponse{
-			ID: int64(inst.ID), ProviderKey: inst.ProviderKey, Name: inst.Name,
-			SupportedTypes: splitTypes(inst.SupportedTypes), Limits: inst.Limits,
-			Enabled: inst.Enabled, RefundEnabled: inst.RefundEnabled, AllowUserRefund: inst.AllowUserRefund,
-			SortOrder: inst.SortOrder, PaymentMode: inst.PaymentMode,
-		}
-		resp.Config, err = s.decryptAndMaskConfig(inst.ProviderKey, inst.Config)
+		resp, responseErr := s.providerInstanceResponse(inst)
+		err = responseErr
 		if err != nil {
 			return nil, fmt.Errorf("decrypt config for instance %d: %w", inst.ID, err)
 		}
 		result = append(result, resp)
 	}
 	return result, nil
+}
+
+func (s *PaymentConfigService) ProviderInstanceResponse(inst *dbent.PaymentProviderInstance) (ProviderInstanceResponse, error) {
+	return s.providerInstanceResponse(inst)
+}
+
+func (s *PaymentConfigService) providerInstanceResponse(inst *dbent.PaymentProviderInstance) (ProviderInstanceResponse, error) {
+	resp := ProviderInstanceResponse{
+		ID: int64(inst.ID), ProviderKey: inst.ProviderKey, Name: inst.Name,
+		SupportedTypes: splitTypes(inst.SupportedTypes), Limits: inst.Limits,
+		FeeRates: parseProviderFeeRates(inst.FeeRates),
+		Enabled:  inst.Enabled, RefundEnabled: inst.RefundEnabled, AllowUserRefund: inst.AllowUserRefund,
+		SortOrder: inst.SortOrder, PaymentMode: inst.PaymentMode,
+	}
+	var err error
+	resp.Config, err = s.decryptAndMaskConfig(inst.ProviderKey, inst.Config)
+	return resp, err
 }
 
 // decryptAndMaskConfig returns the stored config with sensitive fields omitted.
@@ -199,6 +213,10 @@ func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req C
 			return nil, err
 		}
 	}
+	feeRates, err := normalizeProviderFeeRates(req.ProviderKey, typesStr, req.FeeRates)
+	if err != nil {
+		return nil, err
+	}
 	enc, err := s.encryptConfig(req.Config)
 	if err != nil {
 		return nil, err
@@ -207,9 +225,44 @@ func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req C
 	return s.entClient.PaymentProviderInstance.Create().
 		SetProviderKey(req.ProviderKey).SetName(req.Name).SetConfig(enc).
 		SetSupportedTypes(typesStr).SetEnabled(req.Enabled).SetPaymentMode(req.PaymentMode).
-		SetSortOrder(req.SortOrder).SetLimits(req.Limits).SetRefundEnabled(req.RefundEnabled).
+		SetSortOrder(req.SortOrder).SetLimits(req.Limits).SetFeeRates(feeRates).SetRefundEnabled(req.RefundEnabled).
 		SetAllowUserRefund(allowUserRefund).
 		Save(ctx)
+}
+
+func parseProviderFeeRates(raw string) map[string]float64 {
+	rates := map[string]float64{}
+	if strings.TrimSpace(raw) == "" {
+		return rates
+	}
+	if err := json.Unmarshal([]byte(raw), &rates); err != nil {
+		return map[string]float64{}
+	}
+	return rates
+}
+
+func normalizeProviderFeeRates(providerKey, supportedTypes string, input map[string]float64) (string, error) {
+	keys := splitTypes(supportedTypes)
+	if providerKey == payment.TypeStripe {
+		keys = []string{payment.TypeStripe}
+	}
+	rates := make(map[string]float64, len(keys))
+	for _, key := range keys {
+		key = NormalizeVisibleMethod(key)
+		if key == "" || key == payment.TypeEasyPay {
+			continue
+		}
+		rate := input[key]
+		if math.IsNaN(rate) || math.IsInf(rate, 0) || rate < 0 || rate > 100 {
+			return "", infraerrors.BadRequest("VALIDATION_ERROR", fmt.Sprintf("fee rate for %s must be between 0 and 100", key))
+		}
+		rates[key] = math.Round(rate*100) / 100
+	}
+	encoded, err := json.Marshal(rates)
+	if err != nil {
+		return "", fmt.Errorf("marshal provider fee rates: %w", err)
+	}
+	return string(encoded), nil
 }
 
 func validateProviderRequest(providerKey, name, supportedTypes string) error {
@@ -311,6 +364,17 @@ func (s *PaymentConfigService) UpdateProviderInstance(ctx context.Context, id in
 	nextSupportedTypes := current.SupportedTypes
 	if req.SupportedTypes != nil {
 		nextSupportedTypes = joinTypes(req.SupportedTypes)
+	}
+	var nextFeeRates string
+	if req.FeeRates != nil || req.SupportedTypes != nil {
+		feeRateInput := req.FeeRates
+		if feeRateInput == nil {
+			feeRateInput = parseProviderFeeRates(current.FeeRates)
+		}
+		nextFeeRates, err = normalizeProviderFeeRates(current.ProviderKey, nextSupportedTypes, feeRateInput)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if err := s.validateVisibleMethodEnablementConflicts(ctx, id, current.ProviderKey, nextSupportedTypes, nextEnabled); err != nil {
 		return nil, err
@@ -419,6 +483,9 @@ func (s *PaymentConfigService) UpdateProviderInstance(ctx context.Context, id in
 	}
 	if req.Limits != nil {
 		u.SetLimits(*req.Limits)
+	}
+	if nextFeeRates != "" {
+		u.SetFeeRates(nextFeeRates)
 	}
 	if req.RefundEnabled != nil {
 		u.SetRefundEnabled(*req.RefundEnabled)

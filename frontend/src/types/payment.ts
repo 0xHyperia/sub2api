@@ -22,12 +22,13 @@ export type OrderStatus =
 export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' | 'stripe' | 'easypay' | 'airwallex'
 
 export type OrderType = 'balance' | 'subscription'
+export type PaymentFeeMode = 'platform' | 'provider' | 'merchant'
 
 // ==================== Configuration ====================
 
 export interface PaymentConfig {
   payment_enabled: boolean
-  instant_enabled?: boolean
+  fee_mode: PaymentFeeMode
   min_amount: number
   max_amount: number
   daily_limit: number
@@ -55,6 +56,8 @@ export interface MethodLimit {
   single_min: number
   single_max: number
   fee_rate: number
+  fee_rate_min?: number
+  fee_rate_max?: number
   available: boolean
 }
 
@@ -71,7 +74,7 @@ export interface CheckoutInfoResponse {
   global_min: number
   global_max: number
   plans: SubscriptionPlan[]
-  instant_enabled?: boolean
+  fee_mode: PaymentFeeMode
   balance_disabled: boolean
   balance_recharge_multiplier: number
   quick_recharge_amounts: QuickRechargeAmount[]
@@ -100,6 +103,8 @@ export interface PaymentOrder {
   user_id: number
   amount: number
   pay_amount: number
+  provider_amount?: number
+  fee_mode?: PaymentFeeMode
   currency?: string
   fee_rate: number
   payment_type: string
@@ -174,6 +179,7 @@ export interface ProviderInstance {
   refund_enabled: boolean
   allow_user_refund: boolean
   limits: string
+  fee_rates: Record<string, number>
   sort_order: number
 }
 

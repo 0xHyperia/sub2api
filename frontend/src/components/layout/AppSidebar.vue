@@ -303,10 +303,10 @@ const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 const flagBatchImageAccess = () => canUseBatchImage.value
 const flagPurchase = () =>
   appStore.cachedPublicSettings?.payment_enabled === true &&
-  appStore.cachedPublicSettings?.payment_instant_enabled !== false
+  (authStore.isAdmin || appStore.cachedPublicSettings?.payment_recharge_page_visible !== false)
 const flagPaymentOrders = () =>
   appStore.cachedPublicSettings?.payment_enabled === true &&
-  appStore.cachedPublicSettings?.payment_instant_enabled !== false
+  (authStore.isAdmin || appStore.cachedPublicSettings?.payment_orders_page_visible !== false)
 
 const customMenuItemsForUser = computed(() => {
   const items = appStore.cachedPublicSettings?.custom_menu_items ?? []

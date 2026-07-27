@@ -122,7 +122,10 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		paymentCfg, _ = h.paymentConfigService.GetPaymentConfig(c.Request.Context())
 	}
 	if paymentCfg == nil {
-		paymentCfg = &service.PaymentConfig{}
+		paymentCfg = &service.PaymentConfig{
+			RechargePageVisible: true,
+			OrdersPageVisible:   true,
+		}
 	}
 
 	payload := dto.SystemSettings{
@@ -317,7 +320,9 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		AccountQuotaNotifyEnabled:                              settings.AccountQuotaNotifyEnabled,
 		AccountQuotaNotifyEmails:                               dto.NotifyEmailEntriesFromService(settings.AccountQuotaNotifyEmails),
 		PaymentEnabled:                                         paymentCfg.Enabled,
-		PaymentInstantEnabled:                                  paymentCfg.InstantEnabled,
+		PaymentRechargePageVisible:                             paymentCfg.RechargePageVisible,
+		PaymentOrdersPageVisible:                               paymentCfg.OrdersPageVisible,
+		PaymentFeeMode:                                         paymentCfg.EffectiveFeeMode(),
 		PaymentMinAmount:                                       paymentCfg.MinAmount,
 		PaymentMaxAmount:                                       paymentCfg.MaxAmount,
 		PaymentDailyLimit:                                      paymentCfg.DailyLimit,

@@ -255,6 +255,35 @@
         </div>
       </div>
 
+      <div v-if="limitableTypes.length" class="border-t border-outline pt-4">
+        <h4 class="text-sm font-semibold text-foreground">
+          {{ t('admin.settings.payment.methodFeeRatesTitle') }}
+        </h4>
+        <p class="mt-1 text-xs text-foreground-subtle">
+          {{ t('admin.settings.payment.methodFeeRatesHint') }}
+        </p>
+        <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div v-for="lt in limitableTypes" :key="`fee-${lt.value}`">
+            <label :for="`payment-fee-rate-${lt.value}`" class="text-xs text-foreground-muted">
+              {{ lt.label }}
+            </label>
+            <div class="relative mt-0.5">
+              <input
+                :id="`payment-fee-rate-${lt.value}`"
+                type="number"
+                :value="getFeeRate(lt.value)"
+                @input="setFeeRate(lt.value, ($event.target as HTMLInputElement).value)"
+                class="input pr-8"
+                min="0"
+                max="100"
+                step="0.01"
+              />
+              <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-foreground-subtle">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Per-type limits (collapsible) -->
       <div v-if="limitableTypes.length" class="border-t border-outline pt-4">
         <button type="button" :aria-expanded="limitsExpanded" aria-controls="payment-provider-limits" @click="limitsExpanded = !limitsExpanded" class="flex w-full items-center justify-between rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">
@@ -392,6 +421,7 @@ const emit = defineEmits<{
     allow_user_refund: boolean
     config: Record<string, string>
     limits: string
+    fee_rates: Record<string, number>
   }]
 }>()
 
@@ -422,6 +452,7 @@ const form = reactive({
 })
 const config = reactive<Record<string, string>>({})
 const limits = reactive<Record<string, Record<string, number>>>({})
+const feeRates = reactive<Record<string, number>>({})
 const notifyBaseUrl = ref('')
 const returnBaseUrl = ref('')
 const limitsExpanded = ref(false)
@@ -614,11 +645,32 @@ function onKeyChange() {
 function clearConfig() {
   Object.keys(config).forEach(k => delete config[k])
   Object.keys(limits).forEach(k => delete limits[k])
+  Object.keys(feeRates).forEach(k => delete feeRates[k])
   Object.keys(visibleFields).forEach(k => delete visibleFields[k])
   notifyBaseUrl.value = ''
   returnBaseUrl.value = ''
   limitsExpanded.value = false
   easyPayCustomMethods.splice(0, easyPayCustomMethods.length)
+}
+
+function getFeeRate(paymentType: string): string {
+  const value = feeRates[paymentType]
+  return Number.isFinite(value) ? String(value) : '0'
+}
+
+function setFeeRate(paymentType: string, value: string) {
+  const parsed = Number(value)
+  feeRates[paymentType] = Number.isFinite(parsed)
+    ? Math.min(100, Math.max(0, Math.round(parsed * 100) / 100))
+    : 0
+}
+
+function serializedFeeRates(): Record<string, number> {
+  const result: Record<string, number> = {}
+  for (const type of limitableTypes.value) {
+    result[type.value] = feeRates[type.value] ?? 0
+  }
+  return result
 }
 
 function applyDefaults() {
@@ -739,6 +791,7 @@ function handleSave() {
     allow_user_refund: form.refund_enabled ? form.allow_user_refund : false,
     config: filteredConfig,
     limits: serializeLimits(),
+    fee_rates: serializedFeeRates(),
   })
 }
 
@@ -858,6 +911,9 @@ function loadProvider(provider: ProviderInstance) {
       }
       limitsExpanded.value = Object.keys(limits).length > 0
     } catch { /* ignore */ }
+  }
+  for (const [paymentType, rate] of Object.entries(provider.fee_rates || {})) {
+    feeRates[paymentType] = rate
   }
 }
 

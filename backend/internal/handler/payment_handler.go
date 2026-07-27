@@ -30,9 +30,33 @@ func NewPaymentHandler(paymentService *service.PaymentService, configService *se
 	}
 }
 
+func (h *PaymentHandler) requirePageVisible(c *gin.Context, ordersPage bool) bool {
+	role, _ := middleware2.GetUserRoleFromContext(c)
+	if role == service.RoleAdmin {
+		return true
+	}
+	cfg, err := h.configService.GetPaymentConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return false
+	}
+	visible := cfg.RechargePageVisible
+	if ordersPage {
+		visible = cfg.OrdersPageVisible
+	}
+	if !visible {
+		response.Forbidden(c, "Page is not visible to regular users")
+		return false
+	}
+	return true
+}
+
 // GetPaymentConfig returns the payment system configuration.
 // GET /api/v1/payment/config
 func (h *PaymentHandler) GetPaymentConfig(c *gin.Context) {
+	if !h.requirePageVisible(c, false) {
+		return
+	}
 	cfg, err := h.configService.GetPaymentConfig(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -44,6 +68,9 @@ func (h *PaymentHandler) GetPaymentConfig(c *gin.Context) {
 // GetPlans returns subscription plans available for sale.
 // GET /api/v1/payment/plans
 func (h *PaymentHandler) GetPlans(c *gin.Context) {
+	if !h.requirePageVisible(c, false) {
+		return
+	}
 	plans, err := h.configService.ListPlansForSale(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -94,6 +121,9 @@ func (h *PaymentHandler) GetPlans(c *gin.Context) {
 // payment methods with limits, subscription plans, and configuration.
 // GET /api/v1/payment/checkout-info
 func (h *PaymentHandler) GetCheckoutInfo(c *gin.Context) {
+	if !h.requirePageVisible(c, false) {
+		return
+	}
 	ctx := c.Request.Context()
 
 	// Fetch limits (methods + global range)
@@ -145,12 +175,12 @@ func (h *PaymentHandler) GetCheckoutInfo(c *gin.Context) {
 		GlobalMin:                     limitsResp.GlobalMin,
 		GlobalMax:                     limitsResp.GlobalMax,
 		Plans:                         planList,
-		InstantEnabled:                cfg.InstantEnabled,
 		BalanceDisabled:               cfg.BalanceDisabled,
 		BalanceRechargeMultiplier:     cfg.BalanceRechargeMultiplier,
 		QuickRechargeAmounts:          cfg.QuickRechargeAmounts,
 		CustomRechargeEnabled:         cfg.CustomRechargeEnabled,
 		SubscriptionUSDToCNYRate:      cfg.SubscriptionUSDToCNYRate,
+		FeeMode:                       cfg.EffectiveFeeMode(),
 		RechargeFeeRate:               cfg.RechargeFeeRate,
 		HelpText:                      cfg.HelpText,
 		HelpImageURL:                  cfg.HelpImageURL,
@@ -165,12 +195,12 @@ type checkoutInfoResponse struct {
 	GlobalMin                     float64                         `json:"global_min"`
 	GlobalMax                     float64                         `json:"global_max"`
 	Plans                         []checkoutPlan                  `json:"plans"`
-	InstantEnabled                bool                            `json:"instant_enabled"`
 	BalanceDisabled               bool                            `json:"balance_disabled"`
 	BalanceRechargeMultiplier     float64                         `json:"balance_recharge_multiplier"`
 	QuickRechargeAmounts          []service.QuickRechargeAmount   `json:"quick_recharge_amounts"`
 	CustomRechargeEnabled         bool                            `json:"custom_recharge_amount_enabled"`
 	SubscriptionUSDToCNYRate      float64                         `json:"subscription_usd_to_cny_rate"`
+	FeeMode                       string                          `json:"fee_mode"`
 	RechargeFeeRate               float64                         `json:"recharge_fee_rate"`
 	HelpText                      string                          `json:"help_text"`
 	HelpImageURL                  string                          `json:"help_image_url"`
@@ -224,6 +254,9 @@ func parseFeatures(raw string) []string {
 // GetLimits returns per-payment-type limits derived from enabled provider instances.
 // GET /api/v1/payment/limits
 func (h *PaymentHandler) GetLimits(c *gin.Context) {
+	if !h.requirePageVisible(c, false) {
+		return
+	}
 	resp, err := h.configService.GetAvailableMethodLimits(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -251,6 +284,9 @@ type CreateOrderRequest struct {
 // CreateOrder creates a new payment order.
 // POST /api/v1/payment/orders
 func (h *PaymentHandler) CreateOrder(c *gin.Context) {
+	if !h.requirePageVisible(c, false) {
+		return
+	}
 	subject, ok := requireAuth(c)
 	if !ok {
 		return
@@ -341,6 +377,9 @@ func applyWeChatPaymentResumeClaims(req *CreateOrderRequest, claims *service.WeC
 // GetMyOrders returns the authenticated user's orders.
 // GET /api/v1/payment/orders/my
 func (h *PaymentHandler) GetMyOrders(c *gin.Context) {
+	if !h.requirePageVisible(c, true) {
+		return
+	}
 	subject, ok := requireAuth(c)
 	if !ok {
 		return

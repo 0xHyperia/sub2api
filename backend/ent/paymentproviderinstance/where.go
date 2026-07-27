@@ -94,6 +94,11 @@ func Limits(v string) predicate.PaymentProviderInstance {
 	return predicate.PaymentProviderInstance(sql.FieldEQ(FieldLimits, v))
 }
 
+// FeeRates applies equality check predicate on the "fee_rates" field. It's identical to FeeRatesEQ.
+func FeeRates(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldEQ(FieldFeeRates, v))
+}
+
 // RefundEnabled applies equality check predicate on the "refund_enabled" field. It's identical to RefundEnabledEQ.
 func RefundEnabled(v bool) predicate.PaymentProviderInstance {
 	return predicate.PaymentProviderInstance(sql.FieldEQ(FieldRefundEnabled, v))
@@ -552,6 +557,71 @@ func LimitsEqualFold(v string) predicate.PaymentProviderInstance {
 // LimitsContainsFold applies the ContainsFold predicate on the "limits" field.
 func LimitsContainsFold(v string) predicate.PaymentProviderInstance {
 	return predicate.PaymentProviderInstance(sql.FieldContainsFold(FieldLimits, v))
+}
+
+// FeeRatesEQ applies the EQ predicate on the "fee_rates" field.
+func FeeRatesEQ(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldEQ(FieldFeeRates, v))
+}
+
+// FeeRatesNEQ applies the NEQ predicate on the "fee_rates" field.
+func FeeRatesNEQ(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldNEQ(FieldFeeRates, v))
+}
+
+// FeeRatesIn applies the In predicate on the "fee_rates" field.
+func FeeRatesIn(vs ...string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldIn(FieldFeeRates, vs...))
+}
+
+// FeeRatesNotIn applies the NotIn predicate on the "fee_rates" field.
+func FeeRatesNotIn(vs ...string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldNotIn(FieldFeeRates, vs...))
+}
+
+// FeeRatesGT applies the GT predicate on the "fee_rates" field.
+func FeeRatesGT(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldGT(FieldFeeRates, v))
+}
+
+// FeeRatesGTE applies the GTE predicate on the "fee_rates" field.
+func FeeRatesGTE(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldGTE(FieldFeeRates, v))
+}
+
+// FeeRatesLT applies the LT predicate on the "fee_rates" field.
+func FeeRatesLT(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldLT(FieldFeeRates, v))
+}
+
+// FeeRatesLTE applies the LTE predicate on the "fee_rates" field.
+func FeeRatesLTE(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldLTE(FieldFeeRates, v))
+}
+
+// FeeRatesContains applies the Contains predicate on the "fee_rates" field.
+func FeeRatesContains(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldContains(FieldFeeRates, v))
+}
+
+// FeeRatesHasPrefix applies the HasPrefix predicate on the "fee_rates" field.
+func FeeRatesHasPrefix(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldHasPrefix(FieldFeeRates, v))
+}
+
+// FeeRatesHasSuffix applies the HasSuffix predicate on the "fee_rates" field.
+func FeeRatesHasSuffix(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldHasSuffix(FieldFeeRates, v))
+}
+
+// FeeRatesEqualFold applies the EqualFold predicate on the "fee_rates" field.
+func FeeRatesEqualFold(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldEqualFold(FieldFeeRates, v))
+}
+
+// FeeRatesContainsFold applies the ContainsFold predicate on the "fee_rates" field.
+func FeeRatesContainsFold(v string) predicate.PaymentProviderInstance {
+	return predicate.PaymentProviderInstance(sql.FieldContainsFold(FieldFeeRates, v))
 }
 
 // RefundEnabledEQ applies the EQ predicate on the "refund_enabled" field.

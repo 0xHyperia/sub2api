@@ -48,6 +48,7 @@ function providerFactory(overrides: Partial<ProviderInstance> = {}): ProviderIns
     refund_enabled: false,
     allow_user_refund: false,
     limits: '',
+    fee_rates: {},
     sort_order: 0,
     ...overrides,
   }
@@ -235,6 +236,32 @@ describe('PaymentProviderDialog payment guide', () => {
     }
     expect(payload.config.customMethods).toBe('[{"type":"ldc","upstreamType":"epay","displayName":"LDC"}]')
     expect(payload.supported_types).toEqual(['alipay', 'wxpay', 'ldc'])
+  })
+
+  it('edits and emits fee rates for each supported payment method', async () => {
+    const provider = providerFactory({
+      provider_key: 'easypay',
+      config: {
+        pid: 'pid-1',
+        apiBase: 'https://pay.example.com',
+        notifyUrl: 'https://example.com/api/v1/payment/webhook/easypay',
+        returnUrl: 'https://example.com/payment/result',
+      },
+      supported_types: ['alipay', 'wxpay'],
+      payment_mode: 'qrcode',
+      fee_rates: { alipay: 3, wxpay: 3.8 },
+    })
+    const wrapper = mountDialog({ editing: provider })
+
+    ;(wrapper.vm as unknown as { loadProvider: (provider: ProviderInstance) => void }).loadProvider(provider)
+    await nextTick()
+
+    expect((wrapper.get('#payment-fee-rate-alipay').element as HTMLInputElement).value).toBe('3')
+    await wrapper.get('#payment-fee-rate-wxpay').setValue('2.55')
+    await wrapper.find('form').trigger('submit.prevent')
+
+    const payload = wrapper.emitted('save')?.[0]?.[0] as { fee_rates: Record<string, number> }
+    expect(payload.fee_rates).toEqual({ alipay: 3, wxpay: 2.55 })
   })
 
   it('rejects custom EasyPay method types with built-in payment prefixes', async () => {

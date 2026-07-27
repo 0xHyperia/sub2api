@@ -36,9 +36,6 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if !cfg.Enabled {
 		return nil, infraerrors.Forbidden("PAYMENT_DISABLED", "payment system is disabled")
 	}
-	if !cfg.InstantEnabled {
-		return nil, infraerrors.Forbidden("PAYMENT_INSTANT_DISABLED", "instant payment is disabled")
-	}
 	plan, err := s.validateOrderInput(ctx, req, cfg)
 	if err != nil {
 		return nil, err
@@ -66,7 +63,6 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 		rechargeBonus, _ = quickRechargeBonus(req.Amount, cfg.QuickRechargeAmounts)
 		orderAmount = calculateCreditedBalanceWithBonus(req.Amount, cfg.BalanceRechargeMultiplier, rechargeBonus)
 	}
-	feeRate := cfg.RechargeFeeRateFor(req.PaymentType)
 	methodCurrency := payment.DefaultPaymentCurrency
 	if s.configService != nil {
 		methodCurrency, err = s.configService.ValidateMethodCurrencyConsistency(ctx, req.PaymentType)
@@ -74,28 +70,37 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 			return nil, err
 		}
 	}
-	payAmountStr, payAmount, err := calculateCreateOrderPayAmountForOrderType(limitAmount, feeRate, methodCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate)
+	_, _, _, baseProviderAmount, err := calculateCreateOrderAmountsForOrderType(limitAmount, 0, methodCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate, cfg.FeeMode)
 	if err != nil {
 		return nil, err
 	}
-	sel, err := s.selectCreateOrderInstance(ctx, req, cfg, payAmount)
+	amountResolver := func(rate float64) float64 {
+		_, _, _, amount, calcErr := calculateCreateOrderAmountsForOrderType(limitAmount, rate, methodCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate, cfg.FeeMode)
+		if calcErr != nil {
+			return baseProviderAmount
+		}
+		return amount
+	}
+	sel, err := s.selectCreateOrderInstance(ctx, req, cfg, baseProviderAmount, amountResolver)
 	if err != nil {
 		return nil, err
+	}
+	if sel == nil {
+		return nil, infraerrors.TooManyRequests("NO_AVAILABLE_INSTANCE", "no_available_instance")
 	}
 	if err := s.validateSelectedCreateOrderInstance(ctx, req, sel); err != nil {
 		return nil, err
 	}
-	selectedCurrency := payment.DefaultPaymentCurrency
-	if sel != nil {
-		selectedCurrency = paymentProviderConfigCurrency(sel.ProviderKey, sel.Config)
+	feeRate := sel.FeeRate
+	if cfg.EffectiveFeeMode() == PaymentFeeModeMerchant {
+		feeRate = 0
 	}
-	if selectedCurrency != methodCurrency {
-		payAmountStr, payAmount, err = calculateCreateOrderPayAmountForOrderType(limitAmount, feeRate, selectedCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate)
-		if err != nil {
-			return nil, err
-		}
+	selectedCurrency := paymentProviderConfigCurrency(sel.ProviderKey, sel.Config)
+	_, payAmount, providerAmountStr, providerAmount, err := calculateCreateOrderAmountsForOrderType(limitAmount, feeRate, selectedCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate, cfg.FeeMode)
+	if err != nil {
+		return nil, err
 	}
-	if err := validateSelectedCreateOrderAmountCurrency(payAmountStr, sel); err != nil {
+	if err := validateSelectedCreateOrderAmountCurrency(providerAmountStr, sel); err != nil {
 		return nil, err
 	}
 	oauthResp, err := s.maybeBuildWeChatOAuthRequiredResponseForSelection(ctx, req, limitAmount, payAmount, feeRate, sel)
@@ -105,11 +110,11 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if oauthResp != nil {
 		return oauthResp, nil
 	}
-	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, rechargeBonus, feeRate, payAmount, sel)
+	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, rechargeBonus, feeRate, payAmount, providerAmount, sel)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.invokeProvider(ctx, order, req, cfg, limitAmount, payAmountStr, payAmount, plan, sel)
+	resp, err := s.invokeProvider(ctx, order, req, cfg, limitAmount, providerAmountStr, payAmount, plan, sel)
 	if err != nil {
 		_, _ = s.entClient.PaymentOrder.UpdateOneID(order.ID).
 			SetStatus(OrderStatusFailed).
@@ -157,7 +162,7 @@ func (s *PaymentService) validateSubOrder(ctx context.Context, req CreateOrderRe
 	return plan, nil
 }
 
-func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, rechargeBonus, feeRate, payAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
+func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, rechargeBonus, feeRate, payAmount, providerAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
@@ -198,7 +203,9 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		SetNillableUserNotes(psNilIfEmpty(user.Notes)).
 		SetAmount(orderAmount).
 		SetPayAmount(payAmount).
+		SetProviderAmount(providerAmount).
 		SetFeeRate(feeRate).
+		SetFeeMode(normalizePaymentFeeMode(cfg.FeeMode)).
 		SetRechargeCode("").
 		SetOutTradeNo(outTradeNo).
 		SetPaymentType(req.PaymentType).
@@ -360,11 +367,12 @@ func (s *PaymentService) checkDailyLimit(ctx context.Context, tx *dbent.Tx, user
 	return nil
 }
 
-func (s *PaymentService) selectCreateOrderInstance(ctx context.Context, req CreateOrderRequest, cfg *PaymentConfig, payAmount float64) (*payment.InstanceSelection, error) {
+func (s *PaymentService) selectCreateOrderInstance(ctx context.Context, req CreateOrderRequest, cfg *PaymentConfig, payAmount float64, resolver payment.InstanceAmountResolver) (*payment.InstanceSelection, error) {
 	selectCtx, err := s.prepareCreateOrderSelectionContext(ctx, req)
 	if err != nil {
 		return nil, err
 	}
+	selectCtx = payment.WithInstanceAmountResolver(selectCtx, resolver)
 	sel, err := s.loadBalancer.SelectInstance(selectCtx, "", req.PaymentType, payment.Strategy(cfg.LoadBalanceStrategy), payAmount)
 	if err != nil {
 		return nil, infraerrors.ServiceUnavailable("PAYMENT_GATEWAY_ERROR", "method_not_configured").
@@ -411,7 +419,7 @@ func (s *PaymentService) usesOfficialWxpayVisibleMethod(ctx context.Context) boo
 	return inst.ProviderKey == payment.TypeWxpay
 }
 
-func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, limitAmount float64, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan, sel *payment.InstanceSelection) (*CreateOrderResponse, error) {
+func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, limitAmount float64, providerAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan, sel *payment.InstanceSelection) (*CreateOrderResponse, error) {
 	prov, err := provider.CreateProvider(sel.ProviderKey, sel.InstanceID, sel.Config)
 	if err != nil {
 		slog.Error("[PaymentService] CreateProvider failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
@@ -460,7 +468,7 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		Contact:     order.UserEmail,
 		IsMobile:    req.IsMobile,
 		ReturnURL:   providerReturnURL,
-	}, sel, outTradeNo, payAmountStr, subject)
+	}, sel, outTradeNo, providerAmountStr, subject)
 	providerReq.AlipayMobilePrecreate = shouldUseAlipayMobilePrecreate(req, cfg, sel)
 	finishProviderCall := servertiming.ObserveDependency(ctx, "payment")
 	pr, err := prov.CreatePayment(ctx, providerReq)
@@ -487,6 +495,8 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		"paymentAmount":  req.Amount,
 		"creditedAmount": order.Amount,
 		"payAmount":      order.PayAmount,
+		"providerAmount": order.ProviderAmount,
+		"feeMode":        order.FeeMode,
 		"paymentType":    req.PaymentType,
 		"orderType":      req.OrderType,
 		"paymentSource":  NormalizePaymentSource(req.PaymentSource),
@@ -665,6 +675,29 @@ func calculateCreateOrderPayAmountForOrderType(limitAmount, feeRate float64, cur
 		paymentAmount = calculateSubscriptionGatewayBaseAmount(limitAmount, usdToCnyRate, currency)
 	}
 	return calculateCreateOrderPayAmount(paymentAmount, feeRate, currency)
+}
+
+func calculateCreateOrderAmountsForOrderType(limitAmount, feeRate float64, currency, orderType string, usdToCnyRate float64, feeMode string) (string, float64, string, float64, error) {
+	baseAmount := limitAmount
+	if orderType == payment.OrderTypeSubscription {
+		baseAmount = calculateSubscriptionGatewayBaseAmount(limitAmount, usdToCnyRate, currency)
+	}
+	providerAmountStr, providerAmount, err := calculateCreateOrderPayAmount(baseAmount, 0, currency)
+	if err != nil {
+		return "", 0, "", 0, err
+	}
+	if normalizePaymentFeeMode(feeMode) == PaymentFeeModeMerchant {
+		return providerAmountStr, providerAmount, providerAmountStr, providerAmount, nil
+	}
+	payAmountStr, payAmount, err := calculateCreateOrderPayAmount(baseAmount, feeRate, currency)
+	if err != nil {
+		return "", 0, "", 0, err
+	}
+	if normalizePaymentFeeMode(feeMode) == PaymentFeeModePlatform {
+		providerAmountStr = payAmountStr
+		providerAmount = payAmount
+	}
+	return payAmountStr, payAmount, providerAmountStr, providerAmount, nil
 }
 
 // calculateSubscriptionGatewayBaseAmount 计算订阅订单的网关扣款基数。

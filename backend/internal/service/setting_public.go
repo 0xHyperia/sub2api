@@ -203,7 +203,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyWeChatConnectFrontendRedirectURL,
 		SettingKeyBackendModeEnabled,
 		SettingPaymentEnabled,
-		SettingPaymentInstantEnabled,
+		SettingPaymentRechargePageVisible,
+		SettingPaymentOrdersPageVisible,
 		SettingKeyOIDCConnectEnabled,
 		SettingKeyOIDCConnectProviderName,
 		SettingKeyGitHubOAuthEnabled,
@@ -325,7 +326,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		WeChatOAuthMobileEnabled:         weChatMobileEnabled,
 		BackendModeEnabled:               settings[SettingKeyBackendModeEnabled] == "true",
 		PaymentEnabled:                   settings[SettingPaymentEnabled] == "true",
-		PaymentInstantEnabled:            pcParseBoolDefault(settings[SettingPaymentInstantEnabled], true),
+		PaymentRechargePageVisible:       !isFalseSettingValue(settings[SettingPaymentRechargePageVisible]),
+		PaymentOrdersPageVisible:         !isFalseSettingValue(settings[SettingPaymentOrdersPageVisible]),
 		OIDCOAuthEnabled:                 oidcEnabled,
 		OIDCOAuthProviderName:            oidcProviderName,
 		GitHubOAuthEnabled:               gitHubEnabled,
@@ -526,7 +528,8 @@ type PublicSettingsInjectionPayload struct {
 	GoogleOAuthEnabled               bool                     `json:"google_oauth_enabled"`
 	BackendModeEnabled               bool                     `json:"backend_mode_enabled"`
 	PaymentEnabled                   bool                     `json:"payment_enabled"`
-	PaymentInstantEnabled            bool                     `json:"payment_instant_enabled"`
+	PaymentRechargePageVisible       bool                     `json:"payment_recharge_page_visible"`
+	PaymentOrdersPageVisible         bool                     `json:"payment_orders_page_visible"`
 	Version                          string                   `json:"version"`
 	// 服务器全局时区（IANA 名称与当前 UTC 偏移），高峰时段等服务端本地时间窗口的展示标注用
 	ServerTimezone              string  `json:"server_timezone"`
@@ -604,7 +607,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		GoogleOAuthEnabled:               settings.GoogleOAuthEnabled,
 		BackendModeEnabled:               settings.BackendModeEnabled,
 		PaymentEnabled:                   settings.PaymentEnabled,
-		PaymentInstantEnabled:            settings.PaymentInstantEnabled,
+		PaymentRechargePageVisible:       settings.PaymentRechargePageVisible,
+		PaymentOrdersPageVisible:         settings.PaymentOrdersPageVisible,
 		Version:                          s.version,
 		ServerTimezone:                   timezone.Name(),
 		ServerUTCOffset:                  timezone.UTCOffset(),

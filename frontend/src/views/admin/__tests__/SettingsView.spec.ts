@@ -189,6 +189,10 @@ vi.mock("vue-i18n", async () => {
     "admin.settings.paymentVisibleMethods.sourceRequiredError": "{title} 已启用，请先选择支付来源。",
     "admin.settings.payment.configGuide": "查看支付配置说明",
     "admin.settings.payment.findProvider": "查看支持的支付方式",
+    "admin.settings.payment.feeMode": "手续费承担方式",
+    "admin.settings.payment.feeModePlatform": "平台加收",
+    "admin.settings.payment.feeModeProvider": "服务商加收",
+    "admin.settings.payment.feeModeMerchant": "商家承担",
     "admin.settings.openaiExperimentalScheduler.title": "OpenAI 实验调度策略",
     "admin.settings.openaiExperimentalScheduler.description": "默认关闭。开启后仅影响本网关在 OpenAI 账号间的实验性调度选择逻辑，不代表上游 OpenAI 官方能力。",
     "admin.settings.openaiExperimentalScheduler.lowRatePriorityTitle": "低倍率优先",
@@ -458,6 +462,9 @@ const baseSettingsResponse = {
   antigravity_user_agent_version: "",
   openai_codex_user_agent: "",
   payment_enabled: true,
+  payment_recharge_page_visible: true,
+  payment_orders_page_visible: true,
+  payment_fee_mode: "platform" as const,
   payment_min_amount: 1,
   payment_max_amount: 10000,
   payment_daily_limit: 50000,
@@ -741,6 +748,47 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(wrapper.text()).not.toContain("支付来源");
   });
 
+  it("replaces the instant-payment switch with fee modes and saves provider surcharge", async () => {
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    expect(wrapper.text()).not.toContain("即时支付启用");
+    const modes = wrapper.findAll('[role="radio"]');
+    expect(modes).toHaveLength(3);
+    expect(wrapper.get('[data-testid="payment-fee-mode-platform"]').attributes("aria-checked")).toBe("true");
+
+    await wrapper.get('[data-testid="payment-fee-mode-provider"]').trigger("click");
+    expect(wrapper.get('[data-testid="payment-fee-mode-provider"]').attributes("aria-checked")).toBe("true");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_fee_mode: "provider" }),
+    );
+    expect(updateSettings.mock.calls.at(-1)?.[0]).not.toHaveProperty("payment_instant_enabled");
+  });
+
+  it("saves independent recharge and order page visibility switches", async () => {
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    await wrapper.get('[data-testid="payment-recharge-page-visible"]').setValue(false);
+    await wrapper.get('[data-testid="payment-orders-page-visible"]').setValue(false);
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_recharge_page_visible: false,
+        payment_orders_page_visible: false,
+      }),
+    );
+  });
+
   it("loads, edits, validates, and saves forwarded client-IP headers", async () => {
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,
@@ -968,6 +1016,7 @@ describe("admin SettingsView payment visible method controls", () => {
       refund_enabled: false,
       allow_user_refund: false,
       limits: "",
+      fee_rates: {},
       sort_order: 0,
     };
     getProviders.mockReset();
@@ -1184,6 +1233,7 @@ describe("admin SettingsView payment visible method controls", () => {
       refund_enabled: false,
       allow_user_refund: false,
       limits: "",
+      fee_rates: {},
       sort_order: 0,
     };
     getProviders.mockReset();

@@ -48,6 +48,24 @@ type DefaultLoadBalancer struct {
 type contextKey string
 
 const wxpayJSAPIAppIDContextKey contextKey = "payment.wxpay.jsapi_app_id"
+const instanceAmountResolverContextKey contextKey = "payment.instance_amount_resolver"
+
+type InstanceAmountResolver func(feeRate float64) float64
+
+func WithInstanceAmountResolver(ctx context.Context, resolver InstanceAmountResolver) context.Context {
+	if resolver == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, instanceAmountResolverContextKey, resolver)
+}
+
+func instanceAmountResolverFromContext(ctx context.Context) InstanceAmountResolver {
+	if ctx == nil {
+		return nil
+	}
+	resolver, _ := ctx.Value(instanceAmountResolverContextKey).(InstanceAmountResolver)
+	return resolver
+}
 
 // NewDefaultLoadBalancer creates a new load balancer.
 func NewDefaultLoadBalancer(db *dbent.Client, encryptionKey []byte) *DefaultLoadBalancer {
@@ -101,7 +119,7 @@ func (lb *DefaultLoadBalancer) SelectInstance(
 	candidates := lb.attachDailyUsage(ctx, instances)
 
 	// Step 3: filter by limits.
-	available := filterByLimits(candidates, paymentType, orderAmount)
+	available := filterByLimitsWithResolver(candidates, paymentType, orderAmount, instanceAmountResolverFromContext(ctx))
 	if len(available) == 0 {
 		slog.Warn("all instances exceeded limits, using full candidate list",
 			"provider", providerKey, "payment_type", paymentType,
@@ -111,7 +129,7 @@ func (lb *DefaultLoadBalancer) SelectInstance(
 
 	// Step 4: pick by strategy.
 	selected := lb.pickByStrategy(available, strategy)
-	return lb.buildSelection(selected.inst)
+	return lb.buildSelection(selected.inst, paymentType)
 }
 
 // queryEnabledInstances returns enabled instances that support paymentType.
@@ -194,7 +212,7 @@ func (lb *DefaultLoadBalancer) attachDailyUsage(
 			paymentorder.CreatedAtGTE(todayStart),
 		).
 		GroupBy(paymentorder.FieldProviderInstanceID).
-		Aggregate(dbent.Sum(paymentorder.FieldPayAmount)).
+		Aggregate(dbent.Sum(paymentorder.FieldProviderAmount)).
 		Scan(ctx, &rows)
 	if err != nil {
 		slog.Warn("batch daily usage query failed, treating all as zero", "error", err)
@@ -218,31 +236,57 @@ func (lb *DefaultLoadBalancer) attachDailyUsage(
 // filterByLimits removes instances that cannot accommodate the order:
 //   - orderAmount outside single-transaction [min, max]
 //   - daily remaining capacity (limit - used) < orderAmount
-func filterByLimits(candidates []instanceCandidate, paymentType PaymentType, orderAmount float64) []instanceCandidate {
+func filterByLimitsWithResolver(candidates []instanceCandidate, paymentType PaymentType, orderAmount float64, resolver InstanceAmountResolver) []instanceCandidate {
 	var result []instanceCandidate
 	for _, c := range candidates {
+		candidateAmount := orderAmount
+		if resolver != nil {
+			candidateAmount = resolver(getInstanceFeeRate(c.inst, paymentType))
+		}
 		cl := getInstanceChannelLimits(c.inst, paymentType)
 
-		if cl.SingleMin > 0 && orderAmount < cl.SingleMin {
+		if cl.SingleMin > 0 && candidateAmount < cl.SingleMin {
 			slog.Info("order below instance single min, skipping",
-				"instance_id", c.inst.ID, "order", orderAmount, "min", cl.SingleMin)
+				"instance_id", c.inst.ID, "order", candidateAmount, "min", cl.SingleMin)
 			continue
 		}
-		if cl.SingleMax > 0 && orderAmount > cl.SingleMax {
+		if cl.SingleMax > 0 && candidateAmount > cl.SingleMax {
 			slog.Info("order above instance single max, skipping",
-				"instance_id", c.inst.ID, "order", orderAmount, "max", cl.SingleMax)
+				"instance_id", c.inst.ID, "order", candidateAmount, "max", cl.SingleMax)
 			continue
 		}
-		if cl.DailyLimit > 0 && c.dailyUsed+orderAmount > cl.DailyLimit {
+		if cl.DailyLimit > 0 && c.dailyUsed+candidateAmount > cl.DailyLimit {
 			slog.Info("instance daily remaining insufficient, skipping",
 				"instance_id", c.inst.ID, "used", c.dailyUsed,
-				"order", orderAmount, "limit", cl.DailyLimit)
+				"order", candidateAmount, "limit", cl.DailyLimit)
 			continue
 		}
 
 		result = append(result, c)
 	}
 	return result
+}
+
+type InstanceFeeRates map[string]float64
+
+func getInstanceFeeRate(inst *dbent.PaymentProviderInstance, paymentType PaymentType) float64 {
+	if inst == nil || strings.TrimSpace(inst.FeeRates) == "" {
+		return 0
+	}
+	var rates InstanceFeeRates
+	if err := json.Unmarshal([]byte(inst.FeeRates), &rates); err != nil {
+		return 0
+	}
+	lookupKeys := []string{string(paymentType), string(normalizeVisibleMethodSupportType(paymentType))}
+	if inst.ProviderKey == TypeStripe {
+		lookupKeys = append([]string{TypeStripe}, lookupKeys...)
+	}
+	for _, key := range lookupKeys {
+		if rate, ok := rates[strings.TrimSpace(key)]; ok && rate >= 0 {
+			return rate
+		}
+	}
+	return 0
 }
 
 // getInstanceChannelLimits returns the channel limits for a specific payment type.
@@ -292,7 +336,7 @@ func pickLeastAmount(candidates []instanceCandidate) instanceCandidate {
 	return best
 }
 
-func (lb *DefaultLoadBalancer) buildSelection(selected *dbent.PaymentProviderInstance) (*InstanceSelection, error) {
+func (lb *DefaultLoadBalancer) buildSelection(selected *dbent.PaymentProviderInstance, paymentType PaymentType) (*InstanceSelection, error) {
 	config, err := lb.decryptConfig(selected.Config)
 	if err != nil {
 		return nil, fmt.Errorf("decrypt instance %d config: %w", selected.ID, err)
@@ -311,6 +355,7 @@ func (lb *DefaultLoadBalancer) buildSelection(selected *dbent.PaymentProviderIns
 		Config:         config,
 		SupportedTypes: selected.SupportedTypes,
 		PaymentMode:    selected.PaymentMode,
+		FeeRate:        getInstanceFeeRate(selected, paymentType),
 	}, nil
 }
 

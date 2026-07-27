@@ -98,6 +98,12 @@ func TestParsePaymentConfig(t *testing.T) {
 		if cfg.Enabled {
 			t.Fatal("expected Enabled=false by default")
 		}
+		if !cfg.RechargePageVisible || !cfg.OrdersPageVisible {
+			t.Fatal("expected payment pages to remain visible by default")
+		}
+		if cfg.FeeMode != PaymentFeeModePlatform {
+			t.Fatalf("expected FeeMode=%q by default, got %q", PaymentFeeModePlatform, cfg.FeeMode)
+		}
 		if cfg.MinAmount != 1 {
 			t.Fatalf("expected MinAmount=1, got %v", cfg.MinAmount)
 		}
@@ -124,6 +130,46 @@ func TestParsePaymentConfig(t *testing.T) {
 		}
 		if cfg.AlipayMobilePrecreateDeepLink {
 			t.Fatal("expected AlipayMobilePrecreateDeepLink=false by default")
+		}
+	})
+
+	t.Run("page visibility can be disabled independently", func(t *testing.T) {
+		t.Parallel()
+		cfg := svc.parsePaymentConfig(map[string]string{
+			SettingPaymentRechargePageVisible: "false",
+			SettingPaymentOrdersPageVisible:   "false",
+		})
+		if cfg.RechargePageVisible || cfg.OrdersPageVisible {
+			t.Fatal("expected both payment pages to be hidden")
+		}
+	})
+
+	t.Run("merchant mode disables the effective user fee without clearing rates", func(t *testing.T) {
+		t.Parallel()
+		cfg := svc.parsePaymentConfig(map[string]string{
+			SettingPaymentFeeMode:        PaymentFeeModeMerchant,
+			SettingRechargeFeeRate:       "2.5",
+			SettingAlipayRechargeFeeRate: "3",
+		})
+		if cfg.FeeMode != PaymentFeeModeMerchant {
+			t.Fatalf("FeeMode = %q, want %q", cfg.FeeMode, PaymentFeeModeMerchant)
+		}
+		if cfg.RechargeFeeRate != 2.5 {
+			t.Fatalf("stored RechargeFeeRate = %v, want 2.5", cfg.RechargeFeeRate)
+		}
+		if got := cfg.RechargeFeeRateFor(payment.TypeAlipay); got != 0 {
+			t.Fatalf("effective merchant fee rate = %v, want 0", got)
+		}
+	})
+
+	t.Run("invalid fee mode falls back to platform", func(t *testing.T) {
+		t.Parallel()
+		cfg := svc.parsePaymentConfig(map[string]string{SettingPaymentFeeMode: "unexpected"})
+		if cfg.FeeMode != PaymentFeeModePlatform {
+			t.Fatalf("FeeMode = %q, want %q", cfg.FeeMode, PaymentFeeModePlatform)
+		}
+		if isValidPaymentFeeMode("unexpected") {
+			t.Fatal("unexpected fee mode must be rejected by update validation")
 		}
 	})
 
@@ -491,6 +537,25 @@ func TestUpdatePaymentConfig_PersistsVisibleMethodRouting(t *testing.T) {
 	}
 	if repo.values[SettingPaymentVisibleMethodWxpaySource] != VisibleMethodSourceOfficialWechat {
 		t.Fatalf("wxpay source = %q, want %q", repo.values[SettingPaymentVisibleMethodWxpaySource], VisibleMethodSourceOfficialWechat)
+	}
+}
+
+func TestUpdatePaymentConfigPersistsPageVisibility(t *testing.T) {
+	repo := &paymentConfigSettingRepoStub{values: map[string]string{}}
+	svc := &PaymentConfigService{settingRepo: repo}
+	hidden := false
+
+	if err := svc.UpdatePaymentConfig(context.Background(), UpdatePaymentConfigRequest{
+		RechargePageVisible: &hidden,
+		OrdersPageVisible:   &hidden,
+	}); err != nil {
+		t.Fatalf("UpdatePaymentConfig returned error: %v", err)
+	}
+	if repo.values[SettingPaymentRechargePageVisible] != "false" {
+		t.Fatalf("recharge page visibility = %q, want false", repo.values[SettingPaymentRechargePageVisible])
+	}
+	if repo.values[SettingPaymentOrdersPageVisible] != "false" {
+		t.Fatalf("orders page visibility = %q, want false", repo.values[SettingPaymentOrdersPageVisible])
 	}
 }
 

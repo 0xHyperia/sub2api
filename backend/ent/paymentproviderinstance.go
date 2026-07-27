@@ -33,6 +33,8 @@ type PaymentProviderInstance struct {
 	SortOrder int `json:"sort_order,omitempty"`
 	// Limits holds the value of the "limits" field.
 	Limits string `json:"limits,omitempty"`
+	// FeeRates holds the value of the "fee_rates" field.
+	FeeRates string `json:"fee_rates,omitempty"`
 	// RefundEnabled holds the value of the "refund_enabled" field.
 	RefundEnabled bool `json:"refund_enabled,omitempty"`
 	// AllowUserRefund holds the value of the "allow_user_refund" field.
@@ -53,7 +55,7 @@ func (*PaymentProviderInstance) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case paymentproviderinstance.FieldID, paymentproviderinstance.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case paymentproviderinstance.FieldProviderKey, paymentproviderinstance.FieldName, paymentproviderinstance.FieldConfig, paymentproviderinstance.FieldSupportedTypes, paymentproviderinstance.FieldPaymentMode, paymentproviderinstance.FieldLimits:
+		case paymentproviderinstance.FieldProviderKey, paymentproviderinstance.FieldName, paymentproviderinstance.FieldConfig, paymentproviderinstance.FieldSupportedTypes, paymentproviderinstance.FieldPaymentMode, paymentproviderinstance.FieldLimits, paymentproviderinstance.FieldFeeRates:
 			values[i] = new(sql.NullString)
 		case paymentproviderinstance.FieldCreatedAt, paymentproviderinstance.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -125,6 +127,12 @@ func (_m *PaymentProviderInstance) assignValues(columns []string, values []any) 
 				return fmt.Errorf("unexpected type %T for field limits", values[i])
 			} else if value.Valid {
 				_m.Limits = value.String
+			}
+		case paymentproviderinstance.FieldFeeRates:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field fee_rates", values[i])
+			} else if value.Valid {
+				_m.FeeRates = value.String
 			}
 		case paymentproviderinstance.FieldRefundEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -209,6 +217,9 @@ func (_m *PaymentProviderInstance) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("limits=")
 	builder.WriteString(_m.Limits)
+	builder.WriteString(", ")
+	builder.WriteString("fee_rates=")
+	builder.WriteString(_m.FeeRates)
 	builder.WriteString(", ")
 	builder.WriteString("refund_enabled=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RefundEnabled))

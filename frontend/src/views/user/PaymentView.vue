@@ -185,15 +185,15 @@
                           <dl class="py-3">
                             <div class="mb-3 flex items-baseline justify-between gap-3">
                               <dt class="font-medium text-foreground">{{ t('payment.paymentSummary', { method: selectedMethodLabel }) }}</dt>
-                              <dd class="text-xl font-semibold tabular-nums text-foreground">{{ formatGatewayAmount(totalAmount) }}</dd>
+                              <dd class="text-xl font-semibold tabular-nums text-foreground">{{ gatewayTotalDisplay }}</dd>
                             </div>
                             <div class="flex items-center justify-between gap-3 text-foreground-subtle">
                               <dt>{{ t('payment.paymentAmount') }}</dt>
                               <dd class="tabular-nums">{{ formatGatewayAmount(validAmount) }}</dd>
                             </div>
                             <div v-if="feeRate > 0" class="mt-2 flex items-center justify-between gap-3 text-foreground-subtle">
-                              <dt>{{ t('payment.channelFee') }} ({{ feeRate }}%)</dt>
-                              <dd class="tabular-nums">+{{ formatGatewayAmount(feeAmount) }}</dd>
+                              <dt>{{ t('payment.channelFee') }} ({{ feeRateDisplay }})</dt>
+                              <dd class="tabular-nums">+{{ gatewayFeeDisplay }}</dd>
                             </div>
                           </dl>
                         </div>
@@ -209,7 +209,7 @@
                             <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
                             {{ t('common.processing') }}
                           </span>
-                          <span v-else>{{ t('payment.payAmount', { amount: formatGatewayAmount(totalAmount) }) }}</span>
+                          <span v-else>{{ t('payment.payAmount', { amount: gatewayTotalDisplay }) }}</span>
                         </button>
                       </aside>
                     </div>
@@ -336,13 +336,13 @@
                               <dd class="font-medium tabular-nums text-foreground">{{ formatSelectedPaymentAmount(subPaymentAmount) }}</dd>
                             </div>
                             <div v-if="feeRate > 0 && selectedPlan.price > 0" class="flex items-center justify-between gap-4">
-                              <dt class="text-foreground-subtle">{{ t('payment.fee') }} ({{ feeRate }}%)</dt>
-                              <dd class="font-medium tabular-nums text-foreground">+{{ formatSelectedPaymentAmount(subFeeAmount) }}</dd>
+                              <dt class="text-foreground-subtle">{{ t('payment.fee') }} ({{ feeRateDisplay }})</dt>
+                              <dd class="font-medium tabular-nums text-foreground">+{{ subscriptionFeeDisplay }}</dd>
                             </div>
                           </dl>
                           <dl class="mt-4">
                             <dt class="text-sm font-medium text-foreground-subtle">{{ t('payment.actualPay') }}</dt>
-                            <dd class="mt-1 text-3xl font-semibold tabular-nums text-foreground">{{ formatSelectedPaymentAmount(subTotalAmount) }}</dd>
+                            <dd class="mt-1 text-3xl font-semibold tabular-nums text-foreground">{{ subscriptionTotalDisplay }}</dd>
                           </dl>
                           <button
                             type="button"
@@ -356,7 +356,7 @@
                               <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
                               {{ t('common.processing') }}
                             </span>
-                            <span v-else>{{ t('payment.payAmount', { amount: formatSelectedPaymentAmount(subTotalAmount) }) }}</span>
+                            <span v-else>{{ t('payment.payAmount', { amount: subscriptionTotalDisplay }) }}</span>
                           </button>
                         </aside>
                       </div>
@@ -412,7 +412,7 @@
           </div>
           <div class="min-w-0 border-l border-outline pl-3">
             <dt class="text-[10px] leading-4 text-foreground-subtle">{{ t('payment.actualPay') }}</dt>
-            <dd class="truncate text-sm font-semibold tabular-nums text-foreground">{{ formatGatewayAmount(totalAmount) }}</dd>
+            <dd class="truncate text-sm font-semibold tabular-nums text-foreground">{{ gatewayTotalDisplay }}</dd>
           </div>
         </dl>
         <button
@@ -424,7 +424,7 @@
           @click="handleSubmitRecharge"
         >
           <span v-if="submitting">{{ t('common.processing') }}</span>
-          <span v-else>{{ t('payment.mobilePay', { amount: formatGatewayAmount(totalAmount) }) }}</span>
+          <span v-else>{{ t('payment.mobilePay', { amount: gatewayTotalDisplay }) }}</span>
         </button>
       </div>
     </div>
@@ -437,7 +437,7 @@
       <div class="mx-auto grid max-w-lg grid-cols-[minmax(0,1fr)_minmax(155px,auto)] items-center gap-3">
         <dl class="min-w-0">
           <dt class="truncate text-[10px] leading-4 text-foreground-subtle">{{ selectedPlan?.name }}</dt>
-          <dd class="truncate text-base font-semibold tabular-nums text-foreground">{{ formatSelectedPaymentAmount(subTotalAmount) }}</dd>
+          <dd class="truncate text-base font-semibold tabular-nums text-foreground">{{ subscriptionTotalDisplay }}</dd>
         </dl>
         <button
           type="button"
@@ -448,7 +448,7 @@
           @click="confirmSubscribe"
         >
           <span v-if="submitting">{{ t('common.processing') }}</span>
-          <span v-else>{{ t('payment.payAmount', { amount: formatSelectedPaymentAmount(subTotalAmount) }) }}</span>
+          <span v-else>{{ t('payment.payAmount', { amount: subscriptionTotalDisplay }) }}</span>
         </button>
       </div>
     </div>
@@ -734,7 +734,7 @@ const defaultQuickRechargeAmounts = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000
 
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
-  plans: [], instant_enabled: true, balance_disabled: false, balance_recharge_multiplier: 1,
+  plans: [], fee_mode: 'platform', balance_disabled: false, balance_recharge_multiplier: 1,
   quick_recharge_amounts: defaultQuickRechargeAmounts,
   custom_recharge_amount_enabled: true,
   subscription_usd_to_cny_rate: 0, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
@@ -742,10 +742,8 @@ const checkout = ref<CheckoutInfoResponse>({
 
 const tabs = computed(() => {
   const result: { key: PurchaseTab; label: string }[] = []
-  if (checkout.value.instant_enabled !== false) {
-    if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
-    result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
-  }
+  if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
+  result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
   return result
 })
 
@@ -948,11 +946,29 @@ const selectedMethodLabel = computed(() => {
 })
 
 const feeRate = computed(() => selectedLimit.value?.fee_rate ?? checkout.value?.recharge_fee_rate ?? 0)
+const feeRateMin = computed(() => selectedLimit.value?.fee_rate_min ?? feeRate.value)
+const feeRateMax = computed(() => selectedLimit.value?.fee_rate_max ?? feeRate.value)
+const hasFeeRateRange = computed(() => Math.abs(feeRateMax.value - feeRateMin.value) > 0.0001)
+const feeRateDisplay = computed(() => hasFeeRateRange.value
+  ? `${feeRateMin.value}% - ${feeRateMax.value}%`
+  : `${feeRate.value}%`)
+const feeAmountForRate = (rate: number) => validAmount.value > 0
+  ? Math.ceil(((validAmount.value * rate) / 100) * 100) / 100
+  : 0
 const feeAmount = computed(() =>
   feeRate.value > 0 && validAmount.value > 0
     ? Math.ceil(((validAmount.value * feeRate.value) / 100) * 100) / 100
     : 0
 )
+const feeAmountMin = computed(() => feeAmountForRate(feeRateMin.value))
+const gatewayFeeDisplay = computed(() => hasFeeRateRange.value
+  ? `${formatGatewayAmount(feeAmountMin.value)} - ${formatGatewayAmount(feeAmount.value)}`
+  : formatGatewayAmount(feeAmount.value))
+const gatewayTotalDisplay = computed(() => {
+  if (!hasFeeRateRange.value) return formatGatewayAmount(totalAmount.value)
+  const minTotal = Math.round((validAmount.value + feeAmountMin.value) * 100) / 100
+  return `${formatGatewayAmount(minTotal)} - ${formatGatewayAmount(totalAmount.value)}`
+})
 const totalAmount = computed(() =>
   feeRate.value > 0 && validAmount.value > 0
     ? Math.round((validAmount.value + feeAmount.value) * 100) / 100
@@ -992,9 +1008,23 @@ const subFeeAmount = computed(() => {
   return ceilPaymentAmount((subPaymentAmount.value * feeRate.value) / 100, selectedCurrency.value)
 })
 
+const subFeeAmountMin = computed(() => {
+  if (feeRateMin.value <= 0 || subPaymentAmount.value <= 0) return 0
+  return ceilPaymentAmount((subPaymentAmount.value * feeRateMin.value) / 100, selectedCurrency.value)
+})
+
 const subTotalAmount = computed(() => {
   if (feeRate.value <= 0 || subPaymentAmount.value <= 0) return subPaymentAmount.value
   return roundPaymentAmount(subPaymentAmount.value + subFeeAmount.value, selectedCurrency.value)
+})
+
+const subscriptionFeeDisplay = computed(() => hasFeeRateRange.value
+  ? `${formatSelectedPaymentAmount(subFeeAmountMin.value)} - ${formatSelectedPaymentAmount(subFeeAmount.value)}`
+  : formatSelectedPaymentAmount(subFeeAmount.value))
+const subscriptionTotalDisplay = computed(() => {
+  if (!hasFeeRateRange.value) return formatSelectedPaymentAmount(subTotalAmount.value)
+  const minTotal = roundPaymentAmount(subPaymentAmount.value + subFeeAmountMin.value, selectedCurrency.value)
+  return `${formatSelectedPaymentAmount(minTotal)} - ${formatSelectedPaymentAmount(subTotalAmount.value)}`
 })
 
 function subscriptionTotalAmountForCurrency(value: number, currency: string): number {

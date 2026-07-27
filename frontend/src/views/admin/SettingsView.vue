@@ -7124,18 +7124,66 @@
                   :aria-label="t('admin.settings.payment.enabled')"
                 />
               </div>
-              <template v-if="form.payment_enabled">
-                <div class="grid gap-4 md:grid-cols-2">
-                  <div class="flex items-start justify-between rounded-panel border border-outline p-4">
-                    <div class="pr-4">
-                      <label class="font-medium text-foreground">{{ t("admin.settings.payment.instantEnabled") }}</label>
-                      <p class="mt-1 text-sm text-foreground-subtle">{{ t("admin.settings.payment.instantEnabledHint") }}</p>
-                    </div>
-                    <Toggle
-                      v-model="form.payment_instant_enabled"
-                      :aria-label="t('admin.settings.payment.instantEnabled')"
-                    />
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div class="flex items-center justify-between gap-4 rounded-panel border border-outline p-3">
+                  <div>
+                    <label class="font-medium text-foreground">{{ t("admin.settings.payment.rechargePageVisible") }}</label>
+                    <p class="text-sm text-foreground-subtle">{{ t("admin.settings.payment.rechargePageVisibleHint") }}</p>
                   </div>
+                  <Toggle
+                    v-model="form.payment_recharge_page_visible"
+                    data-testid="payment-recharge-page-visible"
+                    :aria-label="t('admin.settings.payment.rechargePageVisible')"
+                  />
+                </div>
+                <div class="flex items-center justify-between gap-4 rounded-panel border border-outline p-3">
+                  <div>
+                    <label class="font-medium text-foreground">{{ t("admin.settings.payment.ordersPageVisible") }}</label>
+                    <p class="text-sm text-foreground-subtle">{{ t("admin.settings.payment.ordersPageVisibleHint") }}</p>
+                  </div>
+                  <Toggle
+                    v-model="form.payment_orders_page_visible"
+                    data-testid="payment-orders-page-visible"
+                    :aria-label="t('admin.settings.payment.ordersPageVisible')"
+                  />
+                </div>
+              </div>
+              <template v-if="form.payment_enabled">
+                <div>
+                  <label class="input-label">{{ t("admin.settings.payment.feeMode") }}</label>
+                  <div
+                    role="radiogroup"
+                    :aria-label="t('admin.settings.payment.feeMode')"
+                    class="grid grid-cols-1 gap-2 rounded-panel border border-outline bg-surface-subtle p-1 sm:grid-cols-3"
+                  >
+                    <button
+                      v-for="mode in (['platform', 'provider', 'merchant'] as const)"
+                      :key="mode"
+                      :data-testid="`payment-fee-mode-${mode}`"
+                      type="button"
+                      role="radio"
+                      :aria-checked="form.payment_fee_mode === mode"
+                      class="min-h-10 rounded-control px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                      :class="form.payment_fee_mode === mode
+                        ? 'bg-surface text-foreground shadow-sm'
+                        : 'text-foreground-muted hover:bg-surface hover:text-foreground'"
+                      @click="form.payment_fee_mode = mode"
+                    >
+                      {{ t(`admin.settings.payment.feeMode${mode.charAt(0).toUpperCase()}${mode.slice(1)}`) }}
+                    </button>
+                  </div>
+                  <p class="mt-2 text-sm text-foreground-subtle">
+                    {{ t(`admin.settings.payment.feeMode${form.payment_fee_mode.charAt(0).toUpperCase()}${form.payment_fee_mode.slice(1)}Hint`) }}
+                  </p>
+                  <p
+                    v-if="form.payment_fee_mode === 'provider'"
+                    class="mt-2 rounded-control border border-warning/40 bg-warning-subtle px-3 py-2 text-sm text-warning-foreground"
+                  >
+                    {{ t("admin.settings.payment.feeModeProviderWarning") }}
+                  </p>
+                  <p class="mt-2 text-sm text-foreground-subtle">
+                    {{ t("admin.settings.payment.feeRatesConfiguredPerProvider") }}
+                  </p>
                 </div>
                 <!-- Row 1: Product name -->
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -7299,84 +7347,6 @@
                         t("admin.settings.payment.subscriptionUsdToCnyRateHint")
                       }}
                     </p>
-                  </div>
-                  <div class="sm:col-span-2">
-                    <label class="input-label">{{
-                      t("admin.settings.payment.rechargeFeeRate")
-                    }}</label>
-                    <div class="relative">
-                      <input
-                        :value="form.payment_recharge_fee_rate ?? ''"
-                        @input="
-                          form.payment_recharge_fee_rate = Math.min(
-                            100,
-                            Math.max(
-                              0,
-                              Math.round(
-                                parseFloat(
-                                  ($event.target as HTMLInputElement).value ||
-                                    '0',
-                                ) * 100,
-                              ) / 100,
-                            ),
-                          )
-                        "
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        class="input pr-8"
-                      />
-                      <span
-                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-foreground-subtle"
-                        >%</span
-                      >
-                    </div>
-                    <p class="mt-0.5 text-xs text-foreground-subtle">
-                      {{ t("admin.settings.payment.rechargeFeeRateHint") }}
-                    </p>
-                    <p
-                      v-if="(Number(form.payment_recharge_fee_rate) || 0) > 0"
-                      class="mt-1 text-xs font-medium text-brand"
-                    >
-                      {{
-                        t("admin.settings.payment.rechargeFeePreview", {
-                          fee: (
-                            Number(form.payment_recharge_fee_rate) || 0
-                          ).toFixed(2),
-                        })
-                      }}
-                    </p>
-                  </div>
-                  <div>
-                    <label class="input-label">{{ t("admin.settings.payment.alipayRechargeFeeRate") }}</label>
-                    <div class="relative">
-                      <input
-                        v-model.number="form.payment_alipay_recharge_fee_rate"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        class="input pr-8"
-                      />
-                      <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-foreground-subtle">%</span>
-                    </div>
-                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ t("admin.settings.payment.methodFeeRateHint") }}</p>
-                  </div>
-                  <div>
-                    <label class="input-label">{{ t("admin.settings.payment.wxpayRechargeFeeRate") }}</label>
-                    <div class="relative">
-                      <input
-                        v-model.number="form.payment_wxpay_recharge_fee_rate"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        class="input pr-8"
-                      />
-                      <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-foreground-subtle">%</span>
-                    </div>
-                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ t("admin.settings.payment.methodFeeRateHint") }}</p>
                   </div>
                   <div>
                     <label class="input-label"
@@ -9083,7 +9053,9 @@ const form = reactive<SettingsForm>({
   backend_mode_enabled: false,
   hide_ccs_import_button: false,
   payment_enabled: false,
-  payment_instant_enabled: true,
+  payment_recharge_page_visible: true,
+  payment_orders_page_visible: true,
+  payment_fee_mode: "platform" as "platform" | "provider" | "merchant",
   risk_control_enabled: false,
   cyber_session_block_enabled: false,
   cyber_session_block_ttl_seconds: 3600,
@@ -10835,7 +10807,9 @@ async function saveSettings() {
       ),
       // Payment configuration
       payment_enabled: form.payment_enabled,
-      payment_instant_enabled: form.payment_instant_enabled,
+      payment_recharge_page_visible: form.payment_recharge_page_visible,
+      payment_orders_page_visible: form.payment_orders_page_visible,
+      payment_fee_mode: form.payment_fee_mode,
       risk_control_enabled: form.risk_control_enabled,
       cyber_session_block_enabled: form.cyber_session_block_enabled,
       cyber_session_block_ttl_seconds:
@@ -10859,9 +10833,6 @@ async function saveSettings() {
         form.payment_custom_recharge_amount_enabled,
       payment_subscription_usd_to_cny_rate:
         Number(form.payment_subscription_usd_to_cny_rate) || 0,
-      payment_recharge_fee_rate: Number(form.payment_recharge_fee_rate) || 0,
-      payment_alipay_recharge_fee_rate: Number(form.payment_alipay_recharge_fee_rate) || 0,
-      payment_wxpay_recharge_fee_rate: Number(form.payment_wxpay_recharge_fee_rate) || 0,
       payment_enabled_types: form.payment_enabled_types,
       payment_load_balance_strategy: form.payment_load_balance_strategy,
       payment_product_name_prefix: form.payment_product_name_prefix,

@@ -274,7 +274,9 @@ type UpdateSettingsRequest struct {
 
 	// Payment configuration (integrated into settings, full replace)
 	PaymentEnabled                   *bool                          `json:"payment_enabled"`
-	PaymentInstantEnabled            *bool                          `json:"payment_instant_enabled"`
+	PaymentRechargePageVisible       *bool                          `json:"payment_recharge_page_visible"`
+	PaymentOrdersPageVisible         *bool                          `json:"payment_orders_page_visible"`
+	PaymentFeeMode                   *string                        `json:"payment_fee_mode"`
 	PaymentMinAmount                 *float64                       `json:"payment_min_amount"`
 	PaymentMaxAmount                 *float64                       `json:"payment_max_amount"`
 	PaymentDailyLimit                *float64                       `json:"payment_daily_limit"`
@@ -1784,7 +1786,9 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	if h.paymentConfigService != nil && hasPaymentFields(req) {
 		paymentReq := service.UpdatePaymentConfigRequest{
 			Enabled:                       req.PaymentEnabled,
-			InstantEnabled:                req.PaymentInstantEnabled,
+			RechargePageVisible:           req.PaymentRechargePageVisible,
+			OrdersPageVisible:             req.PaymentOrdersPageVisible,
+			FeeMode:                       req.PaymentFeeMode,
 			MinAmount:                     req.PaymentMinAmount,
 			MaxAmount:                     req.PaymentMaxAmount,
 			DailyLimit:                    req.PaymentDailyLimit,
@@ -1850,7 +1854,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		updatedPaymentCfg, _ = h.paymentConfigService.GetPaymentConfig(c.Request.Context())
 	}
 	if updatedPaymentCfg == nil {
-		updatedPaymentCfg = &service.PaymentConfig{}
+		updatedPaymentCfg = &service.PaymentConfig{
+			RechargePageVisible: true,
+			OrdersPageVisible:   true,
+		}
 	}
 
 	payload := dto.SystemSettings{
@@ -2041,7 +2048,9 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		AccountQuotaNotifyEnabled:                              updatedSettings.AccountQuotaNotifyEnabled,
 		AccountQuotaNotifyEmails:                               dto.NotifyEmailEntriesFromService(updatedSettings.AccountQuotaNotifyEmails),
 		PaymentEnabled:                                         updatedPaymentCfg.Enabled,
-		PaymentInstantEnabled:                                  updatedPaymentCfg.InstantEnabled,
+		PaymentRechargePageVisible:                             updatedPaymentCfg.RechargePageVisible,
+		PaymentOrdersPageVisible:                               updatedPaymentCfg.OrdersPageVisible,
+		PaymentFeeMode:                                         updatedPaymentCfg.EffectiveFeeMode(),
 		PaymentMinAmount:                                       updatedPaymentCfg.MinAmount,
 		PaymentMaxAmount:                                       updatedPaymentCfg.MaxAmount,
 		PaymentDailyLimit:                                      updatedPaymentCfg.DailyLimit,
@@ -2121,7 +2130,8 @@ func mapDingTalkValidateError(err error) string {
 }
 
 func hasPaymentFields(req UpdateSettingsRequest) bool {
-	return req.PaymentEnabled != nil || req.PaymentInstantEnabled != nil ||
+	return req.PaymentEnabled != nil || req.PaymentRechargePageVisible != nil ||
+		req.PaymentOrdersPageVisible != nil || req.PaymentFeeMode != nil ||
 		req.PaymentMinAmount != nil ||
 		req.PaymentMaxAmount != nil || req.PaymentDailyLimit != nil ||
 		req.PaymentOrderTimeoutMin != nil || req.PaymentMaxPendingOrders != nil ||

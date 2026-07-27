@@ -277,6 +277,38 @@ func TestCalculateCreateOrderPayAmountForBalanceIgnoresSubscriptionRate(t *testi
 	}
 }
 
+func TestCalculateCreateOrderAmountsForFeeModes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		mode            string
+		wantDisplay     float64
+		wantProvider    float64
+		wantDisplayStr  string
+		wantProviderStr string
+	}{
+		{name: "platform adds fee before provider submission", mode: PaymentFeeModePlatform, wantDisplay: 103, wantProvider: 103, wantDisplayStr: "103.00", wantProviderStr: "103.00"},
+		{name: "provider receives base and displays provider surcharge", mode: PaymentFeeModeProvider, wantDisplay: 103, wantProvider: 100, wantDisplayStr: "103.00", wantProviderStr: "100.00"},
+		{name: "merchant pays without user surcharge", mode: PaymentFeeModeMerchant, wantDisplay: 100, wantProvider: 100, wantDisplayStr: "100.00", wantProviderStr: "100.00"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			displayStr, display, providerStr, providerAmount, err := calculateCreateOrderAmountsForOrderType(100, 3, "CNY", payment.OrderTypeBalance, 0, tt.mode)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if display != tt.wantDisplay || displayStr != tt.wantDisplayStr {
+				t.Fatalf("display amount = (%q, %v), want (%q, %v)", displayStr, display, tt.wantDisplayStr, tt.wantDisplay)
+			}
+			if providerAmount != tt.wantProvider || providerStr != tt.wantProviderStr {
+				t.Fatalf("provider amount = (%q, %v), want (%q, %v)", providerStr, providerAmount, tt.wantProviderStr, tt.wantProvider)
+			}
+		})
+	}
+}
+
 func TestCalculateCreditedBalanceStillUsesRechargeMultiplier(t *testing.T) {
 	t.Parallel()
 

@@ -14,9 +14,12 @@ import type {
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
 
+export type PaymentFeeMode = 'platform' | 'provider' | 'merchant'
+
 /** Admin-facing payment config returned by GET /admin/payment/config */
 export interface AdminPaymentConfig {
   enabled: boolean
+  fee_mode: PaymentFeeMode
   min_amount: number
   max_amount: number
   daily_limit: number
@@ -39,6 +42,7 @@ export interface AdminPaymentConfig {
 /** Fields accepted by PUT /admin/payment/config (all optional via pointer semantics) */
 export interface UpdatePaymentConfigRequest {
   enabled?: boolean
+  fee_mode?: PaymentFeeMode
   min_amount?: number
   max_amount?: number
   daily_limit?: number

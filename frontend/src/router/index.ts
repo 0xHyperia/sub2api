@@ -1087,10 +1087,21 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
+  if (
+    to.meta.requiresPayment &&
+    !to.meta.requiresPaymentOrders &&
+    !authStore.isAdmin &&
+    appStore.publicSettingsLoaded &&
+    appStore.cachedPublicSettings?.payment_recharge_page_visible === false
+  ) {
+    next('/dashboard')
+    return
+  }
+
   if (to.meta.requiresPaymentOrders && appStore.publicSettingsLoaded) {
     const settings = appStore.cachedPublicSettings
     const paymentOrdersEnabled = settings?.payment_enabled === true &&
-      settings.payment_instant_enabled !== false
+      (authStore.isAdmin || settings?.payment_orders_page_visible !== false)
     if (!paymentOrdersEnabled) {
       next('/dashboard')
       return

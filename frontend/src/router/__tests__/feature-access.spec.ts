@@ -24,6 +24,8 @@ const appStore = vi.hoisted(() => ({
   publicSettingsLoaded: false,
   cachedPublicSettings: null as null | {
     payment_enabled?: boolean
+    payment_recharge_page_visible?: boolean
+    payment_orders_page_visible?: boolean
     risk_control_enabled?: boolean
     model_marketplace_enabled?: boolean
     custom_menu_items?: []
@@ -189,6 +191,33 @@ describe('feature route guard', () => {
     expect(appStore.fetchPublicSettings).not.toHaveBeenCalled()
     expect(next).toHaveBeenCalledOnce()
     expect(next).toHaveBeenCalledWith(target)
+  })
+
+  it.each([
+    ['recharge page', { requiresPayment: true }, { payment_enabled: true, payment_recharge_page_visible: false }],
+    ['orders page', { requiresPayment: true, requiresPaymentOrders: true }, { payment_enabled: true, payment_orders_page_visible: false }],
+  ])('hides the %s from regular users', async (_name, meta, settings) => {
+    appStore.cachedPublicSettings = settings
+    appStore.publicSettingsLoaded = true
+
+    const { navigation, next } = runGuard(meta, '/feature')
+    await navigation
+
+    expect(next).toHaveBeenCalledWith('/dashboard')
+  })
+
+  it.each([
+    [{ requiresPayment: true }, { payment_enabled: true, payment_recharge_page_visible: false }],
+    [{ requiresPayment: true, requiresPaymentOrders: true }, { payment_enabled: true, payment_orders_page_visible: false }],
+  ])('allows administrators through a hidden payment page', async (meta, settings) => {
+    authStore.isAdmin = true
+    appStore.cachedPublicSettings = settings
+    appStore.publicSettingsLoaded = true
+
+    const { navigation, next } = runGuard(meta, '/feature')
+    await navigation
+
+    expect(next).toHaveBeenCalledWith()
   })
 
   it('allows an enabled distribution agent route', async () => {

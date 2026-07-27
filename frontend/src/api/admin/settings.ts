@@ -581,7 +581,9 @@ export interface SystemSettings {
 
   // Payment configuration
   payment_enabled: boolean;
-  payment_instant_enabled: boolean;
+  payment_recharge_page_visible: boolean;
+  payment_orders_page_visible: boolean;
+  payment_fee_mode: 'platform' | 'provider' | 'merchant';
   risk_control_enabled: boolean;
 
   // Cyber session block
@@ -880,7 +882,9 @@ export interface UpdateSettingsRequest {
   codex_cli_only_engine_fingerprint_signals?: string;
   // Payment configuration
   payment_enabled?: boolean;
-  payment_instant_enabled?: boolean;
+  payment_recharge_page_visible?: boolean;
+  payment_orders_page_visible?: boolean;
+  payment_fee_mode?: 'platform' | 'provider' | 'merchant';
   risk_control_enabled?: boolean;
 
   // Cyber session block

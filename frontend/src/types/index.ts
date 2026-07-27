@@ -220,7 +220,8 @@ export interface PublicSettings {
   home_content: string
   hide_ccs_import_button: boolean
   payment_enabled: boolean
-  payment_instant_enabled: boolean
+  payment_recharge_page_visible?: boolean
+  payment_orders_page_visible?: boolean
   risk_control_enabled: boolean
   table_default_page_size: number
   table_page_size_options: number[]

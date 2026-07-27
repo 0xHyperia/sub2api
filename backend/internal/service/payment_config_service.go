@@ -16,19 +16,21 @@ import (
 )
 
 const (
-	SettingPaymentEnabled        = "payment_enabled"
-	SettingPaymentInstantEnabled = "PAYMENT_INSTANT_ENABLED"
-	SettingMinRechargeAmount     = "MIN_RECHARGE_AMOUNT"
-	SettingMaxRechargeAmount     = "MAX_RECHARGE_AMOUNT"
-	SettingDailyRechargeLimit    = "DAILY_RECHARGE_LIMIT"
-	SettingOrderTimeoutMinutes   = "ORDER_TIMEOUT_MINUTES"
-	SettingMaxPendingOrders      = "MAX_PENDING_ORDERS"
-	SettingEnabledPaymentTypes   = "ENABLED_PAYMENT_TYPES"
-	SettingLoadBalanceStrategy   = "LOAD_BALANCE_STRATEGY"
-	SettingBalancePayDisabled    = "BALANCE_PAYMENT_DISABLED"
-	SettingBalanceRechargeMult   = "BALANCE_RECHARGE_MULTIPLIER"
-	SettingQuickRechargeAmounts  = "QUICK_RECHARGE_AMOUNTS"
-	SettingCustomRechargeEnabled = "CUSTOM_RECHARGE_AMOUNT_ENABLED"
+	SettingPaymentEnabled             = "payment_enabled"
+	SettingPaymentRechargePageVisible = "payment_recharge_page_visible"
+	SettingPaymentOrdersPageVisible   = "payment_orders_page_visible"
+	SettingPaymentFeeMode             = "PAYMENT_FEE_MODE"
+	SettingMinRechargeAmount          = "MIN_RECHARGE_AMOUNT"
+	SettingMaxRechargeAmount          = "MAX_RECHARGE_AMOUNT"
+	SettingDailyRechargeLimit         = "DAILY_RECHARGE_LIMIT"
+	SettingOrderTimeoutMinutes        = "ORDER_TIMEOUT_MINUTES"
+	SettingMaxPendingOrders           = "MAX_PENDING_ORDERS"
+	SettingEnabledPaymentTypes        = "ENABLED_PAYMENT_TYPES"
+	SettingLoadBalanceStrategy        = "LOAD_BALANCE_STRATEGY"
+	SettingBalancePayDisabled         = "BALANCE_PAYMENT_DISABLED"
+	SettingBalanceRechargeMult        = "BALANCE_RECHARGE_MULTIPLIER"
+	SettingQuickRechargeAmounts       = "QUICK_RECHARGE_AMOUNTS"
+	SettingCustomRechargeEnabled      = "CUSTOM_RECHARGE_AMOUNT_ENABLED"
 	// SettingSubscriptionUSDToCNYRate 是订阅 CNY 换算汇率（1 USD = X CNY）。
 	// 0/未配置 = 关闭换算（订阅按 price 数值直付），显式配置后 CNY 通道订阅按 price × rate 收款。
 	SettingSubscriptionUSDToCNYRate      = "SUBSCRIPTION_USD_TO_CNY_RATE"
@@ -46,6 +48,12 @@ const (
 	SettingCancelWindowMode              = "CANCEL_RATE_LIMIT_WINDOW_MODE"
 	SettingAlipayForceQRCode             = "ALIPAY_FORCE_QRCODE"
 	SettingAlipayMobilePrecreateDeepLink = "ALIPAY_MOBILE_PRECREATE_DEEP_LINK"
+)
+
+const (
+	PaymentFeeModePlatform = "platform"
+	PaymentFeeModeProvider = "provider"
+	PaymentFeeModeMerchant = "merchant"
 )
 
 // Default values for payment configuration settings.
@@ -71,7 +79,9 @@ type QuickRechargeAmount struct {
 // PaymentConfig holds the payment system configuration.
 type PaymentConfig struct {
 	Enabled                   bool                  `json:"enabled"`
-	InstantEnabled            bool                  `json:"instant_enabled"`
+	RechargePageVisible       bool                  `json:"recharge_page_visible"`
+	OrdersPageVisible         bool                  `json:"orders_page_visible"`
+	FeeMode                   string                `json:"fee_mode"`
 	MinAmount                 float64               `json:"min_amount"`
 	MaxAmount                 float64               `json:"max_amount"`
 	DailyLimit                float64               `json:"daily_limit"`
@@ -106,10 +116,19 @@ type PaymentConfig struct {
 	AlipayMobilePrecreateDeepLink bool `json:"alipay_mobile_precreate_deep_link"`
 }
 
+func (c *PaymentConfig) EffectiveFeeMode() string {
+	if c == nil {
+		return PaymentFeeModePlatform
+	}
+	return normalizePaymentFeeMode(c.FeeMode)
+}
+
 // UpdatePaymentConfigRequest contains fields to update payment configuration.
 type UpdatePaymentConfigRequest struct {
 	Enabled                   *bool                  `json:"enabled"`
-	InstantEnabled            *bool                  `json:"instant_enabled"`
+	RechargePageVisible       *bool                  `json:"recharge_page_visible"`
+	OrdersPageVisible         *bool                  `json:"orders_page_visible"`
+	FeeMode                   *string                `json:"fee_mode"`
 	MinAmount                 *float64               `json:"min_amount"`
 	MaxAmount                 *float64               `json:"max_amount"`
 	DailyLimit                *float64               `json:"daily_limit"`
@@ -154,6 +173,8 @@ type MethodLimits struct {
 	DisplayName string  `json:"display_name,omitempty"`
 	Currency    string  `json:"currency"`
 	FeeRate     float64 `json:"fee_rate"`
+	FeeRateMin  float64 `json:"fee_rate_min"`
+	FeeRateMax  float64 `json:"fee_rate_max"`
 	DailyLimit  float64 `json:"daily_limit"`
 	SingleMin   float64 `json:"single_min"`
 	SingleMax   float64 `json:"single_max"`
@@ -173,6 +194,9 @@ func (c *PaymentConfig) RechargeFeeRateFor(paymentType string) float64 {
 	if c == nil {
 		return 0
 	}
+	if c.EffectiveFeeMode() == PaymentFeeModeMerchant {
+		return 0
+	}
 	method := NormalizeVisibleMethod(paymentType)
 	if rate, ok := c.PaymentMethodFeeRates[method]; ok {
 		return rate
@@ -181,28 +205,30 @@ func (c *PaymentConfig) RechargeFeeRateFor(paymentType string) float64 {
 }
 
 type CreateProviderInstanceRequest struct {
-	ProviderKey     string            `json:"provider_key"`
-	Name            string            `json:"name"`
-	Config          map[string]string `json:"config"`
-	SupportedTypes  []string          `json:"supported_types"`
-	Enabled         bool              `json:"enabled"`
-	PaymentMode     string            `json:"payment_mode"`
-	SortOrder       int               `json:"sort_order"`
-	Limits          string            `json:"limits"`
-	RefundEnabled   bool              `json:"refund_enabled"`
-	AllowUserRefund bool              `json:"allow_user_refund"`
+	ProviderKey     string             `json:"provider_key"`
+	Name            string             `json:"name"`
+	Config          map[string]string  `json:"config"`
+	SupportedTypes  []string           `json:"supported_types"`
+	Enabled         bool               `json:"enabled"`
+	PaymentMode     string             `json:"payment_mode"`
+	SortOrder       int                `json:"sort_order"`
+	Limits          string             `json:"limits"`
+	FeeRates        map[string]float64 `json:"fee_rates"`
+	RefundEnabled   bool               `json:"refund_enabled"`
+	AllowUserRefund bool               `json:"allow_user_refund"`
 }
 
 type UpdateProviderInstanceRequest struct {
-	Name            *string           `json:"name"`
-	Config          map[string]string `json:"config"`
-	SupportedTypes  []string          `json:"supported_types"`
-	Enabled         *bool             `json:"enabled"`
-	PaymentMode     *string           `json:"payment_mode"`
-	SortOrder       *int              `json:"sort_order"`
-	Limits          *string           `json:"limits"`
-	RefundEnabled   *bool             `json:"refund_enabled"`
-	AllowUserRefund *bool             `json:"allow_user_refund"`
+	Name            *string            `json:"name"`
+	Config          map[string]string  `json:"config"`
+	SupportedTypes  []string           `json:"supported_types"`
+	Enabled         *bool              `json:"enabled"`
+	PaymentMode     *string            `json:"payment_mode"`
+	SortOrder       *int               `json:"sort_order"`
+	Limits          *string            `json:"limits"`
+	FeeRates        map[string]float64 `json:"fee_rates"`
+	RefundEnabled   *bool              `json:"refund_enabled"`
+	AllowUserRefund *bool              `json:"allow_user_refund"`
 }
 type CreatePlanRequest struct {
 	GroupID       int64    `json:"group_id"`
@@ -259,7 +285,8 @@ func (s *PaymentConfigService) IsPaymentEnabled(ctx context.Context) bool {
 // GetPaymentConfig returns the full payment configuration.
 func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentConfig, error) {
 	keys := []string{
-		SettingPaymentEnabled, SettingPaymentInstantEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
+		SettingPaymentEnabled, SettingPaymentRechargePageVisible, SettingPaymentOrdersPageVisible,
+		SettingPaymentFeeMode, SettingMinRechargeAmount, SettingMaxRechargeAmount,
 		SettingDailyRechargeLimit, SettingOrderTimeoutMinutes, SettingMaxPendingOrders,
 		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingQuickRechargeAmounts, SettingCustomRechargeEnabled, SettingSubscriptionUSDToCNYRate, SettingRechargeFeeRate, SettingAlipayRechargeFeeRate, SettingWxpayRechargeFeeRate, SettingLoadBalanceStrategy,
 		SettingProductNamePrefix, SettingProductNameSuffix,
@@ -283,7 +310,9 @@ func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentCo
 func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *PaymentConfig {
 	cfg := &PaymentConfig{
 		Enabled:                   vals[SettingPaymentEnabled] == "true",
-		InstantEnabled:            pcParseBoolDefault(vals[SettingPaymentInstantEnabled], true),
+		RechargePageVisible:       pcParseBoolDefault(vals[SettingPaymentRechargePageVisible], true),
+		OrdersPageVisible:         pcParseBoolDefault(vals[SettingPaymentOrdersPageVisible], true),
+		FeeMode:                   normalizePaymentFeeMode(vals[SettingPaymentFeeMode]),
 		MinAmount:                 pcParseFloat(vals[SettingMinRechargeAmount], 1),
 		MaxAmount:                 pcParseFloat(vals[SettingMaxRechargeAmount], 0),
 		DailyLimit:                pcParseFloat(vals[SettingDailyRechargeLimit], 0),
@@ -371,6 +400,9 @@ func (s *PaymentConfigService) getStripePublishableKey(ctx context.Context) stri
 // nil-check before serialisation — this is inherent to patch-style update patterns
 // and cannot be meaningfully decomposed without introducing unnecessary abstraction.
 func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req UpdatePaymentConfigRequest) error {
+	if req.FeeMode != nil && !isValidPaymentFeeMode(*req.FeeMode) {
+		return infraerrors.BadRequest("INVALID_PAYMENT_FEE_MODE", "payment fee mode must be platform, provider, or merchant")
+	}
 	if req.BalanceRechargeMultiplier != nil {
 		if math.IsNaN(*req.BalanceRechargeMultiplier) || math.IsInf(*req.BalanceRechargeMultiplier, 0) || *req.BalanceRechargeMultiplier <= 0 {
 			return infraerrors.BadRequest("INVALID_BALANCE_RECHARGE_MULTIPLIER", "balance recharge multiplier must be greater than 0")
@@ -420,7 +452,9 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 	}
 	m := map[string]string{
 		SettingPaymentEnabled:                    formatBoolOrEmpty(req.Enabled),
-		SettingPaymentInstantEnabled:             formatBoolOrEmpty(req.InstantEnabled),
+		SettingPaymentRechargePageVisible:        formatBoolOrEmpty(req.RechargePageVisible),
+		SettingPaymentOrdersPageVisible:          formatBoolOrEmpty(req.OrdersPageVisible),
+		SettingPaymentFeeMode:                    normalizeOptionalPaymentFeeMode(req.FeeMode),
 		SettingMinRechargeAmount:                 formatPositiveFloat(req.MinAmount),
 		SettingMaxRechargeAmount:                 formatPositiveFloat(req.MaxAmount),
 		SettingDailyRechargeLimit:                formatPositiveFloat(req.DailyLimit),
@@ -465,6 +499,30 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 		m[SettingEnabledPaymentTypes] = ""
 	}
 	return s.settingRepo.SetMultiple(ctx, m)
+}
+
+func normalizePaymentFeeMode(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if !isValidPaymentFeeMode(value) {
+		return PaymentFeeModePlatform
+	}
+	return value
+}
+
+func normalizeOptionalPaymentFeeMode(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return normalizePaymentFeeMode(*value)
+}
+
+func isValidPaymentFeeMode(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case PaymentFeeModePlatform, PaymentFeeModeProvider, PaymentFeeModeMerchant:
+		return true
+	default:
+		return false
+	}
 }
 
 func validateRechargeFeeRate(value float64) error {

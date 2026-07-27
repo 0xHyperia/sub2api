@@ -114,6 +114,42 @@ func TestGetInstanceChannelLimitsFallsBackToLegacyDirectAliases(t *testing.T) {
 	}
 }
 
+func TestGetInstanceFeeRateUsesRequestedMethod(t *testing.T) {
+	t.Parallel()
+
+	inst := testInstance(1, TypeEasyPay, "")
+	inst.FeeRates = `{"alipay":3,"wxpay":3.8,"custom_method":2.5}`
+	if got := getInstanceFeeRate(inst, TypeWxpay); got != 3.8 {
+		t.Fatalf("getInstanceFeeRate(wxpay) = %v, want 3.8", got)
+	}
+	if got := getInstanceFeeRate(inst, PaymentType("custom_method")); got != 2.5 {
+		t.Fatalf("getInstanceFeeRate(custom_method) = %v, want 2.5", got)
+	}
+
+	stripe := testInstance(2, TypeStripe, "")
+	stripe.FeeRates = `{"stripe":4.1}`
+	if got := getInstanceFeeRate(stripe, TypeAlipay); got != 4.1 {
+		t.Fatalf("getInstanceFeeRate(stripe alipay subtype) = %v, want 4.1", got)
+	}
+}
+
+func TestFilterByLimitsUsesCandidateSpecificFeeAmount(t *testing.T) {
+	t.Parallel()
+
+	first := testInstance(1, TypeEasyPay, makeLimitsJSON(TypeAlipay, ChannelLimits{SingleMax: 102}))
+	first.FeeRates = `{"alipay":3}`
+	second := testInstance(2, TypeEasyPay, makeLimitsJSON(TypeAlipay, ChannelLimits{SingleMax: 102}))
+	second.FeeRates = `{"alipay":2}`
+	candidates := []instanceCandidate{{inst: first}, {inst: second}}
+
+	got := filterByLimitsWithResolver(candidates, TypeAlipay, 100, func(rate float64) float64 {
+		return 100 + rate
+	})
+	if len(got) != 1 || got[0].inst.ID != 2 {
+		t.Fatalf("filterByLimitsWithResolver() returned %+v, want only instance 2", got)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Helper to build test PaymentProviderInstance values
 // ---------------------------------------------------------------------------
@@ -275,7 +311,7 @@ func TestFilterByLimits(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := filterByLimits(tt.candidates, tt.paymentType, tt.orderAmount)
+			got := filterByLimitsWithResolver(tt.candidates, tt.paymentType, tt.orderAmount, nil)
 			gotIDs := make([]int64, len(got))
 			for i, c := range got {
 				gotIDs[i] = c.inst.ID
