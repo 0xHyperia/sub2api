@@ -1,0 +1,92 @@
+name: usa0-sub2api
+x-logging: &logging
+  driver: json-file
+  options: {max-size: 50m, max-file: "5"}
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:?required}
+    container_name: sub2api-postgres
+    restart: unless-stopped
+    command: ["postgres", "-c", "max_connections=${POSTGRES_MAX_CONNECTIONS:-100}"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${POSTGRES_DB:?required}
+      PGDATA: /var/lib/postgresql/data
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes: ["${USA0_DATA_ROOT:-/opt/usa0/data}/sub2api/postgres:/var/lib/postgresql/data"]
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+  redis:
+    image: ${REDIS_IMAGE:?required}
+    container_name: sub2api-redis
+    restart: unless-stopped
+    command: ["sh", "-c", "exec redis-server --appendonly yes --appendfsync everysec --maxmemory-policy noeviction --requirepass \"$$REDIS_PASSWORD\""]
+    environment: {REDIS_PASSWORD: "${REDIS_PASSWORD:?required}", TZ: "${TZ:-Asia/Shanghai}"}
+    volumes: ["${USA0_DATA_ROOT:-/opt/usa0/data}/sub2api/redis:/data"]
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+  app:
+    image: ${APP_IMAGE:?required}
+    container_name: sub2api
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-/opt/usa0/config/sub2api.env}
+    environment:
+      AUTO_SETUP: "true"
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8080"
+      SERVER_MODE: release
+      SERVER_TRUSTED_PROXIES: ${SERVER_TRUSTED_PROXIES:-}
+      SECURITY_TRUST_FORWARDED_IP_FOR_API_KEY_ACL: ${SECURITY_TRUST_FORWARDED_IP_FOR_API_KEY_ACL:-false}
+      RUN_MODE: ${RUN_MODE:-standard}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: ${POSTGRES_USER:?required}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      DATABASE_DBNAME: ${POSTGRES_DB:?required}
+      DATABASE_SSLMODE: disable
+      DATABASE_MAX_OPEN_CONNS: ${DATABASE_MAX_OPEN_CONNS:-50}
+      DATABASE_MAX_IDLE_CONNS: ${DATABASE_MAX_IDLE_CONNS:-10}
+      DATABASE_CONN_MAX_LIFETIME_MINUTES: ${DATABASE_CONN_MAX_LIFETIME_MINUTES:-30}
+      DATABASE_CONN_MAX_IDLE_TIME_MINUTES: ${DATABASE_CONN_MAX_IDLE_TIME_MINUTES:-5}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?required}
+      REDIS_DB: "0"
+      REDIS_POOL_SIZE: ${REDIS_POOL_SIZE:-1024}
+      REDIS_MIN_IDLE_CONNS: ${REDIS_MIN_IDLE_CONNS:-10}
+      REDIS_ENABLE_TLS: "false"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?required}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET:?required}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?required}
+      DISTRIBUTION_TRACKING_HASH_SECRETS: ${DISTRIBUTION_TRACKING_HASH_SECRETS:?required}
+      SECURITY_URL_ALLOWLIST_ENABLED: ${SECURITY_URL_ALLOWLIST_ENABLED:-true}
+      SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP: ${SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP:-false}
+      SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS: ${SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS:-false}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes: ["${USA0_DATA_ROOT:-/opt/usa0/data}/sub2api/app:/app/data"]
+    depends_on: {postgres: {condition: service_healthy}, redis: {condition: service_healthy}}
+    expose: ["8080"]
+    networks: {data: {}, edge: {aliases: [sub2api]}}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-T", "5", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging: *logging
+networks:
+  data: {name: sub2api-data, internal: true}
+  edge: {name: usa0-edge, external: true}

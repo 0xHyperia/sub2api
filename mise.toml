@@ -1,0 +1,5 @@
+[tools]
+go = "1.26.5"
+node = "20.20.0"
+"npm:pnpm" = "9.15.9"
+golangci-lint = "2.9.0"

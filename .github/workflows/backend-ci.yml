@@ -8,6 +8,13 @@ permissions:
   contents: read
 
 jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate production deployment assets
+        run: make deploy-validate
+
   shell:
     runs-on: macos-15
     steps:
