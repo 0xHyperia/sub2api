@@ -2,6 +2,32 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## USA0 v1.0.9
+
+- 发布版本：v1.0.9
+- 发布分支：`usa0/main`
+- 官方基线版本：v0.1.166
+- 官方基线提交：`dc893dd0b8eab41df5be595ae9fcd1aa74a062b8`
+- 上一 USA0 版本：v1.0.8
+- 功能提交：`9efc672d4301e4b000ecbcc9242f7be11ccb3e0f`
+- 发布状态：发布验证完成，等待创建并推送 v1.0.9 tag
+- 记录日期：2026-07-28
+
+### 版本变更
+
+- 为 ZeroBox Web、桌面和 Android 客户端补齐 OAuth 2.0 Authorization Code + PKCE 公共客户端能力，其中 Web 回调使用精确 HTTPS 白名单，本地开发仅允许 loopback 回调。
+- 新增 `profile:write`、`usage:read` 与 `execution:authorize` 应用权限，并提供资料更新、用量读取和执行目标 step-up 受限资源接口。
+- 新增执行授权证明的签发、原子消费、过期和重放防护；沿用现有 Redis/内存缓存，不引入数据库迁移。
+- 保留官方 v0.1.166 的面板限流、多币种支付统计、OpenAI WebSocket、Antigravity/Gemini 兼容及窄屏布局优化。
+
+### 验证结果
+
+- `go generate ./cmd/server` 通过，生成文件无漂移。
+- 后端 `go test ./...` 全部通过，覆盖配置、客户端与回调白名单、PKCE/state、授权码和刷新令牌、应用资源权限及执行 step-up 服务。
+- `git diff --check` 通过；本次没有 Ent schema 或数据库迁移变更。
+
+---
+
 ## 官方 v0.1.166 同步（已合并）
 
 - 集成分支：`codex/merge-upstream-v0.1.166`
@@ -10,8 +36,8 @@
 - 上一官方基线：v0.1.165（`e9a58c1cb8b5ef626a75c93b4d953fde5e67aa29`）
 - 集成前 USA0 提交：`3f63fbd69de8c536a7af5efc3b9e9357af465318`
 - 集成提交：`651f68136b8a8dc8438e6ba4eb0e102e2abb69e2`
-- USA0 发布版本：待确认
-- 同步状态：已完成上游合并、冲突解决、USA0 适配、完整代码验证、本地 Docker 健康检查和登录态浏览器复核，集成提交已快进合入本地 `usa0/main`；尚未推送，尚未创建 USA0 发布 tag
+- USA0 发布版本：v1.0.9
+- 同步状态：已完成上游合并、冲突解决、USA0 适配、完整代码验证、本地 Docker 健康检查和登录态浏览器复核；发布内容已合入 `usa0/main`，纳入 v1.0.9 发布
 - 记录日期：2026-07-27
 
 ### 同步范围
