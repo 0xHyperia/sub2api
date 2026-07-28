@@ -24,7 +24,7 @@ dev-infra-down:
 	$(DEV_COMPOSE) down --remove-orphans
 
 dev:
-	@test -f deploy/.env.dev || { echo "run make dev-infra-up first"; exit 1; }
+	@test -f deploy/.env.dev || { echo "请先运行 make dev-infra-up"; exit 1; }
 	@set -a; . deploy/.env.dev; set +a; \
 	  trap 'kill 0' EXIT; \
 	  (cd backend && AUTO_SETUP=true SERVER_HOST=0.0.0.0 SERVER_PORT=8080 SERVER_MODE=debug \
@@ -33,6 +33,7 @@ dev:
 	    REDIS_HOST=127.0.0.1 REDIS_PORT="$${SUB2API_REDIS_PORT:-6379}" REDIS_PASSWORD="$$SUB2API_REDIS_PASSWORD" \
 	    REDIS_DB=0 REDIS_ENABLE_TLS=false ADMIN_EMAIL="$$SUB2API_ADMIN_EMAIL" ADMIN_PASSWORD="$$SUB2API_ADMIN_PASSWORD" \
 	    JWT_SECRET="$$SUB2API_JWT_SECRET" TOTP_ENCRYPTION_KEY="$$SUB2API_TOTP_KEY" \
+	    DISTRIBUTION_TRACKING_HASH_SECRETS="$$SUB2API_TRACKING_SECRET" \
 	    $(MISE) go run ./cmd/server) & \
 	  ($(MISE) pnpm --dir frontend dev --host 127.0.0.1 --port 5173) & wait
 
