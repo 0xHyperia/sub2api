@@ -994,6 +994,9 @@ distribution_tracking:
 # SUB2API generates and persists a random secret in the database on first boot.
 app_auth:
   signing_secret: ""
+  # Exact HTTPS ZeroBox Gateway callbacks. Loopback HTTP callbacks are accepted
+  # only for local development and must use /api/auth/oauth/callback.
+  web_redirect_uris: []
 
 # =============================================================================
 # TOTP (2FA) Configuration

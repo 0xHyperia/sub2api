@@ -38,9 +38,13 @@ func RegisterAppAuthRoutes(
 	app.Use(gin.HandlerFunc(appJWTAuth))
 	{
 		app.GET("/me", servermiddleware.RequireAppScope("profile:read"), h.AppResource.Me)
+		app.PATCH("/me", servermiddleware.RequireAppScope("profile:write"), h.AppResource.UpdateMe)
+		app.GET("/usage", servermiddleware.RequireAppScope("usage:read"), h.AppResource.Usage)
 		app.GET("/groups", servermiddleware.RequireAppScope("groups:read"), h.AppResource.Groups)
 		app.GET("/keys", servermiddleware.RequireAppScope("keys:read"), h.AppResource.Keys)
 		app.POST("/groups/:groupId/keys", servermiddleware.RequireAppScope("keys:write"), h.AppResource.CreateKey)
 		app.GET("/subscriptions", servermiddleware.RequireAppScope("subscriptions:read"), h.AppResource.Subscriptions)
+		app.POST("/execution/step-up", servermiddleware.RequireAppScope("execution:authorize"), h.AppResource.IssueExecutionStepUp)
+		app.POST("/execution/step-up/consume", servermiddleware.RequireAppScope("execution:authorize"), h.AppResource.ConsumeExecutionStepUp)
 	}
 }

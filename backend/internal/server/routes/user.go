@@ -32,6 +32,8 @@ func RegisterUserRoutes(
 		user := authenticated.Group("/user")
 		{
 			user.GET("/profile", h.User.GetProfile)
+			user.POST("/step-up", h.ExecutionStepUp.Issue)
+			user.POST("/step-up/consume", h.ExecutionStepUp.Consume)
 			user.PUT("/password", h.User.ChangePassword)
 			user.PUT("", h.User.UpdateProfile)
 			user.GET("/aff", h.User.GetAffiliate)

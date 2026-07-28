@@ -1536,7 +1536,8 @@ type DistributionTrackingConfig struct {
 }
 
 type AppAuthConfig struct {
-	SigningSecret string `mapstructure:"signing_secret"`
+	SigningSecret   string   `mapstructure:"signing_secret"`
+	WebRedirectURIs []string `mapstructure:"web_redirect_uris"`
 }
 
 // TotpConfig TOTP 双因素认证配置
@@ -1741,6 +1742,12 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	cfg.Server.FrontendURL = strings.TrimSpace(cfg.Server.FrontendURL)
 	cfg.JWT.Secret = strings.TrimSpace(cfg.JWT.Secret)
 	cfg.AppAuth.SigningSecret = strings.TrimSpace(cfg.AppAuth.SigningSecret)
+	if raw := strings.TrimSpace(os.Getenv("APP_AUTH_WEB_REDIRECT_URIS")); raw != "" {
+		cfg.AppAuth.WebRedirectURIs = strings.FieldsFunc(raw, func(r rune) bool {
+			return r == ',' || r == ';' || r == '\n' || r == '\r'
+		})
+	}
+	cfg.AppAuth.WebRedirectURIs = normalizeStringSlice(cfg.AppAuth.WebRedirectURIs)
 	cfg.LinuxDo.ClientID = strings.TrimSpace(cfg.LinuxDo.ClientID)
 	cfg.LinuxDo.ClientSecret = strings.TrimSpace(cfg.LinuxDo.ClientSecret)
 	cfg.LinuxDo.AuthorizeURL = strings.TrimSpace(cfg.LinuxDo.AuthorizeURL)
@@ -2174,6 +2181,7 @@ func setDefaults() {
 	viper.SetDefault("jwt.refresh_token_expire_days", 30)  // 30天Refresh Token有效期
 	viper.SetDefault("jwt.refresh_window_minutes", 2)      // 过期前2分钟开始允许刷新
 	viper.SetDefault("app_auth.signing_secret", "")
+	viper.SetDefault("app_auth.web_redirect_uris", []string{})
 
 	// TOTP
 	viper.SetDefault("totp.encryption_key", "")

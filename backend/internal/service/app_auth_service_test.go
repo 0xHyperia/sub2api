@@ -248,3 +248,32 @@ func TestAppRefreshRotationAndReuseRevokesGrant(t *testing.T) {
 	require.Equal(t, "revoked", repo.authorization.Status)
 	require.True(t, cache.revoked)
 }
+
+func TestZeroBoxWebRedirectUsesExactHTTPSAllowlistAndLoopbackDevelopment(t *testing.T) {
+	ConfigureAppAuthWebRedirectURIs([]string{
+		"https://gateway.example.com/api/auth/oauth/callback",
+		"https://gateway.example.com/api/auth/oauth/callback?ignored=true",
+		"http://gateway.example.com/api/auth/oauth/callback",
+	})
+	t.Cleanup(func() { ConfigureAppAuthWebRedirectURIs(nil) })
+	client, ok := AppPublicClientByID("zerobox-web")
+	require.True(t, ok)
+	tests := []struct {
+		uri  string
+		want bool
+	}{
+		{"https://gateway.example.com/api/auth/oauth/callback", true},
+		{"https://gateway.example.com/api/auth/oauth/callback/", false},
+		{"https://gateway.example.com/api/auth/oauth/callback?next=/", false},
+		{"https://other.example.com/api/auth/oauth/callback", false},
+		{"http://gateway.example.com/api/auth/oauth/callback", false},
+		{"http://127.0.0.1:50052/api/auth/oauth/callback", true},
+		{"http://localhost:5173/api/auth/oauth/callback", true},
+		{"http://127.0.0.1/api/auth/oauth/callback", false},
+		{"http://127.0.0.1:50052/other", false},
+		{"zerobox://oauth/callback", false},
+	}
+	for _, test := range tests {
+		require.Equalf(t, test.want, client.ValidateRedirect(test.uri), "redirect %s", test.uri)
+	}
+}

@@ -16,10 +16,12 @@ type AppResourceHandler struct {
 	userService         *service.UserService
 	apiKeyService       *service.APIKeyService
 	subscriptionService *service.SubscriptionService
+	usageService        *service.UsageService
+	stepUpService       *service.ExecutionStepUpService
 }
 
-func NewAppResourceHandler(userService *service.UserService, apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService) *AppResourceHandler {
-	return &AppResourceHandler{userService: userService, apiKeyService: apiKeyService, subscriptionService: subscriptionService}
+func NewAppResourceHandler(userService *service.UserService, apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, usageService *service.UsageService, stepUpService *service.ExecutionStepUpService) *AppResourceHandler {
+	return &AppResourceHandler{userService: userService, apiKeyService: apiKeyService, subscriptionService: subscriptionService, usageService: usageService, stepUpService: stepUpService}
 }
 
 func (h *AppResourceHandler) Me(c *gin.Context) {
@@ -27,7 +29,7 @@ func (h *AppResourceHandler) Me(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, err := h.userService.GetByID(c.Request.Context(), subject.UserID)
+	user, err := h.userService.GetProfile(c.Request.Context(), subject.UserID)
 	if err != nil {
 		appResourceError(c, http.StatusNotFound, "user_not_found", "User not found")
 		return
@@ -36,8 +38,102 @@ func (h *AppResourceHandler) Me(c *gin.Context) {
 		"id": user.ID, "email": user.Email, "username": user.Username, "role": user.Role,
 		"balance": user.Balance, "frozen_balance": user.FrozenBalance, "concurrency": user.Concurrency,
 		"rpm_limit": user.RPMLimit, "status": user.Status, "allowed_groups": user.AllowedGroups,
-		"created_at": user.CreatedAt, "last_active_at": user.LastActiveAt,
+		"avatar_url": user.AvatarURL, "balance_notify_enabled": user.BalanceNotifyEnabled,
+		"balance_notify_threshold": user.BalanceNotifyThreshold,
+		"created_at":               user.CreatedAt, "updated_at": user.UpdatedAt, "last_active_at": user.LastActiveAt,
 	})
+}
+
+type updateAppProfileRequest struct {
+	Username               *string  `json:"username"`
+	AvatarURL              *string  `json:"avatar_url"`
+	BalanceNotifyEnabled   *bool    `json:"balance_notify_enabled"`
+	BalanceNotifyThreshold *float64 `json:"balance_notify_threshold"`
+}
+
+func (h *AppResourceHandler) UpdateMe(c *gin.Context) {
+	subject, ok := appSubject(c)
+	if !ok {
+		return
+	}
+	var request updateAppProfileRequest
+	if err := decodeStrictJSON(c, &request); err != nil {
+		appResourceError(c, http.StatusBadRequest, "invalid_request", "Invalid profile update")
+		return
+	}
+	user, err := h.userService.UpdateProfile(c.Request.Context(), subject.UserID, service.UpdateProfileRequest{
+		Username: request.Username, AvatarURL: request.AvatarURL,
+		BalanceNotifyEnabled: request.BalanceNotifyEnabled, BalanceNotifyThreshold: request.BalanceNotifyThreshold,
+	})
+	if err != nil {
+		appResourceError(c, http.StatusBadRequest, "profile_update_failed", err.Error())
+		return
+	}
+	appResourceSuccess(c, gin.H{
+		"id": user.ID, "email": user.Email, "username": user.Username, "avatar_url": user.AvatarURL,
+		"balance_notify_enabled": user.BalanceNotifyEnabled, "balance_notify_threshold": user.BalanceNotifyThreshold,
+		"updated_at": user.UpdatedAt,
+	})
+}
+
+func (h *AppResourceHandler) Usage(c *gin.Context) {
+	subject, ok := appSubject(c)
+	if !ok {
+		return
+	}
+	stats, err := h.usageService.GetUserDashboardStats(c.Request.Context(), subject.UserID)
+	if err != nil {
+		appResourceError(c, http.StatusInternalServerError, "usage_unavailable", "Failed to load usage statistics")
+		return
+	}
+	appResourceSuccess(c, stats)
+}
+
+type appExecutionStepUpRequest struct {
+	Purpose           string `json:"purpose"`
+	TargetFingerprint string `json:"target_fingerprint"`
+}
+
+func (h *AppResourceHandler) IssueExecutionStepUp(c *gin.Context) {
+	subject, ok := appSubject(c)
+	if !ok {
+		return
+	}
+	var request appExecutionStepUpRequest
+	if err := decodeStrictJSON(c, &request); err != nil {
+		appResourceError(c, http.StatusBadRequest, "invalid_request", "Invalid step-up request")
+		return
+	}
+	result, err := h.stepUpService.IssueAuthorized(c.Request.Context(), subject.UserID, request.Purpose, request.TargetFingerprint)
+	if err != nil {
+		appResourceError(c, http.StatusBadRequest, "step_up_failed", err.Error())
+		return
+	}
+	appResourceSuccess(c, gin.H{"proof": result.Proof, "expires_at": result.ExpiresAt, "expires_in": int64(service.ExecutionStepUpProofTTL.Seconds())})
+}
+
+type appExecutionStepUpConsumeRequest struct {
+	Proof             string `json:"proof"`
+	Purpose           string `json:"purpose"`
+	TargetFingerprint string `json:"target_fingerprint"`
+}
+
+func (h *AppResourceHandler) ConsumeExecutionStepUp(c *gin.Context) {
+	subject, ok := appSubject(c)
+	if !ok {
+		return
+	}
+	var request appExecutionStepUpConsumeRequest
+	if err := decodeStrictJSON(c, &request); err != nil {
+		appResourceError(c, http.StatusBadRequest, "invalid_request", "Invalid step-up proof")
+		return
+	}
+	grant, err := h.stepUpService.Consume(c.Request.Context(), subject.UserID, request.Proof, request.Purpose, request.TargetFingerprint)
+	if err != nil {
+		appResourceError(c, http.StatusUnauthorized, "invalid_step_up", err.Error())
+		return
+	}
+	appResourceSuccess(c, gin.H{"valid": true, "purpose": grant.Purpose, "target_fingerprint": grant.TargetFingerprint})
 }
 
 func (h *AppResourceHandler) Groups(c *gin.Context) {

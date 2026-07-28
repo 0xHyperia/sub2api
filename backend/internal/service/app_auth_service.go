@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -64,19 +65,31 @@ type AppPublicClient struct {
 var appAllowedScopes = map[string]struct{}{
 	// Temporary ZeroBox compatibility scope. No id_token or OIDC UserInfo is
 	// issued in the first integration phase.
-	"openid":             {},
-	"profile:read":       {},
-	"groups:read":        {},
-	"keys:read":          {},
-	"keys:write":         {},
-	"subscriptions:read": {},
-	"offline_access":     {},
+	"openid":              {},
+	"profile:read":        {},
+	"groups:read":         {},
+	"keys:read":           {},
+	"keys:write":          {},
+	"subscriptions:read":  {},
+	"profile:write":       {},
+	"usage:read":          {},
+	"execution:authorize": {},
+	"offline_access":      {},
 }
+
+var appWebRedirects = struct {
+	sync.RWMutex
+	values map[string]struct{}
+}{values: map[string]struct{}{}}
 
 var appPublicClients = map[string]AppPublicClient{
 	"zerobox-desktop": {
 		ID: "zerobox-desktop", Platform: "desktop", Name: "ZeroBox",
 		AllowedScopes: appAllowedScopes, ValidateRedirect: validateZeroBoxLoopbackRedirect,
+	},
+	"zerobox-web": {
+		ID: "zerobox-web", Platform: "web", Name: "ZeroBox Web",
+		AllowedScopes: appAllowedScopes, ValidateRedirect: validateZeroBoxWebRedirect,
 	},
 	"zerobox-android": {
 		ID: "zerobox-android", Platform: "android", Name: "ZeroBox",
@@ -86,6 +99,19 @@ var appPublicClients = map[string]AppPublicClient{
 		ID: "zerobox-ios", Platform: "ios", Name: "ZeroBox",
 		AllowedScopes: appAllowedScopes, ValidateRedirect: exactRedirect("zerobox://oauth/callback"),
 	},
+}
+
+func ConfigureAppAuthWebRedirectURIs(values []string) {
+	next := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if validConfiguredWebRedirect(value) {
+			next[value] = struct{}{}
+		}
+	}
+	appWebRedirects.Lock()
+	appWebRedirects.values = next
+	appWebRedirects.Unlock()
 }
 
 func AppPublicClientByID(clientID string) (AppPublicClient, bool) {
@@ -543,6 +569,38 @@ func validateRedirectURI(client AppPublicClient, raw string) error {
 
 func exactRedirect(registered string) func(string) bool {
 	return func(raw string) bool { return raw == registered }
+}
+
+func validConfiguredWebRedirect(raw string) bool {
+	parsed, err := url.Parse(raw)
+	return err == nil && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil &&
+		parsed.Path == "/api/auth/oauth/callback" && parsed.RawQuery == "" && parsed.Fragment == ""
+}
+
+func validateZeroBoxWebRedirect(raw string) bool {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" ||
+		parsed.Path != "/api/auth/oauth/callback" {
+		return false
+	}
+	if parsed.Scheme == "http" && isLoopbackHost(parsed.Hostname()) && parsed.Port() != "" {
+		return true
+	}
+	if parsed.Scheme != "https" || parsed.Host == "" {
+		return false
+	}
+	appWebRedirects.RLock()
+	_, ok := appWebRedirects.values[raw]
+	appWebRedirects.RUnlock()
+	return ok
+}
+
+func isLoopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func validateZeroBoxLoopbackRedirect(raw string) bool {

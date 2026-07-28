@@ -673,6 +673,7 @@ func ProvideAPIKeyService(
 }
 
 func ProvideAppAuthService(repository AppAuthorizationRepository, cache AppAuthCache, cfg *config.Config) *AppAuthService {
+	ConfigureAppAuthWebRedirectURIs(cfg.AppAuth.WebRedirectURIs)
 	return NewAppAuthService(repository, cache, cfg.AppAuth.SigningSecret)
 }
 
@@ -772,6 +773,7 @@ var ProviderSet = wire.NewSet(
 	NewUserAttributeService,
 	NewUsageCache,
 	NewTotpService,
+	NewExecutionStepUpService,
 	NewErrorPassthroughService,
 	NewTLSFingerprintProfileService,
 	NewDigestSessionStore,

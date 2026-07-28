@@ -19,8 +19,17 @@ func resetViperWithJWTSecret(t *testing.T) {
 	viper.Reset()
 	t.Cleanup(viper.Reset)
 	t.Setenv("CONFIG_FILE", "")
-	t.Setenv("DATA_DIR", "")
+	setEmptyConfigDir(t)
 	t.Setenv("JWT_SECRET", strings.Repeat("x", 32))
+}
+
+func setEmptyConfigDir(t *testing.T) {
+	t.Helper()
+	dataDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dataDir, "config.yaml"), []byte("{}\n"), 0o600); err != nil {
+		t.Fatalf("write isolated config: %v", err)
+	}
+	t.Setenv("DATA_DIR", dataDir)
 }
 
 func TestLoadServerTimingConfig(t *testing.T) {
@@ -47,6 +56,17 @@ func TestLoadRedisUsernameFromEnvironment(t *testing.T) {
 	cfg, err := Load()
 	require.NoError(t, err)
 	require.Equal(t, "app-user", cfg.Redis.Username)
+}
+
+func TestLoadAppAuthWebRedirectURIsFromEnvironment(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	t.Setenv("APP_AUTH_WEB_REDIRECT_URIS", " https://one.example/api/auth/oauth/callback,https://two.example/api/auth/oauth/callback ")
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		"https://one.example/api/auth/oauth/callback",
+		"https://two.example/api/auth/oauth/callback",
+	}, cfg.AppAuth.WebRedirectURIs)
 }
 
 func TestLoadHTTPIngressSafetyDefaults(t *testing.T) {
@@ -302,7 +322,7 @@ func TestLoadForBootstrapAllowsMissingJWTSecret(t *testing.T) {
 	viper.Reset()
 	t.Cleanup(viper.Reset)
 	t.Setenv("CONFIG_FILE", "")
-	t.Setenv("DATA_DIR", "")
+	setEmptyConfigDir(t)
 	t.Setenv("JWT_SECRET", "")
 
 	cfg, err := LoadForBootstrap()
