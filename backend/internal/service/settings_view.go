@@ -181,6 +181,7 @@ type SystemSettings struct {
 
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	SoftwareCenterEnabled    bool `json:"software_center_enabled"`
 
 	// Model Marketplace feature (user-facing card catalog)
 	ModelMarketplaceEnabled bool   `json:"model_marketplace_enabled"`
@@ -342,6 +343,7 @@ type PublicSettings struct {
 
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	SoftwareCenterEnabled    bool `json:"software_center_enabled"`
 
 	// Model Marketplace feature (user-facing card catalog)
 	ModelMarketplaceEnabled bool   `json:"model_marketplace_enabled"`

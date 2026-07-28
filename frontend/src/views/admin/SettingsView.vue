@@ -6618,6 +6618,23 @@
 
         <div class="card">
           <div class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">软件中心</h2>
+            <p class="mt-1 text-sm text-foreground-subtle">控制公开软件下载页和首页入口，软件内容可单独维护。</p>
+            <div class="mt-2 flex flex-wrap gap-4 text-xs">
+              <router-link to="/admin/software-center" class="inline-flex items-center gap-1 text-brand hover:underline">管理软件 <span aria-hidden="true">→</span></router-link>
+              <a href="/download" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-brand hover:underline">查看公开页面 <span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="flex items-center justify-between gap-4">
+              <div><label class="text-sm font-medium text-foreground-muted">启用软件中心</label><p class="mt-0.5 text-xs text-foreground-subtle">关闭后隐藏公开入口和下载目录。</p></div>
+              <Toggle v-model="form.software_center_enabled" aria-label="启用软件中心" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="border-b border-outline px-6 py-4">
             <h2 class="text-lg font-semibold text-foreground">
               {{ t('admin.settings.features.availableChannels.title') }}
             </h2>
@@ -8504,14 +8521,14 @@ function localText(zh: string, en: string): string {
 
 const paymentGuideHref = computed(() =>
   locale.value.startsWith("zh")
-    ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md"
-    : "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md",
+    ? "https://github.com/0xHyperia/sub2api/blob/main/docs/PAYMENT_CN.md"
+    : "https://github.com/0xHyperia/sub2api/blob/main/docs/PAYMENT.md",
 );
 
 const paymentMethodsHref = computed(() =>
   locale.value.startsWith("zh")
-    ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式"
-    : "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md#supported-payment-methods",
+    ? "https://github.com/0xHyperia/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式"
+    : "https://github.com/0xHyperia/sub2api/blob/main/docs/PAYMENT.md#supported-payment-methods",
 );
 
 type SettingsTab =
@@ -9481,6 +9498,7 @@ const form = reactive<SettingsForm>({
   channel_monitor_default_interval_seconds: 60,
   // Available Channels feature switch
   available_channels_enabled: false,
+	software_center_enabled: true,
   // Model Marketplace feature switch
   model_marketplace_enabled: false,
   model_monitor_enabled: false,
@@ -11107,6 +11125,7 @@ async function saveSettings() {
         Number(form.channel_monitor_default_interval_seconds) || 60,
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
+		software_center_enabled: form.software_center_enabled,
       // Model Marketplace feature switch
       model_marketplace_enabled: form.model_marketplace_enabled,
       model_monitor_enabled: form.model_marketplace_enabled && form.model_monitor_enabled,

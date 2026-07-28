@@ -156,6 +156,8 @@ var ProviderSet = wire.NewSet(
 	NewTurnstileVerifier,
 	ProvidePricingRemoteClient,
 	ProvideGitHubReleaseClient,
+	NewSoftwareCatalogRepository,
+	NewSoftwareCatalogGitHubClient,
 	NewProxyExitInfoProber,
 	NewClaudeUsageFetcher,
 	NewClaudeOAuthClient,

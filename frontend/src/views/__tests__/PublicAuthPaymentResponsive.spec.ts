@@ -17,8 +17,8 @@ describe('public, auth, and payment responsive theme contracts', () => {
     expect(home).toContain('.usa-home[data-theme="dark"]')
     expect(home).toContain('@media (max-width: 620px)')
     expect(download).toContain(':data-theme="theme"')
-    expect(download).toContain('.download-page[data-theme="dark"]')
-    expect(download).toContain('@media (max-width: 560px)')
+    expect(download).toContain('.software-page[data-theme="dark"]')
+    expect(download).toContain('@media (max-width: 620px)')
   })
 
   it('gives phone auth controls stable touch targets and stacked long-value actions', () => {

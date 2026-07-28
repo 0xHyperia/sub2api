@@ -367,6 +367,7 @@ export const useAppStore = defineStore('app', () => {
         channel_monitor_enabled: true,
         channel_monitor_default_interval_seconds: 60,
         available_channels_enabled: false,
+		software_center_enabled: true,
         model_marketplace_enabled: false,
         model_monitor_enabled: false,
         contact_us_enabled: false,

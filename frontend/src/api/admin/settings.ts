@@ -663,6 +663,8 @@ export interface SystemSettings {
   // Available Channels feature switch
   available_channels_enabled: boolean;
 
+  software_center_enabled: boolean;
+
   // Model Marketplace feature switch
   model_marketplace_enabled: boolean;
   model_monitor_enabled: boolean;
@@ -951,6 +953,8 @@ export interface UpdateSettingsRequest {
 
   // Available Channels feature switch
   available_channels_enabled?: boolean;
+
+  software_center_enabled?: boolean;
 
   // Model Marketplace feature switch
   model_marketplace_enabled?: boolean;

@@ -381,6 +381,7 @@ const (
 	// user-facing aggregate view. When false: user endpoint returns an empty list and the
 	// sidebar entry is hidden. Defaults to false (opt-in feature).
 	SettingKeyAvailableChannelsEnabled = "available_channels_enabled"
+	SettingKeySoftwareCenterEnabled    = "software_center_enabled"
 
 	// SettingKeyModelMarketplaceEnabled controls the user-facing model marketplace.
 	// It uses the same user-scoped channel data as Available Channels but has an

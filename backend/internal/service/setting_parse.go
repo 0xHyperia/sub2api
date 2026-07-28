@@ -187,6 +187,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 		// Available channels feature (default disabled; opt-in)
 		SettingKeyAvailableChannelsEnabled: "false",
+		SettingKeySoftwareCenterEnabled:    "true",
 
 		// Model marketplace feature (default disabled; opt-in)
 		SettingKeyModelMarketplaceEnabled: "false",
@@ -769,6 +770,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Available channels feature (default: disabled; strict true)
 	result.AvailableChannelsEnabled = settings[SettingKeyAvailableChannelsEnabled] == "true"
+	result.SoftwareCenterEnabled = settings[SettingKeySoftwareCenterEnabled] != "false"
 
 	// Model marketplace feature (default: disabled; strict true)
 	result.ModelMarketplaceEnabled = settings[SettingKeyModelMarketplaceEnabled] == "true"

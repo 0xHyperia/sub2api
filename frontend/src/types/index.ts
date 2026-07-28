@@ -249,6 +249,7 @@ export interface PublicSettings {
   channel_monitor_enabled: boolean
   channel_monitor_default_interval_seconds: number
   available_channels_enabled: boolean
+	software_center_enabled: boolean
   model_marketplace_enabled: boolean
   model_monitor_enabled: boolean
   contact_us_enabled: boolean

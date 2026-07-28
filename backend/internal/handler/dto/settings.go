@@ -290,6 +290,7 @@ type SystemSettings struct {
 
 	// Available Channels feature switch (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	SoftwareCenterEnabled    bool `json:"software_center_enabled"`
 
 	// Model Marketplace feature switch (user-facing model catalog)
 	ModelMarketplaceEnabled bool   `json:"model_marketplace_enabled"`
@@ -385,6 +386,7 @@ type PublicSettings struct {
 	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
 
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	SoftwareCenterEnabled    bool `json:"software_center_enabled"`
 
 	ModelMarketplaceEnabled bool   `json:"model_marketplace_enabled"`
 	ModelMonitorEnabled     bool   `json:"model_monitor_enabled"`

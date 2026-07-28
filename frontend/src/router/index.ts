@@ -46,7 +46,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/DownloadView.vue'),
     meta: {
       requiresAuth: false,
-      title: '客户端下载'
+      requiresSoftwareCenter: true,
+      title: '软件中心'
     }
   },
   {
@@ -727,6 +728,12 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/software-center',
+    name: 'AdminSoftwareCenter',
+    component: () => import('@/views/admin/SoftwareCenterView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: '软件中心' }
+  },
+  {
     path: '/admin/risk-control',
     name: 'AdminRiskControl',
     component: () => import('@/views/admin/RiskControlView.vue'),
@@ -1067,7 +1074,8 @@ router.beforeEach(async (to, _from, next) => {
   const requiresFeatureSettings = to.meta.requiresPayment ||
     to.meta.requiresPaymentOrders ||
     to.meta.requiresRiskControl ||
-    to.meta.requiresModelMarketplace
+    to.meta.requiresModelMarketplace ||
+	to.meta.requiresSoftwareCenter
   if (requiresFeatureSettings && !appStore.publicSettingsLoaded) {
     try {
       await appStore.fetchPublicSettings()
@@ -1078,6 +1086,15 @@ router.beforeEach(async (to, _from, next) => {
 
   // Only an explicit value from successfully loaded settings can disable a route.
   // A transient settings failure is unknown state, not a confirmed feature toggle.
+  if (
+	to.meta.requiresSoftwareCenter &&
+	appStore.publicSettingsLoaded &&
+	appStore.cachedPublicSettings?.software_center_enabled === false
+  ) {
+	next('/home')
+	return
+  }
+
   if (
     to.meta.requiresPayment &&
     appStore.publicSettingsLoaded &&

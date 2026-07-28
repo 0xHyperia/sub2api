@@ -35,7 +35,7 @@ dev:
 	    JWT_SECRET="$$SUB2API_JWT_SECRET" TOTP_ENCRYPTION_KEY="$$SUB2API_TOTP_KEY" \
 	    DISTRIBUTION_TRACKING_HASH_SECRETS="$$SUB2API_TRACKING_SECRET" \
 	    $(MISE) go run ./cmd/server) & \
-	  ($(MISE) pnpm --dir frontend dev --host 127.0.0.1 --port 5173) & wait
+	  ($(MISE) pnpm --dir frontend dev --host 0.0.0.0 --port 5173) & wait
 
 deploy-validate:
 	deploy/production/validate.sh

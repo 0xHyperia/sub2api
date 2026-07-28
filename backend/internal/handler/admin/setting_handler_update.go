@@ -317,6 +317,7 @@ type UpdateSettingsRequest struct {
 
 	// Available Channels feature switch (user-facing)
 	AvailableChannelsEnabled *bool `json:"available_channels_enabled"`
+	SoftwareCenterEnabled    *bool `json:"software_center_enabled"`
 
 	// Model Marketplace feature switch (user-facing)
 	ModelMarketplaceEnabled *bool   `json:"model_marketplace_enabled"`
@@ -1678,6 +1679,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.AvailableChannelsEnabled
 		}(),
+		SoftwareCenterEnabled: func() bool {
+			if req.SoftwareCenterEnabled != nil {
+				return *req.SoftwareCenterEnabled
+			}
+			return previousSettings.SoftwareCenterEnabled
+		}(),
 		ModelMarketplaceEnabled: func() bool {
 			if req.ModelMarketplaceEnabled != nil {
 				return *req.ModelMarketplaceEnabled
@@ -2142,6 +2149,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ChannelMonitorDefaultIntervalSeconds: updatedSettings.ChannelMonitorDefaultIntervalSeconds,
 
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
+		SoftwareCenterEnabled:    updatedSettings.SoftwareCenterEnabled,
 
 		ModelMarketplaceEnabled: updatedSettings.ModelMarketplaceEnabled,
 		ModelMonitorEnabled:     updatedSettings.ModelMonitorEnabled,

@@ -183,19 +183,6 @@
                   {{ t('nav.apiKeys') }}
                 </router-link>
 
-                <a
-                  v-if="authStore.isAdmin"
-                  href="https://github.com/Wei-Shaw/sub2api"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  role="menuitem"
-                  tabindex="-1"
-                  class="user-dropdown-item"
-                  @click="closeDropdown"
-                >
-                  <Icon name="externalLink" size="sm" />
-                  {{ t('nav.github') }}
-                </a>
               </div>
 
               <div

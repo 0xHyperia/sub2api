@@ -29,6 +29,7 @@ func RegisterAdminRoutes(
 	{
 		// 部署与运营合规确认
 		registerAdminComplianceRoutes(admin, h)
+		registerSoftwareCatalogRoutes(admin, h)
 
 		// 仪表盘
 		registerDashboardRoutes(admin, h)
@@ -122,6 +123,18 @@ func RegisterAdminRoutes(
 
 		// 操作审计日志
 		registerAuditLogRoutes(admin, h, stepUpAuth)
+	}
+}
+
+func registerSoftwareCatalogRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	software := admin.Group("/software-center")
+	{
+		software.GET("", h.Admin.SoftwareCatalog.List)
+		software.POST("/preview", h.Admin.SoftwareCatalog.Preview)
+		software.POST("", h.Admin.SoftwareCatalog.Create)
+		software.PUT("/:id", h.Admin.SoftwareCatalog.Update)
+		software.DELETE("/:id", h.Admin.SoftwareCatalog.Delete)
+		software.POST("/:id/refresh", h.Admin.SoftwareCatalog.Refresh)
 	}
 }
 

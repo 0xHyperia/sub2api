@@ -532,6 +532,7 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
         ...(authStore.isSimpleMode
           ? [{ path: '/keys', label: t('nav.apiKeys'), icon: 'key' as const }]
           : []),
+        { path: '/admin/software-center', label: localText('软件中心', 'Software center'), icon: 'grid' },
         { path: '/admin/settings', label: t('nav.settings'), icon: 'cog' }
       ]
     }

@@ -220,6 +220,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorEnabled,
 		SettingKeyChannelMonitorDefaultIntervalSeconds,
 		SettingKeyAvailableChannelsEnabled,
+		SettingKeySoftwareCenterEnabled,
 		SettingKeyModelMarketplaceEnabled,
 		SettingKeyModelMonitorEnabled,
 		SettingKeyContactUsEnabled,
@@ -341,6 +342,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ChannelMonitorDefaultIntervalSeconds: parseChannelMonitorInterval(settings[SettingKeyChannelMonitorDefaultIntervalSeconds]),
 
 		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
+		SoftwareCenterEnabled:    settings[SettingKeySoftwareCenterEnabled] != "false",
 
 		ModelMarketplaceEnabled: settings[SettingKeyModelMarketplaceEnabled] == "true",
 		ModelMonitorEnabled:     settings[SettingKeyModelMonitorEnabled] == "true",
@@ -545,6 +547,7 @@ type PublicSettingsInjectionPayload struct {
 	ChannelMonitorEnabled                bool   `json:"channel_monitor_enabled"`
 	ChannelMonitorDefaultIntervalSeconds int    `json:"channel_monitor_default_interval_seconds"`
 	AvailableChannelsEnabled             bool   `json:"available_channels_enabled"`
+	SoftwareCenterEnabled                bool   `json:"software_center_enabled"`
 	ModelMarketplaceEnabled              bool   `json:"model_marketplace_enabled"`
 	ModelMonitorEnabled                  bool   `json:"model_monitor_enabled"`
 	ContactUsEnabled                     bool   `json:"contact_us_enabled"`
@@ -620,6 +623,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ChannelMonitorEnabled:                settings.ChannelMonitorEnabled,
 		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
+		SoftwareCenterEnabled:                settings.SoftwareCenterEnabled,
 		ModelMarketplaceEnabled:              settings.ModelMarketplaceEnabled,
 		ModelMonitorEnabled:                  settings.ModelMonitorEnabled,
 		ContactUsEnabled:                     settings.ContactUsEnabled,

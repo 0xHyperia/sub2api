@@ -19,7 +19,7 @@
           <a href="#routes">接入端点</a>
           <a href="#pricing">价格估算</a>
           <RouterLink to="/key-usage">Key 用量</RouterLink>
-          <RouterLink to="/download">客户端下载</RouterLink>
+          <RouterLink v-if="softwareCenterEnabled" to="/download">软件中心</RouterLink>
         </nav>
         <div class="nav-actions">
           <button
@@ -479,6 +479,7 @@ import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
 import { useTheme } from '@/composables/useTheme'
 import type { GroupPlatform } from '@/types'
 import { platformLabel } from '@/utils/platformColors'
+import { useAppStore } from '@/stores/app'
 
 const props = defineProps<{
   siteName: string
@@ -488,6 +489,8 @@ const props = defineProps<{
 }>()
 
 const brandName = computed(() => props.siteName || 'USA-零')
+const appStore = useAppStore()
+const softwareCenterEnabled = computed(() => appStore.cachedPublicSettings?.software_center_enabled !== false)
 const heroEyebrowText = 'Unified Service API'
 const subtitle = computed(() => props.siteSubtitle || '统一 OpenAI、Claude、Gemini 等不同接口，把多模型调用规范成一个稳定、可计量、可治理的标准 API。')
 const entryPath = computed(() => props.isAuthenticated ? props.dashboardPath : '/login')

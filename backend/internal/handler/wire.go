@@ -48,6 +48,7 @@ func ProvideAdminHandlers(
 	distributionAdminHandler *admin.DistributionHandler,
 	complianceHandler *admin.ComplianceHandler,
 	auditLogHandler *admin.AuditLogHandler,
+	softwareCatalogHandler *admin.SoftwareCatalogHandler,
 	upstreamBillingProbe *service.UpstreamBillingProbeService,
 	ollamaCloudUsage *service.OllamaCloudUsageService,
 ) *AdminHandlers {
@@ -91,6 +92,7 @@ func ProvideAdminHandlers(
 		Distribution:           distributionAdminHandler,
 		Compliance:             complianceHandler,
 		AuditLog:               auditLogHandler,
+		SoftwareCatalog:        softwareCatalogHandler,
 	}
 }
 
@@ -195,6 +197,7 @@ func ProvideHandlers(
 	batchImageHandler *BatchImageHandler,
 	appAuthHandler *AppAuthHandler,
 	appResourceHandler *AppResourceHandler,
+	softwareCatalogHandler *SoftwareCatalogHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
@@ -222,6 +225,7 @@ func ProvideHandlers(
 		BatchImage:       batchImageHandler,
 		AppAuth:          appAuthHandler,
 		AppResource:      appResourceHandler,
+		SoftwareCatalog:  softwareCatalogHandler,
 	}
 }
 
@@ -250,6 +254,7 @@ var ProviderSet = wire.NewSet(
 	ProvideBatchImageHandler,
 	NewAppAuthHandler,
 	NewAppResourceHandler,
+	NewSoftwareCatalogHandler,
 
 	// Admin handlers
 	admin.NewDashboardHandler,
@@ -288,6 +293,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewDistributionHandler,
 	admin.NewComplianceHandler,
 	admin.NewAuditLogHandler,
+	admin.NewSoftwareCatalogHandler,
 
 	// AdminHandlers and Handlers constructors
 	ProvideAdminHandlers,

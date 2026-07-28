@@ -44,6 +44,7 @@ type AdminHandlers struct {
 	Distribution           *admin.DistributionHandler
 	Compliance             *admin.ComplianceHandler
 	AuditLog               *admin.AuditLogHandler
+	SoftwareCatalog        *admin.SoftwareCatalogHandler
 }
 
 // Handlers contains all HTTP handlers
@@ -71,6 +72,7 @@ type Handlers struct {
 	BatchImage       *BatchImageHandler
 	AppAuth          *AppAuthHandler
 	AppResource      *AppResourceHandler
+	SoftwareCatalog  *SoftwareCatalogHandler
 }
 
 // BuildInfo contains build-time information
