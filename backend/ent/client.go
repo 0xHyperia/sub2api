@@ -20,7 +20,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcement"
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/appauthorization"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthgrant"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
 	"github.com/Wei-Shaw/sub2api/ent/batchimageevent"
@@ -78,8 +79,10 @@ type Client struct {
 	Announcement *AnnouncementClient
 	// AnnouncementRead is the client for interacting with the AnnouncementRead builders.
 	AnnouncementRead *AnnouncementReadClient
-	// AppAuthorization is the client for interacting with the AppAuthorization builders.
-	AppAuthorization *AppAuthorizationClient
+	// AppOAuthGrant is the client for interacting with the AppOAuthGrant builders.
+	AppOAuthGrant *AppOAuthGrantClient
+	// AppOAuthSession is the client for interacting with the AppOAuthSession builders.
+	AppOAuthSession *AppOAuthSessionClient
 	// AuthIdentity is the client for interacting with the AuthIdentity builders.
 	AuthIdentity *AuthIdentityClient
 	// AuthIdentityChannel is the client for interacting with the AuthIdentityChannel builders.
@@ -172,7 +175,8 @@ func (c *Client) init() {
 	c.AccountGroup = NewAccountGroupClient(c.config)
 	c.Announcement = NewAnnouncementClient(c.config)
 	c.AnnouncementRead = NewAnnouncementReadClient(c.config)
-	c.AppAuthorization = NewAppAuthorizationClient(c.config)
+	c.AppOAuthGrant = NewAppOAuthGrantClient(c.config)
+	c.AppOAuthSession = NewAppOAuthSessionClient(c.config)
 	c.AuthIdentity = NewAuthIdentityClient(c.config)
 	c.AuthIdentityChannel = NewAuthIdentityChannelClient(c.config)
 	c.BatchImageEvent = NewBatchImageEventClient(c.config)
@@ -308,7 +312,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		AccountGroup:                  NewAccountGroupClient(cfg),
 		Announcement:                  NewAnnouncementClient(cfg),
 		AnnouncementRead:              NewAnnouncementReadClient(cfg),
-		AppAuthorization:              NewAppAuthorizationClient(cfg),
+		AppOAuthGrant:                 NewAppOAuthGrantClient(cfg),
+		AppOAuthSession:               NewAppOAuthSessionClient(cfg),
 		AuthIdentity:                  NewAuthIdentityClient(cfg),
 		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
 		BatchImageEvent:               NewBatchImageEventClient(cfg),
@@ -371,7 +376,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		AccountGroup:                  NewAccountGroupClient(cfg),
 		Announcement:                  NewAnnouncementClient(cfg),
 		AnnouncementRead:              NewAnnouncementReadClient(cfg),
-		AppAuthorization:              NewAppAuthorizationClient(cfg),
+		AppOAuthGrant:                 NewAppOAuthGrantClient(cfg),
+		AppOAuthSession:               NewAppOAuthSessionClient(cfg),
 		AuthIdentity:                  NewAuthIdentityClient(cfg),
 		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
 		BatchImageEvent:               NewBatchImageEventClient(cfg),
@@ -440,8 +446,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
-		c.AppAuthorization, c.AuthIdentity, c.AuthIdentityChannel, c.BatchImageEvent,
-		c.BatchImageItem, c.BatchImageJob, c.ChannelMonitor,
+		c.AppOAuthGrant, c.AppOAuthSession, c.AuthIdentity, c.AuthIdentityChannel,
+		c.BatchImageEvent, c.BatchImageItem, c.BatchImageJob, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.CompositeModelRoute, c.ErrorPassthroughRule,
 		c.Group, c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
@@ -461,8 +467,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
-		c.AppAuthorization, c.AuthIdentity, c.AuthIdentityChannel, c.BatchImageEvent,
-		c.BatchImageItem, c.BatchImageJob, c.ChannelMonitor,
+		c.AppOAuthGrant, c.AppOAuthSession, c.AuthIdentity, c.AuthIdentityChannel,
+		c.BatchImageEvent, c.BatchImageItem, c.BatchImageJob, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.CompositeModelRoute, c.ErrorPassthroughRule,
 		c.Group, c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
@@ -490,8 +496,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Announcement.mutate(ctx, m)
 	case *AnnouncementReadMutation:
 		return c.AnnouncementRead.mutate(ctx, m)
-	case *AppAuthorizationMutation:
-		return c.AppAuthorization.mutate(ctx, m)
+	case *AppOAuthGrantMutation:
+		return c.AppOAuthGrant.mutate(ctx, m)
+	case *AppOAuthSessionMutation:
+		return c.AppOAuthSession.mutate(ctx, m)
 	case *AuthIdentityMutation:
 		return c.AuthIdentity.mutate(ctx, m)
 	case *AuthIdentityChannelMutation:
@@ -1417,107 +1425,107 @@ func (c *AnnouncementReadClient) mutate(ctx context.Context, m *AnnouncementRead
 	}
 }
 
-// AppAuthorizationClient is a client for the AppAuthorization schema.
-type AppAuthorizationClient struct {
+// AppOAuthGrantClient is a client for the AppOAuthGrant schema.
+type AppOAuthGrantClient struct {
 	config
 }
 
-// NewAppAuthorizationClient returns a client for the AppAuthorization from the given config.
-func NewAppAuthorizationClient(c config) *AppAuthorizationClient {
-	return &AppAuthorizationClient{config: c}
+// NewAppOAuthGrantClient returns a client for the AppOAuthGrant from the given config.
+func NewAppOAuthGrantClient(c config) *AppOAuthGrantClient {
+	return &AppOAuthGrantClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `appauthorization.Hooks(f(g(h())))`.
-func (c *AppAuthorizationClient) Use(hooks ...Hook) {
-	c.hooks.AppAuthorization = append(c.hooks.AppAuthorization, hooks...)
+// A call to `Use(f, g, h)` equals to `appoauthgrant.Hooks(f(g(h())))`.
+func (c *AppOAuthGrantClient) Use(hooks ...Hook) {
+	c.hooks.AppOAuthGrant = append(c.hooks.AppOAuthGrant, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `appauthorization.Intercept(f(g(h())))`.
-func (c *AppAuthorizationClient) Intercept(interceptors ...Interceptor) {
-	c.inters.AppAuthorization = append(c.inters.AppAuthorization, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `appoauthgrant.Intercept(f(g(h())))`.
+func (c *AppOAuthGrantClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AppOAuthGrant = append(c.inters.AppOAuthGrant, interceptors...)
 }
 
-// Create returns a builder for creating a AppAuthorization entity.
-func (c *AppAuthorizationClient) Create() *AppAuthorizationCreate {
-	mutation := newAppAuthorizationMutation(c.config, OpCreate)
-	return &AppAuthorizationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a AppOAuthGrant entity.
+func (c *AppOAuthGrantClient) Create() *AppOAuthGrantCreate {
+	mutation := newAppOAuthGrantMutation(c.config, OpCreate)
+	return &AppOAuthGrantCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of AppAuthorization entities.
-func (c *AppAuthorizationClient) CreateBulk(builders ...*AppAuthorizationCreate) *AppAuthorizationCreateBulk {
-	return &AppAuthorizationCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of AppOAuthGrant entities.
+func (c *AppOAuthGrantClient) CreateBulk(builders ...*AppOAuthGrantCreate) *AppOAuthGrantCreateBulk {
+	return &AppOAuthGrantCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *AppAuthorizationClient) MapCreateBulk(slice any, setFunc func(*AppAuthorizationCreate, int)) *AppAuthorizationCreateBulk {
+func (c *AppOAuthGrantClient) MapCreateBulk(slice any, setFunc func(*AppOAuthGrantCreate, int)) *AppOAuthGrantCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &AppAuthorizationCreateBulk{err: fmt.Errorf("calling to AppAuthorizationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &AppOAuthGrantCreateBulk{err: fmt.Errorf("calling to AppOAuthGrantClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*AppAuthorizationCreate, rv.Len())
+	builders := make([]*AppOAuthGrantCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &AppAuthorizationCreateBulk{config: c.config, builders: builders}
+	return &AppOAuthGrantCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for AppAuthorization.
-func (c *AppAuthorizationClient) Update() *AppAuthorizationUpdate {
-	mutation := newAppAuthorizationMutation(c.config, OpUpdate)
-	return &AppAuthorizationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for AppOAuthGrant.
+func (c *AppOAuthGrantClient) Update() *AppOAuthGrantUpdate {
+	mutation := newAppOAuthGrantMutation(c.config, OpUpdate)
+	return &AppOAuthGrantUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *AppAuthorizationClient) UpdateOne(_m *AppAuthorization) *AppAuthorizationUpdateOne {
-	mutation := newAppAuthorizationMutation(c.config, OpUpdateOne, withAppAuthorization(_m))
-	return &AppAuthorizationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *AppOAuthGrantClient) UpdateOne(_m *AppOAuthGrant) *AppOAuthGrantUpdateOne {
+	mutation := newAppOAuthGrantMutation(c.config, OpUpdateOne, withAppOAuthGrant(_m))
+	return &AppOAuthGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *AppAuthorizationClient) UpdateOneID(id int64) *AppAuthorizationUpdateOne {
-	mutation := newAppAuthorizationMutation(c.config, OpUpdateOne, withAppAuthorizationID(id))
-	return &AppAuthorizationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *AppOAuthGrantClient) UpdateOneID(id int64) *AppOAuthGrantUpdateOne {
+	mutation := newAppOAuthGrantMutation(c.config, OpUpdateOne, withAppOAuthGrantID(id))
+	return &AppOAuthGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for AppAuthorization.
-func (c *AppAuthorizationClient) Delete() *AppAuthorizationDelete {
-	mutation := newAppAuthorizationMutation(c.config, OpDelete)
-	return &AppAuthorizationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for AppOAuthGrant.
+func (c *AppOAuthGrantClient) Delete() *AppOAuthGrantDelete {
+	mutation := newAppOAuthGrantMutation(c.config, OpDelete)
+	return &AppOAuthGrantDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *AppAuthorizationClient) DeleteOne(_m *AppAuthorization) *AppAuthorizationDeleteOne {
+func (c *AppOAuthGrantClient) DeleteOne(_m *AppOAuthGrant) *AppOAuthGrantDeleteOne {
 	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *AppAuthorizationClient) DeleteOneID(id int64) *AppAuthorizationDeleteOne {
-	builder := c.Delete().Where(appauthorization.ID(id))
+func (c *AppOAuthGrantClient) DeleteOneID(id int64) *AppOAuthGrantDeleteOne {
+	builder := c.Delete().Where(appoauthgrant.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &AppAuthorizationDeleteOne{builder}
+	return &AppOAuthGrantDeleteOne{builder}
 }
 
-// Query returns a query builder for AppAuthorization.
-func (c *AppAuthorizationClient) Query() *AppAuthorizationQuery {
-	return &AppAuthorizationQuery{
+// Query returns a query builder for AppOAuthGrant.
+func (c *AppOAuthGrantClient) Query() *AppOAuthGrantQuery {
+	return &AppOAuthGrantQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeAppAuthorization},
+		ctx:    &QueryContext{Type: TypeAppOAuthGrant},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a AppAuthorization entity by its id.
-func (c *AppAuthorizationClient) Get(ctx context.Context, id int64) (*AppAuthorization, error) {
-	return c.Query().Where(appauthorization.ID(id)).Only(ctx)
+// Get returns a AppOAuthGrant entity by its id.
+func (c *AppOAuthGrantClient) Get(ctx context.Context, id int64) (*AppOAuthGrant, error) {
+	return c.Query().Where(appoauthgrant.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *AppAuthorizationClient) GetX(ctx context.Context, id int64) *AppAuthorization {
+func (c *AppOAuthGrantClient) GetX(ctx context.Context, id int64) *AppOAuthGrant {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -1526,27 +1534,160 @@ func (c *AppAuthorizationClient) GetX(ctx context.Context, id int64) *AppAuthori
 }
 
 // Hooks returns the client hooks.
-func (c *AppAuthorizationClient) Hooks() []Hook {
-	return c.hooks.AppAuthorization
+func (c *AppOAuthGrantClient) Hooks() []Hook {
+	return c.hooks.AppOAuthGrant
 }
 
 // Interceptors returns the client interceptors.
-func (c *AppAuthorizationClient) Interceptors() []Interceptor {
-	return c.inters.AppAuthorization
+func (c *AppOAuthGrantClient) Interceptors() []Interceptor {
+	return c.inters.AppOAuthGrant
 }
 
-func (c *AppAuthorizationClient) mutate(ctx context.Context, m *AppAuthorizationMutation) (Value, error) {
+func (c *AppOAuthGrantClient) mutate(ctx context.Context, m *AppOAuthGrantMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&AppAuthorizationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AppOAuthGrantCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&AppAuthorizationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AppOAuthGrantUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&AppAuthorizationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AppOAuthGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&AppAuthorizationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&AppOAuthGrantDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown AppAuthorization mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown AppOAuthGrant mutation op: %q", m.Op())
+	}
+}
+
+// AppOAuthSessionClient is a client for the AppOAuthSession schema.
+type AppOAuthSessionClient struct {
+	config
+}
+
+// NewAppOAuthSessionClient returns a client for the AppOAuthSession from the given config.
+func NewAppOAuthSessionClient(c config) *AppOAuthSessionClient {
+	return &AppOAuthSessionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `appoauthsession.Hooks(f(g(h())))`.
+func (c *AppOAuthSessionClient) Use(hooks ...Hook) {
+	c.hooks.AppOAuthSession = append(c.hooks.AppOAuthSession, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `appoauthsession.Intercept(f(g(h())))`.
+func (c *AppOAuthSessionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AppOAuthSession = append(c.inters.AppOAuthSession, interceptors...)
+}
+
+// Create returns a builder for creating a AppOAuthSession entity.
+func (c *AppOAuthSessionClient) Create() *AppOAuthSessionCreate {
+	mutation := newAppOAuthSessionMutation(c.config, OpCreate)
+	return &AppOAuthSessionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AppOAuthSession entities.
+func (c *AppOAuthSessionClient) CreateBulk(builders ...*AppOAuthSessionCreate) *AppOAuthSessionCreateBulk {
+	return &AppOAuthSessionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AppOAuthSessionClient) MapCreateBulk(slice any, setFunc func(*AppOAuthSessionCreate, int)) *AppOAuthSessionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AppOAuthSessionCreateBulk{err: fmt.Errorf("calling to AppOAuthSessionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AppOAuthSessionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AppOAuthSessionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AppOAuthSession.
+func (c *AppOAuthSessionClient) Update() *AppOAuthSessionUpdate {
+	mutation := newAppOAuthSessionMutation(c.config, OpUpdate)
+	return &AppOAuthSessionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AppOAuthSessionClient) UpdateOne(_m *AppOAuthSession) *AppOAuthSessionUpdateOne {
+	mutation := newAppOAuthSessionMutation(c.config, OpUpdateOne, withAppOAuthSession(_m))
+	return &AppOAuthSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AppOAuthSessionClient) UpdateOneID(id int64) *AppOAuthSessionUpdateOne {
+	mutation := newAppOAuthSessionMutation(c.config, OpUpdateOne, withAppOAuthSessionID(id))
+	return &AppOAuthSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AppOAuthSession.
+func (c *AppOAuthSessionClient) Delete() *AppOAuthSessionDelete {
+	mutation := newAppOAuthSessionMutation(c.config, OpDelete)
+	return &AppOAuthSessionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AppOAuthSessionClient) DeleteOne(_m *AppOAuthSession) *AppOAuthSessionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AppOAuthSessionClient) DeleteOneID(id int64) *AppOAuthSessionDeleteOne {
+	builder := c.Delete().Where(appoauthsession.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AppOAuthSessionDeleteOne{builder}
+}
+
+// Query returns a query builder for AppOAuthSession.
+func (c *AppOAuthSessionClient) Query() *AppOAuthSessionQuery {
+	return &AppOAuthSessionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAppOAuthSession},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AppOAuthSession entity by its id.
+func (c *AppOAuthSessionClient) Get(ctx context.Context, id int64) (*AppOAuthSession, error) {
+	return c.Query().Where(appoauthsession.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AppOAuthSessionClient) GetX(ctx context.Context, id int64) *AppOAuthSession {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *AppOAuthSessionClient) Hooks() []Hook {
+	return c.hooks.AppOAuthSession
+}
+
+// Interceptors returns the client interceptors.
+func (c *AppOAuthSessionClient) Interceptors() []Interceptor {
+	return c.inters.AppOAuthSession
+}
+
+func (c *AppOAuthSessionClient) mutate(ctx context.Context, m *AppOAuthSessionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AppOAuthSessionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AppOAuthSessionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AppOAuthSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AppOAuthSessionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AppOAuthSession mutation op: %q", m.Op())
 	}
 }
 
@@ -7692,9 +7833,9 @@ func (c *UserSubscriptionClient) mutate(ctx context.Context, m *UserSubscription
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AppAuthorization,
-		AuthIdentity, AuthIdentityChannel, BatchImageEvent, BatchImageItem,
-		BatchImageJob, ChannelMonitor, ChannelMonitorDailyRollup,
+		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AppOAuthGrant,
+		AppOAuthSession, AuthIdentity, AuthIdentityChannel, BatchImageEvent,
+		BatchImageItem, BatchImageJob, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, CompositeModelRoute,
 		ErrorPassthroughRule, Group, IdempotencyRecord, IdentityAdoptionDecision,
 		PaymentAuditLog, PaymentOrder, PaymentProviderInstance, PendingAuthSession,
@@ -7705,9 +7846,9 @@ type (
 		UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
-		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AppAuthorization,
-		AuthIdentity, AuthIdentityChannel, BatchImageEvent, BatchImageItem,
-		BatchImageJob, ChannelMonitor, ChannelMonitorDailyRollup,
+		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AppOAuthGrant,
+		AppOAuthSession, AuthIdentity, AuthIdentityChannel, BatchImageEvent,
+		BatchImageItem, BatchImageJob, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, CompositeModelRoute,
 		ErrorPassthroughRule, Group, IdempotencyRecord, IdentityAdoptionDecision,
 		PaymentAuditLog, PaymentOrder, PaymentProviderInstance, PendingAuthSession,

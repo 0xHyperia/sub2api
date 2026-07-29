@@ -10,11 +10,11 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/sub2api/ent/appauthorization"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthgrant"
 )
 
-// AppAuthorization is the model entity for the AppAuthorization schema.
-type AppAuthorization struct {
+// AppOAuthGrant is the model entity for the AppOAuthGrant schema.
+type AppOAuthGrant struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
@@ -28,35 +28,33 @@ type AppAuthorization struct {
 	GrantID string `json:"grant_id,omitempty"`
 	// ClientID holds the value of the "client_id" field.
 	ClientID string `json:"client_id,omitempty"`
-	// DeviceName holds the value of the "device_name" field.
-	DeviceName string `json:"device_name,omitempty"`
-	// Platform holds the value of the "platform" field.
-	Platform string `json:"platform,omitempty"`
 	// Scopes holds the value of the "scopes" field.
 	Scopes []string `json:"scopes,omitempty"`
-	// TokenFamilyID holds the value of the "token_family_id" field.
-	TokenFamilyID string `json:"token_family_id,omitempty"`
 	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
-	// LastUsedAt holds the value of the "last_used_at" field.
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	Status appoauthgrant.Status `json:"status,omitempty"`
+	// GrantVersion holds the value of the "grant_version" field.
+	GrantVersion int `json:"grant_version,omitempty"`
+	// FirstAuthorizedAt holds the value of the "first_authorized_at" field.
+	FirstAuthorizedAt time.Time `json:"first_authorized_at,omitempty"`
+	// LastAuthorizedAt holds the value of the "last_authorized_at" field.
+	LastAuthorizedAt time.Time `json:"last_authorized_at,omitempty"`
 	// RevokedAt holds the value of the "revoked_at" field.
 	RevokedAt    *time.Time `json:"revoked_at,omitempty"`
 	selectValues sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*AppAuthorization) scanValues(columns []string) ([]any, error) {
+func (*AppOAuthGrant) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case appauthorization.FieldScopes:
+		case appoauthgrant.FieldScopes:
 			values[i] = new([]byte)
-		case appauthorization.FieldID, appauthorization.FieldUserID:
+		case appoauthgrant.FieldID, appoauthgrant.FieldUserID, appoauthgrant.FieldGrantVersion:
 			values[i] = new(sql.NullInt64)
-		case appauthorization.FieldGrantID, appauthorization.FieldClientID, appauthorization.FieldDeviceName, appauthorization.FieldPlatform, appauthorization.FieldTokenFamilyID, appauthorization.FieldStatus:
+		case appoauthgrant.FieldGrantID, appoauthgrant.FieldClientID, appoauthgrant.FieldStatus:
 			values[i] = new(sql.NullString)
-		case appauthorization.FieldCreatedAt, appauthorization.FieldUpdatedAt, appauthorization.FieldLastUsedAt, appauthorization.FieldRevokedAt:
+		case appoauthgrant.FieldCreatedAt, appoauthgrant.FieldUpdatedAt, appoauthgrant.FieldFirstAuthorizedAt, appoauthgrant.FieldLastAuthorizedAt, appoauthgrant.FieldRevokedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -66,62 +64,50 @@ func (*AppAuthorization) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the AppAuthorization fields.
-func (_m *AppAuthorization) assignValues(columns []string, values []any) error {
+// to the AppOAuthGrant fields.
+func (_m *AppOAuthGrant) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case appauthorization.FieldID:
+		case appoauthgrant.FieldID:
 			value, ok := values[i].(*sql.NullInt64)
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int64(value.Int64)
-		case appauthorization.FieldCreatedAt:
+		case appoauthgrant.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				_m.CreatedAt = value.Time
 			}
-		case appauthorization.FieldUpdatedAt:
+		case appoauthgrant.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				_m.UpdatedAt = value.Time
 			}
-		case appauthorization.FieldUserID:
+		case appoauthgrant.FieldUserID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
 			} else if value.Valid {
 				_m.UserID = value.Int64
 			}
-		case appauthorization.FieldGrantID:
+		case appoauthgrant.FieldGrantID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field grant_id", values[i])
 			} else if value.Valid {
 				_m.GrantID = value.String
 			}
-		case appauthorization.FieldClientID:
+		case appoauthgrant.FieldClientID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field client_id", values[i])
 			} else if value.Valid {
 				_m.ClientID = value.String
 			}
-		case appauthorization.FieldDeviceName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field device_name", values[i])
-			} else if value.Valid {
-				_m.DeviceName = value.String
-			}
-		case appauthorization.FieldPlatform:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field platform", values[i])
-			} else if value.Valid {
-				_m.Platform = value.String
-			}
-		case appauthorization.FieldScopes:
+		case appoauthgrant.FieldScopes:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field scopes", values[i])
 			} else if value != nil && len(*value) > 0 {
@@ -129,26 +115,31 @@ func (_m *AppAuthorization) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field scopes: %w", err)
 				}
 			}
-		case appauthorization.FieldTokenFamilyID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field token_family_id", values[i])
-			} else if value.Valid {
-				_m.TokenFamilyID = value.String
-			}
-		case appauthorization.FieldStatus:
+		case appoauthgrant.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				_m.Status = value.String
+				_m.Status = appoauthgrant.Status(value.String)
 			}
-		case appauthorization.FieldLastUsedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field last_used_at", values[i])
+		case appoauthgrant.FieldGrantVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field grant_version", values[i])
 			} else if value.Valid {
-				_m.LastUsedAt = new(time.Time)
-				*_m.LastUsedAt = value.Time
+				_m.GrantVersion = int(value.Int64)
 			}
-		case appauthorization.FieldRevokedAt:
+		case appoauthgrant.FieldFirstAuthorizedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field first_authorized_at", values[i])
+			} else if value.Valid {
+				_m.FirstAuthorizedAt = value.Time
+			}
+		case appoauthgrant.FieldLastAuthorizedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_authorized_at", values[i])
+			} else if value.Valid {
+				_m.LastAuthorizedAt = value.Time
+			}
+		case appoauthgrant.FieldRevokedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field revoked_at", values[i])
 			} else if value.Valid {
@@ -162,34 +153,34 @@ func (_m *AppAuthorization) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the AppAuthorization.
+// Value returns the ent.Value that was dynamically selected and assigned to the AppOAuthGrant.
 // This includes values selected through modifiers, order, etc.
-func (_m *AppAuthorization) Value(name string) (ent.Value, error) {
+func (_m *AppOAuthGrant) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// Update returns a builder for updating this AppAuthorization.
-// Note that you need to call AppAuthorization.Unwrap() before calling this method if this AppAuthorization
+// Update returns a builder for updating this AppOAuthGrant.
+// Note that you need to call AppOAuthGrant.Unwrap() before calling this method if this AppOAuthGrant
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *AppAuthorization) Update() *AppAuthorizationUpdateOne {
-	return NewAppAuthorizationClient(_m.config).UpdateOne(_m)
+func (_m *AppOAuthGrant) Update() *AppOAuthGrantUpdateOne {
+	return NewAppOAuthGrantClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the AppAuthorization entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the AppOAuthGrant entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *AppAuthorization) Unwrap() *AppAuthorization {
+func (_m *AppOAuthGrant) Unwrap() *AppOAuthGrant {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: AppAuthorization is not a transactional entity")
+		panic("ent: AppOAuthGrant is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *AppAuthorization) String() string {
+func (_m *AppOAuthGrant) String() string {
 	var builder strings.Builder
-	builder.WriteString("AppAuthorization(")
+	builder.WriteString("AppOAuthGrant(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
@@ -206,25 +197,20 @@ func (_m *AppAuthorization) String() string {
 	builder.WriteString("client_id=")
 	builder.WriteString(_m.ClientID)
 	builder.WriteString(", ")
-	builder.WriteString("device_name=")
-	builder.WriteString(_m.DeviceName)
-	builder.WriteString(", ")
-	builder.WriteString("platform=")
-	builder.WriteString(_m.Platform)
-	builder.WriteString(", ")
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))
 	builder.WriteString(", ")
-	builder.WriteString("token_family_id=")
-	builder.WriteString(_m.TokenFamilyID)
-	builder.WriteString(", ")
 	builder.WriteString("status=")
-	builder.WriteString(_m.Status)
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
-	if v := _m.LastUsedAt; v != nil {
-		builder.WriteString("last_used_at=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
+	builder.WriteString("grant_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.GrantVersion))
+	builder.WriteString(", ")
+	builder.WriteString("first_authorized_at=")
+	builder.WriteString(_m.FirstAuthorizedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("last_authorized_at=")
+	builder.WriteString(_m.LastAuthorizedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	if v := _m.RevokedAt; v != nil {
 		builder.WriteString("revoked_at=")
@@ -234,5 +220,5 @@ func (_m *AppAuthorization) String() string {
 	return builder.String()
 }
 
-// AppAuthorizations is a parsable slice of AppAuthorization.
-type AppAuthorizations []*AppAuthorization
+// AppOAuthGrants is a parsable slice of AppOAuthGrant.
+type AppOAuthGrants []*AppOAuthGrant

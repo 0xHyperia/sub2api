@@ -12,35 +12,75 @@ import (
 )
 
 type appAuthRepoStub struct {
-	authorization *AppAuthorization
-	active        bool
+	grant          *AppGrant
+	session        *AppSession
+	active         bool
+	authorizeCalls int
+	activateCalls  int
 }
 
-func (r *appAuthRepoStub) Create(_ context.Context, authorization *AppAuthorization) error {
-	r.authorization = authorization
-	return nil
-}
-func (r *appAuthRepoStub) GetByGrantID(context.Context, string) (*AppAuthorization, error) {
-	if r.authorization == nil {
-		return nil, ErrAppAuthorizationNotFound
+func (r *appAuthRepoStub) AuthorizeGrant(_ context.Context, userID int64, clientID string, scopes []string, proposedGrantID string, now time.Time) (*AppGrant, error) {
+	r.authorizeCalls++
+	if r.grant == nil || r.grant.Status == "revoked" {
+		r.grant = &AppGrant{ID: 1, UserID: userID, ClientID: clientID, GrantID: proposedGrantID, Scopes: append([]string(nil), scopes...), Status: "active", GrantVersion: 1, FirstAuthorizedAt: now, LastAuthorizedAt: now}
+	} else {
+		r.grant.LastAuthorizedAt = now
 	}
-	return r.authorization, nil
+	return r.grant, nil
 }
-func (r *appAuthRepoStub) ListByUserID(context.Context, int64) ([]*AppAuthorization, error) {
+func (r *appAuthRepoStub) ActivateSession(_ context.Context, _ string, installationIDHash, deviceName, platform string, scopes []string, proposedSessionID, proposedFamilyID string, now time.Time) (*AppSession, error) {
+	r.activateCalls++
+	r.session = &AppSession{ID: 1, AppGrantID: 1, SessionID: proposedSessionID, InstallationIDHash: installationIDHash, TokenFamilyID: proposedFamilyID, DeviceName: deviceName, Platform: platform, Scopes: append([]string(nil), scopes...), Status: "active", CreatedAt: now, UpdatedAt: now}
+	return r.session, nil
+}
+func (r *appAuthRepoStub) GetGrantSession(context.Context, string, string) (*AppGrant, *AppSession, error) {
+	if r.grant == nil || r.session == nil {
+		return nil, nil, ErrAppAuthorizationNotFound
+	}
+	return r.grant, r.session, nil
+}
+func (r *appAuthRepoStub) ListGrantsByUserID(context.Context, int64) ([]*AppGrant, error) {
 	return nil, nil
 }
-func (r *appAuthRepoStub) RevokeByIDForUser(context.Context, int64, int64) (*AppAuthorization, error) {
-	return r.authorization, nil
+func (r *appAuthRepoStub) ListSessionsByGrantIDForUser(context.Context, int64, int64, time.Time) ([]*AppSession, error) {
+	return nil, nil
+}
+func (r *appAuthRepoStub) UpdateSessionNameByIDForUser(_ context.Context, _ int64, _ int64, deviceName string) (*AppSession, error) {
+	if r.session == nil {
+		return nil, ErrAppAuthorizationNotFound
+	}
+	r.session.DeviceName = deviceName
+	return r.session, nil
+}
+func (r *appAuthRepoStub) RevokeSessionByIDForUser(context.Context, int64, int64) (*AppSession, error) {
+	if r.session == nil {
+		return nil, ErrAppAuthorizationNotFound
+	}
+	r.session.Status = "revoked"
+	return r.session, nil
+}
+func (r *appAuthRepoStub) RevokeOtherSessionsByGrantIDForUser(context.Context, int64, int64, int64) (int64, error) {
+	return 0, nil
+}
+func (r *appAuthRepoStub) RevokeGrantByIDForUser(context.Context, int64, int64) (*AppGrant, error) {
+	return r.grant, nil
 }
 func (r *appAuthRepoStub) RevokeByGrantID(context.Context, string) error {
-	if r.authorization == nil {
+	if r.grant == nil {
 		return ErrAppAuthorizationNotFound
 	}
-	r.authorization.Status = "revoked"
+	r.grant.Status = "revoked"
 	return nil
 }
-func (r *appAuthRepoStub) Touch(context.Context, string, time.Time) error    { return nil }
-func (r *appAuthRepoStub) IsUserActive(context.Context, int64) (bool, error) { return r.active, nil }
+func (r *appAuthRepoStub) RevokeSessionFamily(context.Context, string, string) error {
+	if r.session == nil {
+		return ErrAppAuthorizationNotFound
+	}
+	r.session.Status = "revoked"
+	return nil
+}
+func (r *appAuthRepoStub) TouchSession(context.Context, string, string, time.Time) error { return nil }
+func (r *appAuthRepoStub) IsUserActive(context.Context, int64) (bool, error)             { return r.active, nil }
 
 type appAuthCacheStub struct {
 	request      *AuthorizationRequest
@@ -107,6 +147,7 @@ func TestCreateAuthorizationRequestValidatesRedirectAndScopes(t *testing.T) {
 		RedirectURI: "http://127.0.0.1:43123/oauth/callback",
 		Scope:       "profile:read offline_access", State: "state",
 		CodeChallenge: challenge, CodeChallengeMethod: "S256",
+		InstallationID: "installation-1",
 	})
 	require.NoError(t, err)
 	require.Equal(t, []string{"offline_access", "profile:read"}, request.Scopes)
@@ -115,6 +156,7 @@ func TestCreateAuthorizationRequestValidatesRedirectAndScopes(t *testing.T) {
 		ResponseType: "code", ClientID: "zeroagent-desktop",
 		RedirectURI: "http://localhost:43123/oauth/callback", Scope: "profile:read",
 		State: "state", CodeChallenge: challenge, CodeChallengeMethod: "S256",
+		InstallationID: "installation-1",
 	})
 	var oauthErr *OAuthError
 	require.True(t, errors.As(err, &oauthErr))
@@ -132,6 +174,7 @@ func TestCreateAuthorizationRequestAcceptsExactMobileRedirects(t *testing.T) {
 			request, err := svc.CreateAuthorizationRequest(context.Background(), AuthorizationRequestInput{
 				ResponseType: "code", ClientID: clientID, RedirectURI: "top.usa0.zeroagent:/oauth/callback",
 				Scope: "profile:read", State: "state", CodeChallenge: challenge, CodeChallengeMethod: "S256",
+				InstallationID: "installation-1",
 			})
 			require.NoError(t, err)
 			require.Equal(t, "top.usa0.zeroagent:/oauth/callback", request.RedirectURI)
@@ -156,6 +199,7 @@ func TestCreateAuthorizationRequestRejectsMobileRedirectVariants(t *testing.T) {
 			_, err := svc.CreateAuthorizationRequest(context.Background(), AuthorizationRequestInput{
 				ResponseType: "code", ClientID: "zeroagent-android", RedirectURI: redirectURI,
 				Scope: "profile:read", State: "state", CodeChallenge: challenge, CodeChallengeMethod: "S256",
+				InstallationID: "installation-1",
 			})
 			var oauthErr *OAuthError
 			require.ErrorAs(t, err, &oauthErr)
@@ -172,6 +216,7 @@ func TestCreateAuthorizationRequestRejectsOversizedState(t *testing.T) {
 		ResponseType: "code", ClientID: "zeroagent-android", RedirectURI: "top.usa0.zeroagent:/oauth/callback",
 		Scope: "profile:read", State: string(make([]byte, MaxAppAuthStateLength+1)),
 		CodeChallenge: base64.RawURLEncoding.EncodeToString(sum[:]), CodeChallengeMethod: "S256",
+		InstallationID: "installation-1",
 	})
 	var oauthErr *OAuthError
 	require.ErrorAs(t, err, &oauthErr)
@@ -184,8 +229,8 @@ func TestAuthorizationCodePKCEAndSingleUse(t *testing.T) {
 	svc := NewAppAuthService(repo, cache, "website-secret")
 	verifier := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
 	sum := sha256.Sum256([]byte(verifier))
-	cache.code = &AuthorizationCode{UserID: 9, ClientID: "zeroagent-desktop", RedirectURI: "http://127.0.0.1:43123/oauth/callback", Scopes: []string{"profile:read"}, CodeChallenge: base64.RawURLEncoding.EncodeToString(sum[:]), GrantID: "grant", FamilyID: "family"}
-	repo.authorization = &AppAuthorization{UserID: 9, ClientID: "zeroagent-desktop", GrantID: "grant", Status: "active", Scopes: []string{"profile:read"}}
+	cache.code = &AuthorizationCode{UserID: 9, ClientID: "zeroagent-desktop", RedirectURI: "http://127.0.0.1:43123/oauth/callback", Scopes: []string{"profile:read"}, CodeChallenge: base64.RawURLEncoding.EncodeToString(sum[:]), GrantID: "grant", InstallationIDHash: "installation-hash"}
+	repo.grant = &AppGrant{UserID: 9, ClientID: "zeroagent-desktop", GrantID: "grant", Status: "active", Scopes: []string{"profile:read"}}
 
 	response, err := svc.ExchangeAuthorizationCode(context.Background(), "zeroagent-desktop", "", "code", "http://127.0.0.1:43123/oauth/callback", verifier)
 	require.NoError(t, err)
@@ -201,7 +246,7 @@ func TestAuthorizationCodePKCEAndSingleUse(t *testing.T) {
 func TestAuthorizationCodeExchangeRevalidatesMobileRedirect(t *testing.T) {
 	cache := &appAuthCacheStub{code: &AuthorizationCode{
 		UserID: 9, ClientID: "zeroagent-android", RedirectURI: "top.usa0.zeroagent:/oauth/callback",
-		Scopes: []string{"profile:read"}, GrantID: "grant", FamilyID: "family",
+		Scopes: []string{"profile:read"}, GrantID: "grant", InstallationIDHash: "installation-hash",
 	}}
 	svc := NewAppAuthService(&appAuthRepoStub{}, cache, "website-secret")
 
@@ -219,20 +264,21 @@ func TestAppRefreshRotationAndReuseRevokesGrant(t *testing.T) {
 	verifier := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
 	sum := sha256.Sum256([]byte(verifier))
 	record := &AppRefreshTokenRecord{
-		UserID: 9, ClientID: "zeroagent-desktop", GrantID: "grant", FamilyID: "family",
+		UserID: 9, ClientID: "zeroagent-desktop", GrantID: "grant", SessionID: "session", FamilyID: "family",
 		Scopes: []string{"offline_access", "profile:read"},
 	}
 	cache.code = &AuthorizationCode{
 		UserID: 9, ClientID: record.ClientID, RedirectURI: "http://127.0.0.1:43123/oauth/callback",
-		Scopes: record.Scopes, CodeChallenge: base64.RawURLEncoding.EncodeToString(sum[:]), GrantID: record.GrantID, FamilyID: record.FamilyID,
+		Scopes: record.Scopes, CodeChallenge: base64.RawURLEncoding.EncodeToString(sum[:]), GrantID: record.GrantID, InstallationIDHash: "installation-hash",
 	}
-	repo.authorization = &AppAuthorization{UserID: 9, ClientID: record.ClientID, GrantID: record.GrantID, Status: "active", Scopes: record.Scopes}
+	repo.grant = &AppGrant{UserID: 9, ClientID: record.ClientID, GrantID: record.GrantID, Status: "active", Scopes: record.Scopes}
 
 	initial, err := svc.ExchangeAuthorizationCode(context.Background(), record.ClientID, "", "code", cache.code.RedirectURI, verifier)
 	require.NoError(t, err)
 	require.NotEmpty(t, initial.RefreshToken)
 	require.Equal(t, record.GrantID, cache.refresh.GrantID)
 
+	record = cache.refresh
 	cache.rotateResult, cache.rotateRecord = RefreshRotationSucceeded, record
 	rotated, err := svc.Refresh(context.Background(), record.ClientID, "", initial.RefreshToken)
 	require.NoError(t, err)
@@ -245,8 +291,61 @@ func TestAppRefreshRotationAndReuseRevokesGrant(t *testing.T) {
 	var oauthErr *OAuthError
 	require.ErrorAs(t, err, &oauthErr)
 	require.Equal(t, "invalid_grant", oauthErr.Code)
-	require.Equal(t, "revoked", repo.authorization.Status)
-	require.True(t, cache.revoked)
+	require.Equal(t, "revoked", repo.session.Status)
+	require.False(t, cache.revoked)
+}
+
+func TestRepeatedAuthorizationReusesGrantAndInstallationSession(t *testing.T) {
+	repo := &appAuthRepoStub{active: true}
+	cache := &appAuthCacheStub{}
+	svc := NewAppAuthService(repo, cache, "independent-app-signing-secret-32-bytes")
+	verifier := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
+	sum := sha256.Sum256([]byte(verifier))
+	input := AuthorizationRequestInput{
+		ResponseType: "code", ClientID: "zeroagent-desktop", RedirectURI: "http://127.0.0.1:43123/oauth/callback",
+		Scope: "profile:read offline_access", State: "state", CodeChallenge: base64.RawURLEncoding.EncodeToString(sum[:]),
+		CodeChallengeMethod: "S256", InstallationID: "stable-installation",
+	}
+
+	var originalGrantID, originalSessionID, originalFamilyID string
+	for attempt := 0; attempt < 2; attempt++ {
+		request, err := svc.CreateAuthorizationRequest(context.Background(), input)
+		require.NoError(t, err)
+		decision, err := svc.DecideAuthorization(context.Background(), 9, request.RequestID, true)
+		require.NoError(t, err)
+		tokens, err := svc.ExchangeAuthorizationCode(context.Background(), input.ClientID, "", decision.Code, input.RedirectURI, verifier)
+		require.NoError(t, err)
+		require.NotEmpty(t, tokens.RefreshToken)
+		if attempt == 0 {
+			originalGrantID, originalSessionID, originalFamilyID = repo.grant.GrantID, repo.session.SessionID, repo.session.TokenFamilyID
+		}
+	}
+
+	require.Equal(t, 2, repo.authorizeCalls)
+	require.Equal(t, 2, repo.activateCalls)
+	require.Equal(t, originalGrantID, repo.grant.GrantID, "application consent must be reused")
+	require.NotEqual(t, originalSessionID, repo.session.SessionID, "a new login replaces the installation session")
+	require.NotEqual(t, originalFamilyID, repo.session.TokenFamilyID, "a new login rotates the token family")
+}
+
+func TestExpiredInstallationSessionIsRejected(t *testing.T) {
+	now := time.Now().UTC()
+	repo := &appAuthRepoStub{
+		active:  true,
+		grant:   &AppGrant{UserID: 9, ClientID: "zeroagent-desktop", GrantID: "grant", Status: "active", Scopes: []string{"profile:read"}},
+		session: &AppSession{SessionID: "session", TokenFamilyID: "family", Status: "active", Scopes: []string{"profile:read"}, CreatedAt: now.Add(-AppRefreshTokenTTL - time.Minute)},
+	}
+	svc := NewAppAuthService(repo, &appAuthCacheStub{}, "independent-app-signing-secret-32-bytes")
+	svc.now = func() time.Time { return now }
+	token, err := svc.signAccessToken(9, "zeroagent-desktop", "grant", "session", "family", []string{"profile:read"})
+	require.NoError(t, err)
+
+	claims, err := svc.ValidateAccessToken(context.Background(), token)
+	require.Nil(t, claims)
+	var oauthErr *OAuthError
+	require.ErrorAs(t, err, &oauthErr)
+	require.Equal(t, "invalid_token", oauthErr.Code)
+	require.Equal(t, "revoked", repo.session.Status)
 }
 
 func TestZeroAgentWebRedirectUsesExactHTTPSAllowlistAndLocalDevelopment(t *testing.T) {
@@ -312,6 +411,7 @@ func TestZeroAgentRejectsOIDCCompatibilityScope(t *testing.T) {
 		ResponseType: "code", ClientID: "zeroagent-desktop",
 		RedirectURI: "http://127.0.0.1:43123/oauth/callback", Scope: "openid profile:read",
 		State: "state", CodeChallenge: base64.RawURLEncoding.EncodeToString(sum[:]), CodeChallengeMethod: "S256",
+		InstallationID: "installation-1",
 	})
 	var oauthErr *OAuthError
 	require.ErrorAs(t, err, &oauthErr)

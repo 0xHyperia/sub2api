@@ -63,7 +63,8 @@ describe('AppAuthorizationView', () => {
       code_challenge_method: 'S256',
       state: 'opaque-state',
       device_name: 'Workstation',
-      platform: 'windows'
+      platform: 'windows',
+      installation_id: 'installation-1'
     }
     mocks.createRequest.mockResolvedValue({ request_id: 'request-123' })
 
@@ -73,7 +74,8 @@ describe('AppAuthorizationView', () => {
     expect(mocks.createRequest).toHaveBeenCalledWith(expect.objectContaining({
       client_id: 'zeroagent-desktop',
       state: 'opaque-state',
-      device_name: 'Workstation'
+      device_name: 'Workstation',
+      installation_id: 'installation-1'
     }))
     expect(mocks.replace).toHaveBeenNthCalledWith(1, {
       name: 'AppAuthorization',

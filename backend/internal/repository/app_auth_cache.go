@@ -11,7 +11,9 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const appAuthRedisPrefix = "app_oauth:"
+// A versioned namespace makes every legacy authorization code and token
+// unusable when the grant/session model is deployed.
+const appAuthRedisPrefix = "app_oauth:v2:"
 
 var consumeAppAuthValueScript = redis.NewScript(`
 local value = redis.call("GET", KEYS[1])

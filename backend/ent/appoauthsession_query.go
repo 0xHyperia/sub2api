@@ -12,69 +12,69 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/sub2api/ent/appauthorization"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 )
 
-// AppAuthorizationQuery is the builder for querying AppAuthorization entities.
-type AppAuthorizationQuery struct {
+// AppOAuthSessionQuery is the builder for querying AppOAuthSession entities.
+type AppOAuthSessionQuery struct {
 	config
 	ctx        *QueryContext
-	order      []appauthorization.OrderOption
+	order      []appoauthsession.OrderOption
 	inters     []Interceptor
-	predicates []predicate.AppAuthorization
+	predicates []predicate.AppOAuthSession
 	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the AppAuthorizationQuery builder.
-func (_q *AppAuthorizationQuery) Where(ps ...predicate.AppAuthorization) *AppAuthorizationQuery {
+// Where adds a new predicate for the AppOAuthSessionQuery builder.
+func (_q *AppOAuthSessionQuery) Where(ps ...predicate.AppOAuthSession) *AppOAuthSessionQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *AppAuthorizationQuery) Limit(limit int) *AppAuthorizationQuery {
+func (_q *AppOAuthSessionQuery) Limit(limit int) *AppOAuthSessionQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *AppAuthorizationQuery) Offset(offset int) *AppAuthorizationQuery {
+func (_q *AppOAuthSessionQuery) Offset(offset int) *AppOAuthSessionQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *AppAuthorizationQuery) Unique(unique bool) *AppAuthorizationQuery {
+func (_q *AppOAuthSessionQuery) Unique(unique bool) *AppOAuthSessionQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *AppAuthorizationQuery) Order(o ...appauthorization.OrderOption) *AppAuthorizationQuery {
+func (_q *AppOAuthSessionQuery) Order(o ...appoauthsession.OrderOption) *AppOAuthSessionQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// First returns the first AppAuthorization entity from the query.
-// Returns a *NotFoundError when no AppAuthorization was found.
-func (_q *AppAuthorizationQuery) First(ctx context.Context) (*AppAuthorization, error) {
+// First returns the first AppOAuthSession entity from the query.
+// Returns a *NotFoundError when no AppOAuthSession was found.
+func (_q *AppOAuthSessionQuery) First(ctx context.Context) (*AppOAuthSession, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{appauthorization.Label}
+		return nil, &NotFoundError{appoauthsession.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *AppAuthorizationQuery) FirstX(ctx context.Context) *AppAuthorization {
+func (_q *AppOAuthSessionQuery) FirstX(ctx context.Context) *AppOAuthSession {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -82,22 +82,22 @@ func (_q *AppAuthorizationQuery) FirstX(ctx context.Context) *AppAuthorization {
 	return node
 }
 
-// FirstID returns the first AppAuthorization ID from the query.
-// Returns a *NotFoundError when no AppAuthorization ID was found.
-func (_q *AppAuthorizationQuery) FirstID(ctx context.Context) (id int64, err error) {
+// FirstID returns the first AppOAuthSession ID from the query.
+// Returns a *NotFoundError when no AppOAuthSession ID was found.
+func (_q *AppOAuthSessionQuery) FirstID(ctx context.Context) (id int64, err error) {
 	var ids []int64
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{appauthorization.Label}
+		err = &NotFoundError{appoauthsession.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *AppAuthorizationQuery) FirstIDX(ctx context.Context) int64 {
+func (_q *AppOAuthSessionQuery) FirstIDX(ctx context.Context) int64 {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -105,10 +105,10 @@ func (_q *AppAuthorizationQuery) FirstIDX(ctx context.Context) int64 {
 	return id
 }
 
-// Only returns a single AppAuthorization entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one AppAuthorization entity is found.
-// Returns a *NotFoundError when no AppAuthorization entities are found.
-func (_q *AppAuthorizationQuery) Only(ctx context.Context) (*AppAuthorization, error) {
+// Only returns a single AppOAuthSession entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one AppOAuthSession entity is found.
+// Returns a *NotFoundError when no AppOAuthSession entities are found.
+func (_q *AppOAuthSessionQuery) Only(ctx context.Context) (*AppOAuthSession, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -117,14 +117,14 @@ func (_q *AppAuthorizationQuery) Only(ctx context.Context) (*AppAuthorization, e
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{appauthorization.Label}
+		return nil, &NotFoundError{appoauthsession.Label}
 	default:
-		return nil, &NotSingularError{appauthorization.Label}
+		return nil, &NotSingularError{appoauthsession.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *AppAuthorizationQuery) OnlyX(ctx context.Context) *AppAuthorization {
+func (_q *AppOAuthSessionQuery) OnlyX(ctx context.Context) *AppOAuthSession {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -132,10 +132,10 @@ func (_q *AppAuthorizationQuery) OnlyX(ctx context.Context) *AppAuthorization {
 	return node
 }
 
-// OnlyID is like Only, but returns the only AppAuthorization ID in the query.
-// Returns a *NotSingularError when more than one AppAuthorization ID is found.
+// OnlyID is like Only, but returns the only AppOAuthSession ID in the query.
+// Returns a *NotSingularError when more than one AppOAuthSession ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *AppAuthorizationQuery) OnlyID(ctx context.Context) (id int64, err error) {
+func (_q *AppOAuthSessionQuery) OnlyID(ctx context.Context) (id int64, err error) {
 	var ids []int64
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -144,15 +144,15 @@ func (_q *AppAuthorizationQuery) OnlyID(ctx context.Context) (id int64, err erro
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{appauthorization.Label}
+		err = &NotFoundError{appoauthsession.Label}
 	default:
-		err = &NotSingularError{appauthorization.Label}
+		err = &NotSingularError{appoauthsession.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *AppAuthorizationQuery) OnlyIDX(ctx context.Context) int64 {
+func (_q *AppOAuthSessionQuery) OnlyIDX(ctx context.Context) int64 {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -160,18 +160,18 @@ func (_q *AppAuthorizationQuery) OnlyIDX(ctx context.Context) int64 {
 	return id
 }
 
-// All executes the query and returns a list of AppAuthorizations.
-func (_q *AppAuthorizationQuery) All(ctx context.Context) ([]*AppAuthorization, error) {
+// All executes the query and returns a list of AppOAuthSessions.
+func (_q *AppOAuthSessionQuery) All(ctx context.Context) ([]*AppOAuthSession, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*AppAuthorization, *AppAuthorizationQuery]()
-	return withInterceptors[[]*AppAuthorization](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*AppOAuthSession, *AppOAuthSessionQuery]()
+	return withInterceptors[[]*AppOAuthSession](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *AppAuthorizationQuery) AllX(ctx context.Context) []*AppAuthorization {
+func (_q *AppOAuthSessionQuery) AllX(ctx context.Context) []*AppOAuthSession {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -179,20 +179,20 @@ func (_q *AppAuthorizationQuery) AllX(ctx context.Context) []*AppAuthorization {
 	return nodes
 }
 
-// IDs executes the query and returns a list of AppAuthorization IDs.
-func (_q *AppAuthorizationQuery) IDs(ctx context.Context) (ids []int64, err error) {
+// IDs executes the query and returns a list of AppOAuthSession IDs.
+func (_q *AppOAuthSessionQuery) IDs(ctx context.Context) (ids []int64, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(appauthorization.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(appoauthsession.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *AppAuthorizationQuery) IDsX(ctx context.Context) []int64 {
+func (_q *AppOAuthSessionQuery) IDsX(ctx context.Context) []int64 {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -201,16 +201,16 @@ func (_q *AppAuthorizationQuery) IDsX(ctx context.Context) []int64 {
 }
 
 // Count returns the count of the given query.
-func (_q *AppAuthorizationQuery) Count(ctx context.Context) (int, error) {
+func (_q *AppOAuthSessionQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*AppAuthorizationQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*AppOAuthSessionQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *AppAuthorizationQuery) CountX(ctx context.Context) int {
+func (_q *AppOAuthSessionQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -219,7 +219,7 @@ func (_q *AppAuthorizationQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *AppAuthorizationQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *AppOAuthSessionQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -232,7 +232,7 @@ func (_q *AppAuthorizationQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *AppAuthorizationQuery) ExistX(ctx context.Context) bool {
+func (_q *AppOAuthSessionQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -240,18 +240,18 @@ func (_q *AppAuthorizationQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the AppAuthorizationQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the AppOAuthSessionQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *AppAuthorizationQuery) Clone() *AppAuthorizationQuery {
+func (_q *AppOAuthSessionQuery) Clone() *AppOAuthSessionQuery {
 	if _q == nil {
 		return nil
 	}
-	return &AppAuthorizationQuery{
+	return &AppOAuthSessionQuery{
 		config:     _q.config,
 		ctx:        _q.ctx.Clone(),
-		order:      append([]appauthorization.OrderOption{}, _q.order...),
+		order:      append([]appoauthsession.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.AppAuthorization{}, _q.predicates...),
+		predicates: append([]predicate.AppOAuthSession{}, _q.predicates...),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -268,15 +268,15 @@ func (_q *AppAuthorizationQuery) Clone() *AppAuthorizationQuery {
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.AppAuthorization.Query().
-//		GroupBy(appauthorization.FieldCreatedAt).
+//	client.AppOAuthSession.Query().
+//		GroupBy(appoauthsession.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *AppAuthorizationQuery) GroupBy(field string, fields ...string) *AppAuthorizationGroupBy {
+func (_q *AppOAuthSessionQuery) GroupBy(field string, fields ...string) *AppOAuthSessionGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &AppAuthorizationGroupBy{build: _q}
+	grbuild := &AppOAuthSessionGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = appauthorization.Label
+	grbuild.label = appoauthsession.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -290,23 +290,23 @@ func (_q *AppAuthorizationQuery) GroupBy(field string, fields ...string) *AppAut
 //		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
-//	client.AppAuthorization.Query().
-//		Select(appauthorization.FieldCreatedAt).
+//	client.AppOAuthSession.Query().
+//		Select(appoauthsession.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (_q *AppAuthorizationQuery) Select(fields ...string) *AppAuthorizationSelect {
+func (_q *AppOAuthSessionQuery) Select(fields ...string) *AppOAuthSessionSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &AppAuthorizationSelect{AppAuthorizationQuery: _q}
-	sbuild.label = appauthorization.Label
+	sbuild := &AppOAuthSessionSelect{AppOAuthSessionQuery: _q}
+	sbuild.label = appoauthsession.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a AppAuthorizationSelect configured with the given aggregations.
-func (_q *AppAuthorizationQuery) Aggregate(fns ...AggregateFunc) *AppAuthorizationSelect {
+// Aggregate returns a AppOAuthSessionSelect configured with the given aggregations.
+func (_q *AppOAuthSessionQuery) Aggregate(fns ...AggregateFunc) *AppOAuthSessionSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *AppAuthorizationQuery) prepareQuery(ctx context.Context) error {
+func (_q *AppOAuthSessionQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -318,7 +318,7 @@ func (_q *AppAuthorizationQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !appauthorization.ValidColumn(f) {
+		if !appoauthsession.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -332,16 +332,16 @@ func (_q *AppAuthorizationQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *AppAuthorizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*AppAuthorization, error) {
+func (_q *AppOAuthSessionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*AppOAuthSession, error) {
 	var (
-		nodes = []*AppAuthorization{}
+		nodes = []*AppOAuthSession{}
 		_spec = _q.querySpec()
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*AppAuthorization).scanValues(nil, columns)
+		return (*AppOAuthSession).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &AppAuthorization{config: _q.config}
+		node := &AppOAuthSession{config: _q.config}
 		nodes = append(nodes, node)
 		return node.assignValues(columns, values)
 	}
@@ -360,7 +360,7 @@ func (_q *AppAuthorizationQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	return nodes, nil
 }
 
-func (_q *AppAuthorizationQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *AppOAuthSessionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -372,8 +372,8 @@ func (_q *AppAuthorizationQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *AppAuthorizationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(appauthorization.Table, appauthorization.Columns, sqlgraph.NewFieldSpec(appauthorization.FieldID, field.TypeInt64))
+func (_q *AppOAuthSessionQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(appoauthsession.Table, appoauthsession.Columns, sqlgraph.NewFieldSpec(appoauthsession.FieldID, field.TypeInt64))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -382,9 +382,9 @@ func (_q *AppAuthorizationQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, appauthorization.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, appoauthsession.FieldID)
 		for i := range fields {
-			if fields[i] != appauthorization.FieldID {
+			if fields[i] != appoauthsession.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -412,12 +412,12 @@ func (_q *AppAuthorizationQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *AppAuthorizationQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *AppOAuthSessionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(appauthorization.Table)
+	t1 := builder.Table(appoauthsession.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = appauthorization.Columns
+		columns = appoauthsession.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -450,7 +450,7 @@ func (_q *AppAuthorizationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (_q *AppAuthorizationQuery) ForUpdate(opts ...sql.LockOption) *AppAuthorizationQuery {
+func (_q *AppOAuthSessionQuery) ForUpdate(opts ...sql.LockOption) *AppOAuthSessionQuery {
 	if _q.driver.Dialect() == dialect.Postgres {
 		_q.Unique(false)
 	}
@@ -463,7 +463,7 @@ func (_q *AppAuthorizationQuery) ForUpdate(opts ...sql.LockOption) *AppAuthoriza
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (_q *AppAuthorizationQuery) ForShare(opts ...sql.LockOption) *AppAuthorizationQuery {
+func (_q *AppOAuthSessionQuery) ForShare(opts ...sql.LockOption) *AppOAuthSessionQuery {
 	if _q.driver.Dialect() == dialect.Postgres {
 		_q.Unique(false)
 	}
@@ -473,28 +473,28 @@ func (_q *AppAuthorizationQuery) ForShare(opts ...sql.LockOption) *AppAuthorizat
 	return _q
 }
 
-// AppAuthorizationGroupBy is the group-by builder for AppAuthorization entities.
-type AppAuthorizationGroupBy struct {
+// AppOAuthSessionGroupBy is the group-by builder for AppOAuthSession entities.
+type AppOAuthSessionGroupBy struct {
 	selector
-	build *AppAuthorizationQuery
+	build *AppOAuthSessionQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *AppAuthorizationGroupBy) Aggregate(fns ...AggregateFunc) *AppAuthorizationGroupBy {
+func (_g *AppOAuthSessionGroupBy) Aggregate(fns ...AggregateFunc) *AppOAuthSessionGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *AppAuthorizationGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *AppOAuthSessionGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*AppAuthorizationQuery, *AppAuthorizationGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*AppOAuthSessionQuery, *AppOAuthSessionGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *AppAuthorizationGroupBy) sqlScan(ctx context.Context, root *AppAuthorizationQuery, v any) error {
+func (_g *AppOAuthSessionGroupBy) sqlScan(ctx context.Context, root *AppOAuthSessionQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -521,28 +521,28 @@ func (_g *AppAuthorizationGroupBy) sqlScan(ctx context.Context, root *AppAuthori
 	return sql.ScanSlice(rows, v)
 }
 
-// AppAuthorizationSelect is the builder for selecting fields of AppAuthorization entities.
-type AppAuthorizationSelect struct {
-	*AppAuthorizationQuery
+// AppOAuthSessionSelect is the builder for selecting fields of AppOAuthSession entities.
+type AppOAuthSessionSelect struct {
+	*AppOAuthSessionQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *AppAuthorizationSelect) Aggregate(fns ...AggregateFunc) *AppAuthorizationSelect {
+func (_s *AppOAuthSessionSelect) Aggregate(fns ...AggregateFunc) *AppOAuthSessionSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *AppAuthorizationSelect) Scan(ctx context.Context, v any) error {
+func (_s *AppOAuthSessionSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*AppAuthorizationQuery, *AppAuthorizationSelect](ctx, _s.AppAuthorizationQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*AppOAuthSessionQuery, *AppOAuthSessionSelect](ctx, _s.AppOAuthSessionQuery, _s, _s.inters, v)
 }
 
-func (_s *AppAuthorizationSelect) sqlScan(ctx context.Context, root *AppAuthorizationQuery, v any) error {
+func (_s *AppOAuthSessionSelect) sqlScan(ctx context.Context, root *AppOAuthSessionQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

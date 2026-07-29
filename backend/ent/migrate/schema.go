@@ -352,42 +352,75 @@ var (
 			},
 		},
 	}
-	// AppAuthorizationsColumns holds the columns for the "app_authorizations" table.
-	AppAuthorizationsColumns = []*schema.Column{
+	// AppOauthGrantsColumns holds the columns for the "app_oauth_grants" table.
+	AppOauthGrantsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "user_id", Type: field.TypeInt64},
 		{Name: "grant_id", Type: field.TypeString, Unique: true, Size: 64},
 		{Name: "client_id", Type: field.TypeString, Size: 64},
+		{Name: "scopes", Type: field.TypeJSON, SchemaType: map[string]string{"postgres": "jsonb"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "revoked"}, Default: "active"},
+		{Name: "grant_version", Type: field.TypeInt, Default: 1},
+		{Name: "first_authorized_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "last_authorized_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// AppOauthGrantsTable holds the schema information for the "app_oauth_grants" table.
+	AppOauthGrantsTable = &schema.Table{
+		Name:       "app_oauth_grants",
+		Columns:    AppOauthGrantsColumns,
+		PrimaryKey: []*schema.Column{AppOauthGrantsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "appoauthgrant_user_id_client_id",
+				Unique:  true,
+				Columns: []*schema.Column{AppOauthGrantsColumns[3], AppOauthGrantsColumns[5]},
+			},
+			{
+				Name:    "appoauthgrant_user_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{AppOauthGrantsColumns[3], AppOauthGrantsColumns[7]},
+			},
+			{
+				Name:    "appoauthgrant_client_id",
+				Unique:  false,
+				Columns: []*schema.Column{AppOauthGrantsColumns[5]},
+			},
+		},
+	}
+	// AppOauthSessionsColumns holds the columns for the "app_oauth_sessions" table.
+	AppOauthSessionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "app_grant_id", Type: field.TypeInt64},
+		{Name: "session_id", Type: field.TypeString, Unique: true, Size: 64},
+		{Name: "installation_id_hash", Type: field.TypeString, Size: 64},
+		{Name: "token_family_id", Type: field.TypeString, Unique: true, Size: 64},
 		{Name: "device_name", Type: field.TypeString, Size: 200, Default: ""},
 		{Name: "platform", Type: field.TypeString, Size: 40, Default: ""},
 		{Name: "scopes", Type: field.TypeJSON, SchemaType: map[string]string{"postgres": "jsonb"}},
-		{Name: "token_family_id", Type: field.TypeString, Unique: true, Size: 64},
-		{Name: "status", Type: field.TypeString, Size: 20, Default: "active"},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "revoked"}, Default: "active"},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "revoked_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 	}
-	// AppAuthorizationsTable holds the schema information for the "app_authorizations" table.
-	AppAuthorizationsTable = &schema.Table{
-		Name:       "app_authorizations",
-		Columns:    AppAuthorizationsColumns,
-		PrimaryKey: []*schema.Column{AppAuthorizationsColumns[0]},
+	// AppOauthSessionsTable holds the schema information for the "app_oauth_sessions" table.
+	AppOauthSessionsTable = &schema.Table{
+		Name:       "app_oauth_sessions",
+		Columns:    AppOauthSessionsColumns,
+		PrimaryKey: []*schema.Column{AppOauthSessionsColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "appauthorization_user_id_status",
-				Unique:  false,
-				Columns: []*schema.Column{AppAuthorizationsColumns[3], AppAuthorizationsColumns[10]},
+				Name:    "appoauthsession_app_grant_id_installation_id_hash",
+				Unique:  true,
+				Columns: []*schema.Column{AppOauthSessionsColumns[3], AppOauthSessionsColumns[5]},
 			},
 			{
-				Name:    "appauthorization_client_id",
+				Name:    "appoauthsession_app_grant_id_status",
 				Unique:  false,
-				Columns: []*schema.Column{AppAuthorizationsColumns[5]},
-			},
-			{
-				Name:    "appauthorization_token_family_id",
-				Unique:  false,
-				Columns: []*schema.Column{AppAuthorizationsColumns[9]},
+				Columns: []*schema.Column{AppOauthSessionsColumns[3], AppOauthSessionsColumns[10]},
 			},
 		},
 	}
@@ -2263,7 +2296,8 @@ var (
 		AccountGroupsTable,
 		AnnouncementsTable,
 		AnnouncementReadsTable,
-		AppAuthorizationsTable,
+		AppOauthGrantsTable,
+		AppOauthSessionsTable,
 		AuthIdentitiesTable,
 		AuthIdentityChannelsTable,
 		BatchImageEventsTable,
@@ -2329,8 +2363,11 @@ func init() {
 	AnnouncementReadsTable.Annotation = &entsql.Annotation{
 		Table: "announcement_reads",
 	}
-	AppAuthorizationsTable.Annotation = &entsql.Annotation{
-		Table: "app_authorizations",
+	AppOauthGrantsTable.Annotation = &entsql.Annotation{
+		Table: "app_oauth_grants",
+	}
+	AppOauthSessionsTable.Annotation = &entsql.Annotation{
+		Table: "app_oauth_sessions",
 	}
 	AuthIdentitiesTable.ForeignKeys[0].RefTable = UsersTable
 	AuthIdentitiesTable.Annotation = &entsql.Annotation{

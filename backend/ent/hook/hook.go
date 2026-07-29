@@ -69,16 +69,28 @@ func (f AnnouncementReadFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.V
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AnnouncementReadMutation", m)
 }
 
-// The AppAuthorizationFunc type is an adapter to allow the use of ordinary
-// function as AppAuthorization mutator.
-type AppAuthorizationFunc func(context.Context, *ent.AppAuthorizationMutation) (ent.Value, error)
+// The AppOAuthGrantFunc type is an adapter to allow the use of ordinary
+// function as AppOAuthGrant mutator.
+type AppOAuthGrantFunc func(context.Context, *ent.AppOAuthGrantMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f AppAuthorizationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.AppAuthorizationMutation); ok {
+func (f AppOAuthGrantFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AppOAuthGrantMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AppAuthorizationMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AppOAuthGrantMutation", m)
+}
+
+// The AppOAuthSessionFunc type is an adapter to allow the use of ordinary
+// function as AppOAuthSession mutator.
+type AppOAuthSessionFunc func(context.Context, *ent.AppOAuthSessionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AppOAuthSessionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AppOAuthSessionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AppOAuthSessionMutation", m)
 }
 
 // The AuthIdentityFunc type is an adapter to allow the use of ordinary

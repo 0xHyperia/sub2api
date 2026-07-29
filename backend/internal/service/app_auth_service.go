@@ -29,6 +29,8 @@ const (
 	AppAccessTokenTTL       = 10 * time.Minute
 	AppRefreshTokenTTL      = 30 * 24 * time.Hour
 	MaxAppAuthStateLength   = 1024
+	MaxInstallationIDLength = 128
+	AppAuthTokenVersion     = 2
 )
 
 var (
@@ -114,41 +116,65 @@ func AppOAuthClientByID(clientID string) (AppOAuthClient, bool) {
 	return client, ok
 }
 
-type AppAuthorization struct {
-	ID            int64      `json:"id"`
-	UserID        int64      `json:"user_id"`
-	GrantID       string     `json:"grant_id"`
-	ClientID      string     `json:"client_id"`
-	DeviceName    string     `json:"device_name"`
-	Platform      string     `json:"platform"`
-	Scopes        []string   `json:"scopes"`
-	TokenFamilyID string     `json:"token_family_id"`
-	Status        string     `json:"status"`
-	LastUsedAt    *time.Time `json:"last_used_at,omitempty"`
-	RevokedAt     *time.Time `json:"revoked_at,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+type AppGrant struct {
+	ID                int64      `json:"id"`
+	UserID            int64      `json:"user_id"`
+	GrantID           string     `json:"grant_id"`
+	ClientID          string     `json:"client_id"`
+	Scopes            []string   `json:"scopes"`
+	Status            string     `json:"status"`
+	GrantVersion      int        `json:"grant_version"`
+	SessionCount      int        `json:"session_count"`
+	LastUsedAt        *time.Time `json:"last_used_at,omitempty"`
+	FirstAuthorizedAt time.Time  `json:"first_authorized_at"`
+	LastAuthorizedAt  time.Time  `json:"last_authorized_at"`
+	RevokedAt         *time.Time `json:"revoked_at,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+}
+
+type AppSession struct {
+	ID                 int64      `json:"id"`
+	AppGrantID         int64      `json:"app_grant_id"`
+	SessionID          string     `json:"session_id"`
+	InstallationIDHash string     `json:"installation_id_hash"`
+	TokenFamilyID      string     `json:"token_family_id"`
+	DeviceName         string     `json:"device_name"`
+	Platform           string     `json:"platform"`
+	Scopes             []string   `json:"scopes"`
+	Status             string     `json:"status"`
+	LastUsedAt         *time.Time `json:"last_used_at,omitempty"`
+	RevokedAt          *time.Time `json:"revoked_at,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 type AppAuthorizationRepository interface {
-	Create(ctx context.Context, authorization *AppAuthorization) error
-	GetByGrantID(ctx context.Context, grantID string) (*AppAuthorization, error)
-	ListByUserID(ctx context.Context, userID int64) ([]*AppAuthorization, error)
-	RevokeByIDForUser(ctx context.Context, id, userID int64) (*AppAuthorization, error)
+	AuthorizeGrant(ctx context.Context, userID int64, clientID string, scopes []string, proposedGrantID string, now time.Time) (*AppGrant, error)
+	ActivateSession(ctx context.Context, grantID, installationIDHash, deviceName, platform string, scopes []string, proposedSessionID, proposedFamilyID string, now time.Time) (*AppSession, error)
+	GetGrantSession(ctx context.Context, grantID, sessionID string) (*AppGrant, *AppSession, error)
+	ListGrantsByUserID(ctx context.Context, userID int64) ([]*AppGrant, error)
+	ListSessionsByGrantIDForUser(ctx context.Context, grantID, userID int64, activeSince time.Time) ([]*AppSession, error)
+	UpdateSessionNameByIDForUser(ctx context.Context, sessionID, userID int64, deviceName string) (*AppSession, error)
+	RevokeSessionByIDForUser(ctx context.Context, sessionID, userID int64) (*AppSession, error)
+	RevokeOtherSessionsByGrantIDForUser(ctx context.Context, grantID, keepSessionID, userID int64) (int64, error)
+	RevokeGrantByIDForUser(ctx context.Context, id, userID int64) (*AppGrant, error)
 	RevokeByGrantID(ctx context.Context, grantID string) error
-	Touch(ctx context.Context, grantID string, usedAt time.Time) error
+	RevokeSessionFamily(ctx context.Context, sessionID, familyID string) error
+	TouchSession(ctx context.Context, sessionID, familyID string, usedAt time.Time) error
 	IsUserActive(ctx context.Context, userID int64) (bool, error)
 }
 
 type AuthorizationRequest struct {
-	RequestID     string   `json:"request_id"`
-	ClientID      string   `json:"client_id"`
-	RedirectURI   string   `json:"redirect_uri"`
-	Scopes        []string `json:"scopes"`
-	State         string   `json:"state"`
-	CodeChallenge string   `json:"code_challenge"`
-	DeviceName    string   `json:"device_name"`
-	Platform      string   `json:"platform"`
+	RequestID      string   `json:"request_id"`
+	ClientID       string   `json:"client_id"`
+	RedirectURI    string   `json:"redirect_uri"`
+	Scopes         []string `json:"scopes"`
+	State          string   `json:"state"`
+	CodeChallenge  string   `json:"code_challenge"`
+	DeviceName     string   `json:"device_name"`
+	Platform       string   `json:"platform"`
+	InstallationID string   `json:"installation_id"`
 }
 
 type AuthorizationRequestInput struct {
@@ -161,24 +187,28 @@ type AuthorizationRequestInput struct {
 	CodeChallengeMethod string
 	DeviceName          string
 	Platform            string
+	InstallationID      string
 }
 
 type AuthorizationCode struct {
-	UserID        int64    `json:"user_id"`
-	ClientID      string   `json:"client_id"`
-	RedirectURI   string   `json:"redirect_uri"`
-	Scopes        []string `json:"scopes"`
-	CodeChallenge string   `json:"code_challenge"`
-	GrantID       string   `json:"grant_id"`
-	FamilyID      string   `json:"family_id"`
+	UserID             int64    `json:"user_id"`
+	ClientID           string   `json:"client_id"`
+	RedirectURI        string   `json:"redirect_uri"`
+	Scopes             []string `json:"scopes"`
+	CodeChallenge      string   `json:"code_challenge"`
+	GrantID            string   `json:"grant_id"`
+	InstallationIDHash string   `json:"installation_id_hash"`
+	DeviceName         string   `json:"device_name"`
+	Platform           string   `json:"platform"`
 }
 
 type AppRefreshTokenRecord struct {
-	UserID   int64    `json:"user_id"`
-	ClientID string   `json:"client_id"`
-	Scopes   []string `json:"scopes"`
-	GrantID  string   `json:"grant_id"`
-	FamilyID string   `json:"family_id"`
+	UserID    int64    `json:"user_id"`
+	ClientID  string   `json:"client_id"`
+	Scopes    []string `json:"scopes"`
+	GrantID   string   `json:"grant_id"`
+	SessionID string   `json:"session_id"`
+	FamilyID  string   `json:"family_id"`
 }
 
 type RefreshRotationResult int
@@ -250,9 +280,13 @@ func (s *AppAuthService) CreateAuthorizationRequest(ctx context.Context, input A
 		RequestID: requestID, ClientID: client.ID, RedirectURI: input.RedirectURI,
 		Scopes: scopes, State: input.State, CodeChallenge: input.CodeChallenge,
 		DeviceName: strings.TrimSpace(input.DeviceName), Platform: strings.TrimSpace(input.Platform),
+		InstallationID: strings.TrimSpace(input.InstallationID),
 	}
 	if len(request.DeviceName) > 200 || len(request.Platform) > 40 {
 		return nil, oauthError("invalid_request", "device metadata is too long")
+	}
+	if request.InstallationID == "" || len(request.InstallationID) > MaxInstallationIDLength {
+		return nil, oauthError("invalid_request", "installation_id is required and must not exceed 128 characters")
 	}
 	if err := s.cache.PutAuthorizationRequest(ctx, request, AuthorizationRequestTTL); err != nil {
 		return nil, fmt.Errorf("store authorization request: %w", err)
@@ -285,33 +319,24 @@ func (s *AppAuthService) DecideAuthorization(ctx context.Context, userID int64, 
 	if !allow {
 		return &AuthorizationDecision{Request: request, AccessDenied: true}, nil
 	}
-	grantID, err := appAuthRandomOpaqueToken(24)
+	proposedGrantID, err := appAuthRandomOpaqueToken(24)
 	if err != nil {
 		return nil, err
 	}
-	familyID, err := appAuthRandomOpaqueToken(24)
+	grant, err := s.repository.AuthorizeGrant(ctx, userID, request.ClientID, request.Scopes, proposedGrantID, s.now())
 	if err != nil {
-		return nil, err
-	}
-	authorization := &AppAuthorization{
-		UserID: userID, GrantID: grantID, ClientID: request.ClientID,
-		DeviceName: request.DeviceName, Platform: request.Platform,
-		Scopes: append([]string(nil), request.Scopes...), TokenFamilyID: familyID, Status: "active",
-	}
-	if err := s.repository.Create(ctx, authorization); err != nil {
-		return nil, fmt.Errorf("create app authorization: %w", err)
+		return nil, fmt.Errorf("authorize app grant: %w", err)
 	}
 	code, err := appAuthRandomOpaqueToken(32)
 	if err != nil {
-		_ = s.repository.RevokeByGrantID(ctx, grantID)
 		return nil, err
 	}
 	entry := &AuthorizationCode{
 		UserID: userID, ClientID: request.ClientID, RedirectURI: request.RedirectURI,
-		Scopes: request.Scopes, CodeChallenge: request.CodeChallenge, GrantID: grantID, FamilyID: familyID,
+		Scopes: request.Scopes, CodeChallenge: request.CodeChallenge, GrantID: grant.GrantID,
+		InstallationIDHash: hashOpaqueToken(request.InstallationID), DeviceName: request.DeviceName, Platform: request.Platform,
 	}
 	if err := s.cache.PutAuthorizationCode(ctx, hashOpaqueToken(code), entry, AuthorizationCodeTTL); err != nil {
-		_ = s.repository.RevokeByGrantID(ctx, grantID)
 		return nil, fmt.Errorf("store authorization code: %w", err)
 	}
 	return &AuthorizationDecision{Request: request, Code: code}, nil
@@ -343,7 +368,19 @@ func (s *AppAuthService) ExchangeAuthorizationCode(ctx context.Context, clientID
 	if entry.ClientID != clientID || entry.RedirectURI != redirectURI || !verifyPKCE(verifier, entry.CodeChallenge) {
 		return nil, oauthError("invalid_grant", "authorization code binding mismatch")
 	}
-	return s.issueTokenPair(ctx, entry.UserID, entry.ClientID, entry.Scopes, entry.GrantID, entry.FamilyID, false, "")
+	sessionID, err := appAuthRandomOpaqueToken(24)
+	if err != nil {
+		return nil, err
+	}
+	familyID, err := appAuthRandomOpaqueToken(24)
+	if err != nil {
+		return nil, err
+	}
+	session, err := s.repository.ActivateSession(ctx, entry.GrantID, entry.InstallationIDHash, entry.DeviceName, entry.Platform, entry.Scopes, sessionID, familyID, s.now())
+	if err != nil {
+		return nil, fmt.Errorf("activate app session: %w", err)
+	}
+	return s.issueTokenPair(ctx, entry.UserID, entry.ClientID, entry.Scopes, entry.GrantID, session.SessionID, session.TokenFamilyID, false, "")
 }
 
 func (s *AppAuthService) Refresh(ctx context.Context, clientID, clientSecret, refreshToken string) (*AppTokenResponse, error) {
@@ -353,7 +390,7 @@ func (s *AppAuthService) Refresh(ctx context.Context, clientID, clientSecret, re
 	if refreshToken == "" {
 		return nil, oauthError("invalid_grant", "refresh token is required")
 	}
-	return s.issueTokenPair(ctx, 0, clientID, nil, "", "", true, refreshToken)
+	return s.issueTokenPair(ctx, 0, clientID, nil, "", "", "", true, refreshToken)
 }
 
 func (s *AppAuthService) authenticateClient(clientID, clientSecret string) (AppOAuthClient, error) {
@@ -375,7 +412,7 @@ func (s *AppAuthService) authenticateClient(clientID, clientSecret string) (AppO
 	return client, nil
 }
 
-func (s *AppAuthService) issueTokenPair(ctx context.Context, userID int64, clientID string, scopes []string, grantID, familyID string, rotating bool, oldRefreshToken string) (*AppTokenResponse, error) {
+func (s *AppAuthService) issueTokenPair(ctx context.Context, userID int64, clientID string, scopes []string, grantID, sessionID, familyID string, rotating bool, oldRefreshToken string) (*AppTokenResponse, error) {
 	var nextRefreshToken string
 	if rotating || containsScope(scopes, "offline_access") {
 		var err error
@@ -397,23 +434,25 @@ func (s *AppAuthService) issueTokenPair(ctx context.Context, userID int64, clien
 			return nil, oauthError("invalid_grant", "refresh token state is invalid")
 		}
 		if result == RefreshRotationReused {
-			_ = s.repository.RevokeByGrantID(ctx, oldRecord.GrantID)
-			_ = s.cache.SetGrantRevoked(ctx, oldRecord.GrantID, AppRefreshTokenTTL)
-			return nil, oauthError("invalid_grant", "refresh token reuse detected; device authorization revoked")
+			_ = s.repository.RevokeSessionFamily(ctx, oldRecord.SessionID, oldRecord.FamilyID)
+			return nil, oauthError("invalid_grant", "refresh token reuse detected; app session revoked")
 		}
 		if oldRecord.ClientID != clientID {
-			_ = s.repository.RevokeByGrantID(ctx, oldRecord.GrantID)
-			_ = s.cache.SetGrantRevoked(ctx, oldRecord.GrantID, AppRefreshTokenTTL)
+			_ = s.repository.RevokeSessionFamily(ctx, oldRecord.SessionID, oldRecord.FamilyID)
 			return nil, oauthError("invalid_grant", "refresh token client mismatch")
 		}
-		userID, scopes, grantID, familyID = oldRecord.UserID, oldRecord.Scopes, oldRecord.GrantID, oldRecord.FamilyID
+		userID, scopes, grantID, sessionID, familyID = oldRecord.UserID, oldRecord.Scopes, oldRecord.GrantID, oldRecord.SessionID, oldRecord.FamilyID
 	}
-	authorization, err := s.repository.GetByGrantID(ctx, grantID)
-	if errors.Is(err, ErrAppAuthorizationNotFound) || (err == nil && authorization.Status != "active") {
-		return nil, oauthError("invalid_grant", "device authorization is no longer active")
+	grant, session, err := s.repository.GetGrantSession(ctx, grantID, sessionID)
+	if errors.Is(err, ErrAppAuthorizationNotFound) || (err == nil && (grant.Status != "active" || session.Status != "active" || session.TokenFamilyID != familyID)) {
+		return nil, oauthError("invalid_grant", "app authorization or session is no longer active")
 	}
 	if err != nil {
 		return nil, fmt.Errorf("load device authorization: %w", err)
+	}
+	if appSessionExpired(session, s.now()) {
+		_ = s.repository.RevokeSessionFamily(ctx, session.SessionID, session.TokenFamilyID)
+		return nil, oauthError("invalid_grant", "app session expired")
 	}
 	active, err := s.repository.IsUserActive(ctx, userID)
 	if err != nil {
@@ -429,36 +468,43 @@ func (s *AppAuthService) issueTokenPair(ctx context.Context, userID int64, clien
 	} else if revoked {
 		return nil, oauthError("invalid_grant", "device authorization is revoked")
 	}
-	accessToken, err := s.signAccessToken(userID, clientID, grantID, scopes)
+	if grant.UserID != userID || grant.ClientID != clientID || !sameScopes(scopes, session.Scopes) {
+		return nil, oauthError("invalid_grant", "app session binding mismatch")
+	}
+	accessToken, err := s.signAccessToken(userID, clientID, grantID, sessionID, familyID, scopes)
 	if err != nil {
 		return nil, err
 	}
 	if !rotating && nextRefreshToken != "" {
-		nextRecord := &AppRefreshTokenRecord{UserID: userID, ClientID: clientID, Scopes: scopes, GrantID: grantID, FamilyID: familyID}
+		nextRecord := &AppRefreshTokenRecord{UserID: userID, ClientID: clientID, Scopes: scopes, GrantID: grantID, SessionID: sessionID, FamilyID: familyID}
 		if err := s.cache.PutRefreshToken(ctx, hashOpaqueToken(nextRefreshToken), nextRecord, AppRefreshTokenTTL); err != nil {
 			return nil, err
 		}
 	}
-	_ = s.repository.Touch(ctx, grantID, s.now())
+	_ = s.repository.TouchSession(ctx, sessionID, familyID, s.now())
 	return &AppTokenResponse{AccessToken: accessToken, RefreshToken: nextRefreshToken, TokenType: "Bearer", ExpiresIn: int64(AppAccessTokenTTL.Seconds()), Scope: strings.Join(scopes, " ")}, nil
 }
 
 type AppAccessClaims struct {
-	TokenUse string   `json:"token_use"`
-	ClientID string   `json:"client_id"`
-	GrantID  string   `json:"grant_id"`
-	Scope    []string `json:"scope"`
+	TokenUse     string   `json:"token_use"`
+	TokenVersion int      `json:"token_version"`
+	ClientID     string   `json:"client_id"`
+	GrantID      string   `json:"grant_id"`
+	SessionID    string   `json:"session_id"`
+	FamilyID     string   `json:"family_id"`
+	Scope        []string `json:"scope"`
 	jwt.RegisteredClaims
 }
 
-func (s *AppAuthService) signAccessToken(userID int64, clientID, grantID string, scopes []string) (string, error) {
+func (s *AppAuthService) signAccessToken(userID int64, clientID, grantID, sessionID, familyID string, scopes []string) (string, error) {
 	now := s.now()
 	jti, err := appAuthRandomOpaqueToken(18)
 	if err != nil {
 		return "", err
 	}
 	claims := AppAccessClaims{
-		TokenUse: AppAuthTokenUse, ClientID: clientID, GrantID: grantID, Scope: append([]string(nil), scopes...),
+		TokenUse: AppAuthTokenUse, TokenVersion: AppAuthTokenVersion, ClientID: clientID,
+		GrantID: grantID, SessionID: sessionID, FamilyID: familyID, Scope: append([]string(nil), scopes...),
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer: AppAuthIssuer, Subject: strconv.FormatInt(userID, 10), Audience: jwt.ClaimStrings{AppAuthAudience}, ID: jti,
 			IssuedAt: jwt.NewNumericDate(now), NotBefore: jwt.NewNumericDate(now), ExpiresAt: jwt.NewNumericDate(now.Add(AppAccessTokenTTL)),
@@ -472,7 +518,7 @@ func (s *AppAuthService) ValidateAccessToken(ctx context.Context, raw string) (*
 	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithIssuer(AppAuthIssuer), jwt.WithAudience(AppAuthAudience), jwt.WithExpirationRequired())
 	token, err := parser.ParseWithClaims(raw, claims, func(*jwt.Token) (any, error) { return s.signingKey, nil })
 	userID, subjectErr := strconv.ParseInt(claims.Subject, 10, 64)
-	if err != nil || subjectErr != nil || userID <= 0 || !token.Valid || claims.TokenUse != AppAuthTokenUse || claims.ClientID == "" || claims.GrantID == "" || claims.ID == "" {
+	if err != nil || subjectErr != nil || userID <= 0 || !token.Valid || claims.TokenUse != AppAuthTokenUse || claims.TokenVersion != AppAuthTokenVersion || claims.ClientID == "" || claims.GrantID == "" || claims.SessionID == "" || claims.FamilyID == "" || claims.ID == "" {
 		return nil, oauthError("invalid_token", "invalid app access token")
 	}
 	client, ok := AppOAuthClientByID(claims.ClientID)
@@ -484,30 +530,58 @@ func (s *AppAuthService) ValidateAccessToken(ctx context.Context, raw string) (*
 	} else if revoked {
 		return nil, oauthError("invalid_token", "device authorization is revoked")
 	}
-	authorization, err := s.repository.GetByGrantID(ctx, claims.GrantID)
-	if errors.Is(err, ErrAppAuthorizationNotFound) || (err == nil && (authorization.Status != "active" || authorization.UserID != userID || authorization.ClientID != claims.ClientID)) {
-		return nil, oauthError("invalid_token", "device authorization is no longer active")
+	grant, session, err := s.repository.GetGrantSession(ctx, claims.GrantID, claims.SessionID)
+	if errors.Is(err, ErrAppAuthorizationNotFound) || (err == nil && (grant.Status != "active" || session.Status != "active" || session.TokenFamilyID != claims.FamilyID || grant.UserID != userID || grant.ClientID != claims.ClientID)) {
+		return nil, oauthError("invalid_token", "app authorization or session is no longer active")
 	}
 	if err != nil {
 		return nil, fmt.Errorf("load device authorization: %w", err)
 	}
+	if appSessionExpired(session, s.now()) {
+		_ = s.repository.RevokeSessionFamily(ctx, session.SessionID, session.TokenFamilyID)
+		return nil, oauthError("invalid_token", "app session expired")
+	}
 	claimScopes, err := normalizeScopeValues(client, claims.Scope)
-	if err != nil || !sameScopes(claimScopes, authorization.Scopes) {
-		return nil, oauthError("invalid_token", "token scopes do not match the device authorization")
+	if err != nil || !sameScopes(claimScopes, session.Scopes) {
+		return nil, oauthError("invalid_token", "token scopes do not match the app session")
 	}
 	return claims, nil
 }
 
-func (s *AppAuthService) ListAuthorizations(ctx context.Context, userID int64) ([]*AppAuthorization, error) {
-	return s.repository.ListByUserID(ctx, userID)
+func (s *AppAuthService) ListAuthorizations(ctx context.Context, userID int64) ([]*AppGrant, error) {
+	return s.repository.ListGrantsByUserID(ctx, userID)
+}
+
+func (s *AppAuthService) ListAuthorizationSessions(ctx context.Context, userID, grantID int64) ([]*AppSession, error) {
+	return s.repository.ListSessionsByGrantIDForUser(ctx, grantID, userID, s.now().Add(-AppRefreshTokenTTL))
+}
+
+func (s *AppAuthService) RenameAuthorizationSession(ctx context.Context, userID, sessionID int64, deviceName string) (*AppSession, error) {
+	deviceName = strings.TrimSpace(deviceName)
+	if deviceName == "" {
+		return nil, errors.New("device name is required")
+	}
+	if len([]rune(deviceName)) > 200 {
+		return nil, errors.New("device name must not exceed 200 characters")
+	}
+	return s.repository.UpdateSessionNameByIDForUser(ctx, sessionID, userID, deviceName)
+}
+
+func (s *AppAuthService) RevokeAuthorizationSession(ctx context.Context, userID, sessionID int64) error {
+	_, err := s.repository.RevokeSessionByIDForUser(ctx, sessionID, userID)
+	return err
+}
+
+func (s *AppAuthService) RevokeOtherAuthorizationSessions(ctx context.Context, userID, grantID, keepSessionID int64) (int64, error) {
+	return s.repository.RevokeOtherSessionsByGrantIDForUser(ctx, grantID, keepSessionID, userID)
 }
 
 func (s *AppAuthService) RevokeAuthorization(ctx context.Context, userID, authorizationID int64) error {
-	authorization, err := s.repository.RevokeByIDForUser(ctx, authorizationID, userID)
+	grant, err := s.repository.RevokeGrantByIDForUser(ctx, authorizationID, userID)
 	if err != nil {
 		return err
 	}
-	return s.cache.SetGrantRevoked(ctx, authorization.GrantID, AppRefreshTokenTTL)
+	return s.cache.SetGrantRevoked(ctx, grant.GrantID, AppRefreshTokenTTL)
 }
 
 func (s *AppAuthService) RevokeGrant(ctx context.Context, grantID string) error {
@@ -526,7 +600,7 @@ func (s *AppAuthService) RevokeToken(ctx context.Context, rawToken, tokenTypeHin
 	_ = tokenTypeHint // A hint never restricts lookup; RFC 7009 requires fallback.
 	record, err := s.cache.GetRefreshToken(ctx, hashOpaqueToken(rawToken))
 	if err == nil {
-		err = s.RevokeGrant(ctx, record.GrantID)
+		err = s.repository.RevokeSessionFamily(ctx, record.SessionID, record.FamilyID)
 		if errors.Is(err, ErrAppAuthorizationNotFound) {
 			return nil
 		}
@@ -539,7 +613,7 @@ func (s *AppAuthService) RevokeToken(ctx context.Context, rawToken, tokenTypeHin
 	if err != nil {
 		return nil
 	}
-	err = s.RevokeGrant(ctx, claims.GrantID)
+	err = s.repository.RevokeSessionFamily(ctx, claims.SessionID, claims.FamilyID)
 	if errors.Is(err, ErrAppAuthorizationNotFound) {
 		return nil
 	}
@@ -550,10 +624,18 @@ func (s *AppAuthService) parseAccessTokenWithoutGrantLookup(raw string) (*AppAcc
 	claims := &AppAccessClaims{}
 	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithIssuer(AppAuthIssuer), jwt.WithAudience(AppAuthAudience), jwt.WithExpirationRequired())
 	token, err := parser.ParseWithClaims(raw, claims, func(*jwt.Token) (any, error) { return s.signingKey, nil })
-	if err != nil || !token.Valid || claims.TokenUse != AppAuthTokenUse || claims.GrantID == "" {
+	if err != nil || !token.Valid || claims.TokenUse != AppAuthTokenUse || claims.TokenVersion != AppAuthTokenVersion || claims.GrantID == "" || claims.SessionID == "" || claims.FamilyID == "" {
 		return nil, ErrAppAuthCacheMiss
 	}
 	return claims, nil
+}
+
+func appSessionExpired(session *AppSession, now time.Time) bool {
+	lastActivity := session.CreatedAt
+	if session.LastUsedAt != nil && session.LastUsedAt.After(lastActivity) {
+		lastActivity = *session.LastUsedAt
+	}
+	return lastActivity.Add(AppRefreshTokenTTL).Before(now)
 }
 
 func normalizeScopes(client AppOAuthClient, raw string) ([]string, error) {

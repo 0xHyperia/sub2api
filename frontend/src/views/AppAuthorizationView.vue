@@ -124,7 +124,8 @@ function buildAuthorizationRequest(): AuthorizationRequestParams | null {
     code_challenge_method: queryString('code_challenge_method'),
     state: queryString('state') || undefined,
     device_name: queryString('device_name') || undefined,
-    platform: queryString('platform') || undefined
+    platform: queryString('platform') || undefined,
+    installation_id: queryString('installation_id')
   }
 }
 

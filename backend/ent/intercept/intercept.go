@@ -13,7 +13,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcement"
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/appauthorization"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthgrant"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
 	"github.com/Wei-Shaw/sub2api/ent/batchimageevent"
@@ -246,31 +247,58 @@ func (f TraverseAnnouncementRead) Traverse(ctx context.Context, q ent.Query) err
 	return fmt.Errorf("unexpected query type %T. expect *ent.AnnouncementReadQuery", q)
 }
 
-// The AppAuthorizationFunc type is an adapter to allow the use of ordinary function as a Querier.
-type AppAuthorizationFunc func(context.Context, *ent.AppAuthorizationQuery) (ent.Value, error)
+// The AppOAuthGrantFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AppOAuthGrantFunc func(context.Context, *ent.AppOAuthGrantQuery) (ent.Value, error)
 
 // Query calls f(ctx, q).
-func (f AppAuthorizationFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
-	if q, ok := q.(*ent.AppAuthorizationQuery); ok {
+func (f AppOAuthGrantFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AppOAuthGrantQuery); ok {
 		return f(ctx, q)
 	}
-	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AppAuthorizationQuery", q)
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AppOAuthGrantQuery", q)
 }
 
-// The TraverseAppAuthorization type is an adapter to allow the use of ordinary function as Traverser.
-type TraverseAppAuthorization func(context.Context, *ent.AppAuthorizationQuery) error
+// The TraverseAppOAuthGrant type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAppOAuthGrant func(context.Context, *ent.AppOAuthGrantQuery) error
 
 // Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
-func (f TraverseAppAuthorization) Intercept(next ent.Querier) ent.Querier {
+func (f TraverseAppOAuthGrant) Intercept(next ent.Querier) ent.Querier {
 	return next
 }
 
 // Traverse calls f(ctx, q).
-func (f TraverseAppAuthorization) Traverse(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.AppAuthorizationQuery); ok {
+func (f TraverseAppOAuthGrant) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AppOAuthGrantQuery); ok {
 		return f(ctx, q)
 	}
-	return fmt.Errorf("unexpected query type %T. expect *ent.AppAuthorizationQuery", q)
+	return fmt.Errorf("unexpected query type %T. expect *ent.AppOAuthGrantQuery", q)
+}
+
+// The AppOAuthSessionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AppOAuthSessionFunc func(context.Context, *ent.AppOAuthSessionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AppOAuthSessionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AppOAuthSessionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AppOAuthSessionQuery", q)
+}
+
+// The TraverseAppOAuthSession type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAppOAuthSession func(context.Context, *ent.AppOAuthSessionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAppOAuthSession) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAppOAuthSession) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AppOAuthSessionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AppOAuthSessionQuery", q)
 }
 
 // The AuthIdentityFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1312,8 +1340,10 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.AnnouncementQuery, predicate.Announcement, announcement.OrderOption]{typ: ent.TypeAnnouncement, tq: q}, nil
 	case *ent.AnnouncementReadQuery:
 		return &query[*ent.AnnouncementReadQuery, predicate.AnnouncementRead, announcementread.OrderOption]{typ: ent.TypeAnnouncementRead, tq: q}, nil
-	case *ent.AppAuthorizationQuery:
-		return &query[*ent.AppAuthorizationQuery, predicate.AppAuthorization, appauthorization.OrderOption]{typ: ent.TypeAppAuthorization, tq: q}, nil
+	case *ent.AppOAuthGrantQuery:
+		return &query[*ent.AppOAuthGrantQuery, predicate.AppOAuthGrant, appoauthgrant.OrderOption]{typ: ent.TypeAppOAuthGrant, tq: q}, nil
+	case *ent.AppOAuthSessionQuery:
+		return &query[*ent.AppOAuthSessionQuery, predicate.AppOAuthSession, appoauthsession.OrderOption]{typ: ent.TypeAppOAuthSession, tq: q}, nil
 	case *ent.AuthIdentityQuery:
 		return &query[*ent.AuthIdentityQuery, predicate.AuthIdentity, authidentity.OrderOption]{typ: ent.TypeAuthIdentity, tq: q}, nil
 	case *ent.AuthIdentityChannelQuery:

@@ -29,8 +29,12 @@ func RegisterAppAuthRoutes(
 		{
 			webAuthenticated.GET("/authorize/context", h.AppAuth.AuthorizationContext)
 			webAuthenticated.POST("/authorize/decision", h.AppAuth.DecideAuthorization)
-			webAuthenticated.GET("/devices", h.AppAuth.ListDevices)
-			webAuthenticated.DELETE("/devices/:id", h.AppAuth.RevokeDevice)
+			webAuthenticated.GET("/grants", h.AppAuth.ListGrants)
+			webAuthenticated.DELETE("/grants/:id", h.AppAuth.RevokeGrant)
+			webAuthenticated.GET("/grants/:id/sessions", h.AppAuth.ListGrantSessions)
+			webAuthenticated.PATCH("/sessions/:id", h.AppAuth.RenameSession)
+			webAuthenticated.DELETE("/sessions/:id", h.AppAuth.RevokeSession)
+			webAuthenticated.POST("/grants/:id/sessions/:sessionId/revoke-others", h.AppAuth.RevokeOtherSessions)
 		}
 	}
 

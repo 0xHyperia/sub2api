@@ -10,6 +10,7 @@ export interface AuthorizationRequestParams {
   state?: string
   device_name?: string
   platform?: string
+  installation_id: string
 }
 
 export interface AuthorizationRequestResult {
@@ -34,13 +35,22 @@ export interface AuthorizationDecisionResult {
   redirect_uri: string
 }
 
-export interface AppAuthorizationDevice {
+export interface AppAuthorizationGrant {
   id: string | number
   client_id: string
   client_name?: string
-  device_name?: string
   platform?: string
   scopes: string[]
+  session_count: number
+  first_authorized_at: string
+  last_authorized_at: string
+  last_used_at?: string | null
+}
+
+export interface AppAuthorizationSession {
+  id: string | number
+  device_name: string
+  platform?: string
   created_at: string
   last_used_at?: string | null
 }
@@ -50,7 +60,7 @@ type RawAuthorizationContext = Omit<AppAuthorizationContext, 'scopes'> & {
   scope?: string[] | string
 }
 
-type RawAuthorizationDevice = Omit<AppAuthorizationDevice, 'scopes'> & {
+type RawAuthorizationGrant = Omit<AppAuthorizationGrant, 'scopes'> & {
   scopes?: string[] | string
   scope?: string[] | string
 }
@@ -90,25 +100,61 @@ export async function submitAuthorizationDecision(
   return data
 }
 
-export async function listAuthorizationDevices(): Promise<AppAuthorizationDevice[]> {
+export async function listAuthorizationGrants(): Promise<AppAuthorizationGrant[]> {
   const { data } = await apiClient.get<
-    RawAuthorizationDevice[] | { items?: RawAuthorizationDevice[]; devices?: RawAuthorizationDevice[] }
-  >('/app-auth/devices')
-  const devices = Array.isArray(data) ? data : (data.items ?? data.devices ?? [])
-  return devices.map((device) => ({
-    ...device,
-    scopes: normalizeScopes(device.scopes ?? device.scope)
+    RawAuthorizationGrant[] | { items?: RawAuthorizationGrant[]; grants?: RawAuthorizationGrant[] }
+  >('/app-auth/grants')
+  const grants = Array.isArray(data) ? data : (data.items ?? data.grants ?? [])
+  return grants.map((grant) => ({
+    ...grant,
+    scopes: normalizeScopes(grant.scopes ?? grant.scope)
   }))
 }
 
-export async function revokeAuthorizationDevice(id: string | number): Promise<void> {
-  await apiClient.delete(`/app-auth/devices/${encodeURIComponent(String(id))}`)
+export async function revokeAuthorizationGrant(id: string | number): Promise<void> {
+  await apiClient.delete(`/app-auth/grants/${encodeURIComponent(String(id))}`)
+}
+
+export async function listAuthorizationSessions(
+  grantId: string | number
+): Promise<AppAuthorizationSession[]> {
+  const { data } = await apiClient.get<AppAuthorizationSession[]>(
+    `/app-auth/grants/${encodeURIComponent(String(grantId))}/sessions`
+  )
+  return Array.isArray(data) ? data : []
+}
+
+export async function renameAuthorizationSession(
+  sessionId: string | number,
+  deviceName: string
+): Promise<void> {
+  await apiClient.patch(`/app-auth/sessions/${encodeURIComponent(String(sessionId))}`, {
+    device_name: deviceName
+  })
+}
+
+export async function revokeAuthorizationSession(sessionId: string | number): Promise<void> {
+  await apiClient.delete(`/app-auth/sessions/${encodeURIComponent(String(sessionId))}`)
+}
+
+export async function revokeOtherAuthorizationSessions(
+  grantId: string | number,
+  keepSessionId: string | number
+): Promise<number> {
+  const { data } = await apiClient.post<{ revoked_count?: number }>(
+    `/app-auth/grants/${encodeURIComponent(String(grantId))}/sessions/${encodeURIComponent(String(keepSessionId))}/revoke-others`
+  )
+  return data.revoked_count ?? 0
 }
 
 export const appAuthAPI = {
   createAuthorizationRequest,
   getAuthorizationContext,
   submitAuthorizationDecision,
-  listAuthorizationDevices,
-  revokeAuthorizationDevice
+  listAuthorizationGrants,
+  revokeAuthorizationGrant,
+  listAuthorizationSessions,
+  renameAuthorizationSession,
+  revokeAuthorizationSession,
+  revokeOtherAuthorizationSessions
 }

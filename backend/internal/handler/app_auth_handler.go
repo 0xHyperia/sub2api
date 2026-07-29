@@ -35,6 +35,7 @@ type createAppAuthorizationRequest struct {
 	State               string `json:"state"`
 	DeviceName          string `json:"device_name"`
 	Platform            string `json:"platform"`
+	InstallationID      string `json:"installation_id"`
 }
 
 func (h *AppAuthHandler) CreateAuthorizationRequest(c *gin.Context) {
@@ -46,7 +47,7 @@ func (h *AppAuthHandler) CreateAuthorizationRequest(c *gin.Context) {
 	created, err := h.service.CreateAuthorizationRequest(c.Request.Context(), service.AuthorizationRequestInput{
 		ResponseType: request.ResponseType, ClientID: request.ClientID, RedirectURI: request.RedirectURI,
 		Scope: request.Scope, CodeChallenge: request.CodeChallenge, CodeChallengeMethod: request.CodeChallengeMethod,
-		State: request.State, DeviceName: request.DeviceName, Platform: request.Platform,
+		State: request.State, DeviceName: request.DeviceName, Platform: request.Platform, InstallationID: request.InstallationID,
 	})
 	if err != nil {
 		writeOAuthError(c, err)
@@ -172,30 +173,31 @@ func (h *AppAuthHandler) Revoke(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-func (h *AppAuthHandler) ListDevices(c *gin.Context) {
+func (h *AppAuthHandler) ListGrants(c *gin.Context) {
 	subject, ok := servermiddleware.GetAuthSubjectFromContext(c)
 	if !ok {
 		response.Unauthorized(c, "User not authenticated")
 		return
 	}
-	devices, err := h.service.ListAuthorizations(c.Request.Context(), subject.UserID)
+	grants, err := h.service.ListAuthorizations(c.Request.Context(), subject.UserID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to list authorized apps")
 		return
 	}
-	result := make([]gin.H, 0, len(devices))
-	for _, device := range devices {
-		client, _ := service.AppOAuthClientByID(device.ClientID)
+	result := make([]gin.H, 0, len(grants))
+	for _, grant := range grants {
+		client, _ := service.AppOAuthClientByID(grant.ClientID)
 		result = append(result, gin.H{
-			"id": device.ID, "client_id": device.ClientID, "client_name": client.Name,
-			"device_name": device.DeviceName, "platform": device.Platform, "scopes": device.Scopes,
-			"created_at": device.CreatedAt, "last_used_at": device.LastUsedAt,
+			"id": grant.ID, "client_id": grant.ClientID, "client_name": client.Name,
+			"platform": client.Platform, "scopes": grant.Scopes, "session_count": grant.SessionCount,
+			"first_authorized_at": grant.FirstAuthorizedAt, "last_authorized_at": grant.LastAuthorizedAt,
+			"last_used_at": grant.LastUsedAt,
 		})
 	}
 	response.Success(c, result)
 }
 
-func (h *AppAuthHandler) RevokeDevice(c *gin.Context) {
+func (h *AppAuthHandler) RevokeGrant(c *gin.Context) {
 	subject, ok := servermiddleware.GetAuthSubjectFromContext(c)
 	if !ok {
 		response.Unauthorized(c, "User not authenticated")
@@ -211,6 +213,94 @@ func (h *AppAuthHandler) RevokeDevice(c *gin.Context) {
 		return
 	}
 	response.Success(c, gin.H{"revoked": true})
+}
+
+func (h *AppAuthHandler) ListGrantSessions(c *gin.Context) {
+	subject, id, ok := appAuthManagementSubjectAndID(c, "authorization")
+	if !ok {
+		return
+	}
+	sessions, err := h.service.ListAuthorizationSessions(c.Request.Context(), subject.UserID, id)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to list application sessions")
+		return
+	}
+	result := make([]gin.H, 0, len(sessions))
+	for _, session := range sessions {
+		result = append(result, gin.H{
+			"id": session.ID, "device_name": session.DeviceName, "platform": session.Platform,
+			"created_at": session.CreatedAt, "last_used_at": session.LastUsedAt,
+		})
+	}
+	response.Success(c, result)
+}
+
+func (h *AppAuthHandler) RenameSession(c *gin.Context) {
+	subject, id, ok := appAuthManagementSubjectAndID(c, "session")
+	if !ok {
+		return
+	}
+	var request struct {
+		DeviceName string `json:"device_name"`
+	}
+	if err := decodeStrictJSON(c, &request); err != nil {
+		response.BadRequest(c, "Invalid request")
+		return
+	}
+	session, err := h.service.RenameAuthorizationSession(c.Request.Context(), subject.UserID, id, request.DeviceName)
+	if err != nil {
+		if errors.Is(err, service.ErrAppAuthorizationNotFound) {
+			response.NotFound(c, "Application session not found")
+		} else {
+			response.BadRequest(c, err.Error())
+		}
+		return
+	}
+	response.Success(c, gin.H{"id": session.ID, "device_name": session.DeviceName})
+}
+
+func (h *AppAuthHandler) RevokeSession(c *gin.Context) {
+	subject, id, ok := appAuthManagementSubjectAndID(c, "session")
+	if !ok {
+		return
+	}
+	if err := h.service.RevokeAuthorizationSession(c.Request.Context(), subject.UserID, id); err != nil {
+		response.NotFound(c, "Application session not found")
+		return
+	}
+	response.Success(c, gin.H{"revoked": true})
+}
+
+func (h *AppAuthHandler) RevokeOtherSessions(c *gin.Context) {
+	subject, grantID, ok := appAuthManagementSubjectAndID(c, "authorization")
+	if !ok {
+		return
+	}
+	keepSessionID, err := strconv.ParseInt(c.Param("sessionId"), 10, 64)
+	if err != nil || keepSessionID <= 0 {
+		response.BadRequest(c, "Invalid session ID")
+		return
+	}
+	revoked, err := h.service.RevokeOtherAuthorizationSessions(c.Request.Context(), subject.UserID, grantID, keepSessionID)
+	if err != nil {
+		response.NotFound(c, "Application session not found")
+		return
+	}
+	response.Success(c, gin.H{"revoked_count": revoked})
+}
+
+func appAuthManagementSubjectAndID(c *gin.Context, resource string) (servermiddleware.AuthSubject, int64, bool) {
+	subject, ok := servermiddleware.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return servermiddleware.AuthSubject{}, 0, false
+	}
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.BadRequest(c, "Invalid "+resource+" ID")
+		return servermiddleware.AuthSubject{}, 0, false
+	}
+	return subject, id, true
 }
 
 func decodeStrictJSON(c *gin.Context, target any) error {

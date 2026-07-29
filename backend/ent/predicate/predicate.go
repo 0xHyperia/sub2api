@@ -21,8 +21,11 @@ type Announcement func(*sql.Selector)
 // AnnouncementRead is the predicate function for announcementread builders.
 type AnnouncementRead func(*sql.Selector)
 
-// AppAuthorization is the predicate function for appauthorization builders.
-type AppAuthorization func(*sql.Selector)
+// AppOAuthGrant is the predicate function for appoauthgrant builders.
+type AppOAuthGrant func(*sql.Selector)
+
+// AppOAuthSession is the predicate function for appoauthsession builders.
+type AppOAuthSession func(*sql.Selector)
 
 // AuthIdentity is the predicate function for authidentity builders.
 type AuthIdentity func(*sql.Selector)

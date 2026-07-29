@@ -17,7 +17,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcement"
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/appauthorization"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthgrant"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
 	"github.com/Wei-Shaw/sub2api/ent/batchimageevent"
@@ -74,7 +75,8 @@ const (
 	TypeAccountGroup                  = "AccountGroup"
 	TypeAnnouncement                  = "Announcement"
 	TypeAnnouncementRead              = "AnnouncementRead"
-	TypeAppAuthorization              = "AppAuthorization"
+	TypeAppOAuthGrant                 = "AppOAuthGrant"
+	TypeAppOAuthSession               = "AppOAuthSession"
 	TypeAuthIdentity                  = "AuthIdentity"
 	TypeAuthIdentityChannel           = "AuthIdentityChannel"
 	TypeBatchImageEvent               = "BatchImageEvent"
@@ -7299,43 +7301,43 @@ func (m *AnnouncementReadMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown AnnouncementRead edge %s", name)
 }
 
-// AppAuthorizationMutation represents an operation that mutates the AppAuthorization nodes in the graph.
-type AppAuthorizationMutation struct {
+// AppOAuthGrantMutation represents an operation that mutates the AppOAuthGrant nodes in the graph.
+type AppOAuthGrantMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *int64
-	created_at      *time.Time
-	updated_at      *time.Time
-	user_id         *int64
-	adduser_id      *int64
-	grant_id        *string
-	client_id       *string
-	device_name     *string
-	platform        *string
-	scopes          *[]string
-	appendscopes    []string
-	token_family_id *string
-	status          *string
-	last_used_at    *time.Time
-	revoked_at      *time.Time
-	clearedFields   map[string]struct{}
-	done            bool
-	oldValue        func(context.Context) (*AppAuthorization, error)
-	predicates      []predicate.AppAuthorization
+	op                  Op
+	typ                 string
+	id                  *int64
+	created_at          *time.Time
+	updated_at          *time.Time
+	user_id             *int64
+	adduser_id          *int64
+	grant_id            *string
+	client_id           *string
+	scopes              *[]string
+	appendscopes        []string
+	status              *appoauthgrant.Status
+	grant_version       *int
+	addgrant_version    *int
+	first_authorized_at *time.Time
+	last_authorized_at  *time.Time
+	revoked_at          *time.Time
+	clearedFields       map[string]struct{}
+	done                bool
+	oldValue            func(context.Context) (*AppOAuthGrant, error)
+	predicates          []predicate.AppOAuthGrant
 }
 
-var _ ent.Mutation = (*AppAuthorizationMutation)(nil)
+var _ ent.Mutation = (*AppOAuthGrantMutation)(nil)
 
-// appauthorizationOption allows management of the mutation configuration using functional options.
-type appauthorizationOption func(*AppAuthorizationMutation)
+// appoauthgrantOption allows management of the mutation configuration using functional options.
+type appoauthgrantOption func(*AppOAuthGrantMutation)
 
-// newAppAuthorizationMutation creates new mutation for the AppAuthorization entity.
-func newAppAuthorizationMutation(c config, op Op, opts ...appauthorizationOption) *AppAuthorizationMutation {
-	m := &AppAuthorizationMutation{
+// newAppOAuthGrantMutation creates new mutation for the AppOAuthGrant entity.
+func newAppOAuthGrantMutation(c config, op Op, opts ...appoauthgrantOption) *AppOAuthGrantMutation {
+	m := &AppOAuthGrantMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeAppAuthorization,
+		typ:           TypeAppOAuthGrant,
 		clearedFields: make(map[string]struct{}),
 	}
 	for _, opt := range opts {
@@ -7344,20 +7346,20 @@ func newAppAuthorizationMutation(c config, op Op, opts ...appauthorizationOption
 	return m
 }
 
-// withAppAuthorizationID sets the ID field of the mutation.
-func withAppAuthorizationID(id int64) appauthorizationOption {
-	return func(m *AppAuthorizationMutation) {
+// withAppOAuthGrantID sets the ID field of the mutation.
+func withAppOAuthGrantID(id int64) appoauthgrantOption {
+	return func(m *AppOAuthGrantMutation) {
 		var (
 			err   error
 			once  sync.Once
-			value *AppAuthorization
+			value *AppOAuthGrant
 		)
-		m.oldValue = func(ctx context.Context) (*AppAuthorization, error) {
+		m.oldValue = func(ctx context.Context) (*AppOAuthGrant, error) {
 			once.Do(func() {
 				if m.done {
 					err = errors.New("querying old values post mutation is not allowed")
 				} else {
-					value, err = m.Client().AppAuthorization.Get(ctx, id)
+					value, err = m.Client().AppOAuthGrant.Get(ctx, id)
 				}
 			})
 			return value, err
@@ -7366,10 +7368,10 @@ func withAppAuthorizationID(id int64) appauthorizationOption {
 	}
 }
 
-// withAppAuthorization sets the old AppAuthorization of the mutation.
-func withAppAuthorization(node *AppAuthorization) appauthorizationOption {
-	return func(m *AppAuthorizationMutation) {
-		m.oldValue = func(context.Context) (*AppAuthorization, error) {
+// withAppOAuthGrant sets the old AppOAuthGrant of the mutation.
+func withAppOAuthGrant(node *AppOAuthGrant) appoauthgrantOption {
+	return func(m *AppOAuthGrantMutation) {
+		m.oldValue = func(context.Context) (*AppOAuthGrant, error) {
 			return node, nil
 		}
 		m.id = &node.ID
@@ -7378,7 +7380,7 @@ func withAppAuthorization(node *AppAuthorization) appauthorizationOption {
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m AppAuthorizationMutation) Client() *Client {
+func (m AppOAuthGrantMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -7386,7 +7388,7 @@ func (m AppAuthorizationMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m AppAuthorizationMutation) Tx() (*Tx, error) {
+func (m AppOAuthGrantMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, errors.New("ent: mutation is not running in a transaction")
 	}
@@ -7397,7 +7399,7 @@ func (m AppAuthorizationMutation) Tx() (*Tx, error) {
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *AppAuthorizationMutation) ID() (id int64, exists bool) {
+func (m *AppOAuthGrantMutation) ID() (id int64, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -7408,7 +7410,7 @@ func (m *AppAuthorizationMutation) ID() (id int64, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *AppAuthorizationMutation) IDs(ctx context.Context) ([]int64, error) {
+func (m *AppOAuthGrantMutation) IDs(ctx context.Context) ([]int64, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
@@ -7417,19 +7419,19 @@ func (m *AppAuthorizationMutation) IDs(ctx context.Context) ([]int64, error) {
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().AppAuthorization.Query().Where(m.predicates...).IDs(ctx)
+		return m.Client().AppOAuthGrant.Query().Where(m.predicates...).IDs(ctx)
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (m *AppAuthorizationMutation) SetCreatedAt(t time.Time) {
+func (m *AppOAuthGrantMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
 }
 
 // CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *AppAuthorizationMutation) CreatedAt() (r time.Time, exists bool) {
+func (m *AppOAuthGrantMutation) CreatedAt() (r time.Time, exists bool) {
 	v := m.created_at
 	if v == nil {
 		return
@@ -7437,10 +7439,10 @@ func (m *AppAuthorizationMutation) CreatedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
-// OldCreatedAt returns the old "created_at" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldCreatedAt returns the old "created_at" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *AppOAuthGrantMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
 	}
@@ -7455,17 +7457,17 @@ func (m *AppAuthorizationMutation) OldCreatedAt(ctx context.Context) (v time.Tim
 }
 
 // ResetCreatedAt resets all changes to the "created_at" field.
-func (m *AppAuthorizationMutation) ResetCreatedAt() {
+func (m *AppOAuthGrantMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (m *AppAuthorizationMutation) SetUpdatedAt(t time.Time) {
+func (m *AppOAuthGrantMutation) SetUpdatedAt(t time.Time) {
 	m.updated_at = &t
 }
 
 // UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *AppAuthorizationMutation) UpdatedAt() (r time.Time, exists bool) {
+func (m *AppOAuthGrantMutation) UpdatedAt() (r time.Time, exists bool) {
 	v := m.updated_at
 	if v == nil {
 		return
@@ -7473,10 +7475,10 @@ func (m *AppAuthorizationMutation) UpdatedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
-// OldUpdatedAt returns the old "updated_at" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldUpdatedAt returns the old "updated_at" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *AppOAuthGrantMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
 	}
@@ -7491,18 +7493,18 @@ func (m *AppAuthorizationMutation) OldUpdatedAt(ctx context.Context) (v time.Tim
 }
 
 // ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *AppAuthorizationMutation) ResetUpdatedAt() {
+func (m *AppOAuthGrantMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
 // SetUserID sets the "user_id" field.
-func (m *AppAuthorizationMutation) SetUserID(i int64) {
+func (m *AppOAuthGrantMutation) SetUserID(i int64) {
 	m.user_id = &i
 	m.adduser_id = nil
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
-func (m *AppAuthorizationMutation) UserID() (r int64, exists bool) {
+func (m *AppOAuthGrantMutation) UserID() (r int64, exists bool) {
 	v := m.user_id
 	if v == nil {
 		return
@@ -7510,10 +7512,10 @@ func (m *AppAuthorizationMutation) UserID() (r int64, exists bool) {
 	return *v, true
 }
 
-// OldUserID returns the old "user_id" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldUserID returns the old "user_id" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldUserID(ctx context.Context) (v int64, err error) {
+func (m *AppOAuthGrantMutation) OldUserID(ctx context.Context) (v int64, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
 	}
@@ -7528,7 +7530,7 @@ func (m *AppAuthorizationMutation) OldUserID(ctx context.Context) (v int64, err 
 }
 
 // AddUserID adds i to the "user_id" field.
-func (m *AppAuthorizationMutation) AddUserID(i int64) {
+func (m *AppOAuthGrantMutation) AddUserID(i int64) {
 	if m.adduser_id != nil {
 		*m.adduser_id += i
 	} else {
@@ -7537,7 +7539,7 @@ func (m *AppAuthorizationMutation) AddUserID(i int64) {
 }
 
 // AddedUserID returns the value that was added to the "user_id" field in this mutation.
-func (m *AppAuthorizationMutation) AddedUserID() (r int64, exists bool) {
+func (m *AppOAuthGrantMutation) AddedUserID() (r int64, exists bool) {
 	v := m.adduser_id
 	if v == nil {
 		return
@@ -7546,18 +7548,18 @@ func (m *AppAuthorizationMutation) AddedUserID() (r int64, exists bool) {
 }
 
 // ResetUserID resets all changes to the "user_id" field.
-func (m *AppAuthorizationMutation) ResetUserID() {
+func (m *AppOAuthGrantMutation) ResetUserID() {
 	m.user_id = nil
 	m.adduser_id = nil
 }
 
 // SetGrantID sets the "grant_id" field.
-func (m *AppAuthorizationMutation) SetGrantID(s string) {
+func (m *AppOAuthGrantMutation) SetGrantID(s string) {
 	m.grant_id = &s
 }
 
 // GrantID returns the value of the "grant_id" field in the mutation.
-func (m *AppAuthorizationMutation) GrantID() (r string, exists bool) {
+func (m *AppOAuthGrantMutation) GrantID() (r string, exists bool) {
 	v := m.grant_id
 	if v == nil {
 		return
@@ -7565,10 +7567,10 @@ func (m *AppAuthorizationMutation) GrantID() (r string, exists bool) {
 	return *v, true
 }
 
-// OldGrantID returns the old "grant_id" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldGrantID returns the old "grant_id" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldGrantID(ctx context.Context) (v string, err error) {
+func (m *AppOAuthGrantMutation) OldGrantID(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldGrantID is only allowed on UpdateOne operations")
 	}
@@ -7583,17 +7585,17 @@ func (m *AppAuthorizationMutation) OldGrantID(ctx context.Context) (v string, er
 }
 
 // ResetGrantID resets all changes to the "grant_id" field.
-func (m *AppAuthorizationMutation) ResetGrantID() {
+func (m *AppOAuthGrantMutation) ResetGrantID() {
 	m.grant_id = nil
 }
 
 // SetClientID sets the "client_id" field.
-func (m *AppAuthorizationMutation) SetClientID(s string) {
+func (m *AppOAuthGrantMutation) SetClientID(s string) {
 	m.client_id = &s
 }
 
 // ClientID returns the value of the "client_id" field in the mutation.
-func (m *AppAuthorizationMutation) ClientID() (r string, exists bool) {
+func (m *AppOAuthGrantMutation) ClientID() (r string, exists bool) {
 	v := m.client_id
 	if v == nil {
 		return
@@ -7601,10 +7603,10 @@ func (m *AppAuthorizationMutation) ClientID() (r string, exists bool) {
 	return *v, true
 }
 
-// OldClientID returns the old "client_id" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldClientID returns the old "client_id" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldClientID(ctx context.Context) (v string, err error) {
+func (m *AppOAuthGrantMutation) OldClientID(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldClientID is only allowed on UpdateOne operations")
 	}
@@ -7619,90 +7621,18 @@ func (m *AppAuthorizationMutation) OldClientID(ctx context.Context) (v string, e
 }
 
 // ResetClientID resets all changes to the "client_id" field.
-func (m *AppAuthorizationMutation) ResetClientID() {
+func (m *AppOAuthGrantMutation) ResetClientID() {
 	m.client_id = nil
 }
 
-// SetDeviceName sets the "device_name" field.
-func (m *AppAuthorizationMutation) SetDeviceName(s string) {
-	m.device_name = &s
-}
-
-// DeviceName returns the value of the "device_name" field in the mutation.
-func (m *AppAuthorizationMutation) DeviceName() (r string, exists bool) {
-	v := m.device_name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDeviceName returns the old "device_name" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldDeviceName(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDeviceName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDeviceName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDeviceName: %w", err)
-	}
-	return oldValue.DeviceName, nil
-}
-
-// ResetDeviceName resets all changes to the "device_name" field.
-func (m *AppAuthorizationMutation) ResetDeviceName() {
-	m.device_name = nil
-}
-
-// SetPlatform sets the "platform" field.
-func (m *AppAuthorizationMutation) SetPlatform(s string) {
-	m.platform = &s
-}
-
-// Platform returns the value of the "platform" field in the mutation.
-func (m *AppAuthorizationMutation) Platform() (r string, exists bool) {
-	v := m.platform
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldPlatform returns the old "platform" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldPlatform(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPlatform is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPlatform requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPlatform: %w", err)
-	}
-	return oldValue.Platform, nil
-}
-
-// ResetPlatform resets all changes to the "platform" field.
-func (m *AppAuthorizationMutation) ResetPlatform() {
-	m.platform = nil
-}
-
 // SetScopes sets the "scopes" field.
-func (m *AppAuthorizationMutation) SetScopes(s []string) {
+func (m *AppOAuthGrantMutation) SetScopes(s []string) {
 	m.scopes = &s
 	m.appendscopes = nil
 }
 
 // Scopes returns the value of the "scopes" field in the mutation.
-func (m *AppAuthorizationMutation) Scopes() (r []string, exists bool) {
+func (m *AppOAuthGrantMutation) Scopes() (r []string, exists bool) {
 	v := m.scopes
 	if v == nil {
 		return
@@ -7710,10 +7640,10 @@ func (m *AppAuthorizationMutation) Scopes() (r []string, exists bool) {
 	return *v, true
 }
 
-// OldScopes returns the old "scopes" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldScopes returns the old "scopes" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldScopes(ctx context.Context) (v []string, err error) {
+func (m *AppOAuthGrantMutation) OldScopes(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldScopes is only allowed on UpdateOne operations")
 	}
@@ -7728,12 +7658,12 @@ func (m *AppAuthorizationMutation) OldScopes(ctx context.Context) (v []string, e
 }
 
 // AppendScopes adds s to the "scopes" field.
-func (m *AppAuthorizationMutation) AppendScopes(s []string) {
+func (m *AppOAuthGrantMutation) AppendScopes(s []string) {
 	m.appendscopes = append(m.appendscopes, s...)
 }
 
 // AppendedScopes returns the list of values that were appended to the "scopes" field in this mutation.
-func (m *AppAuthorizationMutation) AppendedScopes() ([]string, bool) {
+func (m *AppOAuthGrantMutation) AppendedScopes() ([]string, bool) {
 	if len(m.appendscopes) == 0 {
 		return nil, false
 	}
@@ -7741,54 +7671,18 @@ func (m *AppAuthorizationMutation) AppendedScopes() ([]string, bool) {
 }
 
 // ResetScopes resets all changes to the "scopes" field.
-func (m *AppAuthorizationMutation) ResetScopes() {
+func (m *AppOAuthGrantMutation) ResetScopes() {
 	m.scopes = nil
 	m.appendscopes = nil
 }
 
-// SetTokenFamilyID sets the "token_family_id" field.
-func (m *AppAuthorizationMutation) SetTokenFamilyID(s string) {
-	m.token_family_id = &s
-}
-
-// TokenFamilyID returns the value of the "token_family_id" field in the mutation.
-func (m *AppAuthorizationMutation) TokenFamilyID() (r string, exists bool) {
-	v := m.token_family_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTokenFamilyID returns the old "token_family_id" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldTokenFamilyID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTokenFamilyID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTokenFamilyID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTokenFamilyID: %w", err)
-	}
-	return oldValue.TokenFamilyID, nil
-}
-
-// ResetTokenFamilyID resets all changes to the "token_family_id" field.
-func (m *AppAuthorizationMutation) ResetTokenFamilyID() {
-	m.token_family_id = nil
-}
-
 // SetStatus sets the "status" field.
-func (m *AppAuthorizationMutation) SetStatus(s string) {
-	m.status = &s
+func (m *AppOAuthGrantMutation) SetStatus(a appoauthgrant.Status) {
+	m.status = &a
 }
 
 // Status returns the value of the "status" field in the mutation.
-func (m *AppAuthorizationMutation) Status() (r string, exists bool) {
+func (m *AppOAuthGrantMutation) Status() (r appoauthgrant.Status, exists bool) {
 	v := m.status
 	if v == nil {
 		return
@@ -7796,10 +7690,10 @@ func (m *AppAuthorizationMutation) Status() (r string, exists bool) {
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldStatus returns the old "status" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *AppOAuthGrantMutation) OldStatus(ctx context.Context) (v appoauthgrant.Status, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
 	}
@@ -7814,66 +7708,145 @@ func (m *AppAuthorizationMutation) OldStatus(ctx context.Context) (v string, err
 }
 
 // ResetStatus resets all changes to the "status" field.
-func (m *AppAuthorizationMutation) ResetStatus() {
+func (m *AppOAuthGrantMutation) ResetStatus() {
 	m.status = nil
 }
 
-// SetLastUsedAt sets the "last_used_at" field.
-func (m *AppAuthorizationMutation) SetLastUsedAt(t time.Time) {
-	m.last_used_at = &t
+// SetGrantVersion sets the "grant_version" field.
+func (m *AppOAuthGrantMutation) SetGrantVersion(i int) {
+	m.grant_version = &i
+	m.addgrant_version = nil
 }
 
-// LastUsedAt returns the value of the "last_used_at" field in the mutation.
-func (m *AppAuthorizationMutation) LastUsedAt() (r time.Time, exists bool) {
-	v := m.last_used_at
+// GrantVersion returns the value of the "grant_version" field in the mutation.
+func (m *AppOAuthGrantMutation) GrantVersion() (r int, exists bool) {
+	v := m.grant_version
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldLastUsedAt returns the old "last_used_at" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldGrantVersion returns the old "grant_version" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldLastUsedAt(ctx context.Context) (v *time.Time, err error) {
+func (m *AppOAuthGrantMutation) OldGrantVersion(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLastUsedAt is only allowed on UpdateOne operations")
+		return v, errors.New("OldGrantVersion is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLastUsedAt requires an ID field in the mutation")
+		return v, errors.New("OldGrantVersion requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLastUsedAt: %w", err)
+		return v, fmt.Errorf("querying old value for OldGrantVersion: %w", err)
 	}
-	return oldValue.LastUsedAt, nil
+	return oldValue.GrantVersion, nil
 }
 
-// ClearLastUsedAt clears the value of the "last_used_at" field.
-func (m *AppAuthorizationMutation) ClearLastUsedAt() {
-	m.last_used_at = nil
-	m.clearedFields[appauthorization.FieldLastUsedAt] = struct{}{}
+// AddGrantVersion adds i to the "grant_version" field.
+func (m *AppOAuthGrantMutation) AddGrantVersion(i int) {
+	if m.addgrant_version != nil {
+		*m.addgrant_version += i
+	} else {
+		m.addgrant_version = &i
+	}
 }
 
-// LastUsedAtCleared returns if the "last_used_at" field was cleared in this mutation.
-func (m *AppAuthorizationMutation) LastUsedAtCleared() bool {
-	_, ok := m.clearedFields[appauthorization.FieldLastUsedAt]
-	return ok
+// AddedGrantVersion returns the value that was added to the "grant_version" field in this mutation.
+func (m *AppOAuthGrantMutation) AddedGrantVersion() (r int, exists bool) {
+	v := m.addgrant_version
+	if v == nil {
+		return
+	}
+	return *v, true
 }
 
-// ResetLastUsedAt resets all changes to the "last_used_at" field.
-func (m *AppAuthorizationMutation) ResetLastUsedAt() {
-	m.last_used_at = nil
-	delete(m.clearedFields, appauthorization.FieldLastUsedAt)
+// ResetGrantVersion resets all changes to the "grant_version" field.
+func (m *AppOAuthGrantMutation) ResetGrantVersion() {
+	m.grant_version = nil
+	m.addgrant_version = nil
+}
+
+// SetFirstAuthorizedAt sets the "first_authorized_at" field.
+func (m *AppOAuthGrantMutation) SetFirstAuthorizedAt(t time.Time) {
+	m.first_authorized_at = &t
+}
+
+// FirstAuthorizedAt returns the value of the "first_authorized_at" field in the mutation.
+func (m *AppOAuthGrantMutation) FirstAuthorizedAt() (r time.Time, exists bool) {
+	v := m.first_authorized_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFirstAuthorizedAt returns the old "first_authorized_at" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthGrantMutation) OldFirstAuthorizedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFirstAuthorizedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFirstAuthorizedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFirstAuthorizedAt: %w", err)
+	}
+	return oldValue.FirstAuthorizedAt, nil
+}
+
+// ResetFirstAuthorizedAt resets all changes to the "first_authorized_at" field.
+func (m *AppOAuthGrantMutation) ResetFirstAuthorizedAt() {
+	m.first_authorized_at = nil
+}
+
+// SetLastAuthorizedAt sets the "last_authorized_at" field.
+func (m *AppOAuthGrantMutation) SetLastAuthorizedAt(t time.Time) {
+	m.last_authorized_at = &t
+}
+
+// LastAuthorizedAt returns the value of the "last_authorized_at" field in the mutation.
+func (m *AppOAuthGrantMutation) LastAuthorizedAt() (r time.Time, exists bool) {
+	v := m.last_authorized_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastAuthorizedAt returns the old "last_authorized_at" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthGrantMutation) OldLastAuthorizedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastAuthorizedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastAuthorizedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastAuthorizedAt: %w", err)
+	}
+	return oldValue.LastAuthorizedAt, nil
+}
+
+// ResetLastAuthorizedAt resets all changes to the "last_authorized_at" field.
+func (m *AppOAuthGrantMutation) ResetLastAuthorizedAt() {
+	m.last_authorized_at = nil
 }
 
 // SetRevokedAt sets the "revoked_at" field.
-func (m *AppAuthorizationMutation) SetRevokedAt(t time.Time) {
+func (m *AppOAuthGrantMutation) SetRevokedAt(t time.Time) {
 	m.revoked_at = &t
 }
 
 // RevokedAt returns the value of the "revoked_at" field in the mutation.
-func (m *AppAuthorizationMutation) RevokedAt() (r time.Time, exists bool) {
+func (m *AppOAuthGrantMutation) RevokedAt() (r time.Time, exists bool) {
 	v := m.revoked_at
 	if v == nil {
 		return
@@ -7881,10 +7854,10 @@ func (m *AppAuthorizationMutation) RevokedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
-// OldRevokedAt returns the old "revoked_at" field's value of the AppAuthorization entity.
-// If the AppAuthorization object wasn't provided to the builder, the object is fetched from the database.
+// OldRevokedAt returns the old "revoked_at" field's value of the AppOAuthGrant entity.
+// If the AppOAuthGrant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AppAuthorizationMutation) OldRevokedAt(ctx context.Context) (v *time.Time, err error) {
+func (m *AppOAuthGrantMutation) OldRevokedAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRevokedAt is only allowed on UpdateOne operations")
 	}
@@ -7899,32 +7872,32 @@ func (m *AppAuthorizationMutation) OldRevokedAt(ctx context.Context) (v *time.Ti
 }
 
 // ClearRevokedAt clears the value of the "revoked_at" field.
-func (m *AppAuthorizationMutation) ClearRevokedAt() {
+func (m *AppOAuthGrantMutation) ClearRevokedAt() {
 	m.revoked_at = nil
-	m.clearedFields[appauthorization.FieldRevokedAt] = struct{}{}
+	m.clearedFields[appoauthgrant.FieldRevokedAt] = struct{}{}
 }
 
 // RevokedAtCleared returns if the "revoked_at" field was cleared in this mutation.
-func (m *AppAuthorizationMutation) RevokedAtCleared() bool {
-	_, ok := m.clearedFields[appauthorization.FieldRevokedAt]
+func (m *AppOAuthGrantMutation) RevokedAtCleared() bool {
+	_, ok := m.clearedFields[appoauthgrant.FieldRevokedAt]
 	return ok
 }
 
 // ResetRevokedAt resets all changes to the "revoked_at" field.
-func (m *AppAuthorizationMutation) ResetRevokedAt() {
+func (m *AppOAuthGrantMutation) ResetRevokedAt() {
 	m.revoked_at = nil
-	delete(m.clearedFields, appauthorization.FieldRevokedAt)
+	delete(m.clearedFields, appoauthgrant.FieldRevokedAt)
 }
 
-// Where appends a list predicates to the AppAuthorizationMutation builder.
-func (m *AppAuthorizationMutation) Where(ps ...predicate.AppAuthorization) {
+// Where appends a list predicates to the AppOAuthGrantMutation builder.
+func (m *AppOAuthGrantMutation) Where(ps ...predicate.AppOAuthGrant) {
 	m.predicates = append(m.predicates, ps...)
 }
 
-// WhereP appends storage-level predicates to the AppAuthorizationMutation builder. Using this method,
+// WhereP appends storage-level predicates to the AppOAuthGrantMutation builder. Using this method,
 // users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *AppAuthorizationMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.AppAuthorization, len(ps))
+func (m *AppOAuthGrantMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AppOAuthGrant, len(ps))
 	for i := range ps {
 		p[i] = ps[i]
 	}
@@ -7932,60 +7905,57 @@ func (m *AppAuthorizationMutation) WhereP(ps ...func(*sql.Selector)) {
 }
 
 // Op returns the operation name.
-func (m *AppAuthorizationMutation) Op() Op {
+func (m *AppOAuthGrantMutation) Op() Op {
 	return m.op
 }
 
 // SetOp allows setting the mutation operation.
-func (m *AppAuthorizationMutation) SetOp(op Op) {
+func (m *AppOAuthGrantMutation) SetOp(op Op) {
 	m.op = op
 }
 
-// Type returns the node type of this mutation (AppAuthorization).
-func (m *AppAuthorizationMutation) Type() string {
+// Type returns the node type of this mutation (AppOAuthGrant).
+func (m *AppOAuthGrantMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during this mutation. Note that in
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
-func (m *AppAuthorizationMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+func (m *AppOAuthGrantMutation) Fields() []string {
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
-		fields = append(fields, appauthorization.FieldCreatedAt)
+		fields = append(fields, appoauthgrant.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
-		fields = append(fields, appauthorization.FieldUpdatedAt)
+		fields = append(fields, appoauthgrant.FieldUpdatedAt)
 	}
 	if m.user_id != nil {
-		fields = append(fields, appauthorization.FieldUserID)
+		fields = append(fields, appoauthgrant.FieldUserID)
 	}
 	if m.grant_id != nil {
-		fields = append(fields, appauthorization.FieldGrantID)
+		fields = append(fields, appoauthgrant.FieldGrantID)
 	}
 	if m.client_id != nil {
-		fields = append(fields, appauthorization.FieldClientID)
-	}
-	if m.device_name != nil {
-		fields = append(fields, appauthorization.FieldDeviceName)
-	}
-	if m.platform != nil {
-		fields = append(fields, appauthorization.FieldPlatform)
+		fields = append(fields, appoauthgrant.FieldClientID)
 	}
 	if m.scopes != nil {
-		fields = append(fields, appauthorization.FieldScopes)
-	}
-	if m.token_family_id != nil {
-		fields = append(fields, appauthorization.FieldTokenFamilyID)
+		fields = append(fields, appoauthgrant.FieldScopes)
 	}
 	if m.status != nil {
-		fields = append(fields, appauthorization.FieldStatus)
+		fields = append(fields, appoauthgrant.FieldStatus)
 	}
-	if m.last_used_at != nil {
-		fields = append(fields, appauthorization.FieldLastUsedAt)
+	if m.grant_version != nil {
+		fields = append(fields, appoauthgrant.FieldGrantVersion)
+	}
+	if m.first_authorized_at != nil {
+		fields = append(fields, appoauthgrant.FieldFirstAuthorizedAt)
+	}
+	if m.last_authorized_at != nil {
+		fields = append(fields, appoauthgrant.FieldLastAuthorizedAt)
 	}
 	if m.revoked_at != nil {
-		fields = append(fields, appauthorization.FieldRevokedAt)
+		fields = append(fields, appoauthgrant.FieldRevokedAt)
 	}
 	return fields
 }
@@ -7993,31 +7963,29 @@ func (m *AppAuthorizationMutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
-func (m *AppAuthorizationMutation) Field(name string) (ent.Value, bool) {
+func (m *AppOAuthGrantMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case appauthorization.FieldCreatedAt:
+	case appoauthgrant.FieldCreatedAt:
 		return m.CreatedAt()
-	case appauthorization.FieldUpdatedAt:
+	case appoauthgrant.FieldUpdatedAt:
 		return m.UpdatedAt()
-	case appauthorization.FieldUserID:
+	case appoauthgrant.FieldUserID:
 		return m.UserID()
-	case appauthorization.FieldGrantID:
+	case appoauthgrant.FieldGrantID:
 		return m.GrantID()
-	case appauthorization.FieldClientID:
+	case appoauthgrant.FieldClientID:
 		return m.ClientID()
-	case appauthorization.FieldDeviceName:
-		return m.DeviceName()
-	case appauthorization.FieldPlatform:
-		return m.Platform()
-	case appauthorization.FieldScopes:
+	case appoauthgrant.FieldScopes:
 		return m.Scopes()
-	case appauthorization.FieldTokenFamilyID:
-		return m.TokenFamilyID()
-	case appauthorization.FieldStatus:
+	case appoauthgrant.FieldStatus:
 		return m.Status()
-	case appauthorization.FieldLastUsedAt:
-		return m.LastUsedAt()
-	case appauthorization.FieldRevokedAt:
+	case appoauthgrant.FieldGrantVersion:
+		return m.GrantVersion()
+	case appoauthgrant.FieldFirstAuthorizedAt:
+		return m.FirstAuthorizedAt()
+	case appoauthgrant.FieldLastAuthorizedAt:
+		return m.LastAuthorizedAt()
+	case appoauthgrant.FieldRevokedAt:
 		return m.RevokedAt()
 	}
 	return nil, false
@@ -8026,119 +7994,110 @@ func (m *AppAuthorizationMutation) Field(name string) (ent.Value, bool) {
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
-func (m *AppAuthorizationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+func (m *AppOAuthGrantMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case appauthorization.FieldCreatedAt:
+	case appoauthgrant.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
-	case appauthorization.FieldUpdatedAt:
+	case appoauthgrant.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
-	case appauthorization.FieldUserID:
+	case appoauthgrant.FieldUserID:
 		return m.OldUserID(ctx)
-	case appauthorization.FieldGrantID:
+	case appoauthgrant.FieldGrantID:
 		return m.OldGrantID(ctx)
-	case appauthorization.FieldClientID:
+	case appoauthgrant.FieldClientID:
 		return m.OldClientID(ctx)
-	case appauthorization.FieldDeviceName:
-		return m.OldDeviceName(ctx)
-	case appauthorization.FieldPlatform:
-		return m.OldPlatform(ctx)
-	case appauthorization.FieldScopes:
+	case appoauthgrant.FieldScopes:
 		return m.OldScopes(ctx)
-	case appauthorization.FieldTokenFamilyID:
-		return m.OldTokenFamilyID(ctx)
-	case appauthorization.FieldStatus:
+	case appoauthgrant.FieldStatus:
 		return m.OldStatus(ctx)
-	case appauthorization.FieldLastUsedAt:
-		return m.OldLastUsedAt(ctx)
-	case appauthorization.FieldRevokedAt:
+	case appoauthgrant.FieldGrantVersion:
+		return m.OldGrantVersion(ctx)
+	case appoauthgrant.FieldFirstAuthorizedAt:
+		return m.OldFirstAuthorizedAt(ctx)
+	case appoauthgrant.FieldLastAuthorizedAt:
+		return m.OldLastAuthorizedAt(ctx)
+	case appoauthgrant.FieldRevokedAt:
 		return m.OldRevokedAt(ctx)
 	}
-	return nil, fmt.Errorf("unknown AppAuthorization field %s", name)
+	return nil, fmt.Errorf("unknown AppOAuthGrant field %s", name)
 }
 
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *AppAuthorizationMutation) SetField(name string, value ent.Value) error {
+func (m *AppOAuthGrantMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case appauthorization.FieldCreatedAt:
+	case appoauthgrant.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
 		return nil
-	case appauthorization.FieldUpdatedAt:
+	case appoauthgrant.FieldUpdatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
 		return nil
-	case appauthorization.FieldUserID:
+	case appoauthgrant.FieldUserID:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUserID(v)
 		return nil
-	case appauthorization.FieldGrantID:
+	case appoauthgrant.FieldGrantID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetGrantID(v)
 		return nil
-	case appauthorization.FieldClientID:
+	case appoauthgrant.FieldClientID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetClientID(v)
 		return nil
-	case appauthorization.FieldDeviceName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDeviceName(v)
-		return nil
-	case appauthorization.FieldPlatform:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPlatform(v)
-		return nil
-	case appauthorization.FieldScopes:
+	case appoauthgrant.FieldScopes:
 		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetScopes(v)
 		return nil
-	case appauthorization.FieldTokenFamilyID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTokenFamilyID(v)
-		return nil
-	case appauthorization.FieldStatus:
-		v, ok := value.(string)
+	case appoauthgrant.FieldStatus:
+		v, ok := value.(appoauthgrant.Status)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
 		return nil
-	case appauthorization.FieldLastUsedAt:
+	case appoauthgrant.FieldGrantVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGrantVersion(v)
+		return nil
+	case appoauthgrant.FieldFirstAuthorizedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetLastUsedAt(v)
+		m.SetFirstAuthorizedAt(v)
 		return nil
-	case appauthorization.FieldRevokedAt:
+	case appoauthgrant.FieldLastAuthorizedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastAuthorizedAt(v)
+		return nil
+	case appoauthgrant.FieldRevokedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
@@ -8146,15 +8105,18 @@ func (m *AppAuthorizationMutation) SetField(name string, value ent.Value) error 
 		m.SetRevokedAt(v)
 		return nil
 	}
-	return fmt.Errorf("unknown AppAuthorization field %s", name)
+	return fmt.Errorf("unknown AppOAuthGrant field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
-func (m *AppAuthorizationMutation) AddedFields() []string {
+func (m *AppOAuthGrantMutation) AddedFields() []string {
 	var fields []string
 	if m.adduser_id != nil {
-		fields = append(fields, appauthorization.FieldUserID)
+		fields = append(fields, appoauthgrant.FieldUserID)
+	}
+	if m.addgrant_version != nil {
+		fields = append(fields, appoauthgrant.FieldGrantVersion)
 	}
 	return fields
 }
@@ -8162,10 +8124,12 @@ func (m *AppAuthorizationMutation) AddedFields() []string {
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
-func (m *AppAuthorizationMutation) AddedField(name string) (ent.Value, bool) {
+func (m *AppOAuthGrantMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case appauthorization.FieldUserID:
+	case appoauthgrant.FieldUserID:
 		return m.AddedUserID()
+	case appoauthgrant.FieldGrantVersion:
+		return m.AddedGrantVersion()
 	}
 	return nil, false
 }
@@ -8173,143 +8137,1154 @@ func (m *AppAuthorizationMutation) AddedField(name string) (ent.Value, bool) {
 // AddField adds the value to the field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *AppAuthorizationMutation) AddField(name string, value ent.Value) error {
+func (m *AppOAuthGrantMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case appauthorization.FieldUserID:
+	case appoauthgrant.FieldUserID:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddUserID(v)
 		return nil
+	case appoauthgrant.FieldGrantVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGrantVersion(v)
+		return nil
 	}
-	return fmt.Errorf("unknown AppAuthorization numeric field %s", name)
+	return fmt.Errorf("unknown AppOAuthGrant numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
-func (m *AppAuthorizationMutation) ClearedFields() []string {
+func (m *AppOAuthGrantMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(appauthorization.FieldLastUsedAt) {
-		fields = append(fields, appauthorization.FieldLastUsedAt)
-	}
-	if m.FieldCleared(appauthorization.FieldRevokedAt) {
-		fields = append(fields, appauthorization.FieldRevokedAt)
+	if m.FieldCleared(appoauthgrant.FieldRevokedAt) {
+		fields = append(fields, appoauthgrant.FieldRevokedAt)
 	}
 	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
-func (m *AppAuthorizationMutation) FieldCleared(name string) bool {
+func (m *AppOAuthGrantMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *AppAuthorizationMutation) ClearField(name string) error {
+func (m *AppOAuthGrantMutation) ClearField(name string) error {
 	switch name {
-	case appauthorization.FieldLastUsedAt:
-		m.ClearLastUsedAt()
-		return nil
-	case appauthorization.FieldRevokedAt:
+	case appoauthgrant.FieldRevokedAt:
 		m.ClearRevokedAt()
 		return nil
 	}
-	return fmt.Errorf("unknown AppAuthorization nullable field %s", name)
+	return fmt.Errorf("unknown AppOAuthGrant nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
-func (m *AppAuthorizationMutation) ResetField(name string) error {
+func (m *AppOAuthGrantMutation) ResetField(name string) error {
 	switch name {
-	case appauthorization.FieldCreatedAt:
+	case appoauthgrant.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
-	case appauthorization.FieldUpdatedAt:
+	case appoauthgrant.FieldUpdatedAt:
 		m.ResetUpdatedAt()
 		return nil
-	case appauthorization.FieldUserID:
+	case appoauthgrant.FieldUserID:
 		m.ResetUserID()
 		return nil
-	case appauthorization.FieldGrantID:
+	case appoauthgrant.FieldGrantID:
 		m.ResetGrantID()
 		return nil
-	case appauthorization.FieldClientID:
+	case appoauthgrant.FieldClientID:
 		m.ResetClientID()
 		return nil
-	case appauthorization.FieldDeviceName:
-		m.ResetDeviceName()
-		return nil
-	case appauthorization.FieldPlatform:
-		m.ResetPlatform()
-		return nil
-	case appauthorization.FieldScopes:
+	case appoauthgrant.FieldScopes:
 		m.ResetScopes()
 		return nil
-	case appauthorization.FieldTokenFamilyID:
-		m.ResetTokenFamilyID()
-		return nil
-	case appauthorization.FieldStatus:
+	case appoauthgrant.FieldStatus:
 		m.ResetStatus()
 		return nil
-	case appauthorization.FieldLastUsedAt:
-		m.ResetLastUsedAt()
+	case appoauthgrant.FieldGrantVersion:
+		m.ResetGrantVersion()
 		return nil
-	case appauthorization.FieldRevokedAt:
+	case appoauthgrant.FieldFirstAuthorizedAt:
+		m.ResetFirstAuthorizedAt()
+		return nil
+	case appoauthgrant.FieldLastAuthorizedAt:
+		m.ResetLastAuthorizedAt()
+		return nil
+	case appoauthgrant.FieldRevokedAt:
 		m.ResetRevokedAt()
 		return nil
 	}
-	return fmt.Errorf("unknown AppAuthorization field %s", name)
+	return fmt.Errorf("unknown AppOAuthGrant field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
-func (m *AppAuthorizationMutation) AddedEdges() []string {
+func (m *AppOAuthGrantMutation) AddedEdges() []string {
 	edges := make([]string, 0, 0)
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *AppAuthorizationMutation) AddedIDs(name string) []ent.Value {
+func (m *AppOAuthGrantMutation) AddedIDs(name string) []ent.Value {
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
-func (m *AppAuthorizationMutation) RemovedEdges() []string {
+func (m *AppOAuthGrantMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 0)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *AppAuthorizationMutation) RemovedIDs(name string) []ent.Value {
+func (m *AppOAuthGrantMutation) RemovedIDs(name string) []ent.Value {
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *AppAuthorizationMutation) ClearedEdges() []string {
+func (m *AppOAuthGrantMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 0)
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
-func (m *AppAuthorizationMutation) EdgeCleared(name string) bool {
+func (m *AppOAuthGrantMutation) EdgeCleared(name string) bool {
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
-func (m *AppAuthorizationMutation) ClearEdge(name string) error {
-	return fmt.Errorf("unknown AppAuthorization unique edge %s", name)
+func (m *AppOAuthGrantMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown AppOAuthGrant unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
-func (m *AppAuthorizationMutation) ResetEdge(name string) error {
-	return fmt.Errorf("unknown AppAuthorization edge %s", name)
+func (m *AppOAuthGrantMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown AppOAuthGrant edge %s", name)
+}
+
+// AppOAuthSessionMutation represents an operation that mutates the AppOAuthSession nodes in the graph.
+type AppOAuthSessionMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int64
+	created_at           *time.Time
+	updated_at           *time.Time
+	app_grant_id         *int64
+	addapp_grant_id      *int64
+	session_id           *string
+	installation_id_hash *string
+	token_family_id      *string
+	device_name          *string
+	platform             *string
+	scopes               *[]string
+	appendscopes         []string
+	status               *appoauthsession.Status
+	last_used_at         *time.Time
+	revoked_at           *time.Time
+	clearedFields        map[string]struct{}
+	done                 bool
+	oldValue             func(context.Context) (*AppOAuthSession, error)
+	predicates           []predicate.AppOAuthSession
+}
+
+var _ ent.Mutation = (*AppOAuthSessionMutation)(nil)
+
+// appoauthsessionOption allows management of the mutation configuration using functional options.
+type appoauthsessionOption func(*AppOAuthSessionMutation)
+
+// newAppOAuthSessionMutation creates new mutation for the AppOAuthSession entity.
+func newAppOAuthSessionMutation(c config, op Op, opts ...appoauthsessionOption) *AppOAuthSessionMutation {
+	m := &AppOAuthSessionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAppOAuthSession,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAppOAuthSessionID sets the ID field of the mutation.
+func withAppOAuthSessionID(id int64) appoauthsessionOption {
+	return func(m *AppOAuthSessionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AppOAuthSession
+		)
+		m.oldValue = func(ctx context.Context) (*AppOAuthSession, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AppOAuthSession.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAppOAuthSession sets the old AppOAuthSession of the mutation.
+func withAppOAuthSession(node *AppOAuthSession) appoauthsessionOption {
+	return func(m *AppOAuthSessionMutation) {
+		m.oldValue = func(context.Context) (*AppOAuthSession, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AppOAuthSessionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AppOAuthSessionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AppOAuthSessionMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AppOAuthSessionMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AppOAuthSession.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AppOAuthSessionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AppOAuthSessionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AppOAuthSessionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *AppOAuthSessionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *AppOAuthSessionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *AppOAuthSessionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetAppGrantID sets the "app_grant_id" field.
+func (m *AppOAuthSessionMutation) SetAppGrantID(i int64) {
+	m.app_grant_id = &i
+	m.addapp_grant_id = nil
+}
+
+// AppGrantID returns the value of the "app_grant_id" field in the mutation.
+func (m *AppOAuthSessionMutation) AppGrantID() (r int64, exists bool) {
+	v := m.app_grant_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAppGrantID returns the old "app_grant_id" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldAppGrantID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAppGrantID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAppGrantID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAppGrantID: %w", err)
+	}
+	return oldValue.AppGrantID, nil
+}
+
+// AddAppGrantID adds i to the "app_grant_id" field.
+func (m *AppOAuthSessionMutation) AddAppGrantID(i int64) {
+	if m.addapp_grant_id != nil {
+		*m.addapp_grant_id += i
+	} else {
+		m.addapp_grant_id = &i
+	}
+}
+
+// AddedAppGrantID returns the value that was added to the "app_grant_id" field in this mutation.
+func (m *AppOAuthSessionMutation) AddedAppGrantID() (r int64, exists bool) {
+	v := m.addapp_grant_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAppGrantID resets all changes to the "app_grant_id" field.
+func (m *AppOAuthSessionMutation) ResetAppGrantID() {
+	m.app_grant_id = nil
+	m.addapp_grant_id = nil
+}
+
+// SetSessionID sets the "session_id" field.
+func (m *AppOAuthSessionMutation) SetSessionID(s string) {
+	m.session_id = &s
+}
+
+// SessionID returns the value of the "session_id" field in the mutation.
+func (m *AppOAuthSessionMutation) SessionID() (r string, exists bool) {
+	v := m.session_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSessionID returns the old "session_id" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldSessionID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSessionID: %w", err)
+	}
+	return oldValue.SessionID, nil
+}
+
+// ResetSessionID resets all changes to the "session_id" field.
+func (m *AppOAuthSessionMutation) ResetSessionID() {
+	m.session_id = nil
+}
+
+// SetInstallationIDHash sets the "installation_id_hash" field.
+func (m *AppOAuthSessionMutation) SetInstallationIDHash(s string) {
+	m.installation_id_hash = &s
+}
+
+// InstallationIDHash returns the value of the "installation_id_hash" field in the mutation.
+func (m *AppOAuthSessionMutation) InstallationIDHash() (r string, exists bool) {
+	v := m.installation_id_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInstallationIDHash returns the old "installation_id_hash" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldInstallationIDHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInstallationIDHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInstallationIDHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInstallationIDHash: %w", err)
+	}
+	return oldValue.InstallationIDHash, nil
+}
+
+// ResetInstallationIDHash resets all changes to the "installation_id_hash" field.
+func (m *AppOAuthSessionMutation) ResetInstallationIDHash() {
+	m.installation_id_hash = nil
+}
+
+// SetTokenFamilyID sets the "token_family_id" field.
+func (m *AppOAuthSessionMutation) SetTokenFamilyID(s string) {
+	m.token_family_id = &s
+}
+
+// TokenFamilyID returns the value of the "token_family_id" field in the mutation.
+func (m *AppOAuthSessionMutation) TokenFamilyID() (r string, exists bool) {
+	v := m.token_family_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenFamilyID returns the old "token_family_id" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldTokenFamilyID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenFamilyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenFamilyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenFamilyID: %w", err)
+	}
+	return oldValue.TokenFamilyID, nil
+}
+
+// ResetTokenFamilyID resets all changes to the "token_family_id" field.
+func (m *AppOAuthSessionMutation) ResetTokenFamilyID() {
+	m.token_family_id = nil
+}
+
+// SetDeviceName sets the "device_name" field.
+func (m *AppOAuthSessionMutation) SetDeviceName(s string) {
+	m.device_name = &s
+}
+
+// DeviceName returns the value of the "device_name" field in the mutation.
+func (m *AppOAuthSessionMutation) DeviceName() (r string, exists bool) {
+	v := m.device_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeviceName returns the old "device_name" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldDeviceName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeviceName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeviceName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeviceName: %w", err)
+	}
+	return oldValue.DeviceName, nil
+}
+
+// ResetDeviceName resets all changes to the "device_name" field.
+func (m *AppOAuthSessionMutation) ResetDeviceName() {
+	m.device_name = nil
+}
+
+// SetPlatform sets the "platform" field.
+func (m *AppOAuthSessionMutation) SetPlatform(s string) {
+	m.platform = &s
+}
+
+// Platform returns the value of the "platform" field in the mutation.
+func (m *AppOAuthSessionMutation) Platform() (r string, exists bool) {
+	v := m.platform
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlatform returns the old "platform" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldPlatform(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlatform is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlatform requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlatform: %w", err)
+	}
+	return oldValue.Platform, nil
+}
+
+// ResetPlatform resets all changes to the "platform" field.
+func (m *AppOAuthSessionMutation) ResetPlatform() {
+	m.platform = nil
+}
+
+// SetScopes sets the "scopes" field.
+func (m *AppOAuthSessionMutation) SetScopes(s []string) {
+	m.scopes = &s
+	m.appendscopes = nil
+}
+
+// Scopes returns the value of the "scopes" field in the mutation.
+func (m *AppOAuthSessionMutation) Scopes() (r []string, exists bool) {
+	v := m.scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScopes returns the old "scopes" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScopes: %w", err)
+	}
+	return oldValue.Scopes, nil
+}
+
+// AppendScopes adds s to the "scopes" field.
+func (m *AppOAuthSessionMutation) AppendScopes(s []string) {
+	m.appendscopes = append(m.appendscopes, s...)
+}
+
+// AppendedScopes returns the list of values that were appended to the "scopes" field in this mutation.
+func (m *AppOAuthSessionMutation) AppendedScopes() ([]string, bool) {
+	if len(m.appendscopes) == 0 {
+		return nil, false
+	}
+	return m.appendscopes, true
+}
+
+// ResetScopes resets all changes to the "scopes" field.
+func (m *AppOAuthSessionMutation) ResetScopes() {
+	m.scopes = nil
+	m.appendscopes = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *AppOAuthSessionMutation) SetStatus(a appoauthsession.Status) {
+	m.status = &a
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *AppOAuthSessionMutation) Status() (r appoauthsession.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldStatus(ctx context.Context) (v appoauthsession.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *AppOAuthSessionMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetLastUsedAt sets the "last_used_at" field.
+func (m *AppOAuthSessionMutation) SetLastUsedAt(t time.Time) {
+	m.last_used_at = &t
+}
+
+// LastUsedAt returns the value of the "last_used_at" field in the mutation.
+func (m *AppOAuthSessionMutation) LastUsedAt() (r time.Time, exists bool) {
+	v := m.last_used_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastUsedAt returns the old "last_used_at" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldLastUsedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastUsedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastUsedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastUsedAt: %w", err)
+	}
+	return oldValue.LastUsedAt, nil
+}
+
+// ClearLastUsedAt clears the value of the "last_used_at" field.
+func (m *AppOAuthSessionMutation) ClearLastUsedAt() {
+	m.last_used_at = nil
+	m.clearedFields[appoauthsession.FieldLastUsedAt] = struct{}{}
+}
+
+// LastUsedAtCleared returns if the "last_used_at" field was cleared in this mutation.
+func (m *AppOAuthSessionMutation) LastUsedAtCleared() bool {
+	_, ok := m.clearedFields[appoauthsession.FieldLastUsedAt]
+	return ok
+}
+
+// ResetLastUsedAt resets all changes to the "last_used_at" field.
+func (m *AppOAuthSessionMutation) ResetLastUsedAt() {
+	m.last_used_at = nil
+	delete(m.clearedFields, appoauthsession.FieldLastUsedAt)
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (m *AppOAuthSessionMutation) SetRevokedAt(t time.Time) {
+	m.revoked_at = &t
+}
+
+// RevokedAt returns the value of the "revoked_at" field in the mutation.
+func (m *AppOAuthSessionMutation) RevokedAt() (r time.Time, exists bool) {
+	v := m.revoked_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevokedAt returns the old "revoked_at" field's value of the AppOAuthSession entity.
+// If the AppOAuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AppOAuthSessionMutation) OldRevokedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevokedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevokedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevokedAt: %w", err)
+	}
+	return oldValue.RevokedAt, nil
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (m *AppOAuthSessionMutation) ClearRevokedAt() {
+	m.revoked_at = nil
+	m.clearedFields[appoauthsession.FieldRevokedAt] = struct{}{}
+}
+
+// RevokedAtCleared returns if the "revoked_at" field was cleared in this mutation.
+func (m *AppOAuthSessionMutation) RevokedAtCleared() bool {
+	_, ok := m.clearedFields[appoauthsession.FieldRevokedAt]
+	return ok
+}
+
+// ResetRevokedAt resets all changes to the "revoked_at" field.
+func (m *AppOAuthSessionMutation) ResetRevokedAt() {
+	m.revoked_at = nil
+	delete(m.clearedFields, appoauthsession.FieldRevokedAt)
+}
+
+// Where appends a list predicates to the AppOAuthSessionMutation builder.
+func (m *AppOAuthSessionMutation) Where(ps ...predicate.AppOAuthSession) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AppOAuthSessionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AppOAuthSessionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AppOAuthSession, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AppOAuthSessionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AppOAuthSessionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AppOAuthSession).
+func (m *AppOAuthSessionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AppOAuthSessionMutation) Fields() []string {
+	fields := make([]string, 0, 12)
+	if m.created_at != nil {
+		fields = append(fields, appoauthsession.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, appoauthsession.FieldUpdatedAt)
+	}
+	if m.app_grant_id != nil {
+		fields = append(fields, appoauthsession.FieldAppGrantID)
+	}
+	if m.session_id != nil {
+		fields = append(fields, appoauthsession.FieldSessionID)
+	}
+	if m.installation_id_hash != nil {
+		fields = append(fields, appoauthsession.FieldInstallationIDHash)
+	}
+	if m.token_family_id != nil {
+		fields = append(fields, appoauthsession.FieldTokenFamilyID)
+	}
+	if m.device_name != nil {
+		fields = append(fields, appoauthsession.FieldDeviceName)
+	}
+	if m.platform != nil {
+		fields = append(fields, appoauthsession.FieldPlatform)
+	}
+	if m.scopes != nil {
+		fields = append(fields, appoauthsession.FieldScopes)
+	}
+	if m.status != nil {
+		fields = append(fields, appoauthsession.FieldStatus)
+	}
+	if m.last_used_at != nil {
+		fields = append(fields, appoauthsession.FieldLastUsedAt)
+	}
+	if m.revoked_at != nil {
+		fields = append(fields, appoauthsession.FieldRevokedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AppOAuthSessionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case appoauthsession.FieldCreatedAt:
+		return m.CreatedAt()
+	case appoauthsession.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case appoauthsession.FieldAppGrantID:
+		return m.AppGrantID()
+	case appoauthsession.FieldSessionID:
+		return m.SessionID()
+	case appoauthsession.FieldInstallationIDHash:
+		return m.InstallationIDHash()
+	case appoauthsession.FieldTokenFamilyID:
+		return m.TokenFamilyID()
+	case appoauthsession.FieldDeviceName:
+		return m.DeviceName()
+	case appoauthsession.FieldPlatform:
+		return m.Platform()
+	case appoauthsession.FieldScopes:
+		return m.Scopes()
+	case appoauthsession.FieldStatus:
+		return m.Status()
+	case appoauthsession.FieldLastUsedAt:
+		return m.LastUsedAt()
+	case appoauthsession.FieldRevokedAt:
+		return m.RevokedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AppOAuthSessionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case appoauthsession.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case appoauthsession.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case appoauthsession.FieldAppGrantID:
+		return m.OldAppGrantID(ctx)
+	case appoauthsession.FieldSessionID:
+		return m.OldSessionID(ctx)
+	case appoauthsession.FieldInstallationIDHash:
+		return m.OldInstallationIDHash(ctx)
+	case appoauthsession.FieldTokenFamilyID:
+		return m.OldTokenFamilyID(ctx)
+	case appoauthsession.FieldDeviceName:
+		return m.OldDeviceName(ctx)
+	case appoauthsession.FieldPlatform:
+		return m.OldPlatform(ctx)
+	case appoauthsession.FieldScopes:
+		return m.OldScopes(ctx)
+	case appoauthsession.FieldStatus:
+		return m.OldStatus(ctx)
+	case appoauthsession.FieldLastUsedAt:
+		return m.OldLastUsedAt(ctx)
+	case appoauthsession.FieldRevokedAt:
+		return m.OldRevokedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown AppOAuthSession field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AppOAuthSessionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case appoauthsession.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case appoauthsession.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case appoauthsession.FieldAppGrantID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAppGrantID(v)
+		return nil
+	case appoauthsession.FieldSessionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSessionID(v)
+		return nil
+	case appoauthsession.FieldInstallationIDHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInstallationIDHash(v)
+		return nil
+	case appoauthsession.FieldTokenFamilyID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokenFamilyID(v)
+		return nil
+	case appoauthsession.FieldDeviceName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeviceName(v)
+		return nil
+	case appoauthsession.FieldPlatform:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlatform(v)
+		return nil
+	case appoauthsession.FieldScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScopes(v)
+		return nil
+	case appoauthsession.FieldStatus:
+		v, ok := value.(appoauthsession.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case appoauthsession.FieldLastUsedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastUsedAt(v)
+		return nil
+	case appoauthsession.FieldRevokedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevokedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AppOAuthSession field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AppOAuthSessionMutation) AddedFields() []string {
+	var fields []string
+	if m.addapp_grant_id != nil {
+		fields = append(fields, appoauthsession.FieldAppGrantID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AppOAuthSessionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case appoauthsession.FieldAppGrantID:
+		return m.AddedAppGrantID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AppOAuthSessionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case appoauthsession.FieldAppGrantID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAppGrantID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AppOAuthSession numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AppOAuthSessionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(appoauthsession.FieldLastUsedAt) {
+		fields = append(fields, appoauthsession.FieldLastUsedAt)
+	}
+	if m.FieldCleared(appoauthsession.FieldRevokedAt) {
+		fields = append(fields, appoauthsession.FieldRevokedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AppOAuthSessionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AppOAuthSessionMutation) ClearField(name string) error {
+	switch name {
+	case appoauthsession.FieldLastUsedAt:
+		m.ClearLastUsedAt()
+		return nil
+	case appoauthsession.FieldRevokedAt:
+		m.ClearRevokedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown AppOAuthSession nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AppOAuthSessionMutation) ResetField(name string) error {
+	switch name {
+	case appoauthsession.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case appoauthsession.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case appoauthsession.FieldAppGrantID:
+		m.ResetAppGrantID()
+		return nil
+	case appoauthsession.FieldSessionID:
+		m.ResetSessionID()
+		return nil
+	case appoauthsession.FieldInstallationIDHash:
+		m.ResetInstallationIDHash()
+		return nil
+	case appoauthsession.FieldTokenFamilyID:
+		m.ResetTokenFamilyID()
+		return nil
+	case appoauthsession.FieldDeviceName:
+		m.ResetDeviceName()
+		return nil
+	case appoauthsession.FieldPlatform:
+		m.ResetPlatform()
+		return nil
+	case appoauthsession.FieldScopes:
+		m.ResetScopes()
+		return nil
+	case appoauthsession.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case appoauthsession.FieldLastUsedAt:
+		m.ResetLastUsedAt()
+		return nil
+	case appoauthsession.FieldRevokedAt:
+		m.ResetRevokedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown AppOAuthSession field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AppOAuthSessionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AppOAuthSessionMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AppOAuthSessionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AppOAuthSessionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AppOAuthSessionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AppOAuthSessionMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AppOAuthSessionMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown AppOAuthSession unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AppOAuthSessionMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown AppOAuthSession edge %s", name)
 }
 
 // AuthIdentityMutation represents an operation that mutates the AuthIdentity nodes in the graph.

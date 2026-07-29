@@ -10,7 +10,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcement"
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/appauthorization"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthgrant"
+	"github.com/Wei-Shaw/sub2api/ent/appoauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
 	"github.com/Wei-Shaw/sub2api/ent/batchimageevent"
@@ -327,26 +328,26 @@ func init() {
 	announcementreadDescCreatedAt := announcementreadFields[3].Descriptor()
 	// announcementread.DefaultCreatedAt holds the default value on creation for the created_at field.
 	announcementread.DefaultCreatedAt = announcementreadDescCreatedAt.Default.(func() time.Time)
-	appauthorizationMixin := schema.AppAuthorization{}.Mixin()
-	appauthorizationMixinFields0 := appauthorizationMixin[0].Fields()
-	_ = appauthorizationMixinFields0
-	appauthorizationFields := schema.AppAuthorization{}.Fields()
-	_ = appauthorizationFields
-	// appauthorizationDescCreatedAt is the schema descriptor for created_at field.
-	appauthorizationDescCreatedAt := appauthorizationMixinFields0[0].Descriptor()
-	// appauthorization.DefaultCreatedAt holds the default value on creation for the created_at field.
-	appauthorization.DefaultCreatedAt = appauthorizationDescCreatedAt.Default.(func() time.Time)
-	// appauthorizationDescUpdatedAt is the schema descriptor for updated_at field.
-	appauthorizationDescUpdatedAt := appauthorizationMixinFields0[1].Descriptor()
-	// appauthorization.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	appauthorization.DefaultUpdatedAt = appauthorizationDescUpdatedAt.Default.(func() time.Time)
-	// appauthorization.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	appauthorization.UpdateDefaultUpdatedAt = appauthorizationDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// appauthorizationDescGrantID is the schema descriptor for grant_id field.
-	appauthorizationDescGrantID := appauthorizationFields[1].Descriptor()
-	// appauthorization.GrantIDValidator is a validator for the "grant_id" field. It is called by the builders before save.
-	appauthorization.GrantIDValidator = func() func(string) error {
-		validators := appauthorizationDescGrantID.Validators
+	appoauthgrantMixin := schema.AppOAuthGrant{}.Mixin()
+	appoauthgrantMixinFields0 := appoauthgrantMixin[0].Fields()
+	_ = appoauthgrantMixinFields0
+	appoauthgrantFields := schema.AppOAuthGrant{}.Fields()
+	_ = appoauthgrantFields
+	// appoauthgrantDescCreatedAt is the schema descriptor for created_at field.
+	appoauthgrantDescCreatedAt := appoauthgrantMixinFields0[0].Descriptor()
+	// appoauthgrant.DefaultCreatedAt holds the default value on creation for the created_at field.
+	appoauthgrant.DefaultCreatedAt = appoauthgrantDescCreatedAt.Default.(func() time.Time)
+	// appoauthgrantDescUpdatedAt is the schema descriptor for updated_at field.
+	appoauthgrantDescUpdatedAt := appoauthgrantMixinFields0[1].Descriptor()
+	// appoauthgrant.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	appoauthgrant.DefaultUpdatedAt = appoauthgrantDescUpdatedAt.Default.(func() time.Time)
+	// appoauthgrant.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	appoauthgrant.UpdateDefaultUpdatedAt = appoauthgrantDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// appoauthgrantDescGrantID is the schema descriptor for grant_id field.
+	appoauthgrantDescGrantID := appoauthgrantFields[1].Descriptor()
+	// appoauthgrant.GrantIDValidator is a validator for the "grant_id" field. It is called by the builders before save.
+	appoauthgrant.GrantIDValidator = func() func(string) error {
+		validators := appoauthgrantDescGrantID.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
@@ -360,11 +361,11 @@ func init() {
 			return nil
 		}
 	}()
-	// appauthorizationDescClientID is the schema descriptor for client_id field.
-	appauthorizationDescClientID := appauthorizationFields[2].Descriptor()
-	// appauthorization.ClientIDValidator is a validator for the "client_id" field. It is called by the builders before save.
-	appauthorization.ClientIDValidator = func() func(string) error {
-		validators := appauthorizationDescClientID.Validators
+	// appoauthgrantDescClientID is the schema descriptor for client_id field.
+	appoauthgrantDescClientID := appoauthgrantFields[2].Descriptor()
+	// appoauthgrant.ClientIDValidator is a validator for the "client_id" field. It is called by the builders before save.
+	appoauthgrant.ClientIDValidator = func() func(string) error {
+		validators := appoauthgrantDescClientID.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
@@ -378,27 +379,80 @@ func init() {
 			return nil
 		}
 	}()
-	// appauthorizationDescDeviceName is the schema descriptor for device_name field.
-	appauthorizationDescDeviceName := appauthorizationFields[3].Descriptor()
-	// appauthorization.DefaultDeviceName holds the default value on creation for the device_name field.
-	appauthorization.DefaultDeviceName = appauthorizationDescDeviceName.Default.(string)
-	// appauthorization.DeviceNameValidator is a validator for the "device_name" field. It is called by the builders before save.
-	appauthorization.DeviceNameValidator = appauthorizationDescDeviceName.Validators[0].(func(string) error)
-	// appauthorizationDescPlatform is the schema descriptor for platform field.
-	appauthorizationDescPlatform := appauthorizationFields[4].Descriptor()
-	// appauthorization.DefaultPlatform holds the default value on creation for the platform field.
-	appauthorization.DefaultPlatform = appauthorizationDescPlatform.Default.(string)
-	// appauthorization.PlatformValidator is a validator for the "platform" field. It is called by the builders before save.
-	appauthorization.PlatformValidator = appauthorizationDescPlatform.Validators[0].(func(string) error)
-	// appauthorizationDescScopes is the schema descriptor for scopes field.
-	appauthorizationDescScopes := appauthorizationFields[5].Descriptor()
-	// appauthorization.DefaultScopes holds the default value on creation for the scopes field.
-	appauthorization.DefaultScopes = appauthorizationDescScopes.Default.(func() []string)
-	// appauthorizationDescTokenFamilyID is the schema descriptor for token_family_id field.
-	appauthorizationDescTokenFamilyID := appauthorizationFields[6].Descriptor()
-	// appauthorization.TokenFamilyIDValidator is a validator for the "token_family_id" field. It is called by the builders before save.
-	appauthorization.TokenFamilyIDValidator = func() func(string) error {
-		validators := appauthorizationDescTokenFamilyID.Validators
+	// appoauthgrantDescScopes is the schema descriptor for scopes field.
+	appoauthgrantDescScopes := appoauthgrantFields[3].Descriptor()
+	// appoauthgrant.DefaultScopes holds the default value on creation for the scopes field.
+	appoauthgrant.DefaultScopes = appoauthgrantDescScopes.Default.(func() []string)
+	// appoauthgrantDescGrantVersion is the schema descriptor for grant_version field.
+	appoauthgrantDescGrantVersion := appoauthgrantFields[5].Descriptor()
+	// appoauthgrant.DefaultGrantVersion holds the default value on creation for the grant_version field.
+	appoauthgrant.DefaultGrantVersion = appoauthgrantDescGrantVersion.Default.(int)
+	// appoauthgrant.GrantVersionValidator is a validator for the "grant_version" field. It is called by the builders before save.
+	appoauthgrant.GrantVersionValidator = appoauthgrantDescGrantVersion.Validators[0].(func(int) error)
+	// appoauthgrantDescFirstAuthorizedAt is the schema descriptor for first_authorized_at field.
+	appoauthgrantDescFirstAuthorizedAt := appoauthgrantFields[6].Descriptor()
+	// appoauthgrant.DefaultFirstAuthorizedAt holds the default value on creation for the first_authorized_at field.
+	appoauthgrant.DefaultFirstAuthorizedAt = appoauthgrantDescFirstAuthorizedAt.Default.(func() time.Time)
+	// appoauthgrantDescLastAuthorizedAt is the schema descriptor for last_authorized_at field.
+	appoauthgrantDescLastAuthorizedAt := appoauthgrantFields[7].Descriptor()
+	// appoauthgrant.DefaultLastAuthorizedAt holds the default value on creation for the last_authorized_at field.
+	appoauthgrant.DefaultLastAuthorizedAt = appoauthgrantDescLastAuthorizedAt.Default.(func() time.Time)
+	appoauthsessionMixin := schema.AppOAuthSession{}.Mixin()
+	appoauthsessionMixinFields0 := appoauthsessionMixin[0].Fields()
+	_ = appoauthsessionMixinFields0
+	appoauthsessionFields := schema.AppOAuthSession{}.Fields()
+	_ = appoauthsessionFields
+	// appoauthsessionDescCreatedAt is the schema descriptor for created_at field.
+	appoauthsessionDescCreatedAt := appoauthsessionMixinFields0[0].Descriptor()
+	// appoauthsession.DefaultCreatedAt holds the default value on creation for the created_at field.
+	appoauthsession.DefaultCreatedAt = appoauthsessionDescCreatedAt.Default.(func() time.Time)
+	// appoauthsessionDescUpdatedAt is the schema descriptor for updated_at field.
+	appoauthsessionDescUpdatedAt := appoauthsessionMixinFields0[1].Descriptor()
+	// appoauthsession.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	appoauthsession.DefaultUpdatedAt = appoauthsessionDescUpdatedAt.Default.(func() time.Time)
+	// appoauthsession.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	appoauthsession.UpdateDefaultUpdatedAt = appoauthsessionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// appoauthsessionDescSessionID is the schema descriptor for session_id field.
+	appoauthsessionDescSessionID := appoauthsessionFields[1].Descriptor()
+	// appoauthsession.SessionIDValidator is a validator for the "session_id" field. It is called by the builders before save.
+	appoauthsession.SessionIDValidator = func() func(string) error {
+		validators := appoauthsessionDescSessionID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(session_id string) error {
+			for _, fn := range fns {
+				if err := fn(session_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// appoauthsessionDescInstallationIDHash is the schema descriptor for installation_id_hash field.
+	appoauthsessionDescInstallationIDHash := appoauthsessionFields[2].Descriptor()
+	// appoauthsession.InstallationIDHashValidator is a validator for the "installation_id_hash" field. It is called by the builders before save.
+	appoauthsession.InstallationIDHashValidator = func() func(string) error {
+		validators := appoauthsessionDescInstallationIDHash.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(installation_id_hash string) error {
+			for _, fn := range fns {
+				if err := fn(installation_id_hash); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// appoauthsessionDescTokenFamilyID is the schema descriptor for token_family_id field.
+	appoauthsessionDescTokenFamilyID := appoauthsessionFields[3].Descriptor()
+	// appoauthsession.TokenFamilyIDValidator is a validator for the "token_family_id" field. It is called by the builders before save.
+	appoauthsession.TokenFamilyIDValidator = func() func(string) error {
+		validators := appoauthsessionDescTokenFamilyID.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
@@ -412,26 +466,22 @@ func init() {
 			return nil
 		}
 	}()
-	// appauthorizationDescStatus is the schema descriptor for status field.
-	appauthorizationDescStatus := appauthorizationFields[7].Descriptor()
-	// appauthorization.DefaultStatus holds the default value on creation for the status field.
-	appauthorization.DefaultStatus = appauthorizationDescStatus.Default.(string)
-	// appauthorization.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	appauthorization.StatusValidator = func() func(string) error {
-		validators := appauthorizationDescStatus.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(status string) error {
-			for _, fn := range fns {
-				if err := fn(status); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	// appoauthsessionDescDeviceName is the schema descriptor for device_name field.
+	appoauthsessionDescDeviceName := appoauthsessionFields[4].Descriptor()
+	// appoauthsession.DefaultDeviceName holds the default value on creation for the device_name field.
+	appoauthsession.DefaultDeviceName = appoauthsessionDescDeviceName.Default.(string)
+	// appoauthsession.DeviceNameValidator is a validator for the "device_name" field. It is called by the builders before save.
+	appoauthsession.DeviceNameValidator = appoauthsessionDescDeviceName.Validators[0].(func(string) error)
+	// appoauthsessionDescPlatform is the schema descriptor for platform field.
+	appoauthsessionDescPlatform := appoauthsessionFields[5].Descriptor()
+	// appoauthsession.DefaultPlatform holds the default value on creation for the platform field.
+	appoauthsession.DefaultPlatform = appoauthsessionDescPlatform.Default.(string)
+	// appoauthsession.PlatformValidator is a validator for the "platform" field. It is called by the builders before save.
+	appoauthsession.PlatformValidator = appoauthsessionDescPlatform.Validators[0].(func(string) error)
+	// appoauthsessionDescScopes is the schema descriptor for scopes field.
+	appoauthsessionDescScopes := appoauthsessionFields[6].Descriptor()
+	// appoauthsession.DefaultScopes holds the default value on creation for the scopes field.
+	appoauthsession.DefaultScopes = appoauthsessionDescScopes.Default.(func() []string)
 	authidentityMixin := schema.AuthIdentity{}.Mixin()
 	authidentityMixinFields0 := authidentityMixin[0].Fields()
 	_ = authidentityMixinFields0
