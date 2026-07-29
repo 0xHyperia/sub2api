@@ -31,7 +31,21 @@ jobs:
       - uses: actions/setup-node@v6
         with: {node-version: 20}
       - run: pnpm --dir frontend install --frozen-lockfile
-      - run: make test
+      - name: Backend unit tests
+        run: make test-unit
+        working-directory: backend
+      - name: Backend integration tests
+        run: make test-integration
+        working-directory: backend
+      - name: Backend lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.9
+          args: --timeout=30m
+          working-directory: backend
+          skip-cache: true
+      - name: Frontend checks
+        run: make test-frontend
       - run: make deploy-validate
 
   # Update VERSION file with tag version
