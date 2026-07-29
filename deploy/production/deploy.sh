@@ -37,8 +37,8 @@ if [[ $status != deployed && $initialize != true ]]; then
   set_env_value APP_IMAGE "$old_image"
   compose up -d --no-deps app || true
 fi
-printf '{"service":"%s","version":"%s","source_commit":"%s","previous_image":"%s","image":"%s","backup":"%s","status":"%s"}\n' \
-  "$SERVICE" "$version" "${SOURCE_COMMIT:-unknown}" "$old_image" "$target_image" "$backup" "$status" >"$record"
+printf '{"service":"%s","version":"%s","source_commit":"%s","deploy_commit":"%s","previous_image":"%s","image":"%s","backup":"%s","status":"%s"}\n' \
+  "$SERVICE" "$version" "${SOURCE_COMMIT:-unknown}" "${DEPLOY_COMMIT:-unknown}" "$old_image" "$target_image" "$backup" "$status" >"$record"
 chmod 600 "$record"
 if [[ $status != deployed ]]; then
   [[ $initialize == true ]] && die "initial deployment failed; data containers were left for diagnosis"
