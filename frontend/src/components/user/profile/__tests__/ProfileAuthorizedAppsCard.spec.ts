@@ -31,8 +31,8 @@ describe('ProfileAuthorizedAppsCard', () => {
     vi.clearAllMocks()
     mocks.list.mockResolvedValue([{
       id: 'grant-1',
-      client_id: 'zerobox-desktop',
-      client_name: 'ZeroBox',
+      client_id: 'zeroagent-desktop',
+      client_name: 'ZeroAgent',
       device_name: 'Workstation',
       platform: 'windows',
       scopes: ['profile:read'],

@@ -14,6 +14,8 @@ export interface AuthorizationRequestParams {
 
 export interface AuthorizationRequestResult {
   request_id: string
+  expires_in: number
+  authorization_uri: string
 }
 
 export interface AppAuthorizationContext {

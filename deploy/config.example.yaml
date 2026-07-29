@@ -990,13 +990,16 @@ distribution_tracking:
   cleanup_interval_minutes: 10
   cleanup_batch_size: 5000
 
-# ZeroBox/App OAuth tokens use a separate signing trust domain. If omitted,
+# ZeroAgent OAuth tokens use a separate signing trust domain. If omitted,
 # SUB2API generates and persists a random secret in the database on first boot.
 app_auth:
   signing_secret: ""
-  # Exact HTTPS ZeroBox Gateway callbacks. Loopback HTTP callbacks are accepted
+  # Exact HTTPS ZeroAgent Gateway callbacks. Loopback HTTP callbacks are accepted
   # only for local development and must use /api/auth/oauth/callback.
   web_redirect_uris: []
+  # Required when web_redirect_uris is non-empty. Prefer the
+  # ZEROAGENT_WEB_OAUTH_CLIENT_SECRET environment variable in production.
+  web_client_secret: ""
 
 # =============================================================================
 # TOTP (2FA) Configuration

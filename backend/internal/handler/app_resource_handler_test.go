@@ -18,9 +18,9 @@ func TestCreateAppKeyRejectsFieldsOtherThanName(t *testing.T) {
 		name string
 		body string
 	}{
-		{name: "group id override", body: `{"name":"ZeroBox","group_id":99}`},
-		{name: "custom key", body: `{"name":"ZeroBox","custom_key":"attacker"}`},
-		{name: "second json value", body: `{"name":"ZeroBox"}{"name":"second"}`},
+		{name: "group id override", body: `{"name":"ZeroAgent","group_id":99}`},
+		{name: "custom key", body: `{"name":"ZeroAgent","custom_key":"attacker"}`},
+		{name: "second json value", body: `{"name":"ZeroAgent"}{"name":"second"}`},
 		{name: "blank name", body: `{"name":"   "}`},
 	}
 	for _, tt := range tests {

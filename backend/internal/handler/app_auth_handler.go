@@ -52,7 +52,11 @@ func (h *AppAuthHandler) CreateAuthorizationRequest(c *gin.Context) {
 		writeOAuthError(c, err)
 		return
 	}
-	response.Success(c, gin.H{"request_id": created.RequestID})
+	c.JSON(http.StatusCreated, gin.H{
+		"request_id":        created.RequestID,
+		"expires_in":        int64(service.AuthorizationRequestTTL.Seconds()),
+		"authorization_uri": "/oauth/authorize?request_id=" + url.QueryEscape(created.RequestID),
+	})
 }
 
 func (h *AppAuthHandler) AuthorizationContext(c *gin.Context) {
@@ -61,7 +65,7 @@ func (h *AppAuthHandler) AuthorizationContext(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	client, _ := service.AppPublicClientByID(request.ClientID)
+	client, _ := service.AppOAuthClientByID(request.ClientID)
 	response.Success(c, gin.H{
 		"request_id": request.RequestID, "client_id": request.ClientID, "client_name": client.Name,
 		"device_name": request.DeviceName, "platform": request.Platform, "scopes": request.Scopes,
@@ -116,11 +120,16 @@ func (h *AppAuthHandler) Token(c *gin.Context) {
 	}
 	var token *service.AppTokenResponse
 	var err error
+	clientID, clientSecret, credentialErr := oauthClientCredentials(c)
+	if credentialErr != nil {
+		writeOAuthError(c, credentialErr)
+		return
+	}
 	switch c.PostForm("grant_type") {
 	case "authorization_code":
-		token, err = h.service.ExchangeAuthorizationCode(c.Request.Context(), c.PostForm("client_id"), c.PostForm("code"), c.PostForm("redirect_uri"), c.PostForm("code_verifier"))
+		token, err = h.service.ExchangeAuthorizationCode(c.Request.Context(), clientID, clientSecret, c.PostForm("code"), c.PostForm("redirect_uri"), c.PostForm("code_verifier"))
 	case "refresh_token":
-		token, err = h.service.Refresh(c.Request.Context(), c.PostForm("client_id"), c.PostForm("refresh_token"))
+		token, err = h.service.Refresh(c.Request.Context(), clientID, clientSecret, c.PostForm("refresh_token"))
 	default:
 		err = serviceOAuthError("unsupported_grant_type", "unsupported grant_type")
 	}
@@ -131,6 +140,19 @@ func (h *AppAuthHandler) Token(c *gin.Context) {
 	c.Header("Cache-Control", "no-store")
 	c.Header("Pragma", "no-cache")
 	c.JSON(http.StatusOK, token)
+}
+
+func oauthClientCredentials(c *gin.Context) (string, string, error) {
+	formClientID := strings.TrimSpace(c.PostForm("client_id"))
+	clientID, clientSecret, hasBasic := c.Request.BasicAuth()
+	clientID = strings.TrimSpace(clientID)
+	if hasBasic {
+		if formClientID != "" && formClientID != clientID {
+			return "", "", serviceOAuthError("invalid_client", "conflicting client credentials")
+		}
+		return clientID, clientSecret, nil
+	}
+	return formClientID, "", nil
 }
 
 func (h *AppAuthHandler) Revoke(c *gin.Context) {
@@ -163,7 +185,7 @@ func (h *AppAuthHandler) ListDevices(c *gin.Context) {
 	}
 	result := make([]gin.H, 0, len(devices))
 	for _, device := range devices {
-		client, _ := service.AppPublicClientByID(device.ClientID)
+		client, _ := service.AppOAuthClientByID(device.ClientID)
 		result = append(result, gin.H{
 			"id": device.ID, "client_id": device.ClientID, "client_name": client.Name,
 			"device_name": device.DeviceName, "platform": device.Platform, "scopes": device.Scopes,

@@ -28,8 +28,18 @@ vi.mock('@/api/appAuth', () => ({
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string, params?: Record<string, string>) =>
-      params?.app ? `${key}:${params.app}` : key
+    t: (key: string, params?: Record<string, string>) => {
+      if (key === 'appAuthorization.requestDescription') {
+        return `${params?.app} 正在请求访问您的 USA0 账户。`
+      }
+      const scopes: Record<string, string> = {
+        'appAuthorization.scopes.execution_authorize': '授权执行受保护操作',
+        'appAuthorization.scopes.profile_read': '查看您的个人资料',
+        'appAuthorization.scopes.profile_write': '更新您的个人资料',
+        'appAuthorization.scopes.usage_read': '查看您的用量信息'
+      }
+      return scopes[key] ?? key
+    }
   })
 }))
 
@@ -46,7 +56,7 @@ describe('AppAuthorizationView', () => {
   it('initializes raw OAuth parameters and sends an unauthenticated user to login with only request_id', async () => {
     mocks.query = {
       response_type: 'code',
-      client_id: 'zerobox-desktop',
+      client_id: 'zeroagent-desktop',
       redirect_uri: 'http://127.0.0.1:49152/oauth/callback',
       scope: 'profile:read keys:read',
       code_challenge: 'challenge',
@@ -61,7 +71,7 @@ describe('AppAuthorizationView', () => {
     await flushPromises()
 
     expect(mocks.createRequest).toHaveBeenCalledWith(expect.objectContaining({
-      client_id: 'zerobox-desktop',
+      client_id: 'zeroagent-desktop',
       state: 'opaque-state',
       device_name: 'Workstation'
     }))
@@ -81,19 +91,26 @@ describe('AppAuthorizationView', () => {
     mocks.query = { request_id: 'request-456' }
     mocks.getContext.mockResolvedValue({
       request_id: 'request-456',
-      client_id: 'zerobox-desktop',
-      client_name: 'ZeroBox',
+      client_id: 'zeroagent-desktop',
+      client_name: 'ZeroAgent',
       device_name: 'Workstation',
       platform: 'windows',
-      scopes: ['profile:read', 'keys:write']
+      scopes: ['execution:authorize', 'profile:read', 'profile:write', 'usage:read']
     })
     mocks.submitDecision.mockReturnValue(new Promise(() => undefined))
 
     const wrapper = mount(AppAuthorizationView)
     await flushPromises()
 
-    expect(wrapper.text()).toContain('ZeroBox')
-    expect(wrapper.text()).toContain('profile:read')
+    expect(wrapper.text()).toContain('ZeroAgent')
+    expect(wrapper.text()).toContain('ZeroAgent 正在请求访问您的 USA0 账户。')
+    expect(wrapper.text()).toContain('授权执行受保护操作')
+    expect(wrapper.text()).toContain('查看您的个人资料')
+    expect(wrapper.text()).toContain('更新您的个人资料')
+    expect(wrapper.text()).toContain('查看您的用量信息')
+    expect(wrapper.text()).not.toContain('execution:authorize')
+    expect(wrapper.text()).not.toContain('profile:write')
+    expect(wrapper.text()).not.toContain('usage:read')
     await wrapper.get('button.btn-secondary').trigger('click')
 
     expect(mocks.submitDecision).toHaveBeenCalledWith('request-456', 'deny')
@@ -104,8 +121,8 @@ describe('AppAuthorizationView', () => {
     mocks.query = { request_id: 'request-789' }
     mocks.getContext.mockResolvedValue({
       request_id: 'request-789',
-      client_id: 'zerobox-desktop',
-      client_name: 'ZeroBox',
+      client_id: 'zeroagent-desktop',
+      client_name: 'ZeroAgent',
       device_name: 'Workstation',
       platform: 'windows',
       scopes: ['profile:read']

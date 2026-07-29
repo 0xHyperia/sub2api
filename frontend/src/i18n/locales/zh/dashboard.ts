@@ -630,7 +630,7 @@ export default {
   appAuthorization: {
     pageTitle: '应用授权',
     title: '连接应用',
-    requestDescription: '{app} 正在请求访问您的 SUB2API 账户。',
+    requestDescription: '{app} 正在请求访问您的 USA0 账户。',
     device: '设备',
     platform: '平台',
     unknownDevice: '未知设备',
@@ -643,12 +643,14 @@ export default {
     loadFailed: '无法加载授权请求。',
     decisionFailed: '无法完成授权。',
     scopes: {
-      openid: '识别您的 SUB2API 账户',
       profile_read: '查看您的个人资料',
+      profile_write: '更新您的个人资料',
+      usage_read: '查看您的用量信息',
       groups_read: '查看可用分组',
       keys_read: '查看您的 API 密钥',
       keys_write: '创建 API 密钥',
       subscriptions_read: '查看您的订阅',
+      execution_authorize: '授权执行受保护操作',
       offline_access: '应用关闭后仍保持连接'
     }
   },

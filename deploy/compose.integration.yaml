@@ -54,6 +54,7 @@ services:
       JWT_SECRET: ${SUB2API_JWT_SECRET:?required}
       TOTP_ENCRYPTION_KEY: ${SUB2API_TOTP_KEY:?required}
       DISTRIBUTION_TRACKING_HASH_SECRETS: ${SUB2API_TRACKING_SECRET:?required}
+      ZEROAGENT_WEB_OAUTH_CLIENT_SECRET: ${ZEROAGENT_WEB_OAUTH_CLIENT_SECRET:?required}
     depends_on:
       sub2api-postgres: {condition: service_healthy}
       sub2api-redis: {condition: service_healthy}

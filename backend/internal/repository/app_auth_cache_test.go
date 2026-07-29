@@ -33,7 +33,7 @@ func TestAppAuthRefreshRotationIsAtomicAndDetectsReuse(t *testing.T) {
 	t.Cleanup(func() { _ = rdb.Close() })
 	cache := NewAppAuthCache(rdb)
 	ctx := context.Background()
-	record := &service.AppRefreshTokenRecord{UserID: 42, ClientID: "zerobox-desktop", GrantID: "grant", FamilyID: "family"}
+	record := &service.AppRefreshTokenRecord{UserID: 42, ClientID: "zeroagent-desktop", GrantID: "grant", FamilyID: "family"}
 	require.NoError(t, cache.PutRefreshToken(ctx, "old", record, time.Hour))
 
 	results := make(chan service.RefreshRotationResult, 2)

@@ -11,7 +11,7 @@
               {{ t('appAuthorization.title') }}
             </h1>
             <p class="mt-1 truncate text-sm text-foreground-muted">
-              {{ context?.client_name || context?.client_id || 'ZeroBox' }}
+              {{ context?.client_name || context?.client_id || 'ZeroAgent' }}
             </p>
           </div>
         </div>

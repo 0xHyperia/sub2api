@@ -25,7 +25,7 @@ func validateAppAuthorizationStatus(value string) error {
 	return fmt.Errorf("invalid app authorization status %q", value)
 }
 
-// AppAuthorization represents one user-approved public-client device grant.
+// AppAuthorization represents one user-approved ZeroAgent OAuth grant.
 type AppAuthorization struct {
 	ent.Schema
 }

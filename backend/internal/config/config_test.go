@@ -61,12 +61,14 @@ func TestLoadRedisUsernameFromEnvironment(t *testing.T) {
 func TestLoadAppAuthWebRedirectURIsFromEnvironment(t *testing.T) {
 	resetViperWithJWTSecret(t)
 	t.Setenv("APP_AUTH_WEB_REDIRECT_URIS", " https://one.example/api/auth/oauth/callback,https://two.example/api/auth/oauth/callback ")
+	t.Setenv("ZEROAGENT_WEB_OAUTH_CLIENT_SECRET", "zeroagent-test-web-client-secret-32-bytes")
 	cfg, err := Load()
 	require.NoError(t, err)
 	require.Equal(t, []string{
 		"https://one.example/api/auth/oauth/callback",
 		"https://two.example/api/auth/oauth/callback",
 	}, cfg.AppAuth.WebRedirectURIs)
+	require.Equal(t, "zeroagent-test-web-client-secret-32-bytes", cfg.AppAuth.WebClientSecret)
 }
 
 func TestLoadHTTPIngressSafetyDefaults(t *testing.T) {

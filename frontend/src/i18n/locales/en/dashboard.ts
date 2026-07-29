@@ -625,7 +625,7 @@ export default {
   appAuthorization: {
     pageTitle: 'Authorize application',
     title: 'Connect an application',
-    requestDescription: '{app} is requesting access to your SUB2API account.',
+    requestDescription: '{app} is requesting access to your USA0 account.',
     device: 'Device',
     platform: 'Platform',
     unknownDevice: 'Unknown device',
@@ -638,12 +638,14 @@ export default {
     loadFailed: 'Failed to load the authorization request.',
     decisionFailed: 'Failed to complete authorization.',
     scopes: {
-      openid: 'Identify your SUB2API account',
       profile_read: 'View your profile',
+      profile_write: 'Update your profile',
+      usage_read: 'View your usage',
       groups_read: 'View available groups',
       keys_read: 'View your API keys',
       keys_write: 'Create API keys',
       subscriptions_read: 'View your subscriptions',
+      execution_authorize: 'Authorize protected actions',
       offline_access: 'Stay connected when the application is closed'
     }
   },
