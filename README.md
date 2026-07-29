@@ -18,7 +18,7 @@ English | [中文](README_CN.md) | [日本語](README_JA.md)
 
 ## USA0 Maintained Fork
 
-This repository is the USA0-maintained distribution of Sub2API. The `v1.0.7` release line is synchronized with official Sub2API `v0.1.161` while retaining the redesigned home, authentication, and admin UI, ZeroBox application authorization, semantic theme system, and responsive user and admin workspaces.
+This repository is the USA0-maintained distribution of Sub2API. The `v1.0.9` release line is synchronized with official Sub2API `v0.1.166` while retaining the redesigned home, authentication, and admin UI, ZeroAgent application authorization, managed software center, semantic theme system, and responsive user and admin workspaces.
 
 USA0 uses its own `v1.x` release tags. The corresponding official baseline and merge status are documented in [UPSTREAM.md](UPSTREAM.md).
 
