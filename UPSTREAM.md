@@ -2,6 +2,14 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## USA0 v1.0.10
+
+- 发布版本：v1.0.10
+- 官方基线版本：v0.1.166（`dc893dd0b8eab41df5be595ae9fcd1aa74a062b8`）
+- 上一 USA0 版本：v1.0.9
+- 发布范围：将应用授权拆分为用户授权与设备会话，支持查看、重命名和单独撤销 ZeroAgent 设备，并新增迁移 `206_rebuild_app_oauth_grants.sql`
+- 记录日期：2026-07-30
+
 ## 官方 v0.1.166 同步（已合并）
 
 - 集成分支：`codex/merge-upstream-v0.1.166`
