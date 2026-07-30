@@ -165,9 +165,11 @@ const SUCCESS_STATUSES = new Set(['COMPLETED', 'PAID', 'RECHARGING'])
 const PENDING_STATUSES = new Set(['PENDING', 'CREATED', 'WAITING', 'PROCESSING'])
 const STATUS_REFRESH_INTERVAL_MS = 2000
 const STATUS_REFRESH_MAX_ATTEMPTS = 15
+const UPSTREAM_VERIFY_INTERVAL_MS = 5000
 
 let statusRefreshTimer: ReturnType<typeof setTimeout> | null = null
 let refreshOrderAction: (() => Promise<ResolvedOrder | null>) | null = null
+let lastUpstreamVerifyAt = 0
 const refreshAttempts = ref(0)
 
 /** 充值金额 = pay_amount / (1 + fee_rate/100)，fee_rate=0 时等于 pay_amount */
@@ -337,6 +339,22 @@ async function resolveOrderFromOutTradeNo(outTradeNo: string): Promise<ResolvedO
   }
 }
 
+async function verifyPendingOrder(nextOrder: ResolvedOrder | null, fallbackOutTradeNo = ''): Promise<ResolvedOrder | null> {
+  const status = normalizeOrderStatus(nextOrder?.status)
+  if (!nextOrder || (!isPendingStatus(status) && status !== 'EXPIRED')) return nextOrder
+  const outTradeNo = String(nextOrder.out_trade_no || fallbackOutTradeNo).trim()
+  const now = Date.now()
+  if (!outTradeNo || now - lastUpstreamVerifyAt < UPSTREAM_VERIFY_INTERVAL_MS) return nextOrder
+
+  lastUpstreamVerifyAt = now
+  try {
+    const result = await paymentAPI.verifyOrder(outTradeNo)
+    return result.data ?? nextOrder
+  } catch (_err: unknown) {
+    return nextOrder
+  }
+}
+
 function clearStatusRefreshTimer(): void {
   if (statusRefreshTimer !== null) {
     clearTimeout(statusRefreshTimer)
@@ -447,7 +465,8 @@ onMounted(async () => {
 
   if (!order.value && orderId && (!resumeToken || routeOrderId > 0)) {
     try {
-      setResolvedOrder(await paymentStore.pollOrderStatus(orderId))
+      const persistedOrder = await paymentStore.pollOrderStatus(orderId)
+      setResolvedOrder(await verifyPendingOrder(persistedOrder, outTradeNo))
     } catch (_err: unknown) {
       // Order lookup failed, will try legacy fallback below when possible.
     }
@@ -482,7 +501,8 @@ onMounted(async () => {
 
     if (orderId) {
       try {
-        return await paymentStore.pollOrderStatus(orderId)
+        const persistedOrder = await paymentStore.pollOrderStatus(orderId)
+        return await verifyPendingOrder(persistedOrder, outTradeNo)
       } catch (_err: unknown) {
         // Fall through to legacy public verification when order polling is unavailable.
       }

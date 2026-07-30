@@ -306,6 +306,54 @@ describe('PaymentResultView', () => {
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toBeNull()
   })
 
+  it('actively verifies a pending order returned by order_id polling', async () => {
+    routeState.query = {
+      order_id: '42',
+    }
+    pollOrderStatus.mockResolvedValueOnce(orderFactory('PENDING'))
+    verifyOrder.mockResolvedValueOnce({
+      data: orderFactory('COMPLETED'),
+    })
+
+    const wrapper = mount(PaymentResultView, {
+      global: {
+        stubs: {
+          OrderStatusBadge: true,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(pollOrderStatus).toHaveBeenCalledWith(42)
+    expect(verifyOrder).toHaveBeenCalledWith('sub2_20260420abcd1234')
+    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.text()).not.toContain('payment.result.processing')
+  })
+
+  it('actively verifies an expired order in case the provider callback was missed', async () => {
+    routeState.query = {
+      order_id: '42',
+    }
+    pollOrderStatus.mockResolvedValueOnce(orderFactory('EXPIRED'))
+    verifyOrder.mockResolvedValueOnce({
+      data: orderFactory('COMPLETED'),
+    })
+
+    const wrapper = mount(PaymentResultView, {
+      global: {
+        stubs: {
+          OrderStatusBadge: true,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(verifyOrder).toHaveBeenCalledWith('sub2_20260420abcd1234')
+    expect(wrapper.text()).toContain('payment.result.success')
+  })
+
   it('falls back to public out_trade_no verification when resume_token recovery fails in legacy return flows', async () => {
     routeState.query = {
       resume_token: 'resume-fail',

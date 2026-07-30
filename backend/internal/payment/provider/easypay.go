@@ -254,13 +254,18 @@ func (e *EasyPay) upstreamPaymentType(paymentType string) string {
 }
 
 func (e *EasyPay) QueryOrder(ctx context.Context, tradeNo string) (*payment.QueryOrderResponse, error) {
-	params := map[string]string{
-		"act": "order", "pid": e.config["pid"],
-		"key": e.config["pkey"], "out_trade_no": tradeNo,
+	params := url.Values{
+		"act":          {"order"},
+		"pid":          {e.config["pid"]},
+		"key":          {e.config["pkey"]},
+		"out_trade_no": {tradeNo},
 	}
-	body, err := e.post(ctx, e.apiBase()+"/api.php", params)
+	body, statusCode, err := e.getRaw(ctx, e.apiBase()+"/api.php", params)
 	if err != nil {
 		return nil, fmt.Errorf("easypay query: %w", err)
+	}
+	if statusCode < http.StatusOK || statusCode >= http.StatusMultipleChoices {
+		return nil, fmt.Errorf("easypay query HTTP %d: %s", statusCode, summarizeEasyPayResponse(body))
 	}
 	type easyPayQueryData struct {
 		TradeStatus *string `json:"trade_status"`
@@ -269,7 +274,7 @@ func (e *EasyPay) QueryOrder(ctx context.Context, tradeNo string) (*payment.Quer
 		TradeNo     *string `json:"trade_no"`
 	}
 	var resp struct {
-		Code        int              `json:"code"`
+		Code        any              `json:"code"`
 		Msg         string           `json:"msg"`
 		TradeStatus *string          `json:"trade_status"`
 		Status      *int             `json:"status"`
@@ -279,6 +284,13 @@ func (e *EasyPay) QueryOrder(ctx context.Context, tradeNo string) (*payment.Quer
 	}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("easypay parse query: %w", err)
+	}
+	if !easyPayResponseCodeIsSuccess(resp.Code) {
+		msg := strings.TrimSpace(resp.Msg)
+		if msg == "" {
+			msg = summarizeEasyPayResponse(body)
+		}
+		return nil, fmt.Errorf("easypay query failed: %s", msg)
 	}
 	status := payment.ProviderStatusPending
 	if resp.TradeStatus != nil {
@@ -510,6 +522,35 @@ func (e *EasyPay) postRaw(ctx context.Context, endpoint string, params map[strin
 		return nil, 0, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	client := e.httpClient
+	if client == nil {
+		client = &http.Client{Timeout: easypayHTTPTimeout}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		if urlErr, ok := err.(*url.Error); ok {
+			return nil, 0, fmt.Errorf("%s request failed: %w", urlErr.Op, urlErr.Err)
+		}
+		return nil, 0, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxEasypayResponseSize))
+	if err != nil {
+		return nil, resp.StatusCode, err
+	}
+	return body, resp.StatusCode, nil
+}
+
+func (e *EasyPay) getRaw(ctx context.Context, endpoint string, params url.Values) ([]byte, int, error) {
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, 0, err
+	}
+	parsed.RawQuery = params.Encode()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.String(), nil)
+	if err != nil {
+		return nil, 0, err
+	}
 	client := e.httpClient
 	if client == nil {
 		client = &http.Client{Timeout: easypayHTTPTimeout}

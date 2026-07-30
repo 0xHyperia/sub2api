@@ -567,7 +567,7 @@ func TestCancelOrderStillClosesUnpaidUpstreamOrder(t *testing.T) {
 	require.Equal(t, OrderStatusCancelled, reloaded.Status)
 }
 
-func TestReconcilePendingWxpayOrdersBackfillsPaidOrder(t *testing.T) {
+func TestReconcilePendingProviderOrdersBackfillsPaidWxpayOrder(t *testing.T) {
 	ctx := context.Background()
 	client := newPaymentOrderLifecycleTestClient(t)
 
@@ -655,7 +655,7 @@ func TestReconcilePendingWxpayOrdersBackfillsPaidOrder(t *testing.T) {
 		providersLoaded: true,
 	}
 
-	recovered, err := svc.ReconcilePendingWxpayOrders(ctx)
+	recovered, err := svc.ReconcilePendingProviderOrders(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, recovered)
 	require.Equal(t, order.OutTradeNo, provider.lastQueryTradeNo)
@@ -667,6 +667,59 @@ func TestReconcilePendingWxpayOrdersBackfillsPaidOrder(t *testing.T) {
 	require.Equal(t, "wxpay-upstream-trade-123", reloaded.PaymentTradeNo)
 	require.Equal(t, 50.0, userRepo.getByIDUser.Balance)
 	require.Len(t, redeemRepo.useCalls, 1)
+}
+
+func TestReconcilePendingProviderOrdersQueriesEasyPayOrders(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentOrderLifecycleTestClient(t)
+
+	user, err := client.User.Create().
+		SetEmail("easypay-reconcile@example.com").
+		SetPasswordHash("hash").
+		SetUsername("easypay-reconcile-user").
+		Save(ctx)
+	require.NoError(t, err)
+
+	order, err := client.PaymentOrder.Create().
+		SetUserID(user.ID).
+		SetUserEmail(user.Email).
+		SetUserName(user.Username).
+		SetAmount(10).
+		SetPayAmount(10).
+		SetFeeRate(0).
+		SetRechargeCode("EASYPAY-RECONCILE").
+		SetOutTradeNo("sub2_easypay_reconcile").
+		SetPaymentType(payment.TypeAlipay).
+		SetProviderKey(payment.TypeEasyPay).
+		SetPaymentTradeNo("").
+		SetOrderType(payment.OrderTypeBalance).
+		SetStatus(OrderStatusPending).
+		SetExpiresAt(time.Now().Add(time.Hour)).
+		SetClientIP("127.0.0.1").
+		SetSrcHost("api.example.com").
+		Save(ctx)
+	require.NoError(t, err)
+
+	registry := payment.NewRegistry()
+	provider := &paymentOrderLifecycleQueryProvider{
+		key: payment.TypeEasyPay,
+		resp: &payment.QueryOrderResponse{
+			TradeNo: order.OutTradeNo,
+			Status:  payment.ProviderStatusPending,
+		},
+	}
+	registry.Register(provider)
+
+	svc := &PaymentService{
+		entClient:       client,
+		registry:        registry,
+		providersLoaded: true,
+	}
+
+	recovered, err := svc.ReconcilePendingProviderOrders(ctx)
+	require.NoError(t, err)
+	require.Zero(t, recovered)
+	require.Equal(t, order.OutTradeNo, provider.lastQueryTradeNo)
 }
 
 func TestVerifyOrderByOutTradeNoUsesOutTradeNoWhenPaymentTradeNoAlreadyExistsForAlipay(t *testing.T) {
