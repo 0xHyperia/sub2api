@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"testing"
 	"time"
 
@@ -679,6 +680,14 @@ func TestReconcilePendingProviderOrdersQueriesEasyPayOrders(t *testing.T) {
 		SetUsername("easypay-reconcile-user").
 		Save(ctx)
 	require.NoError(t, err)
+	instance, err := client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeEasyPay).
+		SetName("easypay-reconcile-provider").
+		SetConfig("{}").
+		SetSupportedTypes(payment.TypeAlipay).
+		SetEnabled(true).
+		Save(ctx)
+	require.NoError(t, err)
 
 	order, err := client.PaymentOrder.Create().
 		SetUserID(user.ID).
@@ -697,6 +706,7 @@ func TestReconcilePendingProviderOrdersQueriesEasyPayOrders(t *testing.T) {
 		SetExpiresAt(time.Now().Add(time.Hour)).
 		SetClientIP("127.0.0.1").
 		SetSrcHost("api.example.com").
+		SetProviderInstanceID(strconv.FormatInt(instance.ID, 10)).
 		Save(ctx)
 	require.NoError(t, err)
 
@@ -709,10 +719,12 @@ func TestReconcilePendingProviderOrdersQueriesEasyPayOrders(t *testing.T) {
 		},
 	}
 	registry.Register(provider)
+	t.Cleanup(replacePaymentProviderFactoryForTest(t, provider))
 
 	svc := &PaymentService{
 		entClient:       client,
 		registry:        registry,
+		loadBalancer:    &captureLoadBalancer{},
 		providersLoaded: true,
 	}
 
