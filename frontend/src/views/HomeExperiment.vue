@@ -479,18 +479,17 @@ import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
 import { useTheme } from '@/composables/useTheme'
 import type { GroupPlatform } from '@/types'
 import { platformLabel } from '@/utils/platformColors'
-import { useAppStore } from '@/stores/app'
 
 const props = defineProps<{
   siteName: string
   siteSubtitle: string
   isAuthenticated: boolean
   dashboardPath: string
+  softwareCenterEnabled?: boolean
 }>()
 
 const brandName = computed(() => props.siteName || 'USA-零')
-const appStore = useAppStore()
-const softwareCenterEnabled = computed(() => appStore.cachedPublicSettings?.software_center_enabled !== false)
+const softwareCenterEnabled = computed(() => props.softwareCenterEnabled !== false)
 const heroEyebrowText = 'Unified Service API'
 const subtitle = computed(() => props.siteSubtitle || '统一 OpenAI、Claude、Gemini 等不同接口，把多模型调用规范成一个稳定、可计量、可治理的标准 API。')
 const entryPath = computed(() => props.isAuthenticated ? props.dashboardPath : '/login')

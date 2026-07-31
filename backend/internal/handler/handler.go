@@ -65,9 +65,11 @@ type Handlers struct {
 	Setting          *SettingHandler
 	Totp             *TotpHandler
 	ExecutionStepUp  *ExecutionStepUpHandler
+	Passkey          *PasskeyHandler
 	Payment          *PaymentHandler
 	PaymentWebhook   *PaymentWebhookHandler
 	AvailableChannel *AvailableChannelHandler
+	ModelPlaza       *ModelPlazaHandler
 	AsyncImage       *AsyncImageHandler
 	BatchImage       *BatchImageHandler
 	AppAuth          *AppAuthHandler

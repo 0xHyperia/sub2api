@@ -2,6 +2,46 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.1.169 同步（本地集成完成）
+
+- 集成分支：`codex/merge-upstream-v0.1.169`
+- 官方目标版本：v0.1.169
+- 官方目标提交：`26d894ef4f50645a4bf1030e378ac892f17d0223`
+- 上一官方基线：v0.1.166（`dc893dd0b8eab41df5be595ae9fcd1aa74a062b8`）
+- 集成前 USA0 提交：`0e6a554deb32f2859e7406b9fe81bf63506c9262`
+- USA0 当前版本：v1.0.11
+- 同步状态：已完成本地上游合并、冲突解决、USA0 适配和完整代码验证；尚未推送，尚未合入 `usa0/main`，尚未创建 USA0 发布 tag
+- 记录日期：2026-07-31
+
+### 同步范围
+
+- 从官方 v0.1.166 同步至 v0.1.169，共纳入 74 个上游提交、228 个官方变更文件。
+- 新增 Passkey/WebAuthn 注册、登录、凭据管理、管理员开关和部署配置，并为反向代理来源、RP ID 与 Origin 增加校验和测试。
+- 新增独立公开 Model Plaza（`/model-plaza`），按平台、分组、倍率和模型名筛选并展示用户实付价、官方参考价、阶梯价与缓存价格。
+- 新增 Optional JWT 中间件，公开接口可在匿名访问与已登录个性化数据之间安全切换；用户与 API Key 更新改为字段级更新，避免并发请求覆盖未修改字段。
+- 加固上游 URL 路径校验、OAuth/会话撤销、审计日志和 Prompt Audit 配置边界；代理流熔断在状态异常时 fail-open，减少错误阻断正常流量。
+- 修复 SMTP 邮件消息构造、Gemini 上游 URL、Claude/OpenAI 兼容与用量归因，并更新模型价格、容器资源限制及发布构建配置。
+
+### 保留与适配的 USA0 内容
+
+- 31 个文本冲突均按业务语义合并；保留 USA0 App JWT/ZeroBox、用户授权与设备会话、工单、分销、支付、模型监控、软件中心和对应路由/门控。
+- 保留用户模型市场 `/model-marketplace`，官方新增 Model Plaza 独立使用 `/model-plaza`；两者的数据口径、访问路径和功能开关不互相覆盖。
+- Wire 保留 USA0 `ProvideAuthService` 的分销依赖并接入 Passkey、Model Plaza、Optional JWT；移除重复 `NewAuthService` provider 后重新生成，App JWT、工单、分销、模型监控和软件中心依赖均在生成结果中保留。
+- Passkey、Model Plaza 和新增设置界面全部迁入 USA0 语义设计令牌、响应式及无障碍约束；首页的软件中心开关由已有公开设置显式传入，避免展示组件脱离 Pinia 上下文时失败。
+- 保留 USA0 `VERSION` 为已发布的 `1.0.11`；未提前推断下一发布版本。
+- 官方 Passkey 迁移原编号 `191` 与 USA0 已发布迁移冲突，SQL 内容保持不变并改为 `207_passkey_credentials.sql`；最新迁移区间 `176` 至 `207` 编号唯一。
+- Ent 与 Wire 从合并后的 schema/provider 重新生成，未发现未暂存生成漂移。
+
+### 验证结果
+
+- `go generate ./ent` 与 `go generate ./cmd/server` 通过；后端 `go test ./...`、`go test -tags=unit ./...` 通过，`golangci-lint run ./...` 为 0 issues。
+- 前端 `pnpm run test:run` 共 289 个测试文件、1809 项测试通过；Passkey、Model Plaza、首页、语义令牌和 Toggle 无障碍定向测试通过。
+- 前端 `pnpm run lint:check` 为 0 errors、1 条既有 warning，`pnpm run typecheck` 与 `pnpm run build` 通过；构建仅保留既有动态导入与大 chunk 警告。
+- `git diff --check` 通过，无未解决 Git 冲突；源码冲突标记扫描通过，迁移 `176` 至 `207` 前缀唯一。
+- 本次仅准备本地集成提交，未运行 Docker 服务替换或登录态浏览器复核；不得将运行时健康检查、桌面/移动视觉或生产发布表述为已验证。
+
+---
+
 ## USA0 v1.0.11
 
 - 发布版本：v1.0.11

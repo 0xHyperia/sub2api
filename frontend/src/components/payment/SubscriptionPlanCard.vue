@@ -8,9 +8,14 @@
     ]"
   >
     <div class="flex min-w-0 items-start justify-between gap-3">
-      <div class="min-w-0">
-        <div class="flex min-w-0 flex-wrap items-center gap-2">
-          <h3 class="break-words text-base font-semibold text-foreground">{{ plan.name }}</h3>
+      <div class="min-w-0 flex-1">
+        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <h3
+            :title="plan.name"
+            class="h-12 min-w-0 flex-1 break-words [overflow-wrap:anywhere] text-base font-bold leading-6 text-foreground line-clamp-2"
+          >
+            {{ plan.name }}
+          </h3>
           <span :class="['badge shrink-0', badgeLightClass]">
             {{ pLabel }}
           </span>

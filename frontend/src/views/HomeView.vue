@@ -82,6 +82,7 @@
     :site-subtitle="siteSubtitle"
     :is-authenticated="isAuthenticated"
     :dashboard-path="dashboardPath"
+    :software-center-enabled="softwareCenterEnabled"
   />
 </template>
 
@@ -115,6 +116,9 @@ const sanitizedHomeContent = computed(() => sanitizeHomeHtml(homeContent.value))
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const dashboardPath = computed(() => authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+const softwareCenterEnabled = computed(
+  () => appStore.cachedPublicSettings?.software_center_enabled !== false
+)
 
 function sanitizeHomeHtml(content: string): string {
   const sanitized = DOMPurify.sanitize(content, {

@@ -238,7 +238,7 @@
                         <EmptyState :title="t('payment.noPlans')" />
                       </div>
 
-                      <div v-else data-testid="subscription-plan-grid" :class="['plan-grid mt-4', planGridClass]">
+                      <div v-else data-testid="subscription-plan-grid" :class="['plan-grid mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3', planGridClass]">
                         <SubscriptionPlanCard
                           v-for="plan in checkout.plans"
                           :key="plan.id"
