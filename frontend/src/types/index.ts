@@ -253,6 +253,7 @@ export interface PublicSettings {
 	software_center_enabled: boolean
   model_marketplace_enabled: boolean
   model_monitor_enabled: boolean
+  model_marketplace_performance_visible: boolean
   contact_us_enabled: boolean
   contact_qq_enabled: boolean
   contact_qq_name: string

@@ -21,12 +21,36 @@ func NewModelMonitorHandler(modelMonitorService *service.ModelMonitorService, se
 }
 
 func (h *ModelMonitorHandler) List(c *gin.Context) {
-	rows, err := h.service.ListRows(c.Request.Context())
+	resolution := service.ModelMonitorResolution(strings.ToLower(strings.TrimSpace(c.DefaultQuery("resolution", "minute"))))
+	rows, err := h.service.ListRows(c.Request.Context(), resolution)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 	response.Success(c, gin.H{"items": rows})
+}
+
+type modelMonitorGroupConfigRequest struct {
+	Platform        string `json:"platform" binding:"required"`
+	Model           string `json:"model" binding:"required"`
+	GroupID         int64  `json:"group_id" binding:"required"`
+	Enabled         bool   `json:"enabled"`
+	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
+}
+
+func (h *ModelMonitorHandler) ConfigureGroup(c *gin.Context) {
+	var req modelMonitorGroupConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		return
+	}
+	subject, _ := middleware2.GetAuthSubjectFromContext(c)
+	m, err := h.service.ConfigureGroup(c.Request.Context(), req.Platform, req.Model, req.GroupID, req.Enabled, req.IntervalSeconds, subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		return
+	}
+	response.Success(c, m)
 }
 
 type modelMonitorConfigRequest struct {
@@ -77,6 +101,7 @@ func (h *ModelMonitorHandler) ConfigureGroups(c *gin.Context) {
 type modelMonitorRunRequest struct {
 	Platform string `json:"platform" binding:"required"`
 	Model    string `json:"model" binding:"required"`
+	GroupID  int64  `json:"group_id"`
 }
 
 func (h *ModelMonitorHandler) Run(c *gin.Context) {
@@ -90,7 +115,13 @@ func (h *ModelMonitorHandler) Run(c *gin.Context) {
 		return
 	}
 	subject, _ := middleware2.GetAuthSubjectFromContext(c)
-	result, err := h.service.RunByKey(c.Request.Context(), strings.TrimSpace(req.Platform), strings.TrimSpace(req.Model), subject.UserID)
+	var result *service.ModelMonitorHistory
+	var err error
+	if req.GroupID > 0 {
+		result, err = h.service.RunGroupByKey(c.Request.Context(), strings.TrimSpace(req.Platform), strings.TrimSpace(req.Model), req.GroupID, subject.UserID)
+	} else {
+		result, err = h.service.RunByKey(c.Request.Context(), strings.TrimSpace(req.Platform), strings.TrimSpace(req.Model), subject.UserID)
+	}
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

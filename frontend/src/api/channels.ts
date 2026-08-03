@@ -85,6 +85,27 @@ export interface UserModelMonitorSummary {
   timeline: UserModelMonitorTimelinePoint[]
   display_order: number
   label: string
+  groups?: UserModelMonitorGroupMetrics[]
+  metrics?: UserModelMonitorGroupMetrics['metrics'] | null
+  hourly_metrics?: UserModelMonitorGroupMetrics['metrics'] | null
+}
+
+export interface UserModelMonitorMetricBucket {
+  started_at: string
+  success_rate: number | null
+  ttft_ms: number | null
+}
+
+export interface UserModelMonitorGroupMetrics {
+  group_id: number
+  name: string
+  metrics: {
+    tps: number | null
+    ttft_ms: number | null
+    average_latency_ms: number | null
+    success_rate: number | null
+    buckets: UserModelMonitorMetricBucket[]
+  }
 }
 
 export interface UserMarketplacePlatform {
@@ -119,9 +140,10 @@ export async function getAvailable(options?: { signal?: AbortSignal }): Promise<
 }
 
 /** List the current user's model marketplace catalog. */
-export async function getMarketplace(options?: { signal?: AbortSignal }): Promise<UserMarketplacePlatform[]> {
+export async function getMarketplace(options?: { signal?: AbortSignal; resolution?: 'minute' | 'hour' }): Promise<UserMarketplacePlatform[]> {
   const { data } = await apiClient.get<UserMarketplacePlatform[]>('/models/marketplace', {
-    signal: options?.signal
+    signal: options?.signal,
+    params: { resolution: options?.resolution ?? 'hour' },
   })
   return data
 }

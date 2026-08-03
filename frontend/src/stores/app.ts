@@ -371,6 +371,7 @@ export const useAppStore = defineStore('app', () => {
 		software_center_enabled: true,
         model_marketplace_enabled: false,
         model_monitor_enabled: false,
+        model_marketplace_performance_visible: true,
         contact_us_enabled: false,
         contact_qq_enabled: false,
         contact_qq_name: '',

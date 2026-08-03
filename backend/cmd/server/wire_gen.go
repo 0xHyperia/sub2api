@@ -260,7 +260,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	channelHandler := admin.NewChannelHandler(channelService, billingService, pricingService)
 	channelMonitorHandler := admin.NewChannelMonitorHandler(channelMonitorService)
 	modelMonitorRepository := repository.NewModelMonitorRepository(db)
-	modelMonitorService := service.NewModelMonitorService(modelMonitorRepository, groupRepository, accountRepository, accountTestService, gatewayService, openAIGatewayService)
+	modelMonitorService := service.NewModelMonitorService(modelMonitorRepository, groupRepository, accountRepository, accountTestService, gatewayService, openAIGatewayService, billingService, channelService)
 	modelMonitorHandler := admin.NewModelMonitorHandler(modelMonitorService, settingService)
 	channelMonitorRequestTemplateRepository := repository.NewChannelMonitorRequestTemplateRepository(client, db)
 	channelMonitorRequestTemplateService := service.NewChannelMonitorRequestTemplateService(channelMonitorRequestTemplateRepository)

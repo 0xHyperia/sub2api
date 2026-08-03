@@ -321,16 +321,17 @@ type UpdateSettingsRequest struct {
 	SoftwareCenterEnabled    *bool `json:"software_center_enabled"`
 
 	// Model Marketplace feature switch (user-facing)
-	ModelMarketplaceEnabled *bool   `json:"model_marketplace_enabled"`
-	ModelMonitorEnabled     *bool   `json:"model_monitor_enabled"`
-	ContactUsEnabled        *bool   `json:"contact_us_enabled"`
-	ContactQQEnabled        *bool   `json:"contact_qq_enabled"`
-	ContactQQName           *string `json:"contact_qq_name"`
-	ContactQQURL            *string `json:"contact_qq_url"`
-	ContactTelegramEnabled  *bool   `json:"contact_telegram_enabled"`
-	ContactTelegramName     *string `json:"contact_telegram_name"`
-	ContactTelegramURL      *string `json:"contact_telegram_url"`
-	ContactTicketEnabled    *bool   `json:"contact_ticket_enabled"`
+	ModelMarketplaceEnabled            *bool   `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled                *bool   `json:"model_monitor_enabled"`
+	ModelMarketplacePerformanceVisible *bool   `json:"model_marketplace_performance_visible"`
+	ContactUsEnabled                   *bool   `json:"contact_us_enabled"`
+	ContactQQEnabled                   *bool   `json:"contact_qq_enabled"`
+	ContactQQName                      *string `json:"contact_qq_name"`
+	ContactQQURL                       *string `json:"contact_qq_url"`
+	ContactTelegramEnabled             *bool   `json:"contact_telegram_enabled"`
+	ContactTelegramName                *string `json:"contact_telegram_name"`
+	ContactTelegramURL                 *string `json:"contact_telegram_url"`
+	ContactTicketEnabled               *bool   `json:"contact_ticket_enabled"`
 
 	// Model Plaza feature switches + description
 	ModelPlazaEnabled     *bool   `json:"model_plaza_enabled"`
@@ -1715,6 +1716,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.ModelMonitorEnabled
 		}(),
+		ModelMarketplacePerformanceVisible: func() bool {
+			if req.ModelMarketplacePerformanceVisible != nil {
+				return *req.ModelMarketplacePerformanceVisible
+			}
+			return previousSettings.ModelMarketplacePerformanceVisible
+		}(),
 		ContactUsEnabled: func() bool {
 			if req.ContactUsEnabled != nil {
 				return *req.ContactUsEnabled
@@ -2192,16 +2199,17 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
 		SoftwareCenterEnabled:    updatedSettings.SoftwareCenterEnabled,
 
-		ModelMarketplaceEnabled: updatedSettings.ModelMarketplaceEnabled,
-		ModelMonitorEnabled:     updatedSettings.ModelMonitorEnabled,
-		ContactUsEnabled:        updatedSettings.ContactUsEnabled,
-		ContactQQEnabled:        updatedSettings.ContactQQEnabled,
-		ContactQQName:           updatedSettings.ContactQQName,
-		ContactQQURL:            updatedSettings.ContactQQURL,
-		ContactTelegramEnabled:  updatedSettings.ContactTelegramEnabled,
-		ContactTelegramName:     updatedSettings.ContactTelegramName,
-		ContactTelegramURL:      updatedSettings.ContactTelegramURL,
-		ContactTicketEnabled:    updatedSettings.ContactTicketEnabled,
+		ModelMarketplaceEnabled:            updatedSettings.ModelMarketplaceEnabled,
+		ModelMonitorEnabled:                updatedSettings.ModelMonitorEnabled,
+		ModelMarketplacePerformanceVisible: updatedSettings.ModelMarketplacePerformanceVisible,
+		ContactUsEnabled:                   updatedSettings.ContactUsEnabled,
+		ContactQQEnabled:                   updatedSettings.ContactQQEnabled,
+		ContactQQName:                      updatedSettings.ContactQQName,
+		ContactQQURL:                       updatedSettings.ContactQQURL,
+		ContactTelegramEnabled:             updatedSettings.ContactTelegramEnabled,
+		ContactTelegramName:                updatedSettings.ContactTelegramName,
+		ContactTelegramURL:                 updatedSettings.ContactTelegramURL,
+		ContactTicketEnabled:               updatedSettings.ContactTicketEnabled,
 
 		ModelPlazaEnabled:     updatedSettings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth: updatedSettings.ModelPlazaRequireAuth,

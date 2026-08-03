@@ -397,6 +397,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	// Model marketplace feature switch
 	updates[SettingKeyModelMarketplaceEnabled] = strconv.FormatBool(settings.ModelMarketplaceEnabled)
 	updates[SettingKeyModelMonitorEnabled] = strconv.FormatBool(settings.ModelMonitorEnabled)
+	updates[SettingKeyModelMarketplacePerformanceVisible] = strconv.FormatBool(settings.ModelMarketplacePerformanceVisible)
 	updates[SettingKeyContactUsEnabled] = strconv.FormatBool(settings.ContactUsEnabled)
 	updates[SettingKeyContactQQEnabled] = strconv.FormatBool(settings.ContactQQEnabled)
 	updates[SettingKeyContactQQName] = strings.TrimSpace(settings.ContactQQName)

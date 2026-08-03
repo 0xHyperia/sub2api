@@ -833,6 +833,7 @@ func registerModelMonitorRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		monitors.GET("", h.Admin.ModelMonitor.List)
 		monitors.PUT("/config", h.Admin.ModelMonitor.Upsert)
 		monitors.PUT("/groups", h.Admin.ModelMonitor.ConfigureGroups)
+		monitors.PUT("/group", h.Admin.ModelMonitor.ConfigureGroup)
 		monitors.POST("/run", h.Admin.ModelMonitor.Run)
 		monitors.GET("/:id/history", h.Admin.ModelMonitor.History)
 	}

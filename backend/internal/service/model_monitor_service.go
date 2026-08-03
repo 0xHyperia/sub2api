@@ -18,10 +18,12 @@ type ModelMonitorService struct {
 	accountTester *AccountTestService
 	gateway       *GatewayService
 	openAIGateway *OpenAIGatewayService
+	billing       *BillingService
+	channels      *ChannelService
 }
 
-func NewModelMonitorService(repo ModelMonitorRepository, groupRepo GroupRepository, accountRepo AccountRepository, accountTester *AccountTestService, gateway *GatewayService, openAIGateway *OpenAIGatewayService) *ModelMonitorService {
-	return &ModelMonitorService{repo: repo, groupRepo: groupRepo, accountRepo: accountRepo, accountTester: accountTester, gateway: gateway, openAIGateway: openAIGateway}
+func NewModelMonitorService(repo ModelMonitorRepository, groupRepo GroupRepository, accountRepo AccountRepository, accountTester *AccountTestService, gateway *GatewayService, openAIGateway *OpenAIGatewayService, billing *BillingService, channels *ChannelService) *ModelMonitorService {
+	return &ModelMonitorService{repo: repo, groupRepo: groupRepo, accountRepo: accountRepo, accountTester: accountTester, gateway: gateway, openAIGateway: openAIGateway, billing: billing, channels: channels}
 }
 
 func (s *ModelMonitorService) DiscoverCatalog(ctx context.Context) ([]ModelCatalogEntry, error) {
@@ -125,7 +127,10 @@ func ModelCatalogModels(group Group, accounts []Account) []string {
 	return out
 }
 
-func (s *ModelMonitorService) ListRows(ctx context.Context) ([]ModelMonitorRow, error) {
+func (s *ModelMonitorService) ListRows(ctx context.Context, resolution ModelMonitorResolution) ([]ModelMonitorRow, error) {
+	if resolution != ModelMonitorResolutionHour {
+		resolution = ModelMonitorResolutionMinute
+	}
 	catalog, err := s.DiscoverCatalog(ctx)
 	if err != nil {
 		return nil, err
@@ -143,6 +148,12 @@ func (s *ModelMonitorService) ListRows(ctx context.Context) ([]ModelMonitorRow, 
 	for _, entry := range catalog {
 		catalogSet[ModelMonitorKey(entry.Platform, entry.Model)] = true
 	}
+	for _, cfg := range configs {
+		key := ModelMonitorKey(cfg.Platform, cfg.Model)
+		if !catalogSet[key] {
+			keys = append(keys, ModelCatalogEntry{Platform: cfg.Platform, Model: cfg.Model})
+		}
+	}
 	configByKey := make(map[string]ModelMonitor, len(configs))
 	for _, cfg := range configs {
 		key := ModelMonitorKey(cfg.Platform, cfg.Model)
@@ -153,6 +164,7 @@ func (s *ModelMonitorService) ListRows(ctx context.Context) ([]ModelMonitorRow, 
 		return nil, err
 	}
 	rows := make([]ModelMonitorRow, 0, len(keys))
+	metricScopes := make([]ModelMonitorMetricScope, 0, len(configs))
 	seen := make(map[string]struct{}, len(keys))
 	for _, entry := range keys {
 		key := ModelMonitorKey(entry.Platform, entry.Model)
@@ -165,28 +177,62 @@ func (s *ModelMonitorService) ListRows(ctx context.Context) ([]ModelMonitorRow, 
 			cfg = ModelMonitor{Platform: entry.Platform, Model: entry.Model, IntervalSeconds: ModelMonitorDefaultIntervalSeconds}
 		}
 		row := ModelMonitorRow{ModelMonitor: cfg, CatalogAvailable: catalogSet[key], Configured: configured, Groups: append([]ModelMonitorGroupOption(nil), entry.Groups...)}
-		if configuredIDs, ok := groupConfigs[cfg.ID]; ok {
+		if configuredGroups, ok := groupConfigs[cfg.ID]; ok {
 			row.GroupsConfigured = true
-			priorityByID := make(map[int64]int, len(configuredIDs))
-			for priority, groupID := range configuredIDs {
-				priorityByID[groupID] = priority
+			configByID := make(map[int64]ModelMonitorGroupConfig, len(configuredGroups))
+			for _, groupConfig := range configuredGroups {
+				configByID[groupConfig.GroupID] = groupConfig
 			}
 			for i := range row.Groups {
-				priority, selected := priorityByID[row.Groups[i].GroupID]
+				groupConfig, selected := configByID[row.Groups[i].GroupID]
 				row.Groups[i].Selected = selected
 				if selected {
-					row.Groups[i].Priority = priority
+					row.Groups[i].Priority = groupConfig.Priority
+					row.Groups[i].Enabled = groupConfig.Enabled
+					row.Groups[i].IntervalSeconds = groupConfig.IntervalSeconds
+					row.Groups[i].LastTrafficAt = groupConfig.LastTrafficAt
+					row.Groups[i].LastProbeAt = groupConfig.LastProbeAt
 				} else {
-					row.Groups[i].Priority = len(configuredIDs) + i
+					row.Groups[i].Priority = len(configuredGroups) + i
+					row.Groups[i].IntervalSeconds = ModelMonitorDefaultIntervalSeconds
 				}
 			}
 			sort.SliceStable(row.Groups, func(i, j int) bool { return row.Groups[i].Priority < row.Groups[j].Priority })
+		} else {
+			for i := range row.Groups {
+				row.Groups[i].Enabled = configured && cfg.Enabled
+				row.Groups[i].IntervalSeconds = max(cfg.IntervalSeconds, ModelMonitorMinIntervalSeconds)
+			}
+		}
+		if configured && cfg.ID > 0 {
+			groupIDs := make([]int64, 0, len(row.Groups))
+			for i := range row.Groups {
+				groupIDs = append(groupIDs, row.Groups[i].GroupID)
+			}
+			metricScopes = append(metricScopes, ModelMonitorMetricScope{MonitorID: cfg.ID, GroupIDs: groupIDs})
 		}
 		if summary, ok := summaries[key]; ok {
 			copy := summary
 			row.Summary = &copy
 		}
 		rows = append(rows, row)
+	}
+	metricsByMonitor, err := s.repo.GroupMetricsBatch(ctx, metricScopes, resolution, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	for rowIndex := range rows {
+		metrics := metricsByMonitor[rows[rowIndex].ID]
+		for groupIndex := range rows[rowIndex].Groups {
+			if metric, ok := metrics[rows[rowIndex].Groups[groupIndex].GroupID]; ok {
+				copy := metric
+				rows[rowIndex].Groups[groupIndex].Metrics = &copy
+			}
+		}
+		if metric, ok := metrics[0]; ok && rows[rowIndex].Summary != nil {
+			copy := metric
+			rows[rowIndex].Summary.Metrics = &copy
+		}
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].Platform != rows[j].Platform {
@@ -239,6 +285,49 @@ func (s *ModelMonitorService) ConfigureGroups(ctx context.Context, platform, mod
 	return m, nil
 }
 
+func (s *ModelMonitorService) ConfigureGroup(ctx context.Context, platform, model string, groupID int64, enabled bool, intervalSeconds int, createdBy int64) (*ModelMonitor, error) {
+	if intervalSeconds == 0 {
+		intervalSeconds = ModelMonitorDefaultIntervalSeconds
+	}
+	if intervalSeconds < ModelMonitorMinIntervalSeconds || intervalSeconds > ModelMonitorMaxIntervalSeconds {
+		return nil, fmt.Errorf("interval_seconds must be between %d and %d", ModelMonitorMinIntervalSeconds, ModelMonitorMaxIntervalSeconds)
+	}
+	platform, model = strings.TrimSpace(platform), strings.TrimSpace(model)
+	catalog, err := s.DiscoverCatalog(ctx)
+	if err != nil {
+		return nil, err
+	}
+	valid := false
+	for _, entry := range catalog {
+		if entry.Platform != platform || entry.Model != model {
+			continue
+		}
+		for _, group := range entry.Groups {
+			if group.GroupID == groupID {
+				valid = true
+				break
+			}
+		}
+	}
+	if !valid {
+		return nil, fmt.Errorf("group %d does not currently support model %s", groupID, model)
+	}
+	m, err := s.repo.GetByKey(ctx, platform, model)
+	if err != nil {
+		return nil, err
+	}
+	if m == nil {
+		m, err = s.Upsert(ctx, platform, model, false, ModelMonitorDefaultIntervalSeconds, 0, "", createdBy)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := s.repo.UpsertGroupConfig(ctx, ModelMonitorGroupConfig{MonitorID: m.ID, GroupID: groupID, Enabled: enabled, IntervalSeconds: intervalSeconds}); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (s *ModelMonitorService) Upsert(ctx context.Context, platform, model string, enabled bool, intervalSeconds, displayOrder int, label string, createdBy int64) (*ModelMonitor, error) {
 	platform = strings.TrimSpace(platform)
 	model = strings.TrimSpace(model)
@@ -285,6 +374,142 @@ func (s *ModelMonitorService) RunByKey(ctx context.Context, platform, model stri
 		}
 	}
 	return s.Run(ctx, m)
+}
+
+func (s *ModelMonitorService) RunGroupByKey(ctx context.Context, platform, model string, groupID int64, createdBy int64) (*ModelMonitorHistory, error) {
+	m, err := s.repo.GetByKey(ctx, platform, model)
+	if err != nil {
+		return nil, err
+	}
+	if m == nil {
+		m, err = s.Upsert(ctx, platform, model, false, ModelMonitorDefaultIntervalSeconds, 0, "", createdBy)
+		if err != nil {
+			return nil, err
+		}
+	}
+	groups, err := s.DiscoverCatalog(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range groups {
+		if entry.Platform != platform || entry.Model != model {
+			continue
+		}
+		for _, group := range entry.Groups {
+			if group.GroupID == groupID {
+				return s.RunGroup(ctx, m, group)
+			}
+		}
+	}
+	return nil, fmt.Errorf("group %d does not currently support model %s", groupID, model)
+}
+
+func (s *ModelMonitorService) RunGroup(ctx context.Context, monitor *ModelMonitor, group ModelMonitorGroupOption) (*ModelMonitorHistory, error) {
+	started := time.Now()
+	excluded := make(map[int64]struct{})
+	attempts := 0
+	lastMessage := ""
+	var finalResult *ScheduledTestResult
+	costs := probeCostAccumulator{known: true}
+	for attempts < modelMonitorMaxAttempts {
+		account, selectErr := s.selectAccount(ctx, monitor.Platform, monitor.Model, group.GroupID, excluded)
+		if selectErr != nil {
+			lastMessage = selectErr.Error()
+			break
+		}
+		attempts++
+		excluded[account.ID] = struct{}{}
+		result, testErr := s.accountTester.RunTestBackground(ctx, account.ID, monitor.Model)
+		finalResult = result
+		costs.add(result, s.probeCost(ctx, monitor.Model, group.GroupID, account, result))
+		if testErr == nil && result != nil && result.Status == "success" {
+			break
+		}
+		if testErr != nil {
+			lastMessage = testErr.Error()
+		} else if result != nil {
+			lastMessage = result.ErrorMessage
+		}
+	}
+	checkedAt := time.Now()
+	latency := int(checkedAt.Sub(started).Milliseconds())
+	status := MonitorStatusFailed
+	if attempts == 0 {
+		status = MonitorStatusError
+	}
+	if finalResult != nil && finalResult.Status == "success" {
+		status = MonitorStatusOperational
+		if attempts > 1 || time.Duration(latency)*time.Millisecond > modelMonitorDegradedThreshold {
+			status = MonitorStatusDegraded
+		}
+	}
+	groupID := group.GroupID
+	h := &ModelMonitorHistory{MonitorID: monitor.ID, Status: status, LatencyMs: &latency, Attempts: attempts, Message: truncateMessage(sanitizeErrorMessage(lastMessage)), GroupID: &groupID, GroupName: group.Name, CheckedAt: checkedAt}
+	h.ProbeCostKnown = costs.known
+	h.ProbeCost = costs.value()
+	if finalResult != nil {
+		h.FirstTokenMs = finalResult.FirstTokenMs
+		h.InputTokens = finalResult.InputTokens
+		h.OutputTokens = finalResult.OutputTokens
+		h.GenerationMs = finalResult.GenerationMs
+	}
+	if err := s.persistGroupResult(ctx, monitor, h); err != nil {
+		return nil, err
+	}
+	return h, nil
+}
+
+type probeCostAccumulator struct {
+	total    float64
+	billable bool
+	known    bool
+}
+
+func (a *probeCostAccumulator) add(result *ScheduledTestResult, cost *float64) {
+	if result == nil || (result.InputTokens <= 0 && result.OutputTokens <= 0) {
+		return
+	}
+	a.billable = true
+	if cost == nil {
+		a.known = false
+		return
+	}
+	a.total += *cost
+}
+
+func (a probeCostAccumulator) value() *float64 {
+	if !a.billable || !a.known {
+		return nil
+	}
+	value := a.total
+	return &value
+}
+
+func (s *ModelMonitorService) probeCost(ctx context.Context, model string, groupID int64, account *Account, result *ScheduledTestResult) *float64 {
+	if account == nil || result == nil || (result.InputTokens <= 0 && result.OutputTokens <= 0) {
+		return nil
+	}
+	tokens := UsageTokens{InputTokens: result.InputTokens, OutputTokens: result.OutputTokens}
+	if cost := resolveAccountStatsCost(ctx, s.channels, s.billing, account.ID, groupID, model, tokens, 1, 0); cost != nil {
+		return applyProbeCostMultiplier(cost, account)
+	}
+	if s.billing == nil {
+		return nil
+	}
+	breakdown, err := s.billing.CalculateCost(model, tokens, account.BillingRateMultiplier())
+	if err != nil || breakdown == nil {
+		return nil
+	}
+	value := breakdown.TotalCost
+	return &value
+}
+
+func applyProbeCostMultiplier(cost *float64, account *Account) *float64 {
+	if cost == nil || account == nil {
+		return nil
+	}
+	value := *cost * account.BillingRateMultiplier()
+	return &value
 }
 
 func (s *ModelMonitorService) Run(ctx context.Context, monitor *ModelMonitor) (*ModelMonitorHistory, error) {
@@ -364,7 +589,7 @@ func (s *ModelMonitorService) monitorGroups(ctx context.Context, monitor *ModelM
 	if err != nil {
 		return nil, err
 	}
-	ids, ok := configured[monitor.ID]
+	configs, ok := configured[monitor.ID]
 	if !ok {
 		return groups, nil
 	}
@@ -372,10 +597,12 @@ func (s *ModelMonitorService) monitorGroups(ctx context.Context, monitor *ModelM
 	for _, group := range groups {
 		byID[group.GroupID] = group
 	}
-	out := make([]ModelMonitorGroupOption, 0, len(ids))
-	for priority, id := range ids {
-		if group, exists := byID[id]; exists {
-			group.Priority = priority
+	out := make([]ModelMonitorGroupOption, 0, len(configs))
+	for _, config := range configs {
+		if group, exists := byID[config.GroupID]; exists {
+			group.Priority = config.Priority
+			group.Enabled = config.Enabled
+			group.IntervalSeconds = config.IntervalSeconds
 			out = append(out, group)
 		}
 	}
@@ -401,11 +628,124 @@ func (s *ModelMonitorService) persistResult(ctx context.Context, m *ModelMonitor
 	m.LastCheckedAt = &h.CheckedAt
 	return s.repo.UpdateLastChecked(ctx, m.ID, h.CheckedAt)
 }
+
+func (s *ModelMonitorService) persistGroupResult(ctx context.Context, m *ModelMonitor, h *ModelMonitorHistory) error {
+	if h.GroupID == nil {
+		return fmt.Errorf("monitor group is required")
+	}
+	if err := s.repo.InsertHistory(ctx, h); err != nil {
+		return err
+	}
+	cost := 0.0
+	if h.ProbeCost != nil {
+		cost = *h.ProbeCost
+	}
+	delta := ModelMonitorMetricDelta{
+		MonitorID: m.ID, GroupID: *h.GroupID, Source: "probe", BucketStart: h.CheckedAt,
+		RequestCount: 1, ProbeCost: cost, ProbeCostKnown: h.ProbeCostKnown,
+	}
+	if h.Status == MonitorStatusOperational || h.Status == MonitorStatusDegraded {
+		delta.SuccessCount = 1
+		if h.LatencyMs != nil {
+			delta.LatencySumMs = int64(*h.LatencyMs)
+			delta.LatencyCount = 1
+		}
+		if h.FirstTokenMs != nil {
+			delta.TTFTSumMs = int64(*h.FirstTokenMs)
+			delta.TTFTCount = 1
+		}
+		delta.OutputTokens = int64(h.OutputTokens)
+		delta.GenerationMs = h.GenerationMs
+	}
+	if err := s.repo.UpsertMetricDelta(ctx, delta); err != nil {
+		return err
+	}
+	if err := s.repo.UpdateGroupProbeAt(ctx, m.ID, *h.GroupID, h.CheckedAt); err != nil {
+		return err
+	}
+	m.LastCheckedAt = &h.CheckedAt
+	return s.repo.UpdateLastChecked(ctx, m.ID, h.CheckedAt)
+}
 func (s *ModelMonitorService) History(ctx context.Context, id int64, limit int) ([]ModelMonitorHistory, error) {
 	return s.repo.ListHistory(ctx, id, limit)
 }
-func (s *ModelMonitorService) PublicSummaries(ctx context.Context, keys []ModelCatalogEntry) (map[string]ModelMonitorSummary, error) {
-	return s.repo.Summaries(ctx, keys, ModelMonitorTimelinePoints)
+func (s *ModelMonitorService) PublicSummaries(ctx context.Context, keys []ModelCatalogEntry, resolution ModelMonitorResolution) (map[string]ModelMonitorSummary, error) {
+	if resolution != ModelMonitorResolutionMinute {
+		resolution = ModelMonitorResolutionHour
+	}
+	summaries, err := s.repo.Summaries(ctx, keys, ModelMonitorTimelinePoints)
+	if err != nil {
+		return nil, err
+	}
+	monitors, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	catalog, err := s.DiscoverCatalog(ctx)
+	if err != nil {
+		return nil, err
+	}
+	catalogByKey := make(map[string]ModelCatalogEntry, len(catalog))
+	for _, entry := range catalog {
+		catalogByKey[ModelMonitorKey(entry.Platform, entry.Model)] = entry
+	}
+	scopes := make([]ModelMonitorMetricScope, 0, len(monitors))
+	for _, monitor := range monitors {
+		entry, available := catalogByKey[ModelMonitorKey(monitor.Platform, monitor.Model)]
+		if !available {
+			continue
+		}
+		groupIDs := make([]int64, 0, len(entry.Groups))
+		for _, group := range entry.Groups {
+			groupIDs = append(groupIDs, group.GroupID)
+		}
+		scopes = append(scopes, ModelMonitorMetricScope{MonitorID: monitor.ID, GroupIDs: groupIDs})
+	}
+	now := time.Now()
+	metricsByMonitor, err := s.repo.GroupMetricsBatch(ctx, scopes, resolution, now)
+	if err != nil {
+		return nil, err
+	}
+	var hourlyByMonitor map[int64]map[int64]ModelMonitorGroupMetrics
+	if resolution == ModelMonitorResolutionMinute {
+		hourlyByMonitor, err = s.repo.GroupMetricsBatch(ctx, scopes, ModelMonitorResolutionHour, now)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, monitor := range monitors {
+		key := ModelMonitorKey(monitor.Platform, monitor.Model)
+		summary, ok := summaries[key]
+		entry, available := catalogByKey[key]
+		if !ok || !available {
+			continue
+		}
+		metrics := metricsByMonitor[monitor.ID]
+		if metric, exists := metrics[0]; exists {
+			copy := metric
+			copy.ProbeCost = nil
+			summary.Metrics = &copy
+			if resolution == ModelMonitorResolutionHour {
+				summary.HourlyMetrics = &copy
+			}
+		}
+		if resolution == ModelMonitorResolutionMinute {
+			hourly := hourlyByMonitor[monitor.ID]
+			if metric, exists := hourly[0]; exists {
+				copy := metric
+				copy.ProbeCost = nil
+				summary.HourlyMetrics = &copy
+			}
+		}
+		for _, group := range entry.Groups {
+			if metric, exists := metrics[group.GroupID]; exists {
+				metric.ProbeCost = nil
+				summary.Groups = append(summary.Groups, ModelMonitorPublicGroupMetrics{GroupID: group.GroupID, Name: group.Name, Metrics: metric})
+			}
+		}
+		summaries[key] = summary
+	}
+	return summaries, nil
 }
 
 type ModelMonitorRunner struct {
@@ -416,6 +756,7 @@ type ModelMonitorRunner struct {
 	sem         chan struct{}
 	inFlight    sync.Map
 	lastCleanup time.Time
+	lastRollup  time.Time
 }
 
 func NewModelMonitorRunner(service *ModelMonitorService, settings *SettingService) *ModelMonitorRunner {
@@ -443,43 +784,116 @@ func (r *ModelMonitorRunner) Stop() { r.once.Do(func() { close(r.stop) }) }
 func (r *ModelMonitorRunner) tick() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	if r.settings == nil || !r.settings.GetModelMonitorRuntime(ctx).Enabled {
-		return
-	}
-	monitors, err := r.service.repo.ListEnabledDue(ctx, time.Now())
-	if err != nil {
-		return
-	}
+	now := time.Now()
 	catalog, err := r.service.DiscoverCatalog(ctx)
 	if err != nil {
 		return
 	}
-	available := make(map[string]bool, len(catalog))
-	for _, entry := range catalog {
-		available[ModelMonitorKey(entry.Platform, entry.Model)] = true
-	}
-	for i := range monitors {
-		monitor := monitors[i]
-		if !available[ModelMonitorKey(monitor.Platform, monitor.Model)] {
-			continue
+	r.reconcileLegacyGroups(ctx, catalog)
+	_ = r.service.repo.RefreshTrafficMetrics(ctx, now.Add(-3*time.Minute), now)
+	rollupHour := now.UTC().Truncate(time.Hour).Add(-time.Hour)
+	if !r.lastRollup.Equal(rollupHour) {
+		if err := r.service.repo.RollupHourlyMetrics(ctx, rollupHour); err == nil {
+			r.lastRollup = rollupHour
 		}
-		if _, running := r.inFlight.LoadOrStore(monitor.ID, struct{}{}); running {
+	}
+	if r.settings == nil || !r.settings.GetModelMonitorRuntime(ctx).Enabled {
+		r.cleanup(ctx, now)
+		return
+	}
+	available := make(map[string]map[int64]ModelMonitorGroupOption, len(catalog))
+	for _, entry := range catalog {
+		groups := make(map[int64]ModelMonitorGroupOption, len(entry.Groups))
+		for _, group := range entry.Groups {
+			groups[group.GroupID] = group
+		}
+		available[ModelMonitorKey(entry.Platform, entry.Model)] = groups
+	}
+	due, err := r.service.repo.ListEnabledDueGroups(ctx, now, 100)
+	if err != nil {
+		return
+	}
+	for i := range due {
+		item := due[i]
+		group, ok := available[ModelMonitorKey(item.Monitor.Platform, item.Monitor.Model)][item.Group.GroupID]
+		if !ok {
 			continue
 		}
 		select {
 		case r.sem <- struct{}{}:
-			go func(m ModelMonitor) {
-				defer func() { <-r.sem; r.inFlight.Delete(m.ID) }()
-				runCtx, runCancel := context.WithTimeout(context.Background(), 2*time.Minute)
-				defer runCancel()
-				_, _ = r.service.Run(runCtx, &m)
-			}(monitor)
 		default:
-			r.inFlight.Delete(monitor.ID)
+			continue
+		}
+		flightKey := fmt.Sprintf("%d:%d", item.Monitor.ID, item.Group.GroupID)
+		if _, running := r.inFlight.LoadOrStore(flightKey, struct{}{}); running {
+			<-r.sem
+			continue
+		}
+		claimed, claimErr := r.service.repo.ClaimDueGroup(ctx, item.Monitor.ID, item.Group.GroupID, now, now.Add(3*time.Minute))
+		if claimErr != nil || !claimed {
+			r.inFlight.Delete(flightKey)
+			<-r.sem
+			continue
+		}
+		go func(item ModelMonitorDueGroup, group ModelMonitorGroupOption, key string) {
+			defer func() { <-r.sem; r.inFlight.Delete(key) }()
+			runCtx, runCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer runCancel()
+			_, _ = r.service.RunGroup(runCtx, &item.Monitor, group)
+		}(item, group, flightKey)
+	}
+	r.cleanup(ctx, now)
+}
+
+func (r *ModelMonitorRunner) reconcileLegacyGroups(ctx context.Context, catalog []ModelCatalogEntry) {
+	monitors, err := r.service.repo.List(ctx)
+	if err != nil {
+		return
+	}
+	configs, err := r.service.repo.ListGroupConfigs(ctx)
+	if err != nil {
+		return
+	}
+	byKey := make(map[string]ModelMonitor, len(monitors))
+	for _, monitor := range monitors {
+		byKey[ModelMonitorKey(monitor.Platform, monitor.Model)] = monitor
+	}
+	for _, entry := range catalog {
+		key := ModelMonitorKey(entry.Platform, entry.Model)
+		monitor, existed := byKey[key]
+		if !existed {
+			created, createErr := r.service.Upsert(ctx, entry.Platform, entry.Model, false, ModelMonitorDefaultIntervalSeconds, 0, "", 0)
+			if createErr != nil {
+				continue
+			}
+			monitor = *created
+			byKey[key] = monitor
+		}
+		existingConfigs := configs[monitor.ID]
+		configuredGroupIDs := make(map[int64]struct{}, len(existingConfigs))
+		for _, config := range existingConfigs {
+			configuredGroupIDs[config.GroupID] = struct{}{}
+		}
+		for _, group := range entry.Groups {
+			if _, configured := configuredGroupIDs[group.GroupID]; configured {
+				continue
+			}
+			enabled := false
+			interval := ModelMonitorDefaultIntervalSeconds
+			if existed && len(existingConfigs) == 0 {
+				enabled = monitor.Enabled
+				interval = max(monitor.IntervalSeconds, ModelMonitorMinIntervalSeconds)
+			}
+			_ = r.service.repo.UpsertGroupConfig(ctx, ModelMonitorGroupConfig{MonitorID: monitor.ID, GroupID: group.GroupID, Enabled: enabled, IntervalSeconds: interval})
 		}
 	}
+}
+
+func (r *ModelMonitorRunner) cleanup(ctx context.Context, now time.Time) {
 	if time.Since(r.lastCleanup) >= 24*time.Hour {
-		_, _ = r.service.repo.DeleteHistoryBefore(ctx, time.Now().AddDate(0, 0, -ModelMonitorHistoryRetentionDays))
-		r.lastCleanup = time.Now()
+		_, _ = r.service.repo.DeleteHistoryBefore(ctx, now.AddDate(0, 0, -ModelMonitorHistoryRetentionDays))
+		_, _ = r.service.repo.DeleteMetricBucketsBefore(ctx, ModelMonitorResolutionMinute, now.Add(-ModelMonitorMinuteRetentionHours*time.Hour))
+		_, _ = r.service.repo.DeleteMetricBucketsBefore(ctx, ModelMonitorResolutionHour, now.AddDate(0, 0, -ModelMonitorHistoryRetentionDays))
+		r.lastCleanup = now
 	}
 }

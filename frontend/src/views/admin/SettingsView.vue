@@ -6784,6 +6784,21 @@
                 :aria-label="t('admin.settings.features.modelMarketplace.monitorEnabled')"
               />
             </div>
+            <div class="flex items-center justify-between gap-4 border-t border-outline pt-5">
+              <div>
+                <label class="text-sm font-medium text-foreground-muted">
+                  {{ t('admin.settings.features.modelMarketplace.performanceVisible') }}
+                </label>
+                <p class="mt-0.5 text-xs text-foreground-subtle">
+                  {{ t('admin.settings.features.modelMarketplace.performanceVisibleHint') }}
+                </p>
+              </div>
+              <Toggle
+                v-model="form.model_marketplace_performance_visible"
+                :disabled="!form.model_marketplace_enabled"
+                :aria-label="t('admin.settings.features.modelMarketplace.performanceVisible')"
+              />
+            </div>
           </div>
         </div>
 
@@ -9622,6 +9637,7 @@ const form = reactive<SettingsForm>({
   // Model Marketplace feature switch
   model_marketplace_enabled: false,
   model_monitor_enabled: false,
+  model_marketplace_performance_visible: true,
   contact_us_enabled: false,
   contact_qq_enabled: false,
   contact_qq_name: "",
@@ -11254,6 +11270,7 @@ async function saveSettings() {
       // Model Marketplace feature switch
       model_marketplace_enabled: form.model_marketplace_enabled,
       model_monitor_enabled: form.model_marketplace_enabled && form.model_monitor_enabled,
+      model_marketplace_performance_visible: form.model_marketplace_enabled && form.model_marketplace_performance_visible,
       contact_us_enabled: form.contact_us_enabled,
       contact_qq_enabled: form.contact_qq_enabled,
       contact_qq_name: form.contact_qq_name.trim(),

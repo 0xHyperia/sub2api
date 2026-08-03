@@ -190,16 +190,17 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeySoftwareCenterEnabled:    "true",
 
 		// Model marketplace feature (default disabled; opt-in)
-		SettingKeyModelMarketplaceEnabled: "false",
-		SettingKeyModelMonitorEnabled:     "false",
-		SettingKeyContactUsEnabled:        "false",
-		SettingKeyContactQQEnabled:        "false",
-		SettingKeyContactQQName:           "",
-		SettingKeyContactQQURL:            "",
-		SettingKeyContactTelegramEnabled:  "false",
-		SettingKeyContactTelegramName:     "",
-		SettingKeyContactTelegramURL:      "",
-		SettingKeyContactTicketEnabled:    "true",
+		SettingKeyModelMarketplaceEnabled:            "false",
+		SettingKeyModelMonitorEnabled:                "false",
+		SettingKeyModelMarketplacePerformanceVisible: "true",
+		SettingKeyContactUsEnabled:                   "false",
+		SettingKeyContactQQEnabled:                   "false",
+		SettingKeyContactQQName:                      "",
+		SettingKeyContactQQURL:                       "",
+		SettingKeyContactTelegramEnabled:             "false",
+		SettingKeyContactTelegramName:                "",
+		SettingKeyContactTelegramURL:                 "",
+		SettingKeyContactTicketEnabled:               "true",
 
 		// Model plaza feature (default disabled; opt-in, public unless require_auth)
 		SettingKeyModelPlazaEnabled:     "false",
@@ -781,6 +782,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	// Model marketplace feature (default: disabled; strict true)
 	result.ModelMarketplaceEnabled = settings[SettingKeyModelMarketplaceEnabled] == "true"
 	result.ModelMonitorEnabled = settings[SettingKeyModelMonitorEnabled] == "true"
+	result.ModelMarketplacePerformanceVisible = !isFalseSettingValue(settings[SettingKeyModelMarketplacePerformanceVisible])
 	result.ContactUsEnabled = settings[SettingKeyContactUsEnabled] == "true"
 	result.ContactQQEnabled = settings[SettingKeyContactQQEnabled] == "true"
 	result.ContactQQName = strings.TrimSpace(settings[SettingKeyContactQQName])

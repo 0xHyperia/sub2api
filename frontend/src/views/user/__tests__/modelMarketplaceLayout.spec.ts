@@ -57,6 +57,16 @@ describe('model marketplace toolbar layout', () => {
     expect(source).not.toContain('totalPages')
   })
 
+  it('silently refreshes visible marketplace data every 30 seconds and cleans up the timer', () => {
+    expect(source).toContain('window.setInterval')
+    expect(source).toContain('30_000')
+    expect(source).toContain("document.visibilityState === 'visible'")
+    expect(source).toContain('void loadMarketplace(true)')
+    expect(source).toContain('window.clearInterval(marketplaceRefreshTimer)')
+    expect(source).toContain('if (!silent) visibleCount.value = BATCH_SIZE')
+    expect(source).toContain('if (selectedKey) detailEntry.value = entries.value.find')
+  })
+
   it('uses compact responsive cards and a dedicated detail drawer', () => {
     const capabilityTriggerClass = source.match(/class="group\/capability[^"]*"/)?.[0] ?? ''
     const cardActionClasses = [...source.matchAll(/class="(inline-flex h-6 w-6[^"]*)"[\s\S]*?@click\.stop="(?:copyModel\(entry\.name\)|openDetails\(entry\))"/g)]
@@ -87,7 +97,7 @@ describe('model marketplace toolbar layout', () => {
     expect(cardActionClasses.every(classes => !classes.includes('hover:bg-') && !classes.includes('hover:border-'))).toBe(true)
     expect(source).toContain('monitorSignalPoints(entry)')
     expect(source).toContain('marketplace-status-bar')
-    expect(source).toContain('monitorLatency(entry)')
+    expect(source).not.toContain('monitorLatency(entry)')
     expect(source).not.toContain('<ModelMonitorTimeline compact')
     expect(source).toContain('grid-cols-[24px_minmax(0,1fr)_52px]')
     expect(source).toContain(':class="platformIconClass(entry.platform)"')

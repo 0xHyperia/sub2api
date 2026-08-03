@@ -67,6 +67,7 @@
                   class="inline-flex min-w-0 items-center justify-center gap-2 rounded-control px-3 text-xs font-medium text-foreground-muted transition-[background-color,color,box-shadow] sm:text-sm"
                   :class="activeTab === tab.value ? 'bg-surface-raised text-foreground shadow-sm' : 'hover:text-foreground'"
                   :aria-current="activeTab === tab.value ? 'page' : undefined"
+                  :data-testid="`detail-tab-${tab.value}`"
                   @click="activeTab = tab.value"
                 >
                   <Icon :name="tab.icon" size="xs" />
@@ -74,43 +75,7 @@
                 </button>
               </nav>
 
-              <dl v-if="monitorEnabled" class="mt-4 grid grid-cols-1 divide-y divide-outline rounded-panel border border-outline sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <div class="px-4 py-3">
-                  <dt class="flex items-center gap-2 text-[10px] font-medium text-foreground-subtle">
-                    <Icon name="clock" size="xs" />
-                    {{ t('modelMarketplace.details.latestLatency') }}
-                  </dt>
-                  <dd class="mt-1 font-mono text-base font-semibold tabular-nums text-foreground">{{ latestLatency }}</dd>
-                </div>
-                <div class="px-4 py-3">
-                  <dt class="flex items-center gap-2 text-[10px] font-medium text-foreground-subtle">
-                    <Icon name="chart" size="xs" />
-                    {{ t('modelMarketplace.details.averageLatency') }}
-                  </dt>
-                  <dd class="mt-1 font-mono text-base font-semibold tabular-nums text-foreground">{{ averageLatency }}</dd>
-                </div>
-                <div class="px-4 py-3">
-                  <dt class="flex items-center gap-2 text-[10px] font-medium text-foreground-subtle">
-                    <Icon name="badge" size="xs" />
-                    {{ t('modelMarketplace.details.availability7d') }}
-                  </dt>
-                  <dd class="mt-1 font-mono text-base font-semibold tabular-nums" :class="availabilityTextClass">{{ monitorAvailability }}</dd>
-                </div>
-              </dl>
-
-              <section v-if="monitorEnabled" class="mt-4">
-                <div class="flex items-center justify-between gap-4 text-[10px] text-foreground-subtle">
-                  <h3 class="font-medium">{{ t('modelMarketplace.details.history') }}</h3>
-                  <span>{{ lastCheckedAt }}</span>
-                </div>
-                <ModelMonitorTimeline class="mt-1.5" :points="entry.monitorStatus?.timeline" />
-                <div class="mt-1.5 flex items-center justify-between text-[9px] text-foreground-subtle">
-                  <span>{{ t('modelMarketplace.details.older') }}</span>
-                  <span>{{ t('modelMarketplace.details.newest') }}</span>
-                </div>
-              </section>
-
-              <div v-if="activeTab === 'overview'" class="mt-6 space-y-7">
+              <div v-if="activeTab === 'overview'" class="drawer-tab-content mt-6 space-y-7">
                 <section class="rounded-panel border border-outline p-4 sm:p-5">
                   <h3 class="text-sm font-semibold text-foreground">{{ t('modelMarketplace.details.pricing') }}</h3>
 
@@ -256,60 +221,97 @@
                 </section>
               </div>
 
-              <div v-else-if="activeTab === 'performance' && monitorEnabled" class="mt-6 space-y-8">
+              <div v-else-if="activeTab === 'performance'" class="drawer-tab-content relative mt-6" :aria-busy="performanceLoading">
+                <div v-if="performanceLoading" class="absolute inset-x-0 -top-2 z-20 h-0.5 overflow-hidden rounded-full bg-outline" aria-hidden="true">
+                  <span class="marketplace-progress block h-full w-1/3 rounded-full bg-brand"></span>
+                </div>
+                <div class="space-y-10 transition-opacity duration-200 sm:space-y-12" :class="performanceLoading ? 'pointer-events-none opacity-55' : ''">
                 <section>
                   <div class="mb-3">
-                    <h3 class="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <Icon name="badge" size="sm" class="text-foreground-subtle" />
-                      {{ t('modelMarketplace.details.groupPerformance') }}
-                    </h3>
-                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ t('modelMarketplace.details.groupPerformanceHint') }}</p>
+                    <div>
+                      <h3 class="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <Icon name="badge" size="sm" class="text-foreground-subtle" />
+                        {{ t('modelMarketplace.details.modelAvailability') }}
+                      </h3>
+                      <p class="mt-0.5 text-xs text-foreground-subtle">{{ t('modelMarketplace.details.modelAvailabilityHint') }}</p>
+                    </div>
+                  </div>
+                  <div class="rounded-panel border border-outline bg-surface-subtle px-4 py-3 sm:px-5">
+                    <SuccessRateTimeline
+                      class="w-full"
+                      :buckets="entry.monitorStatus?.metrics?.buckets"
+                      :resolution="monitorResolution"
+                      variant="availability"
+                      :show-overall="false"
+                    />
+                  </div>
+                </section>
+
+                <section>
+                  <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 class="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <Icon name="chart" size="sm" class="text-foreground-subtle" />
+                        {{ t('modelMarketplace.details.groupPerformance') }}
+                      </h3>
+                      <p class="mt-0.5 text-xs text-foreground-subtle">{{ showDetailedPerformance ? t('modelMarketplace.details.groupPerformanceHint') : t('modelMarketplace.details.successRateOnlyHint') }}</p>
+                    </div>
+                    <div class="inline-flex h-9 w-fit rounded-panel bg-surface-subtle p-0.5">
+                      <button v-for="option in resolutionOptions" :key="option.value" type="button" class="rounded-control px-3 text-xs font-medium transition-[background-color,color,box-shadow,opacity]" :class="monitorResolution === option.value ? 'bg-surface-raised text-foreground shadow-sm' : 'text-foreground-muted hover:text-foreground'" :disabled="performanceLoading" :data-testid="`resolution-${option.value}`" @click="emit('update:monitorResolution', option.value)">{{ option.label }}</button>
+                    </div>
                   </div>
                   <div class="space-y-2 sm:hidden">
                     <article v-for="row in groupPerformanceRows" :key="`mobile-performance-${row.id}`" class="rounded-panel border border-outline p-3">
-                      <h4 class="truncate text-xs font-semibold text-foreground" :title="row.name">{{ row.name }}</h4>
-                      <dl class="mt-2 grid grid-cols-3 gap-2 border-t border-outline pt-2 text-center">
+                      <div :class="showDetailedPerformance ? '' : 'flex min-w-0 items-center justify-between gap-4'">
+                        <h4 class="min-w-0 truncate text-xs font-semibold text-foreground" :title="row.name">{{ row.name }}</h4>
+                        <SuccessRateTimeline v-if="!showDetailedPerformance" class="shrink-0" :buckets="row.buckets" :success-rate="row.successRate" :resolution="monitorResolution" />
+                      </div>
+                      <dl v-if="showDetailedPerformance" class="mt-2 grid grid-cols-3 gap-2 border-t border-outline pt-2 text-center">
+                        <div><dt class="text-[9px] text-foreground-subtle">TPS</dt><dd class="mt-1 font-mono text-xs tabular-nums text-foreground">{{ row.tps }}</dd></div>
+                        <div><dt class="text-[9px] text-foreground-subtle">TTFT</dt><dd class="mt-1 font-mono text-xs tabular-nums text-foreground">{{ row.ttft }}</dd></div>
                         <div>
                           <dt class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.averageLatency') }}</dt>
                           <dd class="mt-1 font-mono text-xs tabular-nums text-foreground">{{ row.averageLatency }}</dd>
                         </div>
-                        <div>
-                          <dt class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.successRate') }}</dt>
-                          <dd class="mt-1 font-mono text-xs font-semibold tabular-nums" :class="row.successRateClass">{{ row.successRate }}</dd>
-                        </div>
-                        <div>
-                          <dt class="text-[9px] text-foreground-subtle">{{ t('modelMarketplace.details.samples') }}</dt>
-                          <dd class="mt-1 font-mono text-xs tabular-nums text-foreground-muted">{{ row.samples }}</dd>
-                        </div>
                       </dl>
+                      <div v-if="showDetailedPerformance" class="mt-3"><SuccessRateTimeline :buckets="row.buckets" :success-rate="row.successRate" :resolution="monitorResolution" /></div>
                     </article>
                   </div>
-                  <div class="hidden overflow-x-auto rounded-panel border border-outline sm:block">
-                    <table class="w-full min-w-[620px] text-left text-xs">
-                      <thead class="border-b border-outline bg-surface-subtle text-foreground-muted">
+                  <div class="hidden overflow-hidden rounded-panel border border-outline sm:block">
+                    <table class="w-full table-fixed text-left text-sm">
+                      <colgroup>
+                        <col :class="showDetailedPerformance ? 'w-[24%]' : 'w-1/2'" />
+                        <col v-if="showDetailedPerformance" class="w-[12%]" />
+                        <col v-if="showDetailedPerformance" class="w-[16%]" />
+                        <col v-if="showDetailedPerformance" class="w-[16%]" />
+                        <col :class="showDetailedPerformance ? 'w-[32%]' : 'w-1/2'" />
+                      </colgroup>
+                      <thead class="border-b border-outline bg-surface-subtle text-xs text-foreground-muted">
                         <tr>
-                          <th class="px-3 py-2.5 font-medium">{{ t('modelMarketplace.details.group') }}</th>
-                          <th class="px-3 py-2.5 text-right font-medium">{{ t('modelMarketplace.details.averageLatency') }}</th>
-                          <th class="px-3 py-2.5 text-right font-medium">{{ t('modelMarketplace.details.successRate') }}</th>
-                          <th class="px-3 py-2.5 text-right font-medium">{{ t('modelMarketplace.details.samples') }}</th>
+                          <th class="px-4 py-3 font-medium">{{ t('modelMarketplace.details.group') }}</th>
+                          <th v-if="showDetailedPerformance" class="px-4 py-3 text-right font-medium">TPS</th>
+                          <th v-if="showDetailedPerformance" class="px-4 py-3 text-right font-medium">TTFT</th>
+                          <th v-if="showDetailedPerformance" class="px-4 py-3 text-right font-medium">{{ t('modelMarketplace.details.averageLatency') }}</th>
+                          <th class="px-4 py-3 font-medium" :class="showDetailedPerformance ? '' : 'text-right'">{{ t('modelMarketplace.details.successRate') }}</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-outline">
-                        <tr v-for="row in groupPerformanceRows" :key="row.id">
-                          <td class="max-w-72 px-3 py-3 font-medium text-foreground"><span class="block truncate" :title="row.name">{{ row.name }}</span></td>
-                          <td class="px-3 py-3 text-right font-mono tabular-nums text-foreground">{{ row.averageLatency }}</td>
-                          <td class="px-3 py-3 text-right font-mono font-semibold tabular-nums" :class="row.successRateClass">{{ row.successRate }}</td>
-                          <td class="px-3 py-3 text-right font-mono tabular-nums text-foreground-muted">{{ row.samples }}</td>
+                        <tr v-for="row in groupPerformanceRows" :key="row.id" class="h-[60px] transition-colors hover:bg-surface-subtle/60">
+                          <td class="px-4 py-3 font-medium"><span class="inline-flex max-w-full truncate rounded-full bg-brand-subtle px-2.5 py-1 text-xs text-brand" :title="row.name">{{ row.name }}</span></td>
+                          <td v-if="showDetailedPerformance" class="px-4 py-3 text-right font-mono text-xs tabular-nums text-foreground">{{ row.tps }}</td>
+                          <td v-if="showDetailedPerformance" class="px-4 py-3 text-right font-mono text-xs tabular-nums text-foreground">{{ row.ttft }}</td>
+                          <td v-if="showDetailedPerformance" class="px-4 py-3 text-right font-mono text-xs tabular-nums text-foreground-muted">{{ row.averageLatency }}</td>
+                          <td class="px-4 py-3"><div :class="showDetailedPerformance ? '' : 'flex justify-end'"><SuccessRateTimeline :buckets="row.buckets" :success-rate="row.successRate" :resolution="monitorResolution" /></div></td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </section>
-
-                <ModelMarketplacePerformanceCharts :points="entry.monitorStatus?.timeline" />
+                <ModelMarketplacePerformanceCharts :buckets="entry.monitorStatus?.hourly_metrics?.buckets" :show-detailed-performance="showDetailedPerformance" />
+                </div>
               </div>
 
-              <div v-else class="mt-6 space-y-8">
+              <div v-else class="drawer-tab-content mt-6 space-y-8">
                 <section>
                   <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h3 class="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -445,8 +447,8 @@ import { useI18n } from 'vue-i18n'
 import type { GroupPlatform } from '@/types'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
+import SuccessRateTimeline from '@/components/common/SuccessRateTimeline.vue'
 import ModelMarketplacePerformanceCharts from '@/components/user/ModelMarketplacePerformanceCharts.vue'
-import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
 import { platformIconClass } from '@/utils/platformColors'
 import { useAppStore } from '@/stores/app'
 import { useClipboard } from '@/composables/useClipboard'
@@ -456,20 +458,26 @@ type DetailTab = 'overview' | 'performance' | 'api'
 type ApiProtocol = 'anthropic' | 'openai' | 'gemini'
 type CodeLanguage = 'curl' | 'python' | 'typescript' | 'javascript'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   entry: MarketplaceModelEntry | null
   groups: MarketplaceGroupOption[]
   activeGroup: MarketplaceGroupOption | null
   showEffectivePrices: boolean
-  monitorEnabled: boolean
-}>()
+  monitorResolution: 'minute' | 'hour'
+  performanceLoading?: boolean
+  showDetailedPerformance?: boolean
+}>(), {
+  performanceLoading: false,
+  showDetailedPerformance: true,
+})
 
 const emit = defineEmits<{
   close: []
   selectGroup: [groupId: number]
+  'update:monitorResolution': [value: 'minute' | 'hour']
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const appStore = useAppStore()
 const { copyToClipboard } = useClipboard()
 const closeButton = ref<HTMLButtonElement | null>(null)
@@ -483,9 +491,7 @@ let previousBodyOverflow = ''
 
 const detailTabs = computed(() => [
   { value: 'overview' as const, label: t('modelMarketplace.details.overview'), icon: 'infoCircle' as const },
-  ...(props.monitorEnabled
-    ? [{ value: 'performance' as const, label: t('modelMarketplace.details.performance'), icon: 'badge' as const }]
-    : []),
+  { value: 'performance' as const, label: t('modelMarketplace.details.performance'), icon: 'badge' as const },
   { value: 'api' as const, label: 'API', icon: 'terminal' as const },
 ])
 const codeLanguages = [
@@ -497,31 +503,10 @@ const codeLanguages = [
 
 const providerLabel = computed(() => props.entry ? labelOrFallback(`modelMarketplace.providers.${props.entry.platform}`, props.entry.platform.toUpperCase()) : '')
 const billingLabel = computed(() => props.entry ? t(`modelMarketplace.billing.${billingCategory(props.entry.pricing)}`) : '')
-const monitorPoints = computed(() => props.entry?.monitorStatus?.timeline ?? [])
-const latencyValues = computed(() => monitorPoints.value.flatMap(point => point.latency_ms == null ? [] : [point.latency_ms]))
-const averageLatency = computed(() => latencyValues.value.length ? formatLatency(latencyValues.value.reduce((sum, value) => sum + value, 0) / latencyValues.value.length) : '—')
-const latestLatency = computed(() => props.entry?.monitorStatus?.latency_ms == null ? '—' : formatLatency(props.entry.monitorStatus.latency_ms))
-const lastCheckedAt = computed(() => {
-  const value = props.entry?.monitorStatus?.last_checked_at
-  if (!value) return t('modelMarketplace.monitor.noData')
-  return new Intl.DateTimeFormat(locale.value, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
-})
-const monitorAvailability = computed(() => {
-  const value = props.entry?.monitorStatus?.availability_7d
-  return value == null ? '—' : `${value.toFixed(2)}%`
-})
-const availabilityTextClass = computed(() => {
-  const value = props.entry?.monitorStatus?.availability_7d
-  if (value == null) return 'text-foreground'
-  if (value >= 99) return 'text-success-foreground'
-  if (value >= 95) return 'text-warning-foreground'
-  return 'text-danger-foreground'
-})
+const resolutionOptions = computed(() => [
+  { value: 'minute' as const, label: t('modelMarketplace.details.minuteView') },
+  { value: 'hour' as const, label: t('modelMarketplace.details.hourView') },
+])
 
 const pricingRows = computed(() => {
   const pricing = props.entry?.pricing
@@ -559,17 +544,15 @@ const groupPricingRows = computed(() => props.groups.map(group => ({
 })))
 
 const groupPerformanceRows = computed(() => props.groups.map(group => {
-  const points = monitorPoints.value.filter(point => point.group_id === group.id || (!point.group_id && point.group_name === group.name))
-  const latencies = points.flatMap(point => point.latency_ms == null ? [] : [point.latency_ms])
-  const successCount = points.filter(point => point.status === 'operational' || point.status === 'degraded').length
-  const successValue = points.length ? (successCount / points.length) * 100 : null
+  const metrics = props.entry?.monitorStatus?.groups?.find(item => item.group_id === group.id)?.metrics
   return {
     id: group.id,
     name: group.name,
-    averageLatency: latencies.length ? formatLatency(latencies.reduce((sum, value) => sum + value, 0) / latencies.length) : '—',
-    successRate: successValue == null ? '—' : `${successValue.toFixed(2)}%`,
-    successRateClass: successValue == null ? 'text-foreground-muted' : successValue >= 99 ? 'text-success-foreground' : successValue >= 95 ? 'text-warning-foreground' : 'text-danger-foreground',
-    samples: points.length || '—',
+    tps: metrics?.tps == null ? '—' : `${metrics.tps.toFixed(metrics.tps < 10 ? 2 : 1)} t/s`,
+    ttft: metrics?.ttft_ms == null ? '—' : formatLatency(metrics.ttft_ms),
+    averageLatency: metrics?.average_latency_ms == null ? '—' : formatLatency(metrics.average_latency_ms),
+    successRate: metrics?.success_rate ?? null,
+    buckets: metrics?.buckets ?? [],
   }
 }))
 
@@ -709,7 +692,8 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-watch(() => props.entry, async (entry) => {
+watch(() => props.entry, async (entry, previousEntry) => {
+  if (entry && previousEntry && entry.key === previousEntry.key) return
   if (entry) {
     previousFocus = document.activeElement as HTMLElement
     previousBodyOverflow = document.body.style.overflow
@@ -745,4 +729,12 @@ onBeforeUnmount(() => {
 .marketplace-detail-leave-to { opacity: 0; }
 .marketplace-detail-enter-from aside,
 .marketplace-detail-leave-to aside { transform: translateX(100%); }
+.drawer-tab-content { animation: drawer-tab-in 180ms ease-out; }
+@keyframes drawer-tab-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes marketplace-progress { 0% { transform: translateX(-110%); } 100% { transform: translateX(310%); } }
+.marketplace-progress { animation: marketplace-progress 900ms ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .drawer-tab-content { animation: none; }
+  .marketplace-progress { animation: none; transform: translateX(100%); }
+}
 </style>

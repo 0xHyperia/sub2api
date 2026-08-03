@@ -36,8 +36,10 @@ export default {
           configureLink: 'Configure platforms, model lists, and multipliers in Group Management',
           enabled: 'Enable Model Marketplace',
           enabledHint: 'When off, the user entry is hidden, direct navigation returns to the dashboard, and the endpoint returns an empty list.',
-          monitorEnabled: 'Enable Model Monitor',
-          monitorEnabledHint: 'Probe selected models through the normal platform scheduler and show status in the marketplace. Models are enabled individually.',
+          monitorEnabled: 'Enable Active Probes',
+          monitorEnabledHint: 'Run group probes when no real traffic arrives. Real requests continue to be measured and existing data remains visible when disabled.',
+          performanceVisible: 'Show Detailed Performance to Users',
+          performanceVisibleHint: 'When disabled, the marketplace keeps success rate and availability but hides TPS, TTFT, average latency, and the latency trend.',
           monitorConfigureLink: 'Configure in Channel Management > Model Monitor',
         },
         modelPlaza: {

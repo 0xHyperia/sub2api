@@ -297,16 +297,17 @@ type SystemSettings struct {
 	SoftwareCenterEnabled    bool `json:"software_center_enabled"`
 
 	// Model Marketplace feature switch (user-facing model catalog)
-	ModelMarketplaceEnabled bool   `json:"model_marketplace_enabled"`
-	ModelMonitorEnabled     bool   `json:"model_monitor_enabled"`
-	ContactUsEnabled        bool   `json:"contact_us_enabled"`
-	ContactQQEnabled        bool   `json:"contact_qq_enabled"`
-	ContactQQName           string `json:"contact_qq_name"`
-	ContactQQURL            string `json:"contact_qq_url"`
-	ContactTelegramEnabled  bool   `json:"contact_telegram_enabled"`
-	ContactTelegramName     string `json:"contact_telegram_name"`
-	ContactTelegramURL      string `json:"contact_telegram_url"`
-	ContactTicketEnabled    bool   `json:"contact_ticket_enabled"`
+	ModelMarketplaceEnabled            bool   `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled                bool   `json:"model_monitor_enabled"`
+	ModelMarketplacePerformanceVisible bool   `json:"model_marketplace_performance_visible"`
+	ContactUsEnabled                   bool   `json:"contact_us_enabled"`
+	ContactQQEnabled                   bool   `json:"contact_qq_enabled"`
+	ContactQQName                      string `json:"contact_qq_name"`
+	ContactQQURL                       string `json:"contact_qq_url"`
+	ContactTelegramEnabled             bool   `json:"contact_telegram_enabled"`
+	ContactTelegramName                string `json:"contact_telegram_name"`
+	ContactTelegramURL                 string `json:"contact_telegram_url"`
+	ContactTicketEnabled               bool   `json:"contact_ticket_enabled"`
 
 	// Model Plaza feature (public group/model pricing showcase)
 	ModelPlazaEnabled     bool   `json:"model_plaza_enabled"`
@@ -398,16 +399,17 @@ type PublicSettings struct {
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 	SoftwareCenterEnabled    bool `json:"software_center_enabled"`
 
-	ModelMarketplaceEnabled bool   `json:"model_marketplace_enabled"`
-	ModelMonitorEnabled     bool   `json:"model_monitor_enabled"`
-	ContactUsEnabled        bool   `json:"contact_us_enabled"`
-	ContactQQEnabled        bool   `json:"contact_qq_enabled"`
-	ContactQQName           string `json:"contact_qq_name"`
-	ContactQQURL            string `json:"contact_qq_url"`
-	ContactTelegramEnabled  bool   `json:"contact_telegram_enabled"`
-	ContactTelegramName     string `json:"contact_telegram_name"`
-	ContactTelegramURL      string `json:"contact_telegram_url"`
-	ContactTicketEnabled    bool   `json:"contact_ticket_enabled"`
+	ModelMarketplaceEnabled            bool   `json:"model_marketplace_enabled"`
+	ModelMonitorEnabled                bool   `json:"model_monitor_enabled"`
+	ModelMarketplacePerformanceVisible bool   `json:"model_marketplace_performance_visible"`
+	ContactUsEnabled                   bool   `json:"contact_us_enabled"`
+	ContactQQEnabled                   bool   `json:"contact_qq_enabled"`
+	ContactQQName                      string `json:"contact_qq_name"`
+	ContactQQURL                       string `json:"contact_qq_url"`
+	ContactTelegramEnabled             bool   `json:"contact_telegram_enabled"`
+	ContactTelegramName                string `json:"contact_telegram_name"`
+	ContactTelegramURL                 string `json:"contact_telegram_url"`
+	ContactTicketEnabled               bool   `json:"contact_ticket_enabled"`
 
 	ModelPlazaEnabled     bool `json:"model_plaza_enabled"`
 	ModelPlazaRequireAuth bool `json:"model_plaza_require_auth"`

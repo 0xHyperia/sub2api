@@ -390,6 +390,9 @@ const (
 	SettingKeyModelMarketplaceEnabled = "model_marketplace_enabled"
 	// SettingKeyModelMonitorEnabled controls independent platform-model probes.
 	SettingKeyModelMonitorEnabled = "model_monitor_enabled"
+	// SettingKeyModelMarketplacePerformanceVisible controls whether detailed
+	// performance metrics are exposed to marketplace users. Success-rate data remains visible.
+	SettingKeyModelMarketplacePerformanceVisible = "model_marketplace_performance_visible"
 	// Contact-us entries shown to authenticated users.
 	SettingKeyContactUsEnabled       = "contact_us_enabled"
 	SettingKeyContactQQEnabled       = "contact_qq_enabled"

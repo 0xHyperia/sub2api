@@ -224,6 +224,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeySoftwareCenterEnabled,
 		SettingKeyModelMarketplaceEnabled,
 		SettingKeyModelMonitorEnabled,
+		SettingKeyModelMarketplacePerformanceVisible,
 		SettingKeyContactUsEnabled,
 		SettingKeyContactQQEnabled,
 		SettingKeyContactQQName,
@@ -348,16 +349,17 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
 		SoftwareCenterEnabled:    settings[SettingKeySoftwareCenterEnabled] != "false",
 
-		ModelMarketplaceEnabled: settings[SettingKeyModelMarketplaceEnabled] == "true",
-		ModelMonitorEnabled:     settings[SettingKeyModelMonitorEnabled] == "true",
-		ContactUsEnabled:        settings[SettingKeyContactUsEnabled] == "true",
-		ContactQQEnabled:        settings[SettingKeyContactQQEnabled] == "true",
-		ContactQQName:           strings.TrimSpace(settings[SettingKeyContactQQName]),
-		ContactQQURL:            strings.TrimSpace(settings[SettingKeyContactQQURL]),
-		ContactTelegramEnabled:  settings[SettingKeyContactTelegramEnabled] == "true",
-		ContactTelegramName:     strings.TrimSpace(settings[SettingKeyContactTelegramName]),
-		ContactTelegramURL:      strings.TrimSpace(settings[SettingKeyContactTelegramURL]),
-		ContactTicketEnabled:    !isFalseSettingValue(settings[SettingKeyContactTicketEnabled]),
+		ModelMarketplaceEnabled:            settings[SettingKeyModelMarketplaceEnabled] == "true",
+		ModelMonitorEnabled:                settings[SettingKeyModelMonitorEnabled] == "true",
+		ModelMarketplacePerformanceVisible: !isFalseSettingValue(settings[SettingKeyModelMarketplacePerformanceVisible]),
+		ContactUsEnabled:                   settings[SettingKeyContactUsEnabled] == "true",
+		ContactQQEnabled:                   settings[SettingKeyContactQQEnabled] == "true",
+		ContactQQName:                      strings.TrimSpace(settings[SettingKeyContactQQName]),
+		ContactQQURL:                       strings.TrimSpace(settings[SettingKeyContactQQURL]),
+		ContactTelegramEnabled:             settings[SettingKeyContactTelegramEnabled] == "true",
+		ContactTelegramName:                strings.TrimSpace(settings[SettingKeyContactTelegramName]),
+		ContactTelegramURL:                 strings.TrimSpace(settings[SettingKeyContactTelegramURL]),
+		ContactTicketEnabled:               !isFalseSettingValue(settings[SettingKeyContactTicketEnabled]),
 
 		ModelPlazaEnabled:     settings[SettingKeyModelPlazaEnabled] == "true",
 		ModelPlazaRequireAuth: settings[SettingKeyModelPlazaRequireAuth] == "true",
@@ -460,6 +462,16 @@ func (s *SettingService) GetModelMarketplaceRuntime(ctx context.Context) ModelMa
 	return ModelMarketplaceRuntime{
 		Enabled: vals[SettingKeyModelMarketplaceEnabled] == "true",
 	}
+}
+
+// ModelMarketplacePerformanceVisible reports whether marketplace users may see
+// detailed latency and throughput data. Success-rate data is always retained.
+func (s *SettingService) ModelMarketplacePerformanceVisible(ctx context.Context) bool {
+	vals, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeyModelMarketplacePerformanceVisible})
+	if err != nil {
+		return true
+	}
+	return !isFalseSettingValue(vals[SettingKeyModelMarketplacePerformanceVisible])
 }
 
 // ModelMonitorRuntime is enabled only while both the marketplace and the
@@ -585,6 +597,7 @@ type PublicSettingsInjectionPayload struct {
 	SoftwareCenterEnabled                bool   `json:"software_center_enabled"`
 	ModelMarketplaceEnabled              bool   `json:"model_marketplace_enabled"`
 	ModelMonitorEnabled                  bool   `json:"model_monitor_enabled"`
+	ModelMarketplacePerformanceVisible   bool   `json:"model_marketplace_performance_visible"`
 	ContactUsEnabled                     bool   `json:"contact_us_enabled"`
 	ContactQQEnabled                     bool   `json:"contact_qq_enabled"`
 	ContactQQName                        string `json:"contact_qq_name"`
@@ -664,6 +677,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		SoftwareCenterEnabled:                settings.SoftwareCenterEnabled,
 		ModelMarketplaceEnabled:              settings.ModelMarketplaceEnabled,
 		ModelMonitorEnabled:                  settings.ModelMonitorEnabled,
+		ModelMarketplacePerformanceVisible:   settings.ModelMarketplacePerformanceVisible,
 		ContactUsEnabled:                     settings.ContactUsEnabled,
 		ContactQQEnabled:                     settings.ContactQQEnabled,
 		ContactQQName:                        settings.ContactQQName,

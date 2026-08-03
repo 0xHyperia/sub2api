@@ -7,7 +7,7 @@
         role="alert"
       >
         <span>{{ t('modelMarketplace.loadError') }}</span>
-        <button type="button" class="btn btn-secondary btn-sm" @click="loadMarketplace">
+        <button type="button" class="btn btn-secondary btn-sm" @click="loadMarketplace()">
           <Icon name="refresh" size="sm" />
           {{ t('common.retry') }}
         </button>
@@ -189,7 +189,7 @@
                     :disabled="loading"
                     :title="t('common.refresh')"
                     :aria-label="t('common.refresh')"
-                    @click="loadMarketplace"
+                    @click="loadMarketplace()"
                   >
                     <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
                   </button>
@@ -239,7 +239,7 @@
                   :disabled="loading"
                   :title="t('common.refresh')"
                   :aria-label="t('common.refresh')"
-                  @click="loadMarketplace"
+                  @click="loadMarketplace()"
                 >
                   <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
                 </button>
@@ -362,14 +362,11 @@
                   </span>
                 </div>
                 <div
-                  v-if="modelMonitorEnabled"
+                  v-if="entry.monitorStatus"
                   class="inline-flex shrink-0 items-end gap-2"
                   :title="monitorCompactLabel(entry)"
                   :aria-label="monitorCompactLabel(entry)"
                 >
-                  <span v-if="monitorLatency(entry)" class="font-mono text-[9px] tabular-nums text-foreground-subtle">
-                    {{ monitorLatency(entry) }}
-                  </span>
                   <span class="flex h-3 items-end gap-[3px]" aria-hidden="true">
                     <span
                       v-for="(status, index) in monitorSignalPoints(entry)"
@@ -493,9 +490,12 @@
       :groups="detailEntry ? sortedEntryGroups(detailEntry, userGroupRates) : []"
       :active-group="detailEntry ? activeEntryGroup(detailEntry) : null"
       :show-effective-prices="showEffectivePrices"
-      :monitor-enabled="modelMonitorEnabled"
+      :monitor-resolution="monitorResolution"
+      :performance-loading="resolutionLoading"
+      :show-detailed-performance="appStore.cachedPublicSettings?.model_marketplace_performance_visible !== false"
       @close="detailEntry = null"
       @select-group="detailEntry && selectEntryGroup(detailEntry, $event)"
+      @update:monitor-resolution="setMonitorResolution"
     />
   </AppLayout>
 </template>
@@ -587,12 +587,16 @@ const visibleCount = ref(BATCH_SIZE)
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 const selectedEntryGroups = ref<Record<string, number>>({})
 const detailEntry = ref<MarketplaceModelEntry | null>(null)
+const monitorResolution = ref<'minute' | 'hour'>(localStorage.getItem('usa0:model-marketplace-resolution') === 'minute' ? 'minute' : 'hour')
+const marketplaceRefreshing = ref(false)
+const resolutionLoading = ref(false)
 const mobileFilterOpen = ref(false)
 const draftProvider = ref('all')
 const draftGroup = ref('all')
 const draftBilling = ref('all')
 const draftCapability = ref('all')
 let loadMoreObserver: IntersectionObserver | null = null
+let marketplaceRefreshTimer: number | null = null
 
 const entries = computed(() => buildMarketplaceEntries(catalog.value))
 const groups = computed(() => buildMarketplaceGroups(entries.value, userGroupRates.value))
@@ -707,7 +711,6 @@ watch(
 )
 watch(loadMoreSentinel, (node, previous) => { if (previous) loadMoreObserver?.unobserve(previous); if (node) loadMoreObserver?.observe(node) }, { flush: 'post' })
 
-const modelMonitorEnabled = computed(() => appStore.cachedPublicSettings?.model_monitor_enabled === true)
 const balanceRechargeMultiplier = computed(() => {
   const multiplier = paymentStore.config?.balance_recharge_multiplier
   return Number.isFinite(multiplier) && Number(multiplier) > 0 ? Number(multiplier) : 1
@@ -834,19 +837,20 @@ function openDetails(entry: MarketplaceModelEntry) {
 }
 
 function loadMore() { visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, filteredEntries.value.length) }
-function monitorStatusLabel(status?: string) { return status ? t(`modelMarketplace.monitor.${status}`) : t('modelMarketplace.monitor.unknown') }
-function monitorLatency(entry: MarketplaceModelEntry) { const value = entry.monitorStatus?.latency_ms; return value == null ? '' : `${value} ms` }
+function monitorStatusLabel(status?: string) {
+  if (status === 'operational' || status === 'degraded') return t('modelMarketplace.monitor.operational')
+  if (status === 'failed' || status === 'error') return t('modelMarketplace.monitor.failed')
+  return t('modelMarketplace.monitor.unknown')
+}
 function monitorSignalPoints(entry: MarketplaceModelEntry) { return recentMonitorStatuses(entry.monitorStatus?.timeline, 3, entry.monitorStatus?.status ?? '') }
 function monitorSignalClass(status?: string) {
-  if (status === 'operational') return 'bg-success'
-  if (status === 'degraded') return 'bg-warning'
+  if (status === 'operational' || status === 'degraded') return 'bg-success'
   if (status === 'failed' || status === 'error') return 'bg-danger'
   return 'bg-outline'
 }
 function monitorCompactLabel(entry: MarketplaceModelEntry) {
   const summary = entry.monitorStatus
   const parts = [monitorStatusLabel(summary?.status)]
-  if (summary?.latency_ms != null) parts.push(`${t('modelMarketplace.monitor.latency')}: ${summary.latency_ms} ms`)
   if (summary?.availability_7d != null) parts.push(t('modelMarketplace.monitor.availability', { value: summary.availability_7d.toFixed(2) }))
   return parts.join(', ')
 }
@@ -895,23 +899,48 @@ async function copyModel(name: string) {
   await copyToClipboard(name, t('modelMarketplace.copySuccess', { name }))
 }
 
-async function loadMarketplace() {
-  loading.value = true
-  visibleCount.value = BATCH_SIZE
+async function loadMarketplace(silent = false) {
+  if (loading.value || marketplaceRefreshing.value) return false
+  const selectedKey = detailEntry.value?.key
+  silent ? marketplaceRefreshing.value = true : loading.value = true
+  if (!silent) visibleCount.value = BATCH_SIZE
   loadError.value = false
   try {
     const [catalogResponse, rates] = await Promise.all([
-      userChannelsAPI.getMarketplace(),
+      userChannelsAPI.getMarketplace({ resolution: monitorResolution.value }),
       userGroupsAPI.getUserGroupRates().catch(() => ({} as Record<number, number>)),
       paymentStore.fetchConfig(true),
     ])
     catalog.value = catalogResponse
     userGroupRates.value = rates
+    if (selectedKey) detailEntry.value = entries.value.find(entry => entry.key === selectedKey) ?? null
+    return true
   } catch (error) {
-    loadError.value = true
-    appStore.showError(extractApiErrorMessage(error, t('modelMarketplace.loadError')))
+    if (!silent) {
+      loadError.value = true
+      appStore.showError(extractApiErrorMessage(error, t('modelMarketplace.loadError')))
+    }
+    return false
   } finally {
     loading.value = false
+    marketplaceRefreshing.value = false
+  }
+}
+
+async function setMonitorResolution(value: 'minute' | 'hour') {
+  if (monitorResolution.value === value) return
+  const previous = monitorResolution.value
+  monitorResolution.value = value
+  resolutionLoading.value = true
+  try {
+    const loaded = await loadMarketplace(true)
+    if (!loaded) {
+      monitorResolution.value = previous
+      return
+    }
+    localStorage.setItem('usa0:model-marketplace-resolution', value)
+  } finally {
+    resolutionLoading.value = false
   }
 }
 
@@ -919,8 +948,14 @@ onMounted(() => {
   loadMoreObserver = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) loadMore() }, { rootMargin: '240px' })
   if (loadMoreSentinel.value) loadMoreObserver?.observe(loadMoreSentinel.value)
   void loadMarketplace()
+  marketplaceRefreshTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible') void loadMarketplace(true)
+  }, 30_000)
 })
-onBeforeUnmount(() => loadMoreObserver?.disconnect())
+onBeforeUnmount(() => {
+  loadMoreObserver?.disconnect()
+  if (marketplaceRefreshTimer != null) window.clearInterval(marketplaceRefreshTimer)
+})
 </script>
 
 <style scoped>

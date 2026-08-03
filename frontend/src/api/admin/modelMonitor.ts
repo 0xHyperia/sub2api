@@ -8,12 +8,29 @@ export interface ModelMonitorTimelinePoint {
   checked_at: string
 }
 
+export type ModelMonitorResolution = 'minute' | 'hour'
+
+export interface ModelMonitorMetricBucket {
+  started_at: string
+  success_rate: number | null
+}
+
+export interface ModelMonitorGroupMetrics {
+  tps: number | null
+  ttft_ms: number | null
+  average_latency_ms: number | null
+  success_rate: number | null
+  probe_cost: number | null
+  buckets: ModelMonitorMetricBucket[]
+}
+
 export interface ModelMonitorSummary {
   status: ModelMonitorStatus | ''
   latency_ms: number | null
   availability_7d: number | null
   last_checked_at: string | null
   timeline: ModelMonitorTimelinePoint[]
+  metrics?: ModelMonitorGroupMetrics | null
 }
 
 export interface ModelMonitorRow {
@@ -38,6 +55,11 @@ export interface ModelMonitorGroupOption {
   rate_multiplier: number
   priority: number
   selected: boolean
+  enabled: boolean
+  interval_seconds: number
+  last_traffic_at: string | null
+  last_probe_at: string | null
+  metrics: ModelMonitorGroupMetrics | null
 }
 
 export interface ModelMonitorHistoryItem extends ModelMonitorTimelinePoint {
@@ -47,15 +69,15 @@ export interface ModelMonitorHistoryItem extends ModelMonitorTimelinePoint {
   message: string
   group_id: number | null
   group_name: string
+  first_token_ms: number | null
+  input_tokens: number
+  output_tokens: number
+  generation_ms: number
+  probe_cost: number | null
 }
 
-export async function updateGroups(payload: { platform: string; model: string; group_ids: number[] }): Promise<ModelMonitorRow> {
-  const { data } = await apiClient.put('/admin/model-monitors/groups', payload)
-  return data
-}
-
-export async function list(): Promise<{ items: ModelMonitorRow[] }> {
-  const { data } = await apiClient.get('/admin/model-monitors')
+export async function list(resolution: ModelMonitorResolution = 'minute'): Promise<{ items: ModelMonitorRow[] }> {
+  const { data } = await apiClient.get('/admin/model-monitors', { params: { resolution } })
   return data
 }
 
@@ -64,8 +86,13 @@ export async function updateConfig(payload: { platform: string; model: string; e
   return data
 }
 
-export async function runNow(platform: string, model: string): Promise<ModelMonitorHistoryItem> {
-  const { data } = await apiClient.post('/admin/model-monitors/run', { platform, model })
+export async function updateGroupConfig(payload: { platform: string; model: string; group_id: number; enabled: boolean; interval_seconds: number }): Promise<ModelMonitorRow> {
+  const { data } = await apiClient.put('/admin/model-monitors/group', payload)
+  return data
+}
+
+export async function runNow(platform: string, model: string, groupId?: number): Promise<ModelMonitorHistoryItem> {
+  const { data } = await apiClient.post('/admin/model-monitors/run', { platform, model, group_id: groupId })
   return data
 }
 
@@ -74,4 +101,4 @@ export async function history(id: number, limit = 100): Promise<{ items: ModelMo
   return data
 }
 
-export default { list, updateConfig, updateGroups, runNow, history }
+export default { list, updateConfig, updateGroupConfig, runNow, history }

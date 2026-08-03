@@ -205,7 +205,7 @@ func (h *AvailableChannelHandler) List(c *gin.Context) {
 	h.listForUser(c, subject.UserID)
 }
 
-func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID int64) ([]userMarketplacePlatform, error) {
+func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID int64, resolution service.ModelMonitorResolution) ([]userMarketplacePlatform, error) {
 	groups, err := h.apiKeyService.GetAvailableGroups(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -283,14 +283,15 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 			SupportedModels: models,
 		})
 	}
-	if h.modelMonitorService != nil && h.settingService.GetModelMonitorRuntime(ctx).Enabled {
+	if h.modelMonitorService != nil {
+		showDetailedPerformance := h.settingService == nil || h.settingService.ModelMarketplacePerformanceVisible(ctx)
 		keys := make([]service.ModelCatalogEntry, 0)
 		for _, section := range out {
 			for _, model := range section.SupportedModels {
 				keys = append(keys, service.ModelCatalogEntry{Platform: section.Platform, Model: model.Name})
 			}
 		}
-		summaries, summaryErr := h.modelMonitorService.PublicSummaries(ctx, keys)
+		summaries, summaryErr := h.modelMonitorService.PublicSummaries(ctx, keys, resolution)
 		if summaryErr != nil {
 			return nil, summaryErr
 		}
@@ -298,6 +299,9 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 			for j := range out[i].SupportedModels {
 				if summary, ok := summaries[service.ModelMonitorKey(out[i].Platform, out[i].SupportedModels[j].Name)]; ok {
 					copy := summary
+					if !showDetailedPerformance {
+						service.RedactModelMonitorDetailedPerformance(&copy)
+					}
 					out[i].SupportedModels[j].MonitorStatus = &copy
 				}
 			}
@@ -366,8 +370,9 @@ func (h *AvailableChannelHandler) showcaseForPublic(ctx context.Context) ([]publ
 		out = append(out, publicModelShowcasePlatform{Platform: platform, ModelCount: len(models), Models: models})
 	}
 
-	if h.modelMonitorService != nil && h.settingService != nil && h.settingService.GetModelMonitorRuntime(ctx).Enabled {
-		summaries, summaryErr := h.modelMonitorService.PublicSummaries(ctx, keys)
+	if h.modelMonitorService != nil {
+		showDetailedPerformance := h.settingService == nil || h.settingService.ModelMarketplacePerformanceVisible(ctx)
+		summaries, summaryErr := h.modelMonitorService.PublicSummaries(ctx, keys, service.ModelMonitorResolutionHour)
 		if summaryErr != nil {
 			return nil, summaryErr
 		}
@@ -376,6 +381,9 @@ func (h *AvailableChannelHandler) showcaseForPublic(ctx context.Context) ([]publ
 				key := service.ModelMonitorKey(out[i].Platform, out[i].Models[j].Name)
 				if summary, ok := summaries[key]; ok {
 					copy := summary
+					if !showDetailedPerformance {
+						service.RedactModelMonitorDetailedPerformance(&copy)
+					}
 					out[i].Models[j].MonitorStatus = &copy
 				}
 			}
@@ -502,7 +510,8 @@ func (h *AvailableChannelHandler) ListMarketplace(c *gin.Context) {
 		return
 	}
 
-	out, err := h.marketplaceForUser(c.Request.Context(), subject.UserID)
+	resolution := service.ModelMonitorResolution(strings.ToLower(strings.TrimSpace(c.DefaultQuery("resolution", "hour"))))
+	out, err := h.marketplaceForUser(c.Request.Context(), subject.UserID, resolution)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

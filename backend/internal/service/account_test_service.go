@@ -52,6 +52,73 @@ type TestEvent struct {
 	Error    string `json:"error,omitempty"`
 }
 
+const accountTestMetricsContextKey = "account_test_metrics"
+
+type accountTestMetrics struct {
+	startedAt    time.Time
+	firstTokenMs *int
+	inputTokens  int
+	outputTokens int
+}
+
+func accountTestMetricsFromContext(c *gin.Context) *accountTestMetrics {
+	if c == nil {
+		return nil
+	}
+	value, ok := c.Get(accountTestMetricsContextKey)
+	if !ok {
+		return nil
+	}
+	metrics, _ := value.(*accountTestMetrics)
+	return metrics
+}
+
+func observeAccountTestUsage(c *gin.Context, payload map[string]any) {
+	metrics := accountTestMetricsFromContext(c)
+	if metrics == nil || payload == nil {
+		return
+	}
+	var walk func(map[string]any)
+	walk = func(value map[string]any) {
+		for _, key := range []string{"usage", "usageMetadata"} {
+			if usage, ok := value[key].(map[string]any); ok {
+				metrics.inputTokens = max(metrics.inputTokens, intFromAny(firstMapValue(usage, "input_tokens", "prompt_tokens", "promptTokenCount", "inputTokens")))
+				metrics.outputTokens = max(metrics.outputTokens, intFromAny(firstMapValue(usage, "output_tokens", "completion_tokens", "candidatesTokenCount", "outputTokens")))
+			}
+		}
+		for _, key := range []string{"response", "message"} {
+			if nested, ok := value[key].(map[string]any); ok {
+				walk(nested)
+			}
+		}
+	}
+	walk(payload)
+}
+
+func firstMapValue(values map[string]any, keys ...string) any {
+	for _, key := range keys {
+		if value, ok := values[key]; ok {
+			return value
+		}
+	}
+	return nil
+}
+
+func intFromAny(value any) int {
+	switch typed := value.(type) {
+	case float64:
+		return int(typed)
+	case int:
+		return typed
+	case int64:
+		return int(typed)
+	case json.Number:
+		value, _ := typed.Int64()
+		return int(value)
+	}
+	return 0
+}
+
 const (
 	defaultGeminiTextTestPrompt  = "hi"
 	defaultGeminiImageTestPrompt = "Generate a cute orange cat astronaut sticker on a clean pastel background."
@@ -1401,6 +1468,7 @@ func (s *AccountTestService) processGeminiStream(c *gin.Context, body io.Reader)
 		if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
 			continue
 		}
+		observeAccountTestUsage(c, data)
 
 		// Support two Gemini response formats:
 		// - AI Studio: {"candidates": [...]}
@@ -1496,7 +1564,8 @@ func createOpenAIChatCompletionsTestPayload(modelID string, prompt string) map[s
 				"content": testPrompt,
 			},
 		},
-		"stream": true,
+		"stream":         true,
+		"stream_options": map[string]any{"include_usage": true},
 	}
 }
 
@@ -1529,6 +1598,7 @@ func (s *AccountTestService) processClaudeStream(c *gin.Context, body io.Reader)
 		if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
 			continue
 		}
+		observeAccountTestUsage(c, data)
 
 		eventType, _ := data["type"].(string)
 
@@ -1594,6 +1664,7 @@ func (s *AccountTestService) processOpenAIChatCompletionsStream(c *gin.Context, 
 		if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
 			return s.sendErrorAndEnd(c, "Invalid Chat Completions response from /v1/chat/completions: expected JSON data")
 		}
+		observeAccountTestUsage(c, data)
 		seenJSON = true
 
 		if errData, ok := data["error"].(map[string]any); ok {
@@ -1666,6 +1737,7 @@ func (s *AccountTestService) processOpenAIStream(c *gin.Context, body io.Reader)
 		if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
 			continue
 		}
+		observeAccountTestUsage(c, data)
 
 		eventType, _ := data["type"].(string)
 
@@ -1923,6 +1995,12 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 }
 
 func (s *AccountTestService) sendEvent(c *gin.Context, event TestEvent) {
+	if event.Type == "content" && event.Text != "" {
+		if metrics := accountTestMetricsFromContext(c); metrics != nil && metrics.firstTokenMs == nil {
+			value := int(time.Since(metrics.startedAt).Milliseconds())
+			metrics.firstTokenMs = &value
+		}
+	}
 	eventJSON, _ := json.Marshal(event)
 	if _, err := fmt.Fprintf(c.Writer, "data: %s\n\n", eventJSON); err != nil {
 		log.Printf("failed to write SSE event: %v", err)
@@ -1946,6 +2024,8 @@ func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID in
 	w := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(w)
 	ginCtx.Request = (&http.Request{}).WithContext(ctx)
+	metrics := &accountTestMetrics{startedAt: startedAt}
+	ginCtx.Set(accountTestMetricsContextKey, metrics)
 
 	testErr := s.TestAccountConnection(ginCtx, accountID, modelID, "", AccountTestModeDefault)
 
@@ -1961,11 +2041,22 @@ func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID in
 		}
 	}
 
+	generationMs := finishedAt.Sub(startedAt).Milliseconds()
+	if metrics.firstTokenMs != nil {
+		generationMs -= int64(*metrics.firstTokenMs)
+		if generationMs < 1 {
+			generationMs = 1
+		}
+	}
 	return &ScheduledTestResult{
 		Status:       status,
 		ResponseText: responseText,
 		ErrorMessage: errMsg,
 		LatencyMs:    finishedAt.Sub(startedAt).Milliseconds(),
+		FirstTokenMs: metrics.firstTokenMs,
+		InputTokens:  metrics.inputTokens,
+		OutputTokens: metrics.outputTokens,
+		GenerationMs: generationMs,
 		StartedAt:    startedAt,
 		FinishedAt:   finishedAt,
 	}, nil

@@ -36,8 +36,10 @@ export default {
           configureLink: '前往 分组管理 配置平台、模型列表和倍率',
           enabled: '启用模型广场',
           enabledHint: '关闭后用户端入口隐藏，直接访问页面会返回仪表盘，接口返回空数组。',
-          monitorEnabled: '启用模型监控',
-          monitorEnabledHint: '通过平台正常调度路径探测已选模型，并在模型广场展示状态。模型需在配置页逐个启用。',
+          monitorEnabled: '启用主动检测',
+          monitorEnabledHint: '无真实请求时按分组间隔主动补测。关闭后真实请求仍继续统计，已有监测数据仍会显示。',
+          performanceVisible: '向用户展示详细性能指标',
+          performanceVisibleHint: '关闭后模型广场仍展示成功率和可用性，但隐藏 TPS、TTFT、平均延迟及延迟趋势。',
           monitorConfigureLink: '前往 渠道管理 > 模型监控 配置',
         },
         modelPlaza: {
