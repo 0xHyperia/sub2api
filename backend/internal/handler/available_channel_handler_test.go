@@ -216,6 +216,43 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 	}
 }
 
+func TestUserMarketplaceGroup_ExposesImagePricingWithoutChangingAvailableGroup(t *testing.T) {
+	price1K := 0.04
+	price2K := 0.08
+	price4K := 0.12
+	group := service.Group{
+		ID:                   7,
+		Name:                 "image",
+		Platform:             service.PlatformOpenAI,
+		RateMultiplier:       0.8,
+		ImageRateIndependent: true,
+		ImageRateMultiplier:  0.5,
+		ImagePrice1K:         &price1K,
+		ImagePrice2K:         &price2K,
+		ImagePrice4K:         &price4K,
+	}
+
+	marketplaceRaw, err := json.Marshal(toUserMarketplaceGroup(group))
+	require.NoError(t, err)
+	var marketplace map[string]any
+	require.NoError(t, json.Unmarshal(marketplaceRaw, &marketplace))
+	for _, key := range []string{"image_rate_independent", "image_rate_multiplier", "image_price_1k", "image_price_2k", "image_price_4k"} {
+		_, exists := marketplace[key]
+		require.Truef(t, exists, "marketplace group DTO must expose %q", key)
+	}
+	require.Equal(t, 0.04, marketplace["image_price_1k"])
+	require.Equal(t, 0.5, marketplace["image_rate_multiplier"])
+
+	availableRaw, err := json.Marshal(toUserAvailableGroup(group))
+	require.NoError(t, err)
+	var available map[string]any
+	require.NoError(t, json.Unmarshal(availableRaw, &available))
+	for _, key := range []string{"image_rate_independent", "image_rate_multiplier", "image_price_1k", "image_price_2k", "image_price_4k"} {
+		_, exists := available[key]
+		require.Falsef(t, exists, "available channel group DTO must not expose %q", key)
+	}
+}
+
 func TestBuildPlatformSections_GroupsByPlatform(t *testing.T) {
 	// 一个渠道横跨 anthropic / openai / 空平台：应该生成 2 个 section，
 	// 按 platform 字母序排序，各自 groups 和 supported_models 只含同平台条目。

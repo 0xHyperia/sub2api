@@ -89,6 +89,17 @@ type userAvailableGroup struct {
 	RPMLimit           int     `json:"rpm_limit"`
 }
 
+// userMarketplaceGroup extends the regular user-visible group summary with
+// image-generation billing controls used only by /models/marketplace.
+type userMarketplaceGroup struct {
+	userAvailableGroup
+	ImageRateIndependent bool     `json:"image_rate_independent"`
+	ImageRateMultiplier  float64  `json:"image_rate_multiplier"`
+	ImagePrice1K         *float64 `json:"image_price_1k"`
+	ImagePrice2K         *float64 `json:"image_price_2k"`
+	ImagePrice4K         *float64 `json:"image_price_4k"`
+}
+
 // userSupportedModelPricing 用户可见的定价字段白名单。
 type userSupportedModelPricing struct {
 	BillingMode      string                   `json:"billing_mode"`
@@ -126,7 +137,7 @@ type userMarketplaceModel struct {
 	Platform      string                       `json:"platform"`
 	Pricing       *userSupportedModelPricing   `json:"pricing"`
 	Capabilities  []string                     `json:"capabilities"`
-	Groups        []userAvailableGroup         `json:"groups"`
+	Groups        []userMarketplaceGroup       `json:"groups"`
 	MonitorStatus *service.ModelMonitorSummary `json:"monitor_status"`
 }
 
@@ -153,7 +164,7 @@ type userAvailableChannel struct {
 // are aggregated from accessible groups and their schedulable accounts.
 type userMarketplacePlatform struct {
 	Platform        string                 `json:"platform"`
-	Groups          []userAvailableGroup   `json:"groups"`
+	Groups          []userMarketplaceGroup `json:"groups"`
 	SupportedModels []userMarketplaceModel `json:"supported_models"`
 }
 
@@ -201,7 +212,7 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 	}
 
 	type modelAggregate struct {
-		groups map[int64]userAvailableGroup
+		groups map[int64]userMarketplaceGroup
 	}
 	byPlatform := make(map[string]map[string]*modelAggregate)
 
@@ -226,11 +237,11 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 		if byPlatform[platform] == nil {
 			byPlatform[platform] = make(map[string]*modelAggregate)
 		}
-		groupView := toUserAvailableGroup(group)
+		groupView := toUserMarketplaceGroup(group)
 		for _, model := range models {
 			aggregate := byPlatform[platform][model]
 			if aggregate == nil {
-				aggregate = &modelAggregate{groups: make(map[int64]userAvailableGroup)}
+				aggregate = &modelAggregate{groups: make(map[int64]userMarketplaceGroup)}
 				byPlatform[platform][model] = aggregate
 			}
 			aggregate.groups[group.ID] = groupView
@@ -246,7 +257,7 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 	out := make([]userMarketplacePlatform, 0, len(platforms))
 	for _, platform := range platforms {
 		modelNames := make([]string, 0, len(byPlatform[platform]))
-		allGroups := make(map[int64]userAvailableGroup)
+		allGroups := make(map[int64]userMarketplaceGroup)
 		for name, aggregate := range byPlatform[platform] {
 			modelNames = append(modelNames, name)
 			for id, group := range aggregate.groups {
@@ -450,8 +461,19 @@ func toUserAvailableGroup(group service.Group) userAvailableGroup {
 	}
 }
 
-func sortedMarketplaceGroups(groups map[int64]userAvailableGroup) []userAvailableGroup {
-	out := make([]userAvailableGroup, 0, len(groups))
+func toUserMarketplaceGroup(group service.Group) userMarketplaceGroup {
+	return userMarketplaceGroup{
+		userAvailableGroup:   toUserAvailableGroup(group),
+		ImageRateIndependent: group.ImageRateIndependent,
+		ImageRateMultiplier:  group.ImageRateMultiplier,
+		ImagePrice1K:         group.ImagePrice1K,
+		ImagePrice2K:         group.ImagePrice2K,
+		ImagePrice4K:         group.ImagePrice4K,
+	}
+}
+
+func sortedMarketplaceGroups(groups map[int64]userMarketplaceGroup) []userMarketplaceGroup {
+	out := make([]userMarketplaceGroup, 0, len(groups))
 	for _, group := range groups {
 		out = append(out, group)
 	}

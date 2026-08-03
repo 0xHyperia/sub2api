@@ -1,5 +1,5 @@
 import type {
-  UserAvailableGroup,
+  UserMarketplaceGroup,
   UserMarketplacePlatform,
   UserModelMonitorTimelinePoint,
   UserSupportedModelPricing,
@@ -10,7 +10,7 @@ export interface MarketplaceModelEntry {
   key: string
   name: string
   platform: string
-  groups: UserAvailableGroup[]
+  groups: UserMarketplaceGroup[]
   pricing: UserSupportedModelPricing | null
   capabilities: string[]
   monitorStatus: UserModelMonitorSummary | null
@@ -18,8 +18,19 @@ export interface MarketplaceModelEntry {
   label: string
 }
 
-export interface MarketplaceGroupOption extends UserAvailableGroup {
+export interface MarketplaceGroupOption extends UserMarketplaceGroup {
   effectiveRate: number
+}
+
+export const MARKETPLACE_IMAGE_PRICE_TIERS = ['1K', '2K', '4K'] as const
+export type MarketplaceImagePriceTier = typeof MARKETPLACE_IMAGE_PRICE_TIERS[number]
+
+export interface MarketplaceImagePriceRow {
+  key: string
+  tier: MarketplaceImagePriceTier
+  rawValue: number | null
+  effectiveValue: number | null
+  usesGroupPrice: boolean
 }
 
 export type MarketplaceBillingCategory = 'usage' | 'request' | 'unpriced'
@@ -181,6 +192,17 @@ export function buildMarketplaceGroups(
   return [...groups.values()].sort(compareMarketplaceGroups)
 }
 
+export function marketplaceGroupRate(
+  group: UserMarketplaceGroup,
+  userRate: number | undefined,
+  imageBilling: boolean,
+): number {
+  if (imageBilling && group.image_rate_independent) {
+    return Math.max(0, group.image_rate_multiplier)
+  }
+  return userRate ?? group.rate_multiplier
+}
+
 export function compareMarketplaceGroups(a: MarketplaceGroupOption, b: MarketplaceGroupOption): number {
   if (a.effectiveRate !== b.effectiveRate) return a.effectiveRate - b.effectiveRate
   const byName = a.name.localeCompare(b.name)
@@ -228,7 +250,10 @@ export function compareMarketplaceModelRecency(a: string, b: string): number {
 }
 
 export function sortedEntryGroups(entry: MarketplaceModelEntry, userGroupRates: Record<number, number>): MarketplaceGroupOption[] {
-  return entry.groups.map(group => ({ ...group, effectiveRate: userGroupRates[group.id] ?? group.rate_multiplier })).sort(compareMarketplaceGroups)
+  const imageBilling = entry.pricing?.billing_mode === 'image'
+  return entry.groups
+    .map(group => ({ ...group, effectiveRate: marketplaceGroupRate(group, userGroupRates[group.id], imageBilling) }))
+    .sort(compareMarketplaceGroups)
 }
 
 export function effectiveRateForEntry(
@@ -240,7 +265,32 @@ export function effectiveRateForEntry(
     ? entry.groups
     : entry.groups.filter((group) => group.id === selectedGroupId)
   if (groups.length === 0) return 1
-  return Math.min(...groups.map((group) => userGroupRates[group.id] ?? group.rate_multiplier))
+  const imageBilling = entry.pricing?.billing_mode === 'image'
+  return Math.min(...groups.map((group) => marketplaceGroupRate(group, userGroupRates[group.id], imageBilling)))
+}
+
+export function imagePriceRows(
+  pricing: UserSupportedModelPricing | null,
+  group: MarketplaceGroupOption | null,
+): MarketplaceImagePriceRow[] {
+  if (pricing?.billing_mode !== 'image' || !group) return []
+  const fallback = pricing.per_request_price ?? pricing.image_output_price
+  const configuredPrices: Record<MarketplaceImagePriceTier, number | null> = {
+    '1K': group.image_price_1k,
+    '2K': group.image_price_2k,
+    '4K': group.image_price_4k,
+  }
+  return MARKETPLACE_IMAGE_PRICE_TIERS.map((tier) => {
+    const configured = configuredPrices[tier]
+    const rawValue = configured ?? fallback
+    return {
+      key: `image-${tier.toLowerCase()}`,
+      tier,
+      rawValue,
+      effectiveValue: rawValue == null ? null : rawValue * group.effectiveRate,
+      usesGroupPrice: configured != null,
+    }
+  }).filter(row => row.rawValue != null)
 }
 
 export function realtimeRate(

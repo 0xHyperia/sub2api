@@ -394,6 +394,18 @@
                     <span class="shrink-0 pl-2 text-[9px] text-foreground-subtle">/ 1M</span>
                   </dl>
                 </template>
+                <template v-else-if="entry.pricing.billing_mode === 'image'">
+                  <dl class="flex min-w-0 items-baseline divide-x divide-outline overflow-hidden">
+                    <div v-for="row in cardImagePriceRows(entry)" :key="row.key" class="flex min-w-0 items-baseline gap-1.5 px-2 first:pl-0 last:pr-0">
+                      <dt class="shrink-0 text-[9px] font-medium text-foreground-subtle">{{ row.tier }}</dt>
+                      <dd class="flex min-w-0 items-baseline gap-1">
+                        <span class="font-mono text-sm font-semibold tabular-nums text-foreground">{{ row.value }}</span>
+                        <span v-if="row.baseValue" class="truncate font-mono text-[9px] tabular-nums text-foreground-subtle line-through">{{ row.baseValue }}</span>
+                      </dd>
+                    </div>
+                    <span class="shrink-0 pl-2 text-[9px] text-foreground-subtle">{{ t('modelMarketplace.price.perImage') }}</span>
+                  </dl>
+                </template>
                 <template v-else>
                   <div class="flex items-baseline gap-1.5">
                     <span class="text-[9px] font-medium text-foreground-subtle">{{ t('modelMarketplace.price.request') }}</span>
@@ -516,6 +528,7 @@ import {
   compareMarketplaceProviders,
   DEFAULT_USD_TO_CNY_RATE,
   effectiveRateForEntry,
+  imagePriceRows,
   inferMarketplaceModelCapabilities,
   MARKETPLACE_CARD_CAPABILITY_ORDER,
   MARKETPLACE_MODEL_CAPABILITIES,
@@ -677,10 +690,8 @@ const filteredEntries = computed(() => {
     const byDisplayOrder = compareMarketplaceDisplayOrder(a, b)
     if (byDisplayOrder !== 0) return byDisplayOrder
     if (sortMode.value === 'price') {
-      const aPrice = primaryPrice(a.pricing)
-      const bPrice = primaryPrice(b.pricing)
-      const aValue = aPrice == null ? Number.POSITIVE_INFINITY : aPrice * effectiveRate(a)
-      const bValue = bPrice == null ? Number.POSITIVE_INFINITY : bPrice * effectiveRate(b)
+      const aValue = entrySortPrice(a)
+      const bValue = entrySortPrice(b)
       if (aValue !== bValue) return aValue - bValue
     }
     return a.name.localeCompare(b.name)
@@ -792,6 +803,25 @@ function cardPrimaryPriceRows(entry: MarketplaceModelEntry) {
     { key: 'input', label: t('modelMarketplace.price.input'), ...cardPrice(pricing.input_price, 1_000_000, entry) },
     { key: 'output', label: t('modelMarketplace.price.output'), ...cardPrice(pricing.output_price, 1_000_000, entry) },
   ].filter(row => row.value !== '-')
+}
+
+function cardImagePriceRows(entry: MarketplaceModelEntry) {
+  const group = activeEntryGroup(entry)
+  return imagePriceRows(entry.pricing, group).map(row => ({
+    ...row,
+    value: scaledPrice(showEffectivePrices.value ? row.effectiveValue : row.rawValue, 1, 1),
+    baseValue: showEffectivePrices.value && group && group.effectiveRate !== 1
+      ? scaledPrice(row.rawValue, 1, 1)
+      : '',
+  }))
+}
+
+function entrySortPrice(entry: MarketplaceModelEntry): number {
+  if (entry.pricing?.billing_mode === 'image') {
+    return imagePriceRows(entry.pricing, activeEntryGroup(entry))[0]?.effectiveValue ?? Number.POSITIVE_INFINITY
+  }
+  const price = primaryPrice(entry.pricing)
+  return price == null ? Number.POSITIVE_INFINITY : price * effectiveRate(entry)
 }
 
 function cardRequestPrice(entry: MarketplaceModelEntry) {

@@ -1034,6 +1034,7 @@ export default {
       request: 'Request',
       perMillion: '/ 1M Tokens',
       perRequest: '/ request',
+      perImage: '/ image',
     },
     details: {
       open: 'View details for {model}',
@@ -1046,6 +1047,7 @@ export default {
       group: 'Group',
       multiplier: 'Multiplier',
       pricePerMillionHint: 'Token prices are shown per 1M tokens.',
+      imagePricingHint: 'Image prices are per image. Group prices take priority; unconfigured sizes use the model default per-request price.',
       monitor: 'Service status',
       availability7d: '7-day availability',
       latestLatency: 'Latest latency',

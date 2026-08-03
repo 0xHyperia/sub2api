@@ -8,6 +8,7 @@ import {
   compareMarketplaceModelRecency,
   compareMarketplaceProviders,
   effectiveRateForEntry,
+  imagePriceRows,
   inferMarketplaceModelCapabilities,
   recentMonitorStatuses,
   realtimeRate,
@@ -30,6 +31,11 @@ const platforms: UserMarketplacePlatform[] = [{
         peak_end: '',
         peak_rate_multiplier: 1,
         is_exclusive: false,
+        image_rate_independent: false,
+        image_rate_multiplier: 1,
+        image_price_1k: null,
+        image_price_2k: null,
+        image_price_4k: null,
       },
       {
         id: 2,
@@ -42,6 +48,11 @@ const platforms: UserMarketplacePlatform[] = [{
         peak_end: '',
         peak_rate_multiplier: 1,
         is_exclusive: true,
+        image_rate_independent: false,
+        image_rate_multiplier: 1,
+        image_price_1k: null,
+        image_price_2k: null,
+        image_price_4k: null,
       },
     ],
     supported_models: [{
@@ -132,6 +143,60 @@ describe('model marketplace data', () => {
   it('formats prices after applying the selected group rate', () => {
     expect(scaledPrice(0.000002, 1_000_000, 1.1)).toBe('$2.2')
     expect(scaledPrice(null, 1_000_000, 1)).toBe('-')
+  })
+
+  it('uses configured image tier prices with the user-specific group rate', () => {
+    const pricing = {
+      ...platforms[0].supported_models[0].pricing!,
+      billing_mode: 'image' as const,
+      per_request_price: 0.03,
+    }
+    const entry = buildMarketplaceEntries([{
+      ...platforms[0],
+      supported_models: [{
+        ...platforms[0].supported_models[0],
+        pricing,
+        groups: [{
+          ...platforms[0].groups[0],
+          image_price_1k: 0.04,
+          image_price_2k: 0.08,
+          image_price_4k: 0.12,
+        }],
+      }],
+    }])[0]
+    const group = sortedEntryGroups(entry, { 1: 0.75 })[0]
+
+    expect(group.effectiveRate).toBe(0.75)
+    expect(imagePriceRows(pricing, group)).toEqual([
+      { key: 'image-1k', tier: '1K', rawValue: 0.04, effectiveValue: 0.03, usesGroupPrice: true },
+      { key: 'image-2k', tier: '2K', rawValue: 0.08, effectiveValue: 0.06, usesGroupPrice: true },
+      { key: 'image-4k', tier: '4K', rawValue: 0.12, effectiveValue: 0.09, usesGroupPrice: true },
+    ])
+  })
+
+  it('uses the independent image multiplier instead of user and group rates', () => {
+    const pricing = {
+      ...platforms[0].supported_models[0].pricing!,
+      billing_mode: 'image' as const,
+      per_request_price: 0.05,
+    }
+    const entry = buildMarketplaceEntries([{
+      ...platforms[0],
+      supported_models: [{
+        ...platforms[0].supported_models[0],
+        pricing,
+        groups: [{
+          ...platforms[0].groups[0],
+          image_rate_independent: true,
+          image_rate_multiplier: 0.5,
+        }],
+      }],
+    }])[0]
+    const group = sortedEntryGroups(entry, { 1: 0.25 })[0]
+
+    expect(group.effectiveRate).toBe(0.5)
+    expect(effectiveRateForEntry(entry, 1, { 1: 0.25 })).toBe(0.5)
+    expect(imagePriceRows(pricing, group).map(row => row.effectiveValue)).toEqual([0.025, 0.025, 0.025])
   })
 
   it('converts the effective group rate using the current balance recharge rate', () => {

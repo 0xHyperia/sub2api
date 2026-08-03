@@ -1039,6 +1039,7 @@ export default {
       request: '请求',
       perMillion: '/ 1M Tokens',
       perRequest: '/ 次',
+      perImage: '/ 张',
     },
     details: {
       open: '查看 {model} 详情',
@@ -1051,6 +1052,7 @@ export default {
       group: '分组',
       multiplier: '倍率',
       pricePerMillionHint: 'Token 计费价格均按每 1M tokens 展示。',
+      imagePricingHint: '图片价格按每张展示；分组配置优先，未配置的尺寸使用模型默认单次价格。',
       monitor: '运行状态',
       availability7d: '7 天可用率',
       latestLatency: '最近延迟',

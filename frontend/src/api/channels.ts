@@ -24,6 +24,16 @@ export interface UserAvailableGroup {
   rpm_limit?: number
 }
 
+export interface UserMarketplaceGroup extends UserAvailableGroup {
+  /** 图片生成使用独立倍率时，不再叠加用户专属或普通分组倍率。 */
+  image_rate_independent: boolean
+  image_rate_multiplier: number
+  /** USD / image；null 表示该尺寸使用模型默认价格。 */
+  image_price_1k: number | null
+  image_price_2k: number | null
+  image_price_4k: number | null
+}
+
 export interface UserPricingInterval {
   min_tokens: number
   max_tokens: number | null
@@ -54,7 +64,7 @@ export interface UserSupportedModel {
 }
 
 export interface UserMarketplaceModel extends UserSupportedModel {
-  groups: UserAvailableGroup[]
+  groups: UserMarketplaceGroup[]
   capabilities?: string[]
   monitor_status?: UserModelMonitorSummary | null
 }
@@ -79,7 +89,7 @@ export interface UserModelMonitorSummary {
 
 export interface UserMarketplacePlatform {
   platform: string
-  groups: UserAvailableGroup[]
+  groups: UserMarketplaceGroup[]
   supported_models: UserMarketplaceModel[]
 }
 

@@ -140,7 +140,7 @@
                           <dt class="text-xs text-foreground-muted">{{ row.label }}</dt>
                           <dd class="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground">{{ row.value }}</dd>
                         </div>
-                        <span class="text-[10px] text-foreground-subtle">{{ t('modelMarketplace.price.perRequest') }}</span>
+                        <span class="text-[10px] text-foreground-subtle">{{ entry.pricing?.billing_mode === 'image' ? t('modelMarketplace.price.perImage') : t('modelMarketplace.price.perRequest') }}</span>
                       </div>
                     </dl>
                   </template>
@@ -185,7 +185,7 @@
                         </tbody>
                       </table>
                     </div>
-                    <p class="mt-2 text-[10px] text-foreground-subtle">{{ t('modelMarketplace.details.pricePerMillionHint') }}</p>
+                    <p class="mt-2 text-[10px] text-foreground-subtle">{{ entry.pricing?.billing_mode === 'image' ? t('modelMarketplace.details.imagePricingHint') : t('modelMarketplace.details.pricePerMillionHint') }}</p>
                   </div>
 
                   <div v-if="entry.pricing?.intervals.length" class="mt-5">
@@ -450,7 +450,7 @@ import ModelMonitorTimeline from '@/components/user/ModelMonitorTimeline.vue'
 import { platformIconClass } from '@/utils/platformColors'
 import { useAppStore } from '@/stores/app'
 import { useClipboard } from '@/composables/useClipboard'
-import { billingCategory, scaledPrice, type MarketplaceGroupOption, type MarketplaceModelEntry } from '@/views/user/modelMarketplace'
+import { billingCategory, imagePriceRows, scaledPrice, type MarketplaceGroupOption, type MarketplaceModelEntry } from '@/views/user/modelMarketplace'
 
 type DetailTab = 'overview' | 'performance' | 'api'
 type ApiProtocol = 'anthropic' | 'openai' | 'gemini'
@@ -526,6 +526,14 @@ const availabilityTextClass = computed(() => {
 const pricingRows = computed(() => {
   const pricing = props.entry?.pricing
   if (!pricing) return []
+  if (pricing.billing_mode === 'image') {
+    return imagePriceRows(pricing, props.activeGroup).map(row => ({
+      key: row.key,
+      label: row.tier,
+      rawValue: row.rawValue,
+      scale: 1,
+    }))
+  }
   const primaryRows = pricing.billing_mode === 'token'
     ? [
         ['input', t('modelMarketplace.price.input'), pricing.input_price, 1_000_000],
@@ -541,11 +549,13 @@ const pricingRows = computed(() => {
   return rows.filter(([, , value]) => value != null).map(([key, label, value, scale]) => ({ key, label, rawValue: value, scale }))
 })
 const basePricingRows = computed(() => pricingRows.value.map(row => ({ ...row, value: scaledPrice(row.rawValue, row.scale, 1) })))
-const primaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'input' || row.key === 'output' || row.key === 'request'))
+const primaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'input' || row.key === 'output' || row.key === 'request' || row.key.startsWith('image-')))
 const secondaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'cache-read' || row.key === 'cache-write' || row.key === 'image-input'))
 const groupPricingRows = computed(() => props.groups.map(group => ({
   ...group,
-  prices: pricingRows.value.map(row => ({ key: row.key, label: row.label, value: scaledPrice(row.rawValue, row.scale, group.effectiveRate) })),
+  prices: props.entry?.pricing?.billing_mode === 'image'
+    ? imagePriceRows(props.entry.pricing, group).map(row => ({ key: row.key, label: row.tier, value: scaledPrice(row.effectiveValue, 1, 1) }))
+    : pricingRows.value.map(row => ({ key: row.key, label: row.label, value: scaledPrice(row.rawValue, row.scale, group.effectiveRate) })),
 })))
 
 const groupPerformanceRows = computed(() => props.groups.map(group => {
