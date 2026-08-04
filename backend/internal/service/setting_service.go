@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"sync/atomic"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -59,6 +61,9 @@ type SettingService struct {
 	openAICodexUASF             singleflight.Group
 	codexRestrictionPolicyCache atomic.Value // *cachedCodexRestrictionPolicy
 	codexRestrictionPolicySF    singleflight.Group
+	exchangeRateHTTPClient      *http.Client
+	exchangeRateEndpoint        string
+	exchangeRateSyncSF          singleflight.Group
 
 	cyberSessionBlockRuntimeCache atomic.Value // *cachedCyberSessionBlockRuntime
 	cyberSessionBlockRuntimeSF    singleflight.Group
@@ -207,8 +212,10 @@ const (
 // NewSettingService 创建系统设置服务实例
 func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *SettingService {
 	return &SettingService{
-		settingRepo: settingRepo,
-		cfg:         cfg,
+		settingRepo:            settingRepo,
+		cfg:                    cfg,
+		exchangeRateHTTPClient: &http.Client{Timeout: 10 * time.Second},
+		exchangeRateEndpoint:   "https://api.frankfurter.app/latest?from=USD&to=CNY",
 	}
 }
 

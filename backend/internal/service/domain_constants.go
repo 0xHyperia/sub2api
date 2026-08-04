@@ -127,6 +127,17 @@ const DingTalkConnectSyntheticEmailDomain = "@dingtalk-connect.invalid"
 
 // Setting keys
 const (
+	// Currency exchange rate benchmark. Payment settlement and distribution FX
+	// keep their own independent settings; these values are reusable display and
+	// conversion references for the rest of the application.
+	SettingKeyCurrencyUSDToCNYManualRate       = "currency_usd_to_cny_manual_rate"
+	SettingKeyCurrencyExchangeRateAutoSync     = "currency_exchange_rate_auto_sync_enabled"
+	SettingKeyCurrencyUSDToCNYAutoRate         = "currency_usd_to_cny_auto_rate"
+	SettingKeyCurrencyExchangeRateProvider     = "currency_exchange_rate_provider"
+	SettingKeyCurrencyExchangeRateProviderAsOf = "currency_exchange_rate_provider_as_of"
+	SettingKeyCurrencyExchangeRateLastSyncedAt = "currency_exchange_rate_last_synced_at"
+	SettingKeyCurrencyExchangeRateLastError    = "currency_exchange_rate_last_error"
+
 	// 注册设置
 	SettingKeyRegistrationEnabled              = "registration_enabled"                // 是否开放注册
 	SettingKeyEmailVerifyEnabled               = "email_verify_enabled"                // 是否开启邮件验证

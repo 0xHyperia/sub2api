@@ -6148,6 +6148,69 @@
             </div>
           </div>
 
+          <!-- Currency and exchange rate -->
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 class="text-lg font-semibold text-foreground">
+                    {{ localText("货币与汇率", "Currency & exchange rate") }}
+                  </h2>
+                  <p class="mt-1 text-sm text-foreground-subtle">
+                    {{ localText("提供可供模型广场及后续功能复用的 USD/CNY 市场基准，不影响支付结算汇率。", "A reusable USD/CNY market benchmark. Payment settlement rates remain independent.") }}
+                  </p>
+                </div>
+                <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="exchangeRateStatusClass">
+                  {{ exchangeRateStatusText }}
+                </span>
+              </div>
+            </div>
+            <div class="space-y-5 p-6">
+              <div class="grid gap-3 sm:grid-cols-3">
+                <div class="rounded-panel border border-outline bg-surface-subtle p-4">
+                  <p class="text-xs text-foreground-subtle">{{ localText("当前有效汇率", "Effective rate") }}</p>
+                  <p class="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground">1 USD = {{ formatExchangeRate(form.currency_usd_to_cny_effective_rate) }} CNY</p>
+                </div>
+                <div class="rounded-panel border border-outline bg-surface-subtle p-4">
+                  <p class="text-xs text-foreground-subtle">{{ localText("反向换算", "Inverse rate") }}</p>
+                  <p class="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground">1 CNY = {{ inverseExchangeRate }} USD</p>
+                </div>
+                <div class="rounded-panel border border-outline bg-surface-subtle p-4">
+                  <p class="text-xs text-foreground-subtle">{{ localText("数据来源", "Source") }}</p>
+                  <p class="mt-1 text-sm font-medium text-foreground">{{ form.currency_exchange_rate_source === "auto" ? form.currency_exchange_rate_provider : localText("手动配置", "Manual") }}</p>
+                  <p v-if="form.currency_exchange_rate_provider_as_of" class="mt-1 text-xs text-foreground-subtle">{{ localText("数据日期", "As of") }} {{ form.currency_exchange_rate_provider_as_of }}</p>
+                </div>
+              </div>
+              <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-foreground-muted">{{ localText("手动 / 备用汇率", "Manual / fallback rate") }}</label>
+                  <div class="relative max-w-sm">
+                    <input v-model.number="form.currency_usd_to_cny_manual_rate" type="number" min="0.01" max="99.99" step="0.01" class="input pr-14 font-mono tabular-nums" />
+                    <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle">CNY</span>
+                  </div>
+                  <p class="mt-1.5 text-xs text-foreground-subtle">{{ localText("自动同步关闭或暂时不可用时使用此值。", "Used when automatic sync is disabled or temporarily unavailable.") }}</p>
+                </div>
+                <div class="rounded-panel border border-outline p-4">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <p class="text-sm font-medium text-foreground">{{ localText("自动同步最新汇率", "Automatically sync latest rate") }}</p>
+                      <p class="mt-1 text-xs text-foreground-subtle">{{ localText("服务端每 6 小时从 Frankfurter / ECB 同步；异常时保留上次成功值。", "The server syncs from Frankfurter / ECB every 6 hours and keeps the last successful value on failure.") }}</p>
+                    </div>
+                    <Toggle v-model="form.currency_exchange_rate_auto_sync_enabled" :aria-label="localText('自动同步最新汇率', 'Automatically sync latest rate')" />
+                  </div>
+                  <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-outline pt-4">
+                    <p class="text-xs text-foreground-subtle">{{ form.currency_exchange_rate_last_synced_at ? `${localText("上次同步", "Last synced")} ${formatExchangeRateTime(form.currency_exchange_rate_last_synced_at)}` : localText("尚未同步", "Not synced yet") }}</p>
+                    <button type="button" class="btn btn-secondary inline-flex items-center gap-2" :disabled="!form.currency_exchange_rate_auto_sync_enabled || exchangeRateSyncing" @click="syncExchangeRateNow">
+                      <Icon name="refresh" class="h-4 w-4" :class="{ 'animate-spin': exchangeRateSyncing }" />
+                      {{ exchangeRateSyncing ? localText("同步中", "Syncing") : localText("立即同步", "Sync now") }}
+                    </button>
+                  </div>
+                  <p v-if="form.currency_exchange_rate_last_error" class="mt-3 rounded-panel bg-danger-subtle px-3 py-2 text-xs text-danger-foreground">{{ form.currency_exchange_rate_last_error }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Custom Menu Items -->
           <div class="card">
             <div
@@ -8566,6 +8629,7 @@
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import { formatExchangeRate, roundHalfUp } from "@/utils/currency";
 import { adminAPI } from "@/api";
 import {
   appendAuthSourceDefaultsToUpdateRequest,
@@ -9373,6 +9437,16 @@ type SettingsForm = Omit<
 };
 
 const form = reactive<SettingsForm>({
+  currency_usd_to_cny_manual_rate: 7.2,
+  currency_exchange_rate_auto_sync_enabled: false,
+  currency_usd_to_cny_auto_rate: 0,
+  currency_usd_to_cny_effective_rate: 7.2,
+  currency_exchange_rate_source: "manual",
+  currency_exchange_rate_provider: "Frankfurter / ECB",
+  currency_exchange_rate_provider_as_of: "",
+  currency_exchange_rate_last_synced_at: "",
+  currency_exchange_rate_last_error: "",
+  currency_exchange_rate_stale: false,
   registration_enabled: true,
   email_verify_enabled: false,
   registration_email_suffix_whitelist: [],
@@ -9655,6 +9729,61 @@ const form = reactive<SettingsForm>({
   // Allow user view error requests
   allow_user_view_error_requests: false,
 });
+
+const exchangeRateSyncing = ref(false);
+const inverseExchangeRate = computed(() => {
+  const rate = Number(form.currency_usd_to_cny_effective_rate);
+  return Number.isFinite(rate) && rate > 0 ? formatExchangeRate(1 / rate) : "—";
+});
+const exchangeRateStatusText = computed(() => {
+  if (!form.currency_exchange_rate_auto_sync_enabled) {
+    return localText("手动汇率", "Manual rate");
+  }
+  if (form.currency_exchange_rate_source !== "auto") {
+    return localText("使用备用值", "Using fallback");
+  }
+  if (form.currency_exchange_rate_stale) {
+    return localText("数据已过期", "Stale data");
+  }
+  return localText("自动同步", "Auto synced");
+});
+const exchangeRateStatusClass = computed(() => {
+  if (!form.currency_exchange_rate_auto_sync_enabled) {
+    return "bg-surface-subtle text-foreground-muted";
+  }
+  if (form.currency_exchange_rate_source !== "auto" || form.currency_exchange_rate_stale) {
+    return "bg-warning-subtle text-warning-foreground";
+  }
+  return "bg-success-subtle text-success-foreground";
+});
+
+function formatExchangeRateTime(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+async function syncExchangeRateNow(): Promise<void> {
+  if (exchangeRateSyncing.value || !form.currency_exchange_rate_auto_sync_enabled) return;
+  exchangeRateSyncing.value = true;
+  const autoSyncEnabled = form.currency_exchange_rate_auto_sync_enabled;
+  try {
+    const updated = await adminAPI.settings.syncExchangeRate();
+    for (const [key, value] of Object.entries(updated)) {
+      if (key.startsWith("currency_") && value !== null && value !== undefined) {
+        (form as Record<string, unknown>)[key] = value;
+      }
+    }
+    form.currency_exchange_rate_auto_sync_enabled = autoSyncEnabled;
+    await appStore.fetchPublicSettings(true);
+    appStore.showSuccess(localText("汇率同步成功", "Exchange rate synced"));
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, localText("汇率同步失败", "Exchange rate sync failed")));
+    const latest = await adminAPI.settings.getSettings().catch(() => null);
+    if (latest) form.currency_exchange_rate_last_error = latest.currency_exchange_rate_last_error;
+  } finally {
+    exchangeRateSyncing.value = false;
+  }
+}
 
 watch(() => form.model_marketplace_enabled, (enabled) => {
   if (!enabled) form.model_monitor_enabled = false;
@@ -10981,8 +11110,27 @@ async function saveSettings() {
       );
     form.claude_oauth_system_prompt_blocks =
       claudeOAuthSystemPromptBlocksJSON;
+    const currencyManualRate = roundHalfUp(
+      Number(form.currency_usd_to_cny_manual_rate),
+      2,
+    );
+    if (
+      !Number.isFinite(currencyManualRate) ||
+      currencyManualRate <= 0 ||
+      currencyManualRate >= 100
+    ) {
+      appStore.showError(
+        localText(
+          "USD/CNY 汇率必须大于 0 且小于 100。",
+          "USD/CNY rate must be greater than 0 and less than 100.",
+        ),
+      );
+      return;
+    }
 
     const payload: UpdateSettingsRequest = {
+      currency_usd_to_cny_manual_rate: currencyManualRate,
+      currency_exchange_rate_auto_sync_enabled: form.currency_exchange_rate_auto_sync_enabled,
       registration_enabled: form.registration_enabled,
       email_verify_enabled: form.email_verify_enabled,
       registration_email_suffix_whitelist:

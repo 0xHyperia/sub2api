@@ -798,12 +798,19 @@ var ProviderSet = wire.NewSet(
 	ProvideChannelMonitorRunner,
 	NewModelMonitorService,
 	ProvideModelMonitorRunner,
+	ProvideExchangeRateRunner,
 	NewChannelMonitorRequestTemplateService,
 	ProvideUserPlatformQuotaUsageFlusher,
 )
 
 func ProvideModelMonitorRunner(svc *ModelMonitorService, settingService *SettingService) *ModelMonitorRunner {
 	runner := NewModelMonitorRunner(svc, settingService)
+	runner.Start()
+	return runner
+}
+
+func ProvideExchangeRateRunner(settingService *SettingService) *ExchangeRateRunner {
+	runner := NewExchangeRateRunner(settingService)
 	runner.Start()
 	return runner
 }

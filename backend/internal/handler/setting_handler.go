@@ -44,6 +44,10 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 	}
 
 	response.Success(c, dto.PublicSettings{
+		CurrencyUSDToCNYRate:             settings.CurrencyUSDToCNYRate,
+		CurrencyExchangeRateSource:       settings.CurrencyExchangeRateSource,
+		CurrencyExchangeRateAsOf:         settings.CurrencyExchangeRateAsOf,
+		CurrencyExchangeRateStale:        settings.CurrencyExchangeRateStale,
 		RegistrationEnabled:              settings.RegistrationEnabled,
 		EmailVerifyEnabled:               settings.EmailVerifyEnabled,
 		ForceEmailOnThirdPartySignup:     settings.ForceEmailOnThirdPartySignup,

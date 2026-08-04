@@ -197,6 +197,10 @@ export interface LoginAgreementDocument {
 }
 
 export interface PublicSettings {
+  currency_usd_to_cny_rate?: number
+  currency_exchange_rate_source?: 'manual' | 'auto'
+  currency_exchange_rate_as_of?: string
+  currency_exchange_rate_stale?: boolean
   registration_enabled: boolean
   email_verify_enabled: boolean
   force_email_on_third_party_signup: boolean

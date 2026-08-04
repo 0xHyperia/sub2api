@@ -111,6 +111,7 @@ func provideCleanup(
 	distribution *service.DistributionService,
 	channelMonitorRunner *service.ChannelMonitorRunner,
 	modelMonitorRunner *service.ModelMonitorRunner,
+	exchangeRateRunner *service.ExchangeRateRunner,
 	quotaFlusher *service.UserPlatformQuotaUsageFlusher,
 	upstreamBillingProbe *service.UpstreamBillingProbeService,
 	ollamaCloudUsage *service.OllamaCloudUsageService,
@@ -331,6 +332,12 @@ func provideCleanup(
 			{"ModelMonitorRunner", func() error {
 				if modelMonitorRunner != nil {
 					modelMonitorRunner.Stop()
+				}
+				return nil
+			}},
+			{"ExchangeRateRunner", func() error {
+				if exchangeRateRunner != nil {
+					exchangeRateRunner.Stop()
 				}
 				return nil
 			}},

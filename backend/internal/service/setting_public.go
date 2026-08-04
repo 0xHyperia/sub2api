@@ -156,6 +156,14 @@ func (s *SettingService) GetFrontendURL(ctx context.Context) string {
 // GetPublicSettings 获取公开设置（无需登录）
 func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings, error) {
 	keys := []string{
+		SettingKeyCurrencyUSDToCNYManualRate,
+		SettingKeyCurrencyExchangeRateAutoSync,
+		SettingKeyCurrencyUSDToCNYAutoRate,
+		SettingKeyCurrencyExchangeRateProvider,
+		SettingKeyCurrencyExchangeRateProviderAsOf,
+		SettingKeyCurrencyExchangeRateLastSyncedAt,
+		SettingKeyCurrencyExchangeRateLastError,
+		SettingSubscriptionUSDToCNYRate,
 		SettingKeyRegistrationEnabled,
 		SettingKeyEmailVerifyEnabled,
 		SettingKeyForceEmailOnThirdPartySignup,
@@ -295,7 +303,12 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		balanceLowNotifyThreshold = v
 	}
 
+	exchangeRate := parseExchangeRateSettingsMap(settings)
 	return &PublicSettings{
+		CurrencyUSDToCNYRate:          exchangeRate.Effective,
+		CurrencyExchangeRateSource:    exchangeRate.Source,
+		CurrencyExchangeRateAsOf:      exchangeRate.ProviderAsOf,
+		CurrencyExchangeRateStale:     exchangeRate.Stale,
 		RegistrationEnabled:              settings[SettingKeyRegistrationEnabled] == "true",
 		EmailVerifyEnabled:               emailVerifyEnabled,
 		ForceEmailOnThirdPartySignup:     settings[SettingKeyForceEmailOnThirdPartySignup] == "true",
@@ -538,6 +551,10 @@ func (s *SettingService) IsUserErrorViewAllowed(ctx context.Context) bool {
 // A unit test diffs this struct's JSON keys against dto.PublicSettings to catch
 // drift automatically (see setting_service_injection_test.go).
 type PublicSettingsInjectionPayload struct {
+	CurrencyUSDToCNYRate       float64 `json:"currency_usd_to_cny_rate"`
+	CurrencyExchangeRateSource string  `json:"currency_exchange_rate_source"`
+	CurrencyExchangeRateAsOf   string  `json:"currency_exchange_rate_as_of"`
+	CurrencyExchangeRateStale  bool    `json:"currency_exchange_rate_stale"`
 	RegistrationEnabled              bool                     `json:"registration_enabled"`
 	EmailVerifyEnabled               bool                     `json:"email_verify_enabled"`
 	RegistrationEmailSuffixWhitelist []string                 `json:"registration_email_suffix_whitelist"`
@@ -622,6 +639,10 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 	}
 
 	return &PublicSettingsInjectionPayload{
+		CurrencyUSDToCNYRate:          settings.CurrencyUSDToCNYRate,
+		CurrencyExchangeRateSource:    settings.CurrencyExchangeRateSource,
+		CurrencyExchangeRateAsOf:      settings.CurrencyExchangeRateAsOf,
+		CurrencyExchangeRateStale:     settings.CurrencyExchangeRateStale,
 		RegistrationEnabled:              settings.RegistrationEnabled,
 		EmailVerifyEnabled:               settings.EmailVerifyEnabled,
 		RegistrationEmailSuffixWhitelist: settings.RegistrationEmailSuffixWhitelist,

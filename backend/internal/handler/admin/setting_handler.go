@@ -130,6 +130,16 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 	passkeyConfigured, passkeyRPID, passkeyRPOrigins := h.settingService.PasskeyConfiguration()
 
 	payload := dto.SystemSettings{
+		CurrencyUSDToCNYManualRate:                             settings.CurrencyUSDToCNYManualRate,
+		CurrencyExchangeRateAutoSync:                           settings.CurrencyExchangeRateAutoSync,
+		CurrencyUSDToCNYAutoRate:                               settings.CurrencyUSDToCNYAutoRate,
+		CurrencyUSDToCNYEffectiveRate:                          settings.CurrencyUSDToCNYEffectiveRate,
+		CurrencyExchangeRateSource:                             settings.CurrencyExchangeRateSource,
+		CurrencyExchangeRateProvider:                           settings.CurrencyExchangeRateProvider,
+		CurrencyExchangeRateProviderAsOf:                       settings.CurrencyExchangeRateProviderAsOf,
+		CurrencyExchangeRateLastSyncedAt:                       settings.CurrencyExchangeRateLastSyncedAt,
+		CurrencyExchangeRateLastError:                          settings.CurrencyExchangeRateLastError,
+		CurrencyExchangeRateStale:                              settings.CurrencyExchangeRateStale,
 		RegistrationEnabled:                                    settings.RegistrationEnabled,
 		EmailVerifyEnabled:                                     settings.EmailVerifyEnabled,
 		RegistrationEmailSuffixWhitelist:                       settings.RegistrationEmailSuffixWhitelist,

@@ -27,6 +27,17 @@ type CustomEndpoint struct {
 
 // SystemSettings represents the admin settings API response payload.
 type SystemSettings struct {
+	CurrencyUSDToCNYManualRate       float64 `json:"currency_usd_to_cny_manual_rate"`
+	CurrencyExchangeRateAutoSync     bool    `json:"currency_exchange_rate_auto_sync_enabled"`
+	CurrencyUSDToCNYAutoRate         float64 `json:"currency_usd_to_cny_auto_rate"`
+	CurrencyUSDToCNYEffectiveRate    float64 `json:"currency_usd_to_cny_effective_rate"`
+	CurrencyExchangeRateSource       string  `json:"currency_exchange_rate_source"`
+	CurrencyExchangeRateProvider     string  `json:"currency_exchange_rate_provider"`
+	CurrencyExchangeRateProviderAsOf string  `json:"currency_exchange_rate_provider_as_of"`
+	CurrencyExchangeRateLastSyncedAt string  `json:"currency_exchange_rate_last_synced_at"`
+	CurrencyExchangeRateLastError    string  `json:"currency_exchange_rate_last_error"`
+	CurrencyExchangeRateStale        bool    `json:"currency_exchange_rate_stale"`
+
 	RegistrationEnabled              bool                     `json:"registration_enabled"`
 	EmailVerifyEnabled               bool                     `json:"email_verify_enabled"`
 	RegistrationEmailSuffixWhitelist []string                 `json:"registration_email_suffix_whitelist"`
@@ -340,6 +351,11 @@ type DefaultSubscriptionSetting struct {
 }
 
 type PublicSettings struct {
+	CurrencyUSDToCNYRate       float64 `json:"currency_usd_to_cny_rate"`
+	CurrencyExchangeRateSource string  `json:"currency_exchange_rate_source"`
+	CurrencyExchangeRateAsOf   string  `json:"currency_exchange_rate_as_of"`
+	CurrencyExchangeRateStale  bool    `json:"currency_exchange_rate_stale"`
+
 	RegistrationEnabled              bool                     `json:"registration_enabled"`
 	EmailVerifyEnabled               bool                     `json:"email_verify_enabled"`
 	ForceEmailOnThirdPartySignup     bool                     `json:"force_email_on_third_party_signup"`

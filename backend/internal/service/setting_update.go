@@ -160,6 +160,11 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	}
 
 	updates := make(map[string]string)
+	if !validUSDToCNYRate(settings.CurrencyUSDToCNYManualRate) {
+		settings.CurrencyUSDToCNYManualRate = DefaultUSDToCNYRate
+	}
+	updates[SettingKeyCurrencyUSDToCNYManualRate] = formatUSDToCNYRate(settings.CurrencyUSDToCNYManualRate)
+	updates[SettingKeyCurrencyExchangeRateAutoSync] = strconv.FormatBool(settings.CurrencyExchangeRateAutoSync)
 
 	// 注册设置
 	updates[SettingKeyRegistrationEnabled] = strconv.FormatBool(settings.RegistrationEnabled)

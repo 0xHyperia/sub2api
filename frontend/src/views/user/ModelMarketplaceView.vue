@@ -425,7 +425,7 @@
                 <div
                   class="group/rate relative flex shrink-0 cursor-help items-center gap-1.5 outline-none"
                   tabindex="0"
-                  :aria-label="t('modelMarketplace.realtimeRateHint', { cny: formatRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
+                  :aria-label="t('modelMarketplace.realtimeRateHint', { cny: formatExchangeRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
                 >
                   <span class="text-[9px] font-medium text-warning-foreground">{{ t('modelMarketplace.realtimeRate') }}</span>
                   <span class="inline-flex items-center gap-1 font-mono text-xs font-semibold tabular-nums text-warning-foreground">
@@ -440,7 +440,7 @@
                       <dl class="mt-2 space-y-1.5 text-[10px]">
                         <div class="flex items-center justify-between gap-4">
                           <dt class="text-foreground-subtle">{{ t('modelMarketplace.realtimeRateOfficial') }}</dt>
-                          <dd class="font-mono tabular-nums text-foreground">1 USD = {{ formatRate(officialUsdToCnyRate) }} CNY</dd>
+                          <dd class="font-mono tabular-nums text-foreground">1 USD = {{ formatExchangeRate(officialUsdToCnyRate) }} CNY</dd>
                         </div>
                         <div class="flex items-center justify-between gap-4">
                           <dt class="text-foreground-subtle">{{ t('modelMarketplace.realtimeRateRecharge') }}</dt>
@@ -452,7 +452,7 @@
                         </div>
                       </dl>
                       <div class="mt-2 border-t border-dashed border-outline pt-2 text-left font-mono text-[10px] tabular-nums text-foreground-muted">
-                        {{ formatRate(effectiveRate(entry)) }} / {{ formatRate(balanceRechargeMultiplier) }} / {{ formatRate(officialUsdToCnyRate) }} = {{ formatRate(cardRealtimeRate(entry)) }}&times;
+                        {{ formatRate(effectiveRate(entry)) }} / {{ formatRate(balanceRechargeMultiplier) }} / {{ formatExchangeRate(officialUsdToCnyRate) }} = {{ formatRate(cardRealtimeRate(entry)) }}&times;
                       </div>
                   </div>
                 </div>
@@ -502,6 +502,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { formatExchangeRate } from '@/utils/currency'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import SearchInput from '@/components/common/SearchInput.vue'
@@ -716,7 +717,7 @@ const balanceRechargeMultiplier = computed(() => {
   return Number.isFinite(multiplier) && Number(multiplier) > 0 ? Number(multiplier) : 1
 })
 const officialUsdToCnyRate = computed(() => {
-  const rate = paymentStore.config?.subscription_usd_to_cny_rate
+  const rate = appStore.cachedPublicSettings?.currency_usd_to_cny_rate
   return Number.isFinite(rate) && Number(rate) > 0 ? Number(rate) : DEFAULT_USD_TO_CNY_RATE
 })
 
@@ -910,6 +911,7 @@ async function loadMarketplace(silent = false) {
       userChannelsAPI.getMarketplace({ resolution: monitorResolution.value }),
       userGroupsAPI.getUserGroupRates().catch(() => ({} as Record<number, number>)),
       paymentStore.fetchConfig(true),
+      appStore.fetchPublicSettings(true),
     ])
     catalog.value = catalogResponse
     userGroupRates.value = rates

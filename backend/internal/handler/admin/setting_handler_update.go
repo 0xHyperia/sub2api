@@ -22,6 +22,9 @@ import (
 
 // UpdateSettingsRequest 更新设置请求
 type UpdateSettingsRequest struct {
+	CurrencyUSDToCNYManualRate   *float64 `json:"currency_usd_to_cny_manual_rate" setting:"currency_usd_to_cny_manual_rate"`
+	CurrencyExchangeRateAutoSync *bool    `json:"currency_exchange_rate_auto_sync_enabled" setting:"currency_exchange_rate_auto_sync_enabled"`
+
 	// 注册设置
 	RegistrationEnabled              bool                         `json:"registration_enabled"`
 	EmailVerifyEnabled               bool                         `json:"email_verify_enabled"`
@@ -1334,8 +1337,22 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		response.BadRequest(c, "cyber_session_block_ttl_seconds must be > 0")
 		return
 	}
+	currencyManualRate := previousSettings.CurrencyUSDToCNYManualRate
+	if req.CurrencyUSDToCNYManualRate != nil {
+		currencyManualRate = *req.CurrencyUSDToCNYManualRate
+	}
+	if currencyManualRate <= 0 || currencyManualRate >= 100 {
+		response.BadRequest(c, "currency_usd_to_cny_manual_rate must be greater than 0 and less than 100")
+		return
+	}
+	currencyAutoSync := previousSettings.CurrencyExchangeRateAutoSync
+	if req.CurrencyExchangeRateAutoSync != nil {
+		currencyAutoSync = *req.CurrencyExchangeRateAutoSync
+	}
 
 	settings := &service.SystemSettings{
+		CurrencyUSDToCNYManualRate:   currencyManualRate,
+		CurrencyExchangeRateAutoSync: currencyAutoSync,
 		// 系统全局 platform quota 默认值（整体替换语义）
 		DefaultPlatformQuotas: req.DefaultPlatformQuotas,
 
@@ -1972,6 +1989,16 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	passkeyConfigured, passkeyRPID, passkeyRPOrigins := h.settingService.PasskeyConfiguration()
 
 	payload := dto.SystemSettings{
+		CurrencyUSDToCNYManualRate:                             updatedSettings.CurrencyUSDToCNYManualRate,
+		CurrencyExchangeRateAutoSync:                           updatedSettings.CurrencyExchangeRateAutoSync,
+		CurrencyUSDToCNYAutoRate:                               updatedSettings.CurrencyUSDToCNYAutoRate,
+		CurrencyUSDToCNYEffectiveRate:                          updatedSettings.CurrencyUSDToCNYEffectiveRate,
+		CurrencyExchangeRateSource:                             updatedSettings.CurrencyExchangeRateSource,
+		CurrencyExchangeRateProvider:                           updatedSettings.CurrencyExchangeRateProvider,
+		CurrencyExchangeRateProviderAsOf:                       updatedSettings.CurrencyExchangeRateProviderAsOf,
+		CurrencyExchangeRateLastSyncedAt:                       updatedSettings.CurrencyExchangeRateLastSyncedAt,
+		CurrencyExchangeRateLastError:                          updatedSettings.CurrencyExchangeRateLastError,
+		CurrencyExchangeRateStale:                              updatedSettings.CurrencyExchangeRateStale,
 		RegistrationEnabled:                                    updatedSettings.RegistrationEnabled,
 		EmailVerifyEnabled:                                     updatedSettings.EmailVerifyEnabled,
 		RegistrationEmailSuffixWhitelist:                       updatedSettings.RegistrationEmailSuffixWhitelist,

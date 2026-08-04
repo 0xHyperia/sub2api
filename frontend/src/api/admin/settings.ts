@@ -357,6 +357,16 @@ export function deriveWeChatConnectStoredMode(
  * System settings interface
  */
 export interface SystemSettings {
+  currency_usd_to_cny_manual_rate: number;
+  currency_exchange_rate_auto_sync_enabled: boolean;
+  currency_usd_to_cny_auto_rate: number;
+  currency_usd_to_cny_effective_rate: number;
+  currency_exchange_rate_source: "manual" | "auto";
+  currency_exchange_rate_provider: string;
+  currency_exchange_rate_provider_as_of: string;
+  currency_exchange_rate_last_synced_at: string;
+  currency_exchange_rate_last_error: string;
+  currency_exchange_rate_stale: boolean;
   // Registration settings
   registration_enabled: boolean;
   email_verify_enabled: boolean;
@@ -697,6 +707,8 @@ export interface SystemSettings {
 }
 
 export interface UpdateSettingsRequest {
+  currency_usd_to_cny_manual_rate?: number;
+  currency_exchange_rate_auto_sync_enabled?: boolean;
   registration_enabled?: boolean;
   email_verify_enabled?: boolean;
   registration_email_suffix_whitelist?: string[];
@@ -1012,6 +1024,13 @@ export async function updateSettings(
   const { data } = await apiClient.put<SystemSettings>(
     "/admin/settings",
     settings,
+  );
+  return data;
+}
+
+export async function syncExchangeRate(): Promise<SystemSettings> {
+  const { data } = await apiClient.post<SystemSettings>(
+    "/admin/settings/exchange-rate/sync",
   );
   return data;
 }
@@ -1509,6 +1528,7 @@ export async function resetWebSearchUsage(payload: {
 export const settingsAPI = {
   getSettings,
   updateSettings,
+  syncExchangeRate,
   testSmtpConnection,
   sendTestEmail,
   getEmailTemplates,

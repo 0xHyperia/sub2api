@@ -54,6 +54,13 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 	// 初始化默认设置
 	defaults := map[string]string{
+		SettingKeyCurrencyUSDToCNYManualRate:                formatUSDToCNYRate(DefaultUSDToCNYRate),
+		SettingKeyCurrencyExchangeRateAutoSync:              "false",
+		SettingKeyCurrencyUSDToCNYAutoRate:                  "",
+		SettingKeyCurrencyExchangeRateProvider:              exchangeRateProvider,
+		SettingKeyCurrencyExchangeRateProviderAsOf:          "",
+		SettingKeyCurrencyExchangeRateLastSyncedAt:          "",
+		SettingKeyCurrencyExchangeRateLastError:             "",
 		SettingKeyRegistrationEnabled:                       "true",
 		SettingKeyEmailVerifyEnabled:                        "false",
 		SettingKeyRegistrationEmailSuffixWhitelist:          "[]",
@@ -347,6 +354,17 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],
 		BackendModeEnabled:               settings[SettingKeyBackendModeEnabled] == "true",
 	}
+	exchangeRate := parseExchangeRateSettingsMap(settings)
+	result.CurrencyUSDToCNYManualRate = exchangeRate.ManualUSDToCNY
+	result.CurrencyExchangeRateAutoSync = exchangeRate.AutoSync
+	result.CurrencyUSDToCNYAutoRate = exchangeRate.AutoUSDToCNY
+	result.CurrencyUSDToCNYEffectiveRate = exchangeRate.Effective
+	result.CurrencyExchangeRateSource = exchangeRate.Source
+	result.CurrencyExchangeRateProvider = exchangeRate.Provider
+	result.CurrencyExchangeRateProviderAsOf = exchangeRate.ProviderAsOf
+	result.CurrencyExchangeRateLastSyncedAt = exchangeRate.LastSyncedAt
+	result.CurrencyExchangeRateLastError = exchangeRate.LastError
+	result.CurrencyExchangeRateStale = exchangeRate.Stale
 	result.TableDefaultPageSize, result.TablePageSizeOptions = parseTablePreferences(
 		settings[SettingKeyTableDefaultPageSize],
 		settings[SettingKeyTablePageSizeOptions],
