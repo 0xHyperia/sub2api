@@ -13,6 +13,7 @@ const {
   getAllProxies,
   getAllGroups,
   deleteAccount,
+  batchDelete,
   batchClearError,
   batchRefresh,
   resetAccountQuota,
@@ -23,6 +24,7 @@ const {
   getAllProxies: vi.fn(),
   getAllGroups: vi.fn(),
   deleteAccount: vi.fn(),
+  batchDelete: vi.fn(),
   batchClearError: vi.fn(),
   batchRefresh: vi.fn(),
   resetAccountQuota: vi.fn(),
@@ -35,6 +37,7 @@ vi.mock('@/api/admin', () => ({
       listWithEtag,
       getBatchTodayStats,
       delete: deleteAccount,
+      batchDelete,
       batchClearError,
       batchRefresh,
       resetAccountQuota,
@@ -125,6 +128,7 @@ describe('admin AccountsView bulk confirmations', () => {
       getAllProxies,
       getAllGroups,
       deleteAccount,
+      batchDelete,
       batchClearError,
       batchRefresh,
       resetAccountQuota,
@@ -140,13 +144,14 @@ describe('admin AccountsView bulk confirmations', () => {
     getAllProxies.mockResolvedValue([])
     getAllGroups.mockResolvedValue([])
     deleteAccount.mockResolvedValue(undefined)
+    batchDelete.mockResolvedValue({ success: 2, failed: 0, failed_ids: [] })
     batchClearError.mockResolvedValue({ success: 2, failed: 0 })
     batchRefresh.mockResolvedValue({ success: 2, failed: 0 })
     resetAccountQuota.mockResolvedValue(accounts[0])
   })
 
   it.each([
-    { event: 'delete', api: deleteAccount, danger: true },
+    { event: 'delete', api: batchDelete, danger: true },
     { event: 'reset-status', api: batchClearError, danger: false },
     { event: 'refresh-token', api: batchRefresh, danger: false },
   ])('runs $event only after confirmation', async ({ event, api, danger }) => {
@@ -174,9 +179,8 @@ describe('admin AccountsView bulk confirmations', () => {
     await flushPromises()
 
     if (event === 'delete') {
-      expect(deleteAccount).toHaveBeenCalledTimes(2)
-      expect(deleteAccount).toHaveBeenCalledWith(11)
-      expect(deleteAccount).toHaveBeenCalledWith(12)
+      expect(batchDelete).toHaveBeenCalledOnce()
+      expect(batchDelete).toHaveBeenCalledWith([11, 12])
     } else {
       expect(api).toHaveBeenCalledOnce()
       expect(api).toHaveBeenCalledWith([11, 12])

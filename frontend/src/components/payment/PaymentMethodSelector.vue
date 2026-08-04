@@ -4,7 +4,8 @@
       {{ t('payment.paymentMethod') }}
     </legend>
     <div
-      :class="compact ? 'grid grid-cols-1 gap-2 min-[420px]:grid-cols-2' : 'grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3'"
+      data-testid="payment-method-grid"
+      :class="compact ? 'grid grid-cols-1 gap-2 min-[420px]:grid-cols-2' : 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4'"
       role="radiogroup"
       :aria-label="t('payment.paymentMethod')"
     >
@@ -12,6 +13,7 @@
         v-for="(method, index) in sortedMethods"
         :key="method.type"
         type="button"
+        :title="methodLabel(method)"
         :disabled="!method.available"
         role="radio"
         :aria-checked="selected === method.type"
@@ -32,7 +34,7 @@
           <img :src="methodIcon(method.type)" alt="" class="h-7 w-7 object-contain" aria-hidden="true" />
         </span>
         <span class="flex min-w-0 flex-1 flex-col justify-center">
-          <span class="break-words text-sm font-semibold leading-5 text-foreground">{{ methodLabel(method) }}</span>
+          <span data-testid="payment-method-label" class="block w-full truncate text-sm font-semibold leading-5 text-foreground">{{ methodLabel(method) }}</span>
           <span v-if="method.fee_rate > 0" class="mt-0.5 text-xs leading-4 text-foreground-subtle">
             {{ t('payment.fee') }} {{ method.fee_rate }}%
           </span>

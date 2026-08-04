@@ -187,6 +187,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyContactInfo,
 		SettingKeyDocURL,
 		SettingKeyHomeContent,
+		SettingKeyCompactHomeEnabled,
 		SettingKeyHideCcsImportButton,
 		SettingKeyTableDefaultPageSize,
 		SettingKeyTablePageSizeOptions,
@@ -305,10 +306,10 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 	exchangeRate := parseExchangeRateSettingsMap(settings)
 	return &PublicSettings{
-		CurrencyUSDToCNYRate:          exchangeRate.Effective,
-		CurrencyExchangeRateSource:    exchangeRate.Source,
-		CurrencyExchangeRateAsOf:      exchangeRate.ProviderAsOf,
-		CurrencyExchangeRateStale:     exchangeRate.Stale,
+		CurrencyUSDToCNYRate:             exchangeRate.Effective,
+		CurrencyExchangeRateSource:       exchangeRate.Source,
+		CurrencyExchangeRateAsOf:         exchangeRate.ProviderAsOf,
+		CurrencyExchangeRateStale:        exchangeRate.Stale,
 		RegistrationEnabled:              settings[SettingKeyRegistrationEnabled] == "true",
 		EmailVerifyEnabled:               emailVerifyEnabled,
 		ForceEmailOnThirdPartySignup:     settings[SettingKeyForceEmailOnThirdPartySignup] == "true",
@@ -332,6 +333,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ContactInfo:                      settings[SettingKeyContactInfo],
 		DocURL:                           settings[SettingKeyDocURL],
 		HomeContent:                      settings[SettingKeyHomeContent],
+		CompactHomeEnabled:               settings[SettingKeyCompactHomeEnabled] == "true",
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		TableDefaultPageSize:             tableDefaultPageSize,
 		TablePageSizeOptions:             tablePageSizeOptions,
@@ -551,10 +553,10 @@ func (s *SettingService) IsUserErrorViewAllowed(ctx context.Context) bool {
 // A unit test diffs this struct's JSON keys against dto.PublicSettings to catch
 // drift automatically (see setting_service_injection_test.go).
 type PublicSettingsInjectionPayload struct {
-	CurrencyUSDToCNYRate       float64 `json:"currency_usd_to_cny_rate"`
-	CurrencyExchangeRateSource string  `json:"currency_exchange_rate_source"`
-	CurrencyExchangeRateAsOf   string  `json:"currency_exchange_rate_as_of"`
-	CurrencyExchangeRateStale  bool    `json:"currency_exchange_rate_stale"`
+	CurrencyUSDToCNYRate             float64                  `json:"currency_usd_to_cny_rate"`
+	CurrencyExchangeRateSource       string                   `json:"currency_exchange_rate_source"`
+	CurrencyExchangeRateAsOf         string                   `json:"currency_exchange_rate_as_of"`
+	CurrencyExchangeRateStale        bool                     `json:"currency_exchange_rate_stale"`
 	RegistrationEnabled              bool                     `json:"registration_enabled"`
 	EmailVerifyEnabled               bool                     `json:"email_verify_enabled"`
 	RegistrationEmailSuffixWhitelist []string                 `json:"registration_email_suffix_whitelist"`
@@ -577,6 +579,7 @@ type PublicSettingsInjectionPayload struct {
 	ContactInfo                      string                   `json:"contact_info"`
 	DocURL                           string                   `json:"doc_url"`
 	HomeContent                      string                   `json:"home_content"`
+	CompactHomeEnabled               bool                     `json:"compact_home_enabled"`
 	HideCcsImportButton              bool                     `json:"hide_ccs_import_button"`
 	TableDefaultPageSize             int                      `json:"table_default_page_size"`
 	TablePageSizeOptions             []int                    `json:"table_page_size_options"`
@@ -639,10 +642,10 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 	}
 
 	return &PublicSettingsInjectionPayload{
-		CurrencyUSDToCNYRate:          settings.CurrencyUSDToCNYRate,
-		CurrencyExchangeRateSource:    settings.CurrencyExchangeRateSource,
-		CurrencyExchangeRateAsOf:      settings.CurrencyExchangeRateAsOf,
-		CurrencyExchangeRateStale:     settings.CurrencyExchangeRateStale,
+		CurrencyUSDToCNYRate:             settings.CurrencyUSDToCNYRate,
+		CurrencyExchangeRateSource:       settings.CurrencyExchangeRateSource,
+		CurrencyExchangeRateAsOf:         settings.CurrencyExchangeRateAsOf,
+		CurrencyExchangeRateStale:        settings.CurrencyExchangeRateStale,
 		RegistrationEnabled:              settings.RegistrationEnabled,
 		EmailVerifyEnabled:               settings.EmailVerifyEnabled,
 		RegistrationEmailSuffixWhitelist: settings.RegistrationEmailSuffixWhitelist,
@@ -665,6 +668,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ContactInfo:                      settings.ContactInfo,
 		DocURL:                           settings.DocURL,
 		HomeContent:                      settings.HomeContent,
+		CompactHomeEnabled:               settings.CompactHomeEnabled,
 		HideCcsImportButton:              settings.HideCcsImportButton,
 		TableDefaultPageSize:             settings.TableDefaultPageSize,
 		TablePageSizeOptions:             settings.TablePageSizeOptions,

@@ -179,7 +179,11 @@ func (s *SettingService) SyncExchangeRate(ctx context.Context, force bool) (*Exc
 	if err != nil {
 		return nil, err
 	}
-	return value.(*ExchangeRateSettings), nil
+	settings, ok := value.(*ExchangeRateSettings)
+	if !ok || settings == nil {
+		return nil, errors.New("exchange rate sync returned an unexpected result")
+	}
+	return settings, nil
 }
 
 func (s *SettingService) fetchUSDToCNYRate(ctx context.Context) (float64, string, error) {
@@ -196,7 +200,9 @@ func (s *SettingService) fetchUSDToCNYRate(ctx context.Context) (float64, string
 	if err != nil {
 		return 0, "", fmt.Errorf("fetch exchange rate: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return 0, "", fmt.Errorf("exchange rate provider returned HTTP %d", resp.StatusCode)
 	}

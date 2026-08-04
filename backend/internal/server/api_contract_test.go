@@ -314,19 +314,23 @@ func TestAPIContracts(t *testing.T) {
 			name: "GET /api/v1/groups/available",
 			setup: func(t *testing.T, deps *contractDeps) {
 				t.Helper()
-				// 普通用户可见的分组列表不应包含内部字段（如 model_routing/account_count）。
+				// 普通用户可见的分组列表不应包含内部字段（如 model_routing/account_count），
+				// 也不得包含利润控制配置——它与同响应的 rate_multiplier 相乘即可反推上游成本上限。
 				deps.groupRepo.SetActive([]service.Group{
 					{
-						ID:                  10,
-						Name:                "Group One",
-						Description:         "desc",
-						Platform:            service.PlatformAnthropic,
-						RateMultiplier:      1.5,
-						PeakRateMultiplier:  1.0,
-						IsExclusive:         false,
-						Status:              service.StatusActive,
-						SubscriptionType:    service.SubscriptionTypeStandard,
-						ModelRoutingEnabled: true,
+						ID:                   10,
+						Name:                 "Group One",
+						Description:          "desc",
+						Platform:             service.PlatformAnthropic,
+						RateMultiplier:       1.5,
+						PeakRateMultiplier:   1.0,
+						IsExclusive:          false,
+						Status:               service.StatusActive,
+						SubscriptionType:     service.SubscriptionTypeStandard,
+						ProfitControlEnabled: true,
+						ProfitMinMargin:      0.3,
+						ProfitSafetyBuffer:   0.05,
+						ModelRoutingEnabled:  true,
 						ModelRouting: map[string][]int64{
 							"claude-3-*": []int64{101, 102},
 						},
@@ -802,6 +806,16 @@ func TestAPIContracts(t *testing.T) {
 					"forwarded_client_ip_headers": [],
 					"contact_info": "support",
 					"doc_url": "https://docs.example.com",
+					"currency_usd_to_cny_manual_rate": 7.2,
+					"currency_usd_to_cny_auto_rate": 0,
+					"currency_usd_to_cny_effective_rate": 7.2,
+					"currency_exchange_rate_auto_sync_enabled": false,
+					"currency_exchange_rate_source": "manual",
+					"currency_exchange_rate_provider": "Frankfurter / ECB",
+					"currency_exchange_rate_provider_as_of": "",
+					"currency_exchange_rate_last_synced_at": "",
+					"currency_exchange_rate_last_error": "",
+					"currency_exchange_rate_stale": false,
 					"auth_source_default_email_balance": 0,
 					"auth_source_default_email_concurrency": 5,
 					"auth_source_default_email_subscriptions": [],
@@ -873,6 +887,7 @@ func TestAPIContracts(t *testing.T) {
 					"max_codex_version": "",
 					"codex_cli_only_blacklist": "",
 					"codex_cli_only_whitelist": "",
+					"compact_home_enabled": false,
 					"codex_cli_only_allow_app_server_clients": false,
 					"codex_cli_only_engine_fingerprint_signals": "[{\"type\":\"header_prefix\",\"match\":[\"x-codex-\"],\"required\":true},{\"type\":\"header_exact\",\"match\":[\"session-id\",\"session_id\"],\"required\":false},{\"type\":\"header_exact\",\"match\":[\"thread-id\",\"thread_id\"],\"required\":false},{\"type\":\"body_path\",\"match\":[\"client_metadata.x-codex-window-id\",\"client_metadata.x-codex-installation-id\"],\"required\":false}]",
 					"allow_ungrouped_key_scheduling": false,
@@ -926,6 +941,8 @@ func TestAPIContracts(t *testing.T) {
 					"custom_menu_items": [],
 					"custom_endpoints": [],
 					"payment_enabled": false,
+					"purchase_subscription_enabled": false,
+					"purchase_subscription_url": "",
 					"payment_recharge_page_visible": true,
 					"payment_orders_page_visible": true,
 					"payment_fee_mode": "platform",
@@ -965,6 +982,7 @@ func TestAPIContracts(t *testing.T) {
 					"channel_monitor_default_interval_seconds": 60,
 					"available_channels_enabled": false,
 					"model_marketplace_enabled": false,
+					"model_marketplace_performance_visible": true,
 					"model_monitor_enabled": false,
 					"contact_us_enabled": false,
 					"contact_qq_enabled": false,
@@ -1138,6 +1156,16 @@ func TestAPIContracts(t *testing.T) {
 					"forwarded_client_ip_headers": [],
 					"contact_info": "",
 					"doc_url": "",
+					"currency_usd_to_cny_manual_rate": 7.2,
+					"currency_usd_to_cny_auto_rate": 0,
+					"currency_usd_to_cny_effective_rate": 7.2,
+					"currency_exchange_rate_auto_sync_enabled": false,
+					"currency_exchange_rate_source": "manual",
+					"currency_exchange_rate_provider": "Frankfurter / ECB",
+					"currency_exchange_rate_provider_as_of": "",
+					"currency_exchange_rate_last_synced_at": "",
+					"currency_exchange_rate_last_error": "",
+					"currency_exchange_rate_stale": false,
 					"home_content": "",
 					"hide_ccs_import_button": false,
 					"table_default_page_size": 20,
@@ -1190,6 +1218,7 @@ func TestAPIContracts(t *testing.T) {
 					"max_codex_version": "",
 					"codex_cli_only_blacklist": "",
 					"codex_cli_only_whitelist": "",
+					"compact_home_enabled": false,
 					"codex_cli_only_allow_app_server_clients": false,
 					"codex_cli_only_engine_fingerprint_signals": "[{\"type\":\"header_prefix\",\"match\":[\"x-codex-\"],\"required\":true},{\"type\":\"header_exact\",\"match\":[\"session-id\",\"session_id\"],\"required\":false},{\"type\":\"header_exact\",\"match\":[\"thread-id\",\"thread_id\"],\"required\":false},{\"type\":\"body_path\",\"match\":[\"client_metadata.x-codex-window-id\",\"client_metadata.x-codex-installation-id\"],\"required\":false}]",
 					"web_search_emulation_enabled": false,
@@ -1229,6 +1258,8 @@ func TestAPIContracts(t *testing.T) {
 						"rules": []
 					},
 					"payment_enabled": false,
+					"purchase_subscription_enabled": false,
+					"purchase_subscription_url": "",
 					"payment_recharge_page_visible": true,
 					"payment_orders_page_visible": true,
 					"payment_fee_mode": "platform",
@@ -1268,6 +1299,7 @@ func TestAPIContracts(t *testing.T) {
 					"channel_monitor_default_interval_seconds": 60,
 					"available_channels_enabled": false,
 					"model_marketplace_enabled": false,
+					"model_marketplace_performance_visible": true,
 					"model_monitor_enabled": false,
 					"contact_us_enabled": false,
 					"contact_qq_enabled": false,
@@ -1846,6 +1878,16 @@ func (s *stubAccountRepo) FindByExtraField(ctx context.Context, key string, valu
 }
 
 func (s *stubAccountRepo) Update(ctx context.Context, account *service.Account) error {
+	return errors.New("not implemented")
+}
+
+func (s *stubAccountRepo) UpdateWithAccountBillingSettings(
+	ctx context.Context,
+	account *service.Account,
+	probeEnabled *bool,
+	rateSyncEnabled *bool,
+	rateMultiplier *float64,
+) error {
 	return errors.New("not implemented")
 }
 
