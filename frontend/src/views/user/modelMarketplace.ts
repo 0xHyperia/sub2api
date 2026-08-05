@@ -1,7 +1,7 @@
 import type {
   UserMarketplaceGroup,
   UserMarketplacePlatform,
-  UserModelMonitorTimelinePoint,
+  UserModelMonitorMetricBucket,
   UserSupportedModelPricing,
   UserModelMonitorSummary,
 } from '@/api/channels'
@@ -105,8 +105,6 @@ export const MARKETPLACE_CARD_CAPABILITY_ORDER: MarketplaceModelCapability[] = [
   'image_embedding',
   'service_tier',
 ]
-export type MarketplaceMonitorSignalStatus = UserModelMonitorTimelinePoint['status'] | ''
-
 export const DEFAULT_USD_TO_CNY_RATE = 7.2
 const MARKETPLACE_PROVIDER_PRIORITY = ['openai', 'anthropic', 'gemini'] as const
 
@@ -144,18 +142,16 @@ export function inferMarketplaceModelCapabilities(
   return [...new Set(capabilities)]
 }
 
-export function recentMonitorStatuses(
-  points: UserModelMonitorTimelinePoint[] | null | undefined,
+export function recentModelSuccessRates(
+  buckets: UserModelMonitorMetricBucket[] | null | undefined,
   limit = 3,
-  fallbackStatus: MarketplaceMonitorSignalStatus = '',
-): MarketplaceMonitorSignalStatus[] {
+): Array<number | null> {
   const safeLimit = Math.max(0, Math.floor(limit))
-  const recent = [...(points ?? [])]
-    .slice(0, safeLimit)
-    .reverse()
-    .map(point => point.status)
-  if (recent.length === 0 && safeLimit > 0 && fallbackStatus) recent.push(fallbackStatus)
-  const empty = Array<MarketplaceMonitorSignalStatus>(Math.max(0, safeLimit - recent.length)).fill('')
+  if (safeLimit === 0) return []
+  const recent = [...(buckets ?? [])]
+    .slice(-safeLimit)
+    .map(bucket => bucket.success_rate)
+  const empty = Array<number | null>(Math.max(0, safeLimit - recent.length)).fill(null)
   return [...empty, ...recent]
 }
 

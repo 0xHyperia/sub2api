@@ -534,7 +534,7 @@ import {
   MARKETPLACE_CARD_CAPABILITY_ORDER,
   MARKETPLACE_MODEL_CAPABILITIES,
   primaryPrice,
-  recentMonitorStatuses,
+  recentModelSuccessRates,
   realtimeRate,
   scaledPrice,
   sortedEntryGroups,
@@ -838,21 +838,25 @@ function openDetails(entry: MarketplaceModelEntry) {
 }
 
 function loadMore() { visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, filteredEntries.value.length) }
-function monitorStatusLabel(status?: string) {
-  if (status === 'operational' || status === 'degraded') return t('modelMarketplace.monitor.operational')
-  if (status === 'failed' || status === 'error') return t('modelMarketplace.monitor.failed')
+function monitorStatusLabel(rate?: number | null) {
+  if (rate == null || !Number.isFinite(rate)) return t('modelMarketplace.monitor.unknown')
+  if (rate >= 70) return t('modelMarketplace.monitor.operational')
+  if (rate < 70) return t('modelMarketplace.monitor.failed')
   return t('modelMarketplace.monitor.unknown')
 }
-function monitorSignalPoints(entry: MarketplaceModelEntry) { return recentMonitorStatuses(entry.monitorStatus?.timeline, 3, entry.monitorStatus?.status ?? '') }
-function monitorSignalClass(status?: string) {
-  if (status === 'operational' || status === 'degraded') return 'bg-success'
-  if (status === 'failed' || status === 'error') return 'bg-danger'
+function monitorSignalPoints(entry: MarketplaceModelEntry) { return recentModelSuccessRates(entry.monitorStatus?.hourly_metrics?.buckets, 3) }
+function monitorSignalClass(rate?: number | null) {
+  if (rate == null || !Number.isFinite(rate)) return 'bg-outline'
+  if (rate >= 99.9) return 'bg-success'
+  if (rate >= 90) return 'bg-success/70'
+  if (rate >= 70) return 'bg-warning'
+  if (rate < 70) return 'bg-danger'
   return 'bg-outline'
 }
 function monitorCompactLabel(entry: MarketplaceModelEntry) {
-  const summary = entry.monitorStatus
-  const parts = [monitorStatusLabel(summary?.status)]
-  if (summary?.availability_7d != null) parts.push(t('modelMarketplace.monitor.availability', { value: summary.availability_7d.toFixed(2) }))
+  const rate = entry.monitorStatus?.hourly_metrics?.success_rate
+  const parts = [monitorStatusLabel(rate)]
+  if (rate != null) parts.push(t('modelMarketplace.monitor.availability', { value: rate.toFixed(2) }))
   return parts.join(', ')
 }
 

@@ -10,7 +10,7 @@ import {
   effectiveRateForEntry,
   imagePriceRows,
   inferMarketplaceModelCapabilities,
-  recentMonitorStatuses,
+  recentModelSuccessRates,
   realtimeRate,
   scaledPrice,
   sortedEntryGroups,
@@ -247,15 +247,15 @@ describe('model marketplace data', () => {
     ])
   })
 
-  it('builds a three-point compact monitor signal from the latest checks', () => {
-    const points = [
-      { status: 'failed' as const, latency_ms: 300, checked_at: '2026-07-16T03:00:00Z' },
-      { status: 'degraded' as const, latency_ms: 200, checked_at: '2026-07-16T02:00:00Z' },
-      { status: 'operational' as const, latency_ms: 100, checked_at: '2026-07-16T01:00:00Z' },
-      { status: 'operational' as const, latency_ms: 90, checked_at: '2026-07-16T00:00:00Z' },
+  it('builds a three-point compact monitor signal from the latest hourly buckets', () => {
+    const buckets = [
+      { started_at: '2026-07-16T01:00:00Z', success_rate: 99.9, ttft_ms: null },
+      { started_at: '2026-07-16T02:00:00Z', success_rate: 90, ttft_ms: null },
+      { started_at: '2026-07-16T03:00:00Z', success_rate: 69, ttft_ms: null },
     ]
-    expect(recentMonitorStatuses(points)).toEqual(['operational', 'degraded', 'failed'])
-    expect(recentMonitorStatuses(points.slice(0, 1))).toEqual(['', '', 'failed'])
-    expect(recentMonitorStatuses([], 3, 'operational')).toEqual(['', '', 'operational'])
+    expect(recentModelSuccessRates(buckets)).toEqual([99.9, 90, 69])
+    expect(recentModelSuccessRates(buckets.slice(0, 1))).toEqual([null, null, 99.9])
+    expect(recentModelSuccessRates([])).toEqual([null, null, null])
+    expect(recentModelSuccessRates(buckets, 0)).toEqual([])
   })
 })

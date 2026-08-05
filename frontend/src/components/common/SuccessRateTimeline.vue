@@ -93,8 +93,11 @@ const ariaLabel = computed(() => `Success rate ${formattedOverall.value}`)
 
 function rateClass(rate: number | null | undefined, text = false): string {
   if (rate == null || !Number.isFinite(rate)) return text ? 'text-foreground-subtle' : 'bg-outline-strong'
-  if (props.variant === 'availability') return rate >= 100 ? 'bg-success' : 'bg-danger'
-  if (rate >= 100) return text ? 'text-success-foreground' : 'bg-success'
+  if (props.variant === 'availability') {
+    if (rate >= 99.9) return text ? 'text-success-foreground' : 'bg-success'
+    return rate >= 70 ? (text ? 'text-success-foreground' : 'bg-success/70') : (text ? 'text-danger-foreground' : 'bg-danger')
+  }
+  if (rate >= 99.9) return text ? 'text-success-foreground' : 'bg-success'
   if (rate >= 90) return text ? 'text-success-foreground' : 'bg-success/70'
   if (rate >= 70) return text ? 'text-warning-foreground' : 'bg-warning'
   return text ? 'text-danger-foreground' : 'bg-danger'
@@ -111,6 +114,7 @@ function barStyle(rate: number | null): Record<string, string> {
   if (rate >= 99) return { height: '88%' }
   if (rate >= 95) return { height: '72%' }
   if (rate >= 90) return { height: '55%' }
+  if (rate >= 70) return { height: '48%' }
   return { height: '40%' }
 }
 
