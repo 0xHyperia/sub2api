@@ -5,7 +5,7 @@ import { LEGACY_THEME_STORAGE_KEY, THEME_STORAGE_KEY } from '@/composables/useTh
 
 const indexHtml = readFileSync(join(process.cwd(), 'index.html'), 'utf8')
 const prepaintScript = indexHtml.match(
-  /<script data-theme-prepaint>([\s\S]*?)<\/script>/
+  /<script[^>]*data-theme-prepaint[^>]*>([\s\S]*?)<\/script>/
 )?.[1]
 
 type ThemeSnapshot = {

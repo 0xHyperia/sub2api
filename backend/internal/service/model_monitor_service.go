@@ -176,7 +176,7 @@ func (s *ModelMonitorService) ListRows(ctx context.Context, resolution ModelMoni
 		if !configured {
 			cfg = ModelMonitor{Platform: entry.Platform, Model: entry.Model, IntervalSeconds: ModelMonitorDefaultIntervalSeconds}
 		}
-		row := ModelMonitorRow{ModelMonitor: cfg, CatalogAvailable: catalogSet[key], Configured: configured, Groups: append([]ModelMonitorGroupOption(nil), entry.Groups...)}
+		row := ModelMonitorRow{ModelMonitor: cfg, CatalogAvailable: catalogSet[key], Configured: configured, Groups: append([]ModelMonitorGroupOption{}, entry.Groups...)}
 		if configuredGroups, ok := groupConfigs[cfg.ID]; ok {
 			row.GroupsConfigured = true
 			configByID := make(map[int64]ModelMonitorGroupConfig, len(configuredGroups))

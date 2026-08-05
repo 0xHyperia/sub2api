@@ -78,7 +78,15 @@ export interface ModelMonitorHistoryItem extends ModelMonitorTimelinePoint {
 
 export async function list(resolution: ModelMonitorResolution = 'minute'): Promise<{ items: ModelMonitorRow[] }> {
   const { data } = await apiClient.get('/admin/model-monitors', { params: { resolution } })
-  return data
+  const items = Array.isArray(data?.items) ? data.items : []
+  return {
+    ...data,
+    items: items.map((row: ModelMonitorRow) => ({
+      ...row,
+      // Older backends may serialize an empty slice as null.
+      groups: Array.isArray(row.groups) ? row.groups : [],
+    })),
+  }
 }
 
 export async function updateConfig(payload: { platform: string; model: string; enabled: boolean; interval_seconds: number; display_order: number; label: string }): Promise<ModelMonitorRow> {
