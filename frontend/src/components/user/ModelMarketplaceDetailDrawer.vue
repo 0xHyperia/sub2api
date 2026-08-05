@@ -277,14 +277,14 @@
                       <div v-if="showDetailedPerformance" class="mt-3"><SuccessRateTimeline :buckets="row.buckets" :success-rate="row.successRate" :resolution="monitorResolution" /></div>
                     </article>
                   </div>
-                  <div class="hidden overflow-hidden rounded-panel border border-outline sm:block">
-                    <table class="w-full table-fixed text-left text-sm">
+                  <div class="hidden overflow-x-auto rounded-panel border border-outline sm:block">
+                    <table class="w-full table-fixed text-left text-sm" :class="showDetailedPerformance ? 'min-w-[720px]' : 'min-w-[420px]'">
                       <colgroup>
-                        <col :class="showDetailedPerformance ? 'w-[24%]' : 'w-1/2'" />
+                        <col :class="showDetailedPerformance ? 'w-[22%]' : 'w-1/2'" />
                         <col v-if="showDetailedPerformance" class="w-[12%]" />
+                        <col v-if="showDetailedPerformance" class="w-[14%]" />
                         <col v-if="showDetailedPerformance" class="w-[16%]" />
-                        <col v-if="showDetailedPerformance" class="w-[16%]" />
-                        <col :class="showDetailedPerformance ? 'w-[32%]' : 'w-1/2'" />
+                        <col :class="showDetailedPerformance ? 'w-[36%]' : 'w-1/2'" />
                       </colgroup>
                       <thead class="border-b border-outline bg-surface-subtle text-xs text-foreground-muted">
                         <tr>
@@ -292,7 +292,7 @@
                           <th v-if="showDetailedPerformance" class="px-4 py-3 text-right font-medium">TPS</th>
                           <th v-if="showDetailedPerformance" class="px-4 py-3 text-right font-medium">TTFT</th>
                           <th v-if="showDetailedPerformance" class="px-4 py-3 text-right font-medium">{{ t('modelMarketplace.details.averageLatency') }}</th>
-                          <th class="px-4 py-3 font-medium" :class="showDetailedPerformance ? '' : 'text-right'">{{ t('modelMarketplace.details.successRate') }}</th>
+                          <th class="px-4 py-3 text-right font-medium">{{ t('modelMarketplace.details.successRate') }}</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-outline">
@@ -301,7 +301,7 @@
                           <td v-if="showDetailedPerformance" class="px-4 py-3 text-right font-mono text-xs tabular-nums text-foreground">{{ row.tps }}</td>
                           <td v-if="showDetailedPerformance" class="px-4 py-3 text-right font-mono text-xs tabular-nums text-foreground">{{ row.ttft }}</td>
                           <td v-if="showDetailedPerformance" class="px-4 py-3 text-right font-mono text-xs tabular-nums text-foreground-muted">{{ row.averageLatency }}</td>
-                          <td class="px-4 py-3"><div :class="showDetailedPerformance ? '' : 'flex justify-end'"><SuccessRateTimeline :buckets="row.buckets" :success-rate="row.successRate" :resolution="monitorResolution" /></div></td>
+                          <td class="px-4 py-3"><div class="flex justify-end"><SuccessRateTimeline :buckets="row.buckets" :success-rate="row.successRate" :resolution="monitorResolution" /></div></td>
                         </tr>
                       </tbody>
                     </table>
