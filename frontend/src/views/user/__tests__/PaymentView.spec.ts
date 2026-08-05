@@ -4,6 +4,7 @@ import PaymentView from '../PaymentView.vue'
 import AmountInput from '@/components/payment/AmountInput.vue'
 import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector.vue'
 import PurchaseAuxiliaryDrawer from '@/components/payment/PurchaseAuxiliaryDrawer.vue'
+import RechargeValueEstimator from '@/components/payment/RechargeValueEstimator.vue'
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import { PAYMENT_RECOVERY_STORAGE_KEY } from '@/components/payment/paymentFlow'
 import { formatPaymentAmount } from '@/components/payment/currency'
@@ -79,6 +80,8 @@ vi.mock('@/stores', () => ({
   useAppStore: () => ({
     cachedPublicSettings: {
       affiliate_enabled: true,
+      model_marketplace_enabled: true,
+      currency_usd_to_cny_rate: 7.08,
     },
     showError,
     showInfo,
@@ -314,6 +317,14 @@ describe('PaymentView subscription plan grid', () => {
 })
 
 describe('PaymentView subscription confirmation amounts', () => {
+  it('uses the system base exchange rate for model usage estimates', async () => {
+    const wrapper = await mountPaymentView(checkoutInfoFixture({
+      subscription_usd_to_cny_rate: 6.5,
+    }), {})
+
+    expect(wrapper.getComponent(RechargeValueEstimator).props('officialUsdToCnyRate')).toBe(7.08)
+  })
+
   it('starts directly with the purchase workspace without an account summary header', async () => {
     const wrapper = await mountPaymentView(checkoutInfoFixture(), {})
 

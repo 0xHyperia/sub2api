@@ -143,7 +143,7 @@
                         :credited-amount="creditedAmount"
                         :recharge-amount="validAmount"
                         :balance-recharge-multiplier="balanceRechargeMultiplier"
-                        :official-usd-to-cny-rate="subscriptionUsdToCnyRate"
+                        :official-usd-to-cny-rate="officialUsdToCnyRate"
                         :quick-recharge-amounts="checkout.quick_recharge_amounts"
                       />
 
@@ -815,6 +815,11 @@ const balanceRechargeMultiplier = computed(() => {
 // 订阅 CNY 换算汇率（1 USD = X CNY）。0 = 未配置，订阅保持 price 直付（与后端 opt-in 条件严格镜像）。
 const subscriptionUsdToCnyRate = computed(() => {
   const rate = checkout.value.subscription_usd_to_cny_rate
+  return Number.isFinite(rate) && rate > 0 ? rate : 0
+})
+// 官方价格等值估算使用系统基础汇率，与订阅订单的结算专用汇率相互独立。
+const officialUsdToCnyRate = computed(() => {
+  const rate = Number(appStore.cachedPublicSettings?.currency_usd_to_cny_rate)
   return Number.isFinite(rate) && rate > 0 ? rate : 0
 })
 const selectedRechargeBonus = computed(() => {
