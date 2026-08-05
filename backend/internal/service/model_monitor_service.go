@@ -743,6 +743,7 @@ func (s *ModelMonitorService) PublicSummaries(ctx context.Context, keys []ModelC
 				summary.Groups = append(summary.Groups, ModelMonitorPublicGroupMetrics{GroupID: group.GroupID, Name: group.Name, Metrics: metric})
 			}
 		}
+		RedactModelMonitorSampleCounts(&summary)
 		summaries[key] = summary
 	}
 	return summaries, nil

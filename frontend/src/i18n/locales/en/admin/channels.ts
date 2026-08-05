@@ -485,6 +485,7 @@ export default {
       expandAll: 'Expand all',
       averageLatency: 'Average latency',
       successRate: 'Success rate',
+      requestResults: 'Success / failed',
       probeCost: 'Probe cost',
       presentation: 'Presentation',
       group: 'Group',

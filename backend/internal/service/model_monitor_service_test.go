@@ -262,9 +262,11 @@ func TestRedactModelMonitorDetailedPerformanceKeepsSuccessRate(t *testing.T) {
 	tps := 42.0
 	latency := 900.0
 	rate := 99.5
+	requests, successes, failures := int64(100), int64(99), int64(1)
 	summary := ModelMonitorSummary{
 		Metrics: &ModelMonitorGroupMetrics{
 			TPS: &tps, TTFTMs: &ttft, AverageLatencyMs: &latency, SuccessRate: &rate,
+			RequestCount: &requests, SuccessCount: &successes, FailureCount: &failures,
 			Buckets: []ModelMonitorMetricBucket{{StartedAt: time.Now(), SuccessRate: &rate, TTFTMs: &ttft}},
 		},
 	}
@@ -274,6 +276,9 @@ func TestRedactModelMonitorDetailedPerformanceKeepsSuccessRate(t *testing.T) {
 	require.Nil(t, summary.Metrics.TPS)
 	require.Nil(t, summary.Metrics.TTFTMs)
 	require.Nil(t, summary.Metrics.AverageLatencyMs)
+	require.Nil(t, summary.Metrics.RequestCount)
+	require.Nil(t, summary.Metrics.SuccessCount)
+	require.Nil(t, summary.Metrics.FailureCount)
 	require.Equal(t, rate, *summary.Metrics.SuccessRate)
 	require.Nil(t, summary.Metrics.Buckets[0].TTFTMs)
 	require.Equal(t, rate, *summary.Metrics.Buckets[0].SuccessRate)
@@ -285,5 +290,28 @@ func TestRedactModelMonitorDetailedPerformanceKeepsSuccessRate(t *testing.T) {
 	require.NotContains(t, jsonText, `"ttft_ms"`)
 	require.NotContains(t, jsonText, `"average_latency_ms"`)
 	require.NotContains(t, jsonText, `"probe_cost"`)
+	require.NotContains(t, jsonText, `"request_count"`)
+	require.NotContains(t, jsonText, `"success_count"`)
+	require.NotContains(t, jsonText, `"failure_count"`)
 	require.True(t, strings.Contains(jsonText, `"success_rate":99.5`))
+}
+
+func TestRedactModelMonitorSampleCountsKeepsDetailedPerformance(t *testing.T) {
+	tps := 42.0
+	requests, successes, failures := int64(100), int64(99), int64(1)
+	metrics := ModelMonitorGroupMetrics{
+		TPS: &tps, RequestCount: &requests, SuccessCount: &successes, FailureCount: &failures,
+	}
+	summary := ModelMonitorSummary{
+		Metrics:       &metrics,
+		HourlyMetrics: &metrics,
+		Groups:        []ModelMonitorPublicGroupMetrics{{GroupID: 1, Name: "Default", Metrics: metrics}},
+	}
+
+	RedactModelMonitorSampleCounts(&summary)
+
+	require.Equal(t, tps, *summary.Metrics.TPS)
+	require.Nil(t, summary.Metrics.RequestCount)
+	require.Nil(t, summary.HourlyMetrics.SuccessCount)
+	require.Nil(t, summary.Groups[0].Metrics.FailureCount)
 }

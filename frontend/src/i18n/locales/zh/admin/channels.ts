@@ -483,6 +483,7 @@ export default {
       expandAll: '展开全部',
       averageLatency: '平均延迟',
       successRate: '成功率',
+      requestResults: '成功 / 失败',
       probeCost: '检测成本',
       presentation: '展示设置',
       group: '分组',

@@ -553,6 +553,12 @@ FROM raw ORDER BY monitor_id,group_id,bucket_start`, pq.Array(monitorIDs), pq.Ar
 		for _, groupID := range metricGroupIDs {
 			a := aggregates[monitorID][groupID]
 			metrics := service.ModelMonitorGroupMetrics{Buckets: make([]service.ModelMonitorMetricBucket, 0, service.ModelMonitorMetricBucketCount)}
+			requestCount := a.requests
+			successCount := a.successes
+			failureCount := max(a.requests-a.successes, 0)
+			metrics.RequestCount = &requestCount
+			metrics.SuccessCount = &successCount
+			metrics.FailureCount = &failureCount
 			for i := 0; i < service.ModelMonitorMetricBucketCount; i++ {
 				started := start.Add(time.Duration(i) * step)
 				point, exists := a.buckets[started]

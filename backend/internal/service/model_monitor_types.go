@@ -67,6 +67,9 @@ type ModelMonitorGroupMetrics struct {
 	TTFTMs           *float64                   `json:"ttft_ms,omitempty"`
 	AverageLatencyMs *float64                   `json:"average_latency_ms,omitempty"`
 	SuccessRate      *float64                   `json:"success_rate"`
+	RequestCount     *int64                     `json:"request_count,omitempty"`
+	SuccessCount     *int64                     `json:"success_count,omitempty"`
+	FailureCount     *int64                     `json:"failure_count,omitempty"`
 	ProbeCost        *float64                   `json:"probe_cost,omitempty"`
 	Buckets          []ModelMonitorMetricBucket `json:"buckets"`
 }
@@ -208,6 +211,28 @@ func RedactModelMonitorDetailedPerformance(summary *ModelMonitorSummary) {
 	summary.Groups = groups
 }
 
+// RedactModelMonitorSampleCounts keeps operational sample volume private on
+// public model marketplace endpoints while retaining success-rate aggregates.
+func RedactModelMonitorSampleCounts(summary *ModelMonitorSummary) {
+	if summary == nil {
+		return
+	}
+	clearModelMonitorMetricCounts(summary.Metrics)
+	clearModelMonitorMetricCounts(summary.HourlyMetrics)
+	for i := range summary.Groups {
+		clearModelMonitorMetricCounts(&summary.Groups[i].Metrics)
+	}
+}
+
+func clearModelMonitorMetricCounts(metrics *ModelMonitorGroupMetrics) {
+	if metrics == nil {
+		return
+	}
+	metrics.RequestCount = nil
+	metrics.SuccessCount = nil
+	metrics.FailureCount = nil
+}
+
 func successOnlyModelMonitorMetrics(metrics *ModelMonitorGroupMetrics) *ModelMonitorGroupMetrics {
 	if metrics == nil {
 		return nil
@@ -217,6 +242,7 @@ func successOnlyModelMonitorMetrics(metrics *ModelMonitorGroupMetrics) *ModelMon
 	copy.TTFTMs = nil
 	copy.AverageLatencyMs = nil
 	copy.ProbeCost = nil
+	clearModelMonitorMetricCounts(&copy)
 	copy.Buckets = append([]ModelMonitorMetricBucket(nil), metrics.Buckets...)
 	for i := range copy.Buckets {
 		copy.Buckets[i].TTFTMs = nil

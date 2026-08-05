@@ -37,16 +37,17 @@
 
       <div v-if="loading" class="py-24 text-center text-sm text-foreground-subtle">{{ t('common.loading') }}</div>
       <div v-else-if="filteredRows.length" class="max-h-[calc(100dvh-15rem)] min-h-80 overflow-y-auto overscroll-contain rounded-panel border border-outline bg-surface">
-        <div class="sticky top-0 z-20 hidden grid-cols-[minmax(240px,1.5fr)_80px_96px_104px_minmax(180px,1.1fr)_76px] items-center gap-3 border-b border-outline bg-surface-subtle px-4 py-2 text-[10px] font-medium text-foreground-subtle shadow-sm lg:grid">
+        <div class="sticky top-0 z-20 hidden grid-cols-[minmax(240px,1.5fr)_112px_80px_96px_104px_minmax(180px,1.1fr)_76px] items-center gap-3 border-b border-outline bg-surface-subtle px-4 py-2 text-[10px] font-medium text-foreground-subtle shadow-sm lg:grid">
           <span>{{ t('admin.modelMonitor.model') }}</span>
-          <button type="button" class="inline-flex items-center justify-end gap-1 text-right transition-colors hover:text-foreground" @click="toggleMetricSort('tps')">TPS<Icon :name="sortIcon('tps')" size="xs" /></button>
-          <button type="button" class="inline-flex items-center justify-end gap-1 text-right transition-colors hover:text-foreground" @click="toggleMetricSort('ttft')">TTFT<Icon :name="sortIcon('ttft')" size="xs" /></button>
-          <button type="button" class="inline-flex items-center justify-end gap-1 text-right transition-colors hover:text-foreground" @click="toggleMetricSort('latency')">{{ t('admin.modelMonitor.averageLatency') }}<Icon :name="sortIcon('latency')" size="xs" /></button>
-          <button type="button" class="inline-flex items-center justify-end gap-1 text-right transition-colors hover:text-foreground" @click="toggleMetricSort('successRate')">{{ t('admin.modelMonitor.successRate') }}<Icon :name="sortIcon('successRate')" size="xs" /></button>
-          <span class="text-right">{{ t('admin.modelMonitor.actions') }}</span>
+          <span class="justify-self-end text-right">{{ t('admin.modelMonitor.requestResults') }}</span>
+          <button type="button" class="inline-flex w-full items-center justify-end gap-1 text-right transition-colors hover:text-foreground" @click="toggleMetricSort('tps')">TPS<Icon :name="sortIcon('tps')" size="xs" /></button>
+          <button type="button" class="inline-flex w-full items-center justify-end gap-1 text-right transition-colors hover:text-foreground" @click="toggleMetricSort('ttft')">TTFT<Icon :name="sortIcon('ttft')" size="xs" /></button>
+          <button type="button" class="inline-flex w-full items-center justify-end gap-1 text-right transition-colors hover:text-foreground" @click="toggleMetricSort('latency')">{{ t('admin.modelMonitor.averageLatency') }}<Icon :name="sortIcon('latency')" size="xs" /></button>
+          <button type="button" class="inline-flex w-full items-center justify-end gap-1 text-right transition-colors hover:text-foreground" @click="toggleMetricSort('successRate')">{{ t('admin.modelMonitor.successRate') }}<Icon :name="sortIcon('successRate')" size="xs" /></button>
+          <span class="justify-self-end text-right">{{ t('admin.modelMonitor.actions') }}</span>
         </div>
         <article v-for="row in filteredRows" :key="modelKey(row)" class="border-b border-outline last:border-b-0">
-          <header class="grid min-w-0 grid-cols-[minmax(0,1fr)_76px] items-center gap-2 px-3 py-3 transition-colors hover:bg-surface-subtle/60 lg:grid-cols-[minmax(240px,1.5fr)_80px_96px_104px_minmax(180px,1.1fr)_76px] lg:gap-3 lg:px-4 lg:py-2.5">
+          <header class="grid min-w-0 grid-cols-[minmax(0,1fr)_76px] items-center gap-2 px-3 py-3 transition-colors hover:bg-surface-subtle/60 lg:grid-cols-[minmax(240px,1.5fr)_112px_80px_96px_104px_minmax(180px,1.1fr)_76px] lg:gap-3 lg:px-4 lg:py-2.5">
             <div class="flex min-w-0 items-center gap-2">
               <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground" :aria-expanded="isExpanded(row)" @click="toggleExpanded(row)">
                 <Icon name="chevronRight" size="xs" class="transition-transform" :class="isExpanded(row) ? 'rotate-90' : ''" />
@@ -63,15 +64,21 @@
                 <span class="mt-0.5 block truncate text-[10px] text-foreground-subtle">{{ row.platform }} · {{ t('admin.modelMonitor.groupTotal', { count: row.groups.length }) }}</span>
               </button>
             </div>
-            <div class="hidden text-right font-mono text-xs tabular-nums text-foreground lg:block">{{ formatTPS(row.summary?.metrics?.tps) }}</div>
-            <div class="hidden text-right font-mono text-xs tabular-nums text-foreground lg:block">{{ formatLatency(row.summary?.metrics?.ttft_ms) }}</div>
-            <div class="hidden text-right font-mono text-xs tabular-nums text-foreground lg:block">{{ formatLatency(row.summary?.metrics?.average_latency_ms) }}</div>
-            <div class="hidden justify-end lg:flex"><SuccessRateTimeline :buckets="row.summary?.metrics?.buckets" :success-rate="row.summary?.metrics?.success_rate" :resolution="resolution" /></div>
-            <div class="flex justify-end gap-1">
+            <div class="hidden justify-self-end items-center gap-1 font-mono text-xs tabular-nums lg:flex" :title="t('admin.modelMonitor.requestResults')">
+              <span class="text-success-foreground">{{ formatCount(row.summary?.metrics?.success_count) }}</span>
+              <span class="text-foreground-subtle">/</span>
+              <span class="text-danger-foreground">{{ formatCount(row.summary?.metrics?.failure_count) }}</span>
+            </div>
+            <div class="hidden justify-self-end text-right font-mono text-xs tabular-nums text-foreground lg:block">{{ formatTPS(row.summary?.metrics?.tps) }}</div>
+            <div class="hidden justify-self-end text-right font-mono text-xs tabular-nums text-foreground lg:block">{{ formatLatency(row.summary?.metrics?.ttft_ms) }}</div>
+            <div class="hidden justify-self-end text-right font-mono text-xs tabular-nums text-foreground lg:block">{{ formatLatency(row.summary?.metrics?.average_latency_ms) }}</div>
+            <div class="hidden justify-self-end lg:flex"><SuccessRateTimeline :buckets="row.summary?.metrics?.buckets" :success-rate="row.summary?.metrics?.success_rate" :resolution="resolution" /></div>
+            <div class="flex justify-self-end justify-end gap-1">
               <button type="button" class="btn btn-ghost btn-icon h-7 w-7" :title="t('admin.modelMonitor.presentation')" @click="openPresentation(row)"><Icon name="edit" size="xs" /></button>
               <button type="button" class="btn btn-ghost btn-icon h-7 w-7" :title="t('admin.modelMonitor.history')" :disabled="!row.id" @click="openHistory(row)"><Icon name="clock" size="xs" /></button>
             </div>
-            <div class="col-span-2 grid grid-cols-3 gap-px overflow-hidden rounded-control bg-outline lg:hidden">
+            <div class="col-span-2 grid grid-cols-2 gap-px overflow-hidden rounded-control bg-outline sm:grid-cols-4 lg:hidden">
+              <ModelMetric :label="t('admin.modelMonitor.requestResults')" :value="formatRequestResults(row.summary?.metrics)" />
               <ModelMetric label="TPS" :value="formatTPS(row.summary?.metrics?.tps)" />
               <ModelMetric label="TTFT" :value="formatLatency(row.summary?.metrics?.ttft_ms)" />
               <ModelMetric :label="t('admin.modelMonitor.averageLatency')" :value="formatLatency(row.summary?.metrics?.average_latency_ms)" />
@@ -82,36 +89,42 @@
             </div>
           </header>
 
-          <section v-if="isExpanded(row)" class="border-t border-outline bg-surface-subtle/60 lg:pl-9">
-            <div v-if="row.groups.length" class="divide-y divide-outline">
-              <div class="hidden grid-cols-[minmax(150px,1fr)_72px_86px_96px_minmax(175px,1.2fr)_88px_104px_52px_72px] items-center gap-3 px-4 py-2 text-[9px] font-medium text-foreground-subtle xl:grid">
-                <span>{{ t('admin.modelMonitor.group') }}</span><span class="text-right">TPS</span><span class="text-right">TTFT</span><span class="text-right">{{ t('admin.modelMonitor.averageLatency') }}</span><span>{{ t('admin.modelMonitor.successRate') }}</span><span class="text-right">{{ t('admin.modelMonitor.probeCost') }}</span><span>{{ t('admin.modelMonitor.interval') }}</span><span class="text-center">{{ t('admin.modelMonitor.enabled') }}</span><span class="text-right">{{ t('admin.modelMonitor.actions') }}</span>
+          <section v-if="isExpanded(row)" class="overflow-x-auto border-t border-outline bg-surface-subtle/60 lg:pl-9">
+            <div v-if="row.groups.length" class="divide-y divide-outline xl:min-w-[1120px]">
+              <div class="hidden grid-cols-[minmax(160px,1.2fr)_96px_68px_80px_92px_minmax(180px,1.35fr)_88px_112px_56px_72px] items-center gap-x-3 px-4 py-2.5 text-[9px] font-medium text-foreground-subtle xl:grid">
+                <span>{{ t('admin.modelMonitor.group') }}</span><span class="w-full text-center">{{ t('admin.modelMonitor.requestResults') }}</span><span class="justify-self-end text-right">TPS</span><span class="justify-self-end text-right">TTFT</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.averageLatency') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.successRate') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.probeCost') }}</span><span class="justify-self-center text-center">{{ t('admin.modelMonitor.interval') }}</span><span class="justify-self-center text-center">{{ t('admin.modelMonitor.enabled') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.actions') }}</span>
               </div>
-              <div v-for="group in row.groups" :key="group.group_id" class="px-3 py-3 transition-colors hover:bg-surface sm:px-4 xl:grid xl:min-h-14 xl:grid-cols-[minmax(150px,1fr)_72px_86px_96px_minmax(175px,1.2fr)_88px_104px_52px_72px] xl:items-center xl:gap-3 xl:py-2">
+              <div v-for="group in row.groups" :key="group.group_id" class="px-3 py-3 transition-colors hover:bg-surface sm:px-4 xl:grid xl:min-h-14 xl:grid-cols-[minmax(160px,1.2fr)_96px_68px_80px_92px_minmax(180px,1.35fr)_88px_112px_56px_72px] xl:items-center xl:gap-x-3 xl:py-2.5">
                 <div class="flex min-w-0 items-center justify-between gap-3 xl:block">
                   <div class="flex min-w-0 items-center gap-2"><span class="h-2 w-2 shrink-0 rounded-full" :class="statusDotClass(group)"></span><span class="truncate text-sm font-medium text-foreground" :title="group.name">{{ group.name }}</span></div>
                   <div class="flex shrink-0 items-center gap-2 xl:hidden"><span class="text-[10px] text-foreground-subtle">{{ t('admin.modelMonitor.enabled') }}</span><Toggle :model-value="group.enabled" :disabled="isGroupSaving(row, group)" @update:model-value="saveGroup(row, group, $event)" /></div>
                 </div>
-                <dl class="mt-3 grid grid-cols-3 gap-px bg-outline xl:contents">
+                <div class="mt-3 hidden w-full items-center justify-center gap-1 font-mono text-xs tabular-nums xl:mt-0 xl:flex" :title="t('admin.modelMonitor.requestResults')">
+                  <span class="text-success-foreground">{{ formatCount(group.metrics?.success_count) }}</span>
+                  <span class="text-foreground-subtle">/</span>
+                  <span class="text-danger-foreground">{{ formatCount(group.metrics?.failure_count) }}</span>
+                </div>
+                <dl class="mt-3 grid grid-cols-2 gap-px bg-outline sm:grid-cols-4 xl:contents">
+                  <MetricCell :label="t('admin.modelMonitor.requestResults')" :value="formatRequestResults(group.metrics)" class="xl:hidden" />
                   <MetricCell label="TPS" :value="formatTPS(group.metrics?.tps)" />
                   <MetricCell label="TTFT" :value="formatLatency(group.metrics?.ttft_ms)" />
                   <MetricCell :label="t('admin.modelMonitor.averageLatency')" :value="formatLatency(group.metrics?.average_latency_ms)" />
                 </dl>
-                <div class="mt-3 flex min-w-0 items-center justify-between gap-3 xl:mt-0"><span class="text-[10px] text-foreground-subtle xl:hidden">{{ t('admin.modelMonitor.successRate') }}</span><SuccessRateTimeline :buckets="group.metrics?.buckets" :success-rate="group.metrics?.success_rate" :resolution="resolution" /></div>
-                <div class="mt-3 flex items-center justify-between xl:mt-0 xl:block xl:text-right"><span class="text-[10px] text-foreground-subtle xl:hidden">{{ t('admin.modelMonitor.probeCost') }}</span><span class="font-mono text-xs tabular-nums text-foreground-muted">{{ formatCost(group.metrics?.probe_cost) }}</span></div>
-                <div class="mt-3 xl:mt-0">
+                <div class="mt-3 flex min-w-0 items-center justify-between gap-3 xl:mt-0 xl:justify-self-end"><span class="text-[10px] text-foreground-subtle xl:hidden">{{ t('admin.modelMonitor.successRate') }}</span><SuccessRateTimeline :buckets="group.metrics?.buckets" :success-rate="group.metrics?.success_rate" :resolution="resolution" /></div>
+                <div class="mt-3 flex items-center justify-between xl:mt-0 xl:justify-self-end xl:text-right"><span class="text-[10px] text-foreground-subtle xl:hidden">{{ t('admin.modelMonitor.probeCost') }}</span><span class="font-mono text-xs tabular-nums text-foreground-muted">{{ formatCost(group.metrics?.probe_cost) }}</span></div>
+                <div class="mt-3 xl:mt-0 xl:flex xl:justify-self-center">
                   <Select
                     :model-value="group.interval_seconds || 300"
                     :options="intervalSelectOptions"
                     :searchable="false"
                     :disabled="isGroupSaving(row, group)"
-                    class="w-full xl:w-[104px]"
+                    class="w-full xl:w-[112px]"
                     :aria-label="t('admin.modelMonitor.interval')"
                     @update:model-value="saveGroup(row, group, group.enabled, Number($event))"
                   />
                 </div>
-                <div class="hidden justify-center xl:flex"><Toggle :model-value="group.enabled" :disabled="isGroupSaving(row, group)" @update:model-value="saveGroup(row, group, $event)" /></div>
-                <div class="mt-3 flex justify-end gap-1 xl:mt-0">
+                <div class="hidden justify-self-center xl:flex"><Toggle :model-value="group.enabled" :disabled="isGroupSaving(row, group)" @update:model-value="saveGroup(row, group, $event)" /></div>
+                <div class="mt-3 flex justify-end gap-1 xl:mt-0 xl:justify-self-end">
                   <button type="button" class="btn btn-ghost btn-icon h-8 w-8" :title="t('admin.modelMonitor.runNow')" :disabled="!featureEnabled || runningKey !== null" @click="runGroup(row, group)"><Icon name="play" size="sm" :class="runningKey === groupKey(row, group) ? 'animate-pulse' : ''" /></button>
                   <button type="button" class="btn btn-ghost btn-icon h-8 w-8" :title="t('admin.modelMonitor.history')" :disabled="!row.id" @click="openHistory(row, group)"><Icon name="clock" size="sm" /></button>
                 </div>
@@ -153,7 +166,7 @@
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
-import type { ModelMonitorGroupOption, ModelMonitorHistoryItem, ModelMonitorResolution, ModelMonitorRow } from '@/api/admin/modelMonitor'
+import type { ModelMonitorGroupMetrics, ModelMonitorGroupOption, ModelMonitorHistoryItem, ModelMonitorResolution, ModelMonitorRow } from '@/api/admin/modelMonitor'
 import type { GroupPlatform } from '@/types'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
@@ -251,6 +264,8 @@ function statusTextClass(value?: string) { return value === 'operational' ? 'tex
 function statusLabel(value?: string) { return value ? t(`admin.modelMonitor.${value}`) : t('admin.modelMonitor.unknown') }
 function formatTPS(value?: number | null) { return value == null ? '—' : `${value.toFixed(value < 10 ? 2 : 1)} t/s` }
 function formatLatency(value?: number | null) { if (value == null) return '—'; return value >= 1000 ? `${(value / 1000).toFixed(2)}s` : `${Math.round(value)}ms` }
+function formatCount(value?: number | null) { return value == null ? '—' : Math.max(0, Math.trunc(value)).toLocaleString() }
+function formatRequestResults(metrics?: ModelMonitorGroupMetrics | null) { return `${formatCount(metrics?.success_count)} / ${formatCount(metrics?.failure_count)}` }
 function formatCost(value?: number | null) { return value == null ? '—' : `$${value.toFixed(value > 0 && value < 0.01 ? 6 : 4)}` }
 function intervalLabel(value: number) { return t('admin.modelMonitor.minutes', { value: value / 60 }) }
 function formatTime(value: string) { return new Date(value).toLocaleString() }

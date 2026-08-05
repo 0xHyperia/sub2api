@@ -20,6 +20,9 @@ export interface ModelMonitorGroupMetrics {
   ttft_ms: number | null
   average_latency_ms: number | null
   success_rate: number | null
+  request_count?: number | null
+  success_count?: number | null
+  failure_count?: number | null
   probe_cost: number | null
   buckets: ModelMonitorMetricBucket[]
 }
