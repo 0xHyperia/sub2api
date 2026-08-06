@@ -25,7 +25,7 @@
         <router-link to="/admin/settings?tab=features" class="shrink-0 font-medium text-brand hover:underline">{{ t('admin.modelMonitor.openSettings') }}</router-link>
       </div>
 
-      <div class="grid gap-2 rounded-panel border border-outline bg-surface p-2 sm:grid-cols-2 lg:grid-cols-[minmax(280px,1fr)_150px_150px_150px]">
+      <div class="grid gap-2 rounded-panel border border-outline bg-surface p-2 sm:grid-cols-2 lg:grid-cols-[minmax(280px,1fr)_150px_150px_150px_auto]">
         <div class="relative sm:col-span-2 lg:col-span-1">
           <Icon name="search" size="sm" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
           <input v-model="search" class="input h-10 pl-9" :placeholder="t('admin.modelMonitor.searchPlaceholder')" />
@@ -33,6 +33,10 @@
         <select v-model="platform" class="input h-10"><option value="">{{ t('admin.modelMonitor.allPlatforms') }}</option><option v-for="item in platforms" :key="item" :value="item">{{ item }}</option></select>
         <select v-model="status" class="input h-10"><option value="">{{ t('admin.modelMonitor.allStatuses') }}</option><option value="operational">{{ t('admin.modelMonitor.operational') }}</option><option value="degraded">{{ t('admin.modelMonitor.degraded') }}</option><option value="failed">{{ t('admin.modelMonitor.failed') }}</option><option value="unknown">{{ t('admin.modelMonitor.unknown') }}</option></select>
         <select v-model="enabled" class="input h-10"><option value="">{{ t('admin.modelMonitor.allStates') }}</option><option value="true">{{ t('admin.modelMonitor.enabledOnly') }}</option><option value="false">{{ t('admin.modelMonitor.disabledOnly') }}</option></select>
+        <label class="flex h-10 cursor-pointer items-center justify-between gap-3 rounded-control border border-outline px-3 text-xs text-foreground-muted lg:justify-start">
+          <input v-model="showUnavailable" type="checkbox" class="h-4 w-4 accent-brand" />
+          <span class="whitespace-nowrap">{{ t('admin.modelMonitor.showUnavailable') }}</span>
+        </label>
       </div>
 
       <div v-if="loading" class="py-24 text-center text-sm text-foreground-subtle">{{ t('common.loading') }}</div>
@@ -90,13 +94,13 @@
           </header>
 
           <section v-if="isExpanded(row)" class="overflow-x-auto border-t border-outline bg-surface-subtle/60 lg:pl-9">
-            <div v-if="row.groups.length" class="divide-y divide-outline xl:min-w-[1120px]">
-              <div class="hidden grid-cols-[minmax(160px,1.2fr)_96px_68px_80px_92px_minmax(180px,1.35fr)_88px_112px_56px_72px] items-center gap-x-3 px-4 py-2.5 text-[9px] font-medium text-foreground-subtle xl:grid">
-                <span>{{ t('admin.modelMonitor.group') }}</span><span class="w-full text-center">{{ t('admin.modelMonitor.requestResults') }}</span><span class="justify-self-end text-right">TPS</span><span class="justify-self-end text-right">TTFT</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.averageLatency') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.successRate') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.probeCost') }}</span><span class="justify-self-center text-center">{{ t('admin.modelMonitor.interval') }}</span><span class="justify-self-center text-center">{{ t('admin.modelMonitor.enabled') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.actions') }}</span>
+            <div v-if="row.groups.length" class="divide-y divide-outline xl:min-w-[1200px]">
+              <div class="hidden grid-cols-[minmax(160px,1.2fr)_96px_68px_80px_92px_minmax(180px,1.35fr)_88px_112px_56px_64px_72px] items-center gap-x-3 px-4 py-2.5 text-[9px] font-medium text-foreground-subtle xl:grid">
+                <span>{{ t('admin.modelMonitor.group') }}</span><span class="w-full text-center">{{ t('admin.modelMonitor.requestResults') }}</span><span class="justify-self-end text-right">TPS</span><span class="justify-self-end text-right">TTFT</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.averageLatency') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.successRate') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.probeCost') }}</span><span class="justify-self-center text-center">{{ t('admin.modelMonitor.interval') }}</span><span class="justify-self-center text-center">{{ t('admin.modelMonitor.enabled') }}</span><span class="justify-self-center text-center">{{ t('admin.modelMonitor.compensation') }}</span><span class="justify-self-end text-right">{{ t('admin.modelMonitor.actions') }}</span>
               </div>
-              <div v-for="group in row.groups" :key="group.group_id" class="px-3 py-3 transition-colors hover:bg-surface sm:px-4 xl:grid xl:min-h-14 xl:grid-cols-[minmax(160px,1.2fr)_96px_68px_80px_92px_minmax(180px,1.35fr)_88px_112px_56px_72px] xl:items-center xl:gap-x-3 xl:py-2.5">
+              <div v-for="group in row.groups" :key="group.group_id" class="px-3 py-3 transition-colors hover:bg-surface sm:px-4 xl:grid xl:min-h-14 xl:grid-cols-[minmax(160px,1.2fr)_96px_68px_80px_92px_minmax(180px,1.35fr)_88px_112px_56px_64px_72px] xl:items-center xl:gap-x-3 xl:py-2.5">
                 <div class="flex min-w-0 items-center justify-between gap-3 xl:block">
-                  <div class="flex min-w-0 items-center gap-2"><span class="h-2 w-2 shrink-0 rounded-full" :class="statusDotClass(group)"></span><span class="truncate text-sm font-medium text-foreground" :title="group.name">{{ group.name }}</span></div>
+                  <div class="flex min-w-0 items-center gap-2"><span class="h-2 w-2 shrink-0 rounded-full" :class="statusDotClass(group)"></span><span class="truncate text-sm font-medium text-foreground" :title="group.name">{{ group.name }}</span><span v-if="group.failure_compensation_pending" class="badge shrink-0 bg-warning-subtle text-warning-foreground">{{ t('admin.modelMonitor.compensating') }}</span></div>
                   <div class="flex shrink-0 items-center gap-2 xl:hidden"><span class="text-[10px] text-foreground-subtle">{{ t('admin.modelMonitor.enabled') }}</span><Toggle :model-value="group.enabled" :disabled="isGroupSaving(row, group)" @update:model-value="saveGroup(row, group, $event)" /></div>
                 </div>
                 <div class="mt-3 hidden w-full items-center justify-center gap-1 font-mono text-xs tabular-nums xl:mt-0 xl:flex" :title="t('admin.modelMonitor.requestResults')">
@@ -120,10 +124,14 @@
                     :disabled="isGroupSaving(row, group)"
                     class="w-full xl:w-[112px]"
                     :aria-label="t('admin.modelMonitor.interval')"
-                    @update:model-value="saveGroup(row, group, group.enabled, Number($event))"
+                    @update:model-value="saveGroup(row, group, group.enabled, Number($event), group.failure_compensation_enabled)"
                   />
                 </div>
                 <div class="hidden justify-self-center xl:flex"><Toggle :model-value="group.enabled" :disabled="isGroupSaving(row, group)" @update:model-value="saveGroup(row, group, $event)" /></div>
+                <div class="mt-3 flex items-center justify-between xl:mt-0 xl:justify-self-center">
+                  <span class="text-[10px] text-foreground-subtle xl:hidden">{{ t('admin.modelMonitor.compensation') }}</span>
+                  <Toggle :model-value="group.failure_compensation_enabled" :disabled="!group.enabled || isGroupSaving(row, group)" :aria-label="t('admin.modelMonitor.compensation')" :title="t('admin.modelMonitor.compensationHint')" @update:model-value="saveGroup(row, group, group.enabled, group.interval_seconds || 300, $event)" />
+                </div>
                 <div class="mt-3 flex justify-end gap-1 xl:mt-0 xl:justify-self-end">
                   <button type="button" class="btn btn-ghost btn-icon h-8 w-8" :title="t('admin.modelMonitor.runNow')" :disabled="!featureEnabled || runningKey !== null" @click="runGroup(row, group)"><Icon name="play" size="sm" :class="runningKey === groupKey(row, group) ? 'animate-pulse' : ''" /></button>
                   <button type="button" class="btn btn-ghost btn-icon h-8 w-8" :title="t('admin.modelMonitor.history')" :disabled="!row.id" @click="openHistory(row, group)"><Icon name="clock" size="sm" /></button>
@@ -193,6 +201,7 @@ const search = ref('')
 const platform = ref('')
 const status = ref('')
 const enabled = ref('')
+const showUnavailable = ref(false)
 const sortField = ref<ModelMonitorMetricSortField | null>(null)
 const sortDirection = ref<'asc' | 'desc'>('desc')
 const resolution = ref<ModelMonitorResolution>(localStorage.getItem('usa0:model-monitor-resolution') === 'minute' ? 'minute' : 'hour')
@@ -218,6 +227,7 @@ const platforms = computed(() => [...new Set(rows.value.map(row => row.platform)
 const resolutionOptions = computed(() => [{ value: 'minute' as const, label: t('admin.modelMonitor.minute') }, { value: 'hour' as const, label: t('admin.modelMonitor.hour') }])
 const filteredHistoryItems = computed(() => historyGroupID.value === 0 ? historyItems.value : historyItems.value.filter(item => item.group_id === historyGroupID.value))
 const filteredRows = computed(() => rows.value.filter(row => {
+  if (!showUnavailable.value && !row.catalog_available) return false
   const query = search.value.trim().toLowerCase()
   if (query && !row.model.toLowerCase().includes(query) && !row.groups.some(group => group.name.toLowerCase().includes(query))) return false
   if (platform.value && row.platform !== platform.value) return false
@@ -253,7 +263,7 @@ async function load(silent = false) {
   finally { loading.value = false; refreshing.value = false }
 }
 async function setResolution(value: ModelMonitorResolution) { if (resolution.value === value) return; const previous = resolution.value; resolution.value = value; if (await load()) localStorage.setItem('usa0:model-monitor-resolution', value); else resolution.value = previous }
-async function saveGroup(row: ModelMonitorRow, group: ModelMonitorGroupOption, nextEnabled = group.enabled, nextInterval = group.interval_seconds || 300) { const key = groupKey(row, group); savingGroups.value = new Set(savingGroups.value).add(key); try { await adminAPI.modelMonitor.updateGroupConfig({ platform: row.platform, model: row.model, group_id: group.group_id, enabled: nextEnabled, interval_seconds: nextInterval }); group.enabled = nextEnabled; group.interval_seconds = nextInterval; group.selected = true; row.configured = true } catch (error) { appStore.showError(extractApiErrorMessage(error, t('admin.modelMonitor.saveError'))); await load(true) } finally { const done = new Set(savingGroups.value); done.delete(key); savingGroups.value = done } }
+async function saveGroup(row: ModelMonitorRow, group: ModelMonitorGroupOption, nextEnabled = group.enabled, nextInterval = group.interval_seconds || 300, nextCompensation = group.failure_compensation_enabled) { const key = groupKey(row, group); savingGroups.value = new Set(savingGroups.value).add(key); try { await adminAPI.modelMonitor.updateGroupConfig({ platform: row.platform, model: row.model, group_id: group.group_id, enabled: nextEnabled, interval_seconds: nextInterval, failure_compensation_enabled: nextCompensation }); group.enabled = nextEnabled; group.interval_seconds = nextInterval; group.failure_compensation_enabled = nextCompensation; if (!nextEnabled || !nextCompensation) group.failure_compensation_pending = false; group.selected = true; row.configured = true } catch (error) { appStore.showError(extractApiErrorMessage(error, t('admin.modelMonitor.saveError'))); await load(true) } finally { const done = new Set(savingGroups.value); done.delete(key); savingGroups.value = done } }
 async function runGroup(row: ModelMonitorRow, group: ModelMonitorGroupOption) { runningKey.value = groupKey(row, group); try { await adminAPI.modelMonitor.runNow(row.platform, row.model, group.group_id); appStore.showSuccess(t('admin.modelMonitor.runSuccess')); await load(true) } catch (error) { appStore.showError(extractApiErrorMessage(error, t('admin.modelMonitor.runError'))) } finally { runningKey.value = null } }
 async function openHistory(row: ModelMonitorRow, group?: ModelMonitorGroupOption) { if (!row.id) return; historyRow.value = row; historyGroupID.value = group?.group_id ?? 0; historyOpen.value = true; historyLoading.value = true; try { historyItems.value = (await adminAPI.modelMonitor.history(row.id)).items || [] } catch (error) { appStore.showError(extractApiErrorMessage(error, t('admin.modelMonitor.loadError'))) } finally { historyLoading.value = false } }
 function openPresentation(row: ModelMonitorRow) { presentationRow.value = row; presentationLabel.value = row.label; presentationOrder.value = row.display_order; presentationOpen.value = true }

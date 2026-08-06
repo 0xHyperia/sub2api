@@ -99,7 +99,7 @@ func TestModelMonitorGroupMetricsBatchKeepsMonitorsSeparateAndReadsHourlyRollups
 	require.Equal(t, hour, metrics[3][0].Buckets[service.ModelMonitorMetricBucketCount-1].StartedAt)
 }
 
-func TestModelMonitorDueGroupsUseLatestActivityAndConditionalClaim(t *testing.T) {
+func TestModelMonitorDueGroupsUseAlignedSlotsAndCompensationPriority(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
@@ -110,13 +110,15 @@ func TestModelMonitorDueGroupsUseLatestActivityAndConditionalClaim(t *testing.T)
 	lastProbe := now.Add(-5 * time.Minute)
 	columns := []string{
 		"id", "platform", "model", "model_enabled", "model_interval", "display_order", "label", "last_checked_at", "created_by", "created_at", "updated_at",
-		"group_id", "priority", "group_enabled", "group_interval", "last_traffic_at", "last_probe_at", "group_name",
+		"group_id", "priority", "group_enabled", "group_interval", "compensation_enabled", "compensation_pending",
+		"last_traffic_at", "last_probe_at", "last_scheduled_slot_at", "next_compensation_at", "consecutive_failures", "group_name",
 	}
-	mock.ExpectQuery(`(?s)GREATEST\(COALESCE\(mg\.last_traffic_at,m\.created_at\),COALESCE\(mg\.last_probe_at,m\.created_at\)\).*ORDER BY GREATEST`).
+	lastSlot := now.Add(-5 * time.Minute)
+	mock.ExpectQuery(`(?s)to_timestamp\(floor\(extract\(epoch FROM \$1::timestamptz\).*ORDER BY CASE WHEN mg\.failure_compensation_pending`).
 		WithArgs(now, 100).
 		WillReturnRows(sqlmock.NewRows(columns).AddRow(
 			3, "openai", "gpt-5", false, 300, 0, "", nil, 0, createdAt, createdAt,
-			7, 0, true, 300, lastTraffic, lastProbe, "Standard",
+			7, 0, true, 300, true, false, lastTraffic, lastProbe, lastSlot, nil, 0, "Standard",
 		))
 
 	repo := &modelMonitorRepository{db: db}
@@ -125,12 +127,32 @@ func TestModelMonitorDueGroupsUseLatestActivityAndConditionalClaim(t *testing.T)
 	require.Len(t, due, 1)
 	require.Equal(t, lastTraffic, *due[0].Group.LastTrafficAt)
 	require.Equal(t, lastProbe, *due[0].Group.LastProbeAt)
+	require.Equal(t, lastSlot, *due[0].Group.LastScheduledSlotAt)
+	require.True(t, due[0].Group.FailureCompensationEnabled)
 
 	claimedUntil := now.Add(3 * time.Minute)
-	mock.ExpectExec(`(?s)UPDATE model_monitor_groups mg.*GREATEST\(COALESCE\(mg\.last_traffic_at,m\.created_at\),COALESCE\(mg\.last_probe_at,m\.created_at\)\)`).
-		WithArgs(int64(3), int64(7), now, claimedUntil).
+	mock.ExpectExec(`(?s)UPDATE model_monitor_groups mg.*failure_compensation_pending=FALSE.*\$5 > COALESCE\(mg\.last_scheduled_slot_at`).
+		WithArgs(int64(3), int64(7), now, claimedUntil, now).
 		WillReturnResult(sqlmock.NewResult(0, 1))
-	claimed, err := repo.ClaimDueGroup(context.Background(), 3, 7, now, claimedUntil)
+	claimed, err := repo.ClaimDueGroup(context.Background(), 3, 7, now, claimedUntil, now, false)
+	require.NoError(t, err)
+	require.True(t, claimed)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestModelMonitorCompensationClaimRequiresPendingRetry(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	now := time.Date(2026, 8, 3, 12, 31, 0, 0, time.UTC)
+	claimedUntil := now.Add(3 * time.Minute)
+	mock.ExpectExec(`(?s)failure_compensation_enabled=TRUE AND mg\.failure_compensation_pending=TRUE.*next_compensation_at <= \$3`).
+		WithArgs(int64(3), int64(7), now, claimedUntil, now).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	repo := &modelMonitorRepository{db: db}
+	claimed, err := repo.ClaimDueGroup(context.Background(), 3, 7, now, claimedUntil, now, true)
 	require.NoError(t, err)
 	require.True(t, claimed)
 	require.NoError(t, mock.ExpectationsWereMet())

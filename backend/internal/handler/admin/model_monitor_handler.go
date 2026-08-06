@@ -31,11 +31,12 @@ func (h *ModelMonitorHandler) List(c *gin.Context) {
 }
 
 type modelMonitorGroupConfigRequest struct {
-	Platform        string `json:"platform" binding:"required"`
-	Model           string `json:"model" binding:"required"`
-	GroupID         int64  `json:"group_id" binding:"required"`
-	Enabled         bool   `json:"enabled"`
-	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
+	Platform                   string `json:"platform" binding:"required"`
+	Model                      string `json:"model" binding:"required"`
+	GroupID                    int64  `json:"group_id" binding:"required"`
+	Enabled                    bool   `json:"enabled"`
+	IntervalSeconds            int    `json:"interval_seconds" binding:"required"`
+	FailureCompensationEnabled bool   `json:"failure_compensation_enabled"`
 }
 
 func (h *ModelMonitorHandler) ConfigureGroup(c *gin.Context) {
@@ -45,7 +46,7 @@ func (h *ModelMonitorHandler) ConfigureGroup(c *gin.Context) {
 		return
 	}
 	subject, _ := middleware2.GetAuthSubjectFromContext(c)
-	m, err := h.service.ConfigureGroup(c.Request.Context(), req.Platform, req.Model, req.GroupID, req.Enabled, req.IntervalSeconds, subject.UserID)
+	m, err := h.service.ConfigureGroup(c.Request.Context(), req.Platform, req.Model, req.GroupID, req.Enabled, req.IntervalSeconds, req.FailureCompensationEnabled, subject.UserID)
 	if err != nil {
 		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
 		return

@@ -68,14 +68,24 @@ func (r *modelMonitorRepository) ListEnabledDueGroups(ctx context.Context, now t
 	rows, err := r.db.QueryContext(ctx, `
 SELECT m.id,m.platform,m.model,m.enabled,m.interval_seconds,m.display_order,m.label,m.last_checked_at,m.created_by,m.created_at,m.updated_at,
        mg.group_id,mg.priority,mg.enabled,mg.interval_seconds,
-       mg.last_traffic_at,mg.last_probe_at,g.name
+       mg.failure_compensation_enabled,mg.failure_compensation_pending,
+       mg.last_traffic_at,mg.last_probe_at,mg.last_scheduled_slot_at,
+       mg.next_compensation_at,mg.consecutive_probe_failures,g.name
 FROM model_monitor_groups mg
 JOIN model_monitors m ON m.id=mg.monitor_id
 JOIN groups g ON g.id=mg.group_id AND g.deleted_at IS NULL
 WHERE mg.enabled=TRUE
   AND (mg.probe_claimed_until IS NULL OR mg.probe_claimed_until <= $1)
-  AND GREATEST(COALESCE(mg.last_traffic_at,m.created_at),COALESCE(mg.last_probe_at,m.created_at)) + interval '1 second' * mg.interval_seconds <= $1
-ORDER BY GREATEST(COALESCE(mg.last_traffic_at,m.created_at),COALESCE(mg.last_probe_at,m.created_at)),m.id,mg.priority
+  AND (
+    (mg.failure_compensation_enabled=TRUE AND mg.failure_compensation_pending=TRUE AND mg.next_compensation_at <= $1)
+    OR (
+      mg.failure_compensation_pending=FALSE
+      AND to_timestamp(floor(extract(epoch FROM $1::timestamptz) / mg.interval_seconds) * mg.interval_seconds)
+          > COALESCE(mg.last_scheduled_slot_at,to_timestamp(0))
+    )
+  )
+ORDER BY CASE WHEN mg.failure_compensation_pending THEN 0 ELSE 1 END,
+         COALESCE(mg.next_compensation_at,mg.last_scheduled_slot_at,to_timestamp(0)),m.id,mg.priority
 LIMIT $2`, now, limit)
 	if err != nil {
 		return nil, err
@@ -84,7 +94,11 @@ LIMIT $2`, now, limit)
 	out := make([]service.ModelMonitorDueGroup, 0)
 	for rows.Next() {
 		var item service.ModelMonitorDueGroup
-		m, scanErr := scanModelMonitorWithTail(rows, &item.Group.GroupID, &item.Group.Priority, &item.Group.Enabled, &item.Group.IntervalSeconds, &item.Group.LastTrafficAt, &item.Group.LastProbeAt, &item.Name)
+		m, scanErr := scanModelMonitorWithTail(rows,
+			&item.Group.GroupID, &item.Group.Priority, &item.Group.Enabled, &item.Group.IntervalSeconds,
+			&item.Group.FailureCompensationEnabled, &item.Group.FailureCompensationPending,
+			&item.Group.LastTrafficAt, &item.Group.LastProbeAt, &item.Group.LastScheduledSlotAt,
+			&item.Group.NextCompensationAt, &item.Group.ConsecutiveProbeFailures, &item.Name)
 		if scanErr != nil {
 			return nil, scanErr
 		}
@@ -105,14 +119,25 @@ func scanModelMonitorWithTail(scanner interface{ Scan(...any) error }, tail ...a
 	return &m, nil
 }
 
-func (r *modelMonitorRepository) ClaimDueGroup(ctx context.Context, monitorID, groupID int64, now, claimedUntil time.Time) (bool, error) {
-	result, err := r.db.ExecContext(ctx, `
+func (r *modelMonitorRepository) ClaimDueGroup(ctx context.Context, monitorID, groupID int64, now, claimedUntil, scheduledSlot time.Time, compensation bool) (bool, error) {
+	query := `
 UPDATE model_monitor_groups mg
 SET probe_claimed_until=$4
-FROM model_monitors m
-WHERE mg.monitor_id=$1 AND mg.group_id=$2 AND m.id=mg.monitor_id AND mg.enabled=TRUE
+WHERE mg.monitor_id=$1 AND mg.group_id=$2 AND mg.enabled=TRUE
   AND (mg.probe_claimed_until IS NULL OR mg.probe_claimed_until <= $3)
-  AND GREATEST(COALESCE(mg.last_traffic_at,m.created_at),COALESCE(mg.last_probe_at,m.created_at)) + interval '1 second' * mg.interval_seconds <= $3`, monitorID, groupID, now, claimedUntil)
+  AND mg.failure_compensation_pending=FALSE
+  AND $5 > COALESCE(mg.last_scheduled_slot_at,to_timestamp(0))`
+	if compensation {
+		query = `
+UPDATE model_monitor_groups mg
+SET probe_claimed_until=$4
+WHERE mg.monitor_id=$1 AND mg.group_id=$2 AND mg.enabled=TRUE
+  AND mg.failure_compensation_enabled=TRUE AND mg.failure_compensation_pending=TRUE
+  AND mg.next_compensation_at <= $3
+  AND (mg.probe_claimed_until IS NULL OR mg.probe_claimed_until <= $3)
+  AND $5 >= date_trunc('minute',mg.next_compensation_at)`
+	}
+	result, err := r.db.ExecContext(ctx, query, monitorID, groupID, now, claimedUntil, scheduledSlot)
 	if err != nil {
 		return false, err
 	}
@@ -150,7 +175,9 @@ func (r *modelMonitorRepository) Upsert(ctx context.Context, m *service.ModelMon
 }
 
 func (r *modelMonitorRepository) ListGroupConfigs(ctx context.Context) (map[int64][]service.ModelMonitorGroupConfig, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT monitor_id,group_id,priority,enabled,interval_seconds,last_traffic_at,last_probe_at FROM model_monitor_groups ORDER BY monitor_id,priority`)
+	rows, err := r.db.QueryContext(ctx, `SELECT monitor_id,group_id,priority,enabled,interval_seconds,
+failure_compensation_enabled,failure_compensation_pending,last_traffic_at,last_probe_at,last_scheduled_slot_at,
+next_compensation_at,consecutive_probe_failures FROM model_monitor_groups ORDER BY monitor_id,priority`)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +185,9 @@ func (r *modelMonitorRepository) ListGroupConfigs(ctx context.Context) (map[int6
 	out := make(map[int64][]service.ModelMonitorGroupConfig)
 	for rows.Next() {
 		var config service.ModelMonitorGroupConfig
-		if err := rows.Scan(&config.MonitorID, &config.GroupID, &config.Priority, &config.Enabled, &config.IntervalSeconds, &config.LastTrafficAt, &config.LastProbeAt); err != nil {
+		if err := rows.Scan(&config.MonitorID, &config.GroupID, &config.Priority, &config.Enabled, &config.IntervalSeconds,
+			&config.FailureCompensationEnabled, &config.FailureCompensationPending, &config.LastTrafficAt, &config.LastProbeAt,
+			&config.LastScheduledSlotAt, &config.NextCompensationAt, &config.ConsecutiveProbeFailures); err != nil {
 			return nil, err
 		}
 		out[config.MonitorID] = append(out[config.MonitorID], config)
@@ -185,15 +214,58 @@ func (r *modelMonitorRepository) ReplaceGroups(ctx context.Context, monitorID in
 
 func (r *modelMonitorRepository) UpsertGroupConfig(ctx context.Context, config service.ModelMonitorGroupConfig) error {
 	_, err := r.db.ExecContext(ctx, `
-INSERT INTO model_monitor_groups (monitor_id,group_id,priority,enabled,interval_seconds)
-VALUES ($1,$2,COALESCE((SELECT MAX(priority)+1 FROM model_monitor_groups WHERE monitor_id=$1),0),$3,$4)
+INSERT INTO model_monitor_groups (monitor_id,group_id,priority,enabled,interval_seconds,failure_compensation_enabled,last_scheduled_slot_at)
+VALUES ($1,$2,COALESCE((SELECT MAX(priority)+1 FROM model_monitor_groups WHERE monitor_id=$1),0),$3,$4,$5,
+        to_timestamp(floor(extract(epoch FROM NOW()) / $4) * $4))
 ON CONFLICT (monitor_id,group_id) DO UPDATE
-SET enabled=EXCLUDED.enabled,interval_seconds=EXCLUDED.interval_seconds`, config.MonitorID, config.GroupID, config.Enabled, config.IntervalSeconds)
+SET enabled=EXCLUDED.enabled,
+    interval_seconds=EXCLUDED.interval_seconds,
+    failure_compensation_enabled=EXCLUDED.failure_compensation_enabled,
+    last_scheduled_slot_at=CASE
+      WHEN model_monitor_groups.enabled IS DISTINCT FROM EXCLUDED.enabled
+        OR model_monitor_groups.interval_seconds IS DISTINCT FROM EXCLUDED.interval_seconds
+      THEN EXCLUDED.last_scheduled_slot_at
+      ELSE model_monitor_groups.last_scheduled_slot_at
+    END,
+    failure_compensation_pending=CASE
+      WHEN EXCLUDED.enabled=FALSE OR EXCLUDED.failure_compensation_enabled=FALSE THEN FALSE
+      ELSE model_monitor_groups.failure_compensation_pending
+    END,
+    next_compensation_at=CASE
+      WHEN EXCLUDED.enabled=FALSE OR EXCLUDED.failure_compensation_enabled=FALSE THEN NULL
+      ELSE model_monitor_groups.next_compensation_at
+    END,
+    consecutive_probe_failures=CASE
+      WHEN EXCLUDED.enabled=FALSE OR EXCLUDED.failure_compensation_enabled=FALSE THEN 0
+      ELSE model_monitor_groups.consecutive_probe_failures
+    END,
+    probe_claimed_until=CASE WHEN EXCLUDED.enabled=FALSE THEN NULL ELSE model_monitor_groups.probe_claimed_until END`, config.MonitorID, config.GroupID, config.Enabled, config.IntervalSeconds, config.FailureCompensationEnabled)
 	return err
 }
 
 func (r *modelMonitorRepository) UpdateGroupProbeAt(ctx context.Context, monitorID, groupID int64, checkedAt time.Time) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE model_monitor_groups SET last_probe_at=$3,probe_claimed_until=NULL WHERE monitor_id=$1 AND group_id=$2`, monitorID, groupID, checkedAt)
+	_, err := r.db.ExecContext(ctx, `UPDATE model_monitor_groups SET last_probe_at=$3 WHERE monitor_id=$1 AND group_id=$2`, monitorID, groupID, checkedAt)
+	return err
+}
+
+func (r *modelMonitorRepository) FinishGroupProbe(ctx context.Context, monitorID, groupID int64, scheduledSlot *time.Time, checkedAt time.Time, status string) error {
+	success := status == service.MonitorStatusOperational || status == service.MonitorStatusDegraded
+	retryableFailure := status == service.MonitorStatusFailed
+	_, err := r.db.ExecContext(ctx, `
+UPDATE model_monitor_groups
+SET last_scheduled_slot_at=CASE WHEN $3::timestamptz IS NULL THEN last_scheduled_slot_at ELSE GREATEST(COALESCE(last_scheduled_slot_at,$3),$3) END,
+    failure_compensation_pending=CASE WHEN $5 THEN FALSE WHEN enabled AND failure_compensation_enabled AND $6 THEN TRUE ELSE FALSE END,
+    next_compensation_at=CASE WHEN NOT $5 AND enabled AND failure_compensation_enabled AND $6 THEN date_trunc('minute',$4::timestamptz)+interval '1 minute' ELSE NULL END,
+    consecutive_probe_failures=CASE WHEN $5 THEN 0 WHEN enabled AND failure_compensation_enabled AND $6 THEN consecutive_probe_failures+1 ELSE 0 END,
+    probe_claimed_until=CASE WHEN $3::timestamptz IS NULL THEN probe_claimed_until ELSE NULL END
+WHERE monitor_id=$1 AND group_id=$2`, monitorID, groupID, scheduledSlot, checkedAt, success, retryableFailure)
+	return err
+}
+
+func (r *modelMonitorRepository) CompleteGroupSlotWithoutProbe(ctx context.Context, monitorID, groupID int64, scheduledSlot time.Time) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE model_monitor_groups
+SET last_scheduled_slot_at=GREATEST(COALESCE(last_scheduled_slot_at,$3),$3),probe_claimed_until=NULL
+WHERE monitor_id=$1 AND group_id=$2`, monitorID, groupID, scheduledSlot)
 	return err
 }
 
@@ -382,14 +454,41 @@ FROM combined WHERE request_count>0`, from, to)
 	_, err = tx.ExecContext(ctx, `
 UPDATE model_monitor_groups mg SET last_traffic_at=x.last_traffic_at
 FROM (
-  SELECT m.id AS monitor_id,ul.group_id,MAX(ul.created_at) AS last_traffic_at
+  SELECT monitor_id,group_id,MAX(activity_at) AS last_traffic_at FROM (
+    SELECT m.id AS monitor_id,ul.group_id,ul.created_at AS activity_at
+    FROM usage_logs ul JOIN accounts a ON a.id=ul.account_id
+    JOIN model_monitors m ON m.platform=a.platform AND m.model=COALESCE(NULLIF(ul.requested_model,''),ul.model)
+    WHERE ul.created_at >= $1 AND ul.created_at < $2 AND ul.group_id IS NOT NULL
+      AND COALESCE(ul.request_type,0) <> 4
+    UNION ALL
+    SELECT m.id AS monitor_id,e.group_id,e.created_at AS activity_at
+    FROM ops_error_logs e
+    JOIN model_monitors m ON m.platform=e.platform AND m.model=COALESCE(NULLIF(e.requested_model,''),e.model)
+    WHERE e.created_at >= $1 AND e.created_at < $2 AND e.group_id IS NOT NULL
+      AND COALESCE(e.is_count_tokens,FALSE)=FALSE AND COALESCE(e.is_business_limited,FALSE)=FALSE
+      AND COALESCE(e.status_code,0) >= 400 AND e.error_phase IN ('upstream','network','internal')
+  ) activity
+  GROUP BY monitor_id,group_id
+) x WHERE mg.monitor_id=x.monitor_id AND mg.group_id=x.group_id
+  AND (mg.last_traffic_at IS NULL OR mg.last_traffic_at < x.last_traffic_at)`, from, to)
+	if err != nil {
+		return err
+	}
+	// A successful real request confirms recovery and ends any active retry loop.
+	_, err = tx.ExecContext(ctx, `
+UPDATE model_monitor_groups mg
+SET failure_compensation_pending=FALSE,next_compensation_at=NULL,consecutive_probe_failures=0
+FROM (
+  SELECT m.id AS monitor_id,ul.group_id,MAX(ul.created_at) AS recovered_at
   FROM usage_logs ul JOIN accounts a ON a.id=ul.account_id
   JOIN model_monitors m ON m.platform=a.platform AND m.model=COALESCE(NULLIF(ul.requested_model,''),ul.model)
   WHERE ul.created_at >= $1 AND ul.created_at < $2 AND ul.group_id IS NOT NULL
     AND COALESCE(ul.request_type,0) <> 4
   GROUP BY m.id,ul.group_id
-) x WHERE mg.monitor_id=x.monitor_id AND mg.group_id=x.group_id
-  AND (mg.last_traffic_at IS NULL OR mg.last_traffic_at < x.last_traffic_at)`, from, to)
+) recovered
+WHERE mg.monitor_id=recovered.monitor_id AND mg.group_id=recovered.group_id
+  AND mg.failure_compensation_pending=TRUE
+  AND (mg.last_probe_at IS NULL OR recovered.recovered_at > mg.last_probe_at)`, from, to)
 	if err != nil {
 		return err
 	}

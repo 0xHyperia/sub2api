@@ -190,8 +190,13 @@ func (s *ModelMonitorService) ListRows(ctx context.Context, resolution ModelMoni
 					row.Groups[i].Priority = groupConfig.Priority
 					row.Groups[i].Enabled = groupConfig.Enabled
 					row.Groups[i].IntervalSeconds = groupConfig.IntervalSeconds
+					row.Groups[i].FailureCompensationEnabled = groupConfig.FailureCompensationEnabled
+					row.Groups[i].FailureCompensationPending = groupConfig.FailureCompensationPending
 					row.Groups[i].LastTrafficAt = groupConfig.LastTrafficAt
 					row.Groups[i].LastProbeAt = groupConfig.LastProbeAt
+					row.Groups[i].LastScheduledSlotAt = groupConfig.LastScheduledSlotAt
+					row.Groups[i].NextCompensationAt = groupConfig.NextCompensationAt
+					row.Groups[i].ConsecutiveProbeFailures = groupConfig.ConsecutiveProbeFailures
 				} else {
 					row.Groups[i].Priority = len(configuredGroups) + i
 					row.Groups[i].IntervalSeconds = ModelMonitorDefaultIntervalSeconds
@@ -285,7 +290,7 @@ func (s *ModelMonitorService) ConfigureGroups(ctx context.Context, platform, mod
 	return m, nil
 }
 
-func (s *ModelMonitorService) ConfigureGroup(ctx context.Context, platform, model string, groupID int64, enabled bool, intervalSeconds int, createdBy int64) (*ModelMonitor, error) {
+func (s *ModelMonitorService) ConfigureGroup(ctx context.Context, platform, model string, groupID int64, enabled bool, intervalSeconds int, failureCompensationEnabled bool, createdBy int64) (*ModelMonitor, error) {
 	if intervalSeconds == 0 {
 		intervalSeconds = ModelMonitorDefaultIntervalSeconds
 	}
@@ -322,7 +327,10 @@ func (s *ModelMonitorService) ConfigureGroup(ctx context.Context, platform, mode
 			return nil, err
 		}
 	}
-	if err := s.repo.UpsertGroupConfig(ctx, ModelMonitorGroupConfig{MonitorID: m.ID, GroupID: groupID, Enabled: enabled, IntervalSeconds: intervalSeconds}); err != nil {
+	if err := s.repo.UpsertGroupConfig(ctx, ModelMonitorGroupConfig{
+		MonitorID: m.ID, GroupID: groupID, Enabled: enabled, IntervalSeconds: intervalSeconds,
+		FailureCompensationEnabled: failureCompensationEnabled,
+	}); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -397,7 +405,14 @@ func (s *ModelMonitorService) RunGroupByKey(ctx context.Context, platform, model
 		}
 		for _, group := range entry.Groups {
 			if group.GroupID == groupID {
-				return s.RunGroup(ctx, m, group)
+				history, runErr := s.RunGroup(ctx, m, group)
+				if runErr != nil {
+					return nil, runErr
+				}
+				if err := s.repo.FinishGroupProbe(ctx, m.ID, groupID, nil, history.CheckedAt, history.Status); err != nil {
+					return nil, err
+				}
+				return history, nil
 			}
 		}
 	}
@@ -887,14 +902,21 @@ func NewModelMonitorRunner(service *ModelMonitorService, settings *SettingServic
 
 func (r *ModelMonitorRunner) Start() {
 	go func() {
-		ticker := time.NewTicker(15 * time.Second)
-		defer ticker.Stop()
 		r.tick()
 		for {
+			now := time.Now()
+			// Keep the first scan on each natural minute boundary, while polling
+			// within the slot so concurrency-limited backlogs are not delayed by
+			// a full minute.
+			nextScan := now.Truncate(15 * time.Second).Add(15 * time.Second)
+			timer := time.NewTimer(time.Until(nextScan))
 			select {
-			case <-ticker.C:
+			case <-timer.C:
 				r.tick()
 			case <-r.stop:
+				if !timer.Stop() {
+					<-timer.C
+				}
 				return
 			}
 		}
@@ -951,20 +973,59 @@ func (r *ModelMonitorRunner) tick() {
 			<-r.sem
 			continue
 		}
-		claimed, claimErr := r.service.repo.ClaimDueGroup(ctx, item.Monitor.ID, item.Group.GroupID, now, now.Add(3*time.Minute))
+		compensation := modelMonitorCompensationDue(item.Group, now)
+		scheduledSlot := alignedModelMonitorSlot(now, item.Group.IntervalSeconds)
+		if compensation {
+			scheduledSlot = now.UTC().Truncate(time.Minute)
+		}
+		claimed, claimErr := r.service.repo.ClaimDueGroup(ctx, item.Monitor.ID, item.Group.GroupID, now, now.Add(3*time.Minute), scheduledSlot, compensation)
 		if claimErr != nil || !claimed {
 			r.inFlight.Delete(flightKey)
 			<-r.sem
 			continue
 		}
-		go func(item ModelMonitorDueGroup, group ModelMonitorGroupOption, key string) {
+		if !compensation {
+			if modelMonitorSlotHasTraffic(item.Group, scheduledSlot) {
+				_ = r.service.repo.CompleteGroupSlotWithoutProbe(ctx, item.Monitor.ID, item.Group.GroupID, scheduledSlot)
+				r.inFlight.Delete(flightKey)
+				<-r.sem
+				continue
+			}
+		}
+		go func(item ModelMonitorDueGroup, group ModelMonitorGroupOption, key string, slot time.Time) {
 			defer func() { <-r.sem; r.inFlight.Delete(key) }()
 			runCtx, runCancel := context.WithTimeout(context.Background(), 2*time.Minute)
 			defer runCancel()
-			_, _ = r.service.RunGroup(runCtx, &item.Monitor, group)
-		}(item, group, flightKey)
+			history, runErr := r.service.RunGroup(runCtx, &item.Monitor, group)
+			if runErr != nil || history == nil {
+				return
+			}
+			_ = r.service.repo.FinishGroupProbe(runCtx, item.Monitor.ID, item.Group.GroupID, &slot, history.CheckedAt, history.Status)
+		}(item, group, flightKey, scheduledSlot)
 	}
 	r.cleanup(ctx, now)
+}
+
+func alignedModelMonitorSlot(now time.Time, intervalSeconds int) time.Time {
+	if intervalSeconds < ModelMonitorMinIntervalSeconds {
+		intervalSeconds = ModelMonitorDefaultIntervalSeconds
+	}
+	unix := now.UTC().Unix()
+	interval := int64(intervalSeconds)
+	return time.Unix(unix-(unix%interval), 0).UTC()
+}
+
+func modelMonitorCompensationDue(group ModelMonitorGroupConfig, now time.Time) bool {
+	return group.Enabled && group.FailureCompensationEnabled && group.FailureCompensationPending &&
+		group.NextCompensationAt != nil && !group.NextCompensationAt.After(now)
+}
+
+func modelMonitorSlotHasTraffic(group ModelMonitorGroupConfig, scheduledSlot time.Time) bool {
+	if group.LastTrafficAt == nil {
+		return false
+	}
+	windowStart := scheduledSlot.Add(-time.Duration(group.IntervalSeconds) * time.Second)
+	return !group.LastTrafficAt.Before(windowStart)
 }
 
 func (r *ModelMonitorRunner) reconcileLegacyGroups(ctx context.Context, catalog []ModelCatalogEntry) {

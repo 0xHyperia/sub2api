@@ -60,6 +60,11 @@ export interface ModelMonitorGroupOption {
   selected: boolean
   enabled: boolean
   interval_seconds: number
+  failure_compensation_enabled: boolean
+  failure_compensation_pending: boolean
+  consecutive_probe_failures: number
+  last_scheduled_slot_at: string | null
+  next_compensation_at: string | null
   last_traffic_at: string | null
   last_probe_at: string | null
   metrics: ModelMonitorGroupMetrics | null
@@ -97,7 +102,7 @@ export async function updateConfig(payload: { platform: string; model: string; e
   return data
 }
 
-export async function updateGroupConfig(payload: { platform: string; model: string; group_id: number; enabled: boolean; interval_seconds: number }): Promise<ModelMonitorRow> {
+export async function updateGroupConfig(payload: { platform: string; model: string; group_id: number; enabled: boolean; interval_seconds: number; failure_compensation_enabled: boolean }): Promise<ModelMonitorRow> {
   const { data } = await apiClient.put('/admin/model-monitors/group', payload)
   return data
 }

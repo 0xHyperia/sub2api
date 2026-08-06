@@ -75,13 +75,18 @@ type ModelMonitorGroupMetrics struct {
 }
 
 type ModelMonitorGroupConfig struct {
-	MonitorID       int64      `json:"monitor_id"`
-	GroupID         int64      `json:"group_id"`
-	Priority        int        `json:"priority"`
-	Enabled         bool       `json:"enabled"`
-	IntervalSeconds int        `json:"interval_seconds"`
-	LastTrafficAt   *time.Time `json:"last_traffic_at"`
-	LastProbeAt     *time.Time `json:"last_probe_at"`
+	MonitorID                  int64      `json:"monitor_id"`
+	GroupID                    int64      `json:"group_id"`
+	Priority                   int        `json:"priority"`
+	Enabled                    bool       `json:"enabled"`
+	IntervalSeconds            int        `json:"interval_seconds"`
+	FailureCompensationEnabled bool       `json:"failure_compensation_enabled"`
+	FailureCompensationPending bool       `json:"failure_compensation_pending"`
+	LastTrafficAt              *time.Time `json:"last_traffic_at"`
+	LastProbeAt                *time.Time `json:"last_probe_at"`
+	LastScheduledSlotAt        *time.Time `json:"last_scheduled_slot_at"`
+	NextCompensationAt         *time.Time `json:"next_compensation_at"`
+	ConsecutiveProbeFailures   int        `json:"consecutive_probe_failures"`
 }
 
 type ModelMonitorDueGroup struct {
@@ -146,16 +151,21 @@ type ModelCatalogEntry struct {
 }
 
 type ModelMonitorGroupOption struct {
-	GroupID         int64                     `json:"group_id"`
-	Name            string                    `json:"name"`
-	RateMultiplier  float64                   `json:"rate_multiplier"`
-	Priority        int                       `json:"priority"`
-	Selected        bool                      `json:"selected"`
-	Enabled         bool                      `json:"enabled"`
-	IntervalSeconds int                       `json:"interval_seconds"`
-	LastTrafficAt   *time.Time                `json:"last_traffic_at"`
-	LastProbeAt     *time.Time                `json:"last_probe_at"`
-	Metrics         *ModelMonitorGroupMetrics `json:"metrics"`
+	GroupID                    int64                     `json:"group_id"`
+	Name                       string                    `json:"name"`
+	RateMultiplier             float64                   `json:"rate_multiplier"`
+	Priority                   int                       `json:"priority"`
+	Selected                   bool                      `json:"selected"`
+	Enabled                    bool                      `json:"enabled"`
+	IntervalSeconds            int                       `json:"interval_seconds"`
+	FailureCompensationEnabled bool                      `json:"failure_compensation_enabled"`
+	FailureCompensationPending bool                      `json:"failure_compensation_pending"`
+	LastTrafficAt              *time.Time                `json:"last_traffic_at"`
+	LastProbeAt                *time.Time                `json:"last_probe_at"`
+	LastScheduledSlotAt        *time.Time                `json:"last_scheduled_slot_at"`
+	NextCompensationAt         *time.Time                `json:"next_compensation_at"`
+	ConsecutiveProbeFailures   int                       `json:"consecutive_probe_failures"`
+	Metrics                    *ModelMonitorGroupMetrics `json:"metrics"`
 }
 
 type ModelMonitorRow struct {
@@ -171,7 +181,7 @@ type ModelMonitorRepository interface {
 	List(ctx context.Context) ([]ModelMonitor, error)
 	ListEnabledDue(ctx context.Context, now time.Time) ([]ModelMonitor, error)
 	ListEnabledDueGroups(ctx context.Context, now time.Time, limit int) ([]ModelMonitorDueGroup, error)
-	ClaimDueGroup(ctx context.Context, monitorID, groupID int64, now, claimedUntil time.Time) (bool, error)
+	ClaimDueGroup(ctx context.Context, monitorID, groupID int64, now, claimedUntil, scheduledSlot time.Time, compensation bool) (bool, error)
 	GetByID(ctx context.Context, id int64) (*ModelMonitor, error)
 	GetByKey(ctx context.Context, platform, model string) (*ModelMonitor, error)
 	Upsert(ctx context.Context, monitor *ModelMonitor) error
@@ -179,6 +189,8 @@ type ModelMonitorRepository interface {
 	ReplaceGroups(ctx context.Context, monitorID int64, groupIDs []int64) error
 	UpsertGroupConfig(ctx context.Context, config ModelMonitorGroupConfig) error
 	UpdateGroupProbeAt(ctx context.Context, monitorID, groupID int64, checkedAt time.Time) error
+	FinishGroupProbe(ctx context.Context, monitorID, groupID int64, scheduledSlot *time.Time, checkedAt time.Time, status string) error
+	CompleteGroupSlotWithoutProbe(ctx context.Context, monitorID, groupID int64, scheduledSlot time.Time) error
 	UpdateLastChecked(ctx context.Context, id int64, checkedAt time.Time) error
 	InsertHistory(ctx context.Context, history *ModelMonitorHistory) error
 	ListHistory(ctx context.Context, monitorID int64, limit int) ([]ModelMonitorHistory, error)

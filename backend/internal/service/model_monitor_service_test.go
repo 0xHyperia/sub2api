@@ -92,6 +92,35 @@ func TestModelMonitorCatalogModelsUsesExplicitAccountRestrictions(t *testing.T) 
 	require.Equal(t, []string{"gpt-5", "gpt-5-codex", "o3-mini"}, ModelCatalogModels(group, accounts))
 }
 
+func TestAlignedModelMonitorSlotUsesNaturalBoundaries(t *testing.T) {
+	now := time.Date(2026, 8, 6, 12, 37, 42, 0, time.FixedZone("CST", 8*60*60))
+	require.Equal(t, time.Date(2026, 8, 6, 4, 0, 0, 0, time.UTC), alignedModelMonitorSlot(now, 3600))
+	require.Equal(t, time.Date(2026, 8, 6, 4, 35, 0, 0, time.UTC), alignedModelMonitorSlot(now, 300))
+	require.Equal(t, time.Date(2026, 8, 6, 4, 37, 0, 0, time.UTC), alignedModelMonitorSlot(now, 60))
+}
+
+func TestModelMonitorSlotTrafficUsesPreviousNaturalWindow(t *testing.T) {
+	slot := time.Date(2026, 8, 6, 13, 0, 0, 0, time.UTC)
+	windowStart := slot.Add(-time.Hour)
+	group := ModelMonitorGroupConfig{IntervalSeconds: 3600, LastTrafficAt: &windowStart}
+	require.True(t, modelMonitorSlotHasTraffic(group, slot))
+
+	oldTraffic := windowStart.Add(-time.Nanosecond)
+	group.LastTrafficAt = &oldTraffic
+	require.False(t, modelMonitorSlotHasTraffic(group, slot))
+}
+
+func TestModelMonitorCompensationUsesNaturalMinuteDueTime(t *testing.T) {
+	next := time.Date(2026, 8, 6, 12, 1, 0, 0, time.UTC)
+	group := ModelMonitorGroupConfig{
+		Enabled: true, FailureCompensationEnabled: true, FailureCompensationPending: true, NextCompensationAt: &next,
+	}
+	require.False(t, modelMonitorCompensationDue(group, next.Add(-time.Nanosecond)))
+	require.True(t, modelMonitorCompensationDue(group, next))
+	group.Enabled = false
+	require.False(t, modelMonitorCompensationDue(group, next))
+}
+
 func TestModelMonitorCatalogModelsDoesNotInferDefaultsFromUnrestrictedAccount(t *testing.T) {
 	group := Group{Platform: PlatformOpenAI}
 	accounts := []Account{{
