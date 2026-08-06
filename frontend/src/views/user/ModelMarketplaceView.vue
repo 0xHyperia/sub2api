@@ -533,6 +533,7 @@ import {
   inferMarketplaceModelCapabilities,
   MARKETPLACE_CARD_CAPABILITY_ORDER,
   MARKETPLACE_MODEL_CAPABILITIES,
+  modelAvailabilityBarClass,
   primaryPrice,
   recentModelSuccessRates,
   realtimeRate,
@@ -846,12 +847,7 @@ function monitorStatusLabel(rate?: number | null) {
 }
 function monitorSignalPoints(entry: MarketplaceModelEntry) { return recentModelSuccessRates(entry.monitorStatus?.hourly_metrics?.buckets, 3) }
 function monitorSignalClass(rate?: number | null) {
-  if (rate == null || !Number.isFinite(rate)) return 'bg-outline'
-  if (rate >= 99.9) return 'bg-success'
-  if (rate >= 90) return 'bg-success/70'
-  if (rate >= 70) return 'bg-warning'
-  if (rate < 70) return 'bg-danger'
-  return 'bg-outline'
+  return modelAvailabilityBarClass(rate)
 }
 function monitorCompactLabel(entry: MarketplaceModelEntry) {
   const rate = entry.monitorStatus?.hourly_metrics?.success_rate

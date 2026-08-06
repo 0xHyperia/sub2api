@@ -50,12 +50,13 @@ describe('SuccessRateTimeline', () => {
     expect(buckets.at(29)?.find('button').classes()).toContain('bg-danger')
   })
 
-  it('renders model availability with a lenient 70% boundary and a stable 99.9% accent', () => {
+  it('renders model availability with red through 30% and warning below 70%', () => {
     const wrapper = mount(SuccessRateTimeline, {
       props: {
         buckets: [
-          { started_at: '2026-08-02T22:00:00Z', success_rate: null },
-          { started_at: '2026-08-02T22:00:00Z', success_rate: 69.9 },
+          { started_at: '2026-08-02T20:00:00Z', success_rate: null },
+          { started_at: '2026-08-02T21:00:00Z', success_rate: 30 },
+          { started_at: '2026-08-02T22:00:00Z', success_rate: 30.1 },
           { started_at: '2026-08-02T23:00:00Z', success_rate: 70 },
           { started_at: '2026-08-03T00:00:00Z', success_rate: 99.9 },
         ],
@@ -65,8 +66,9 @@ describe('SuccessRateTimeline', () => {
     })
 
     const buckets = wrapper.find('[role="img"]').findAll(':scope > span')
-    expect(buckets.at(26)?.find('button').classes()).toContain('bg-outline-strong')
-    expect(buckets.at(27)?.find('button').classes()).toContain('bg-danger')
+    expect(buckets.at(25)?.find('button').classes()).toContain('bg-outline-strong')
+    expect(buckets.at(26)?.find('button').classes()).toContain('bg-danger')
+    expect(buckets.at(27)?.find('button').classes()).toContain('bg-warning')
     expect(buckets.at(28)?.find('button').classes()).toContain('bg-success/70')
     expect(buckets.at(29)?.find('button').classes()).toContain('bg-success')
     expect(buckets.at(29)?.find('button').attributes('style')).toContain('height: 100%')

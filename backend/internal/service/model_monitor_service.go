@@ -229,7 +229,7 @@ func (s *ModelMonitorService) ListRows(ctx context.Context, resolution ModelMoni
 				rows[rowIndex].Groups[groupIndex].Metrics = &copy
 			}
 		}
-		if metric, ok := metrics[0]; ok && rows[rowIndex].Summary != nil {
+		if metric, ok := averageModelMonitorMetrics(metrics, groupIDsForModel(rows[rowIndex].Groups)); ok && rows[rowIndex].Summary != nil {
 			copy := metric
 			rows[rowIndex].Summary.Metrics = &copy
 		}
@@ -721,7 +721,7 @@ func (s *ModelMonitorService) PublicSummaries(ctx context.Context, keys []ModelC
 			continue
 		}
 		metrics := metricsByMonitor[monitor.ID]
-		if metric, exists := metrics[0]; exists {
+		if metric, exists := averageModelMonitorMetrics(metrics, groupIDsForModel(entry.Groups)); exists {
 			copy := metric
 			copy.ProbeCost = nil
 			summary.Metrics = &copy
@@ -731,7 +731,7 @@ func (s *ModelMonitorService) PublicSummaries(ctx context.Context, keys []ModelC
 		}
 		if resolution == ModelMonitorResolutionMinute {
 			hourly := hourlyByMonitor[monitor.ID]
-			if metric, exists := hourly[0]; exists {
+			if metric, exists := averageModelMonitorMetrics(hourly, groupIDsForModel(entry.Groups)); exists {
 				copy := metric
 				copy.ProbeCost = nil
 				summary.HourlyMetrics = &copy
@@ -747,6 +747,127 @@ func (s *ModelMonitorService) PublicSummaries(ctx context.Context, keys []ModelC
 		summaries[key] = summary
 	}
 	return summaries, nil
+}
+
+func groupIDsForModel(groups []ModelMonitorGroupOption) []int64 {
+	ids := make([]int64, 0, len(groups))
+	for _, group := range groups {
+		ids = append(ids, group.GroupID)
+	}
+	return ids
+}
+
+// averageModelMonitorMetrics builds model-level performance from independent
+// group metrics. The repository's group_id=0 aggregate remains the source for
+// total request counts and probe cost, while performance values are averaged
+// across groups so a high-volume group cannot dominate the model view.
+func averageModelMonitorMetrics(metrics map[int64]ModelMonitorGroupMetrics, groupIDs []int64) (ModelMonitorGroupMetrics, bool) {
+	aggregate, hasAggregate := metrics[0]
+	candidates := make([]ModelMonitorGroupMetrics, 0, len(groupIDs))
+	seen := make(map[int64]struct{}, len(groupIDs))
+	for _, groupID := range groupIDs {
+		if groupID <= 0 {
+			continue
+		}
+		if _, ok := seen[groupID]; ok {
+			continue
+		}
+		seen[groupID] = struct{}{}
+		metric, ok := metrics[groupID]
+		if ok && modelMonitorMetricHasData(metric) {
+			candidates = append(candidates, metric)
+		}
+	}
+	if len(candidates) == 0 {
+		return aggregate, hasAggregate && modelMonitorMetricHasData(aggregate)
+	}
+
+	result := aggregate
+	result.TPS = averageMetricValue(candidates, func(metric ModelMonitorGroupMetrics) *float64 { return metric.TPS })
+	result.TTFTMs = averageMetricValue(candidates, func(metric ModelMonitorGroupMetrics) *float64 { return metric.TTFTMs })
+	result.AverageLatencyMs = averageMetricValue(candidates, func(metric ModelMonitorGroupMetrics) *float64 { return metric.AverageLatencyMs })
+	result.SuccessRate = averageMetricValue(candidates, func(metric ModelMonitorGroupMetrics) *float64 { return metric.SuccessRate })
+	result.Buckets = averageModelMonitorBuckets(candidates, aggregate.Buckets)
+	return result, true
+}
+
+func modelMonitorMetricHasData(metric ModelMonitorGroupMetrics) bool {
+	if metric.TPS != nil || metric.TTFTMs != nil || metric.AverageLatencyMs != nil || metric.SuccessRate != nil || metric.RequestCount != nil || metric.SuccessCount != nil || metric.FailureCount != nil {
+		return true
+	}
+	for _, bucket := range metric.Buckets {
+		if bucket.SuccessRate != nil || bucket.TTFTMs != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func averageMetricValue(metrics []ModelMonitorGroupMetrics, value func(ModelMonitorGroupMetrics) *float64) *float64 {
+	var total float64
+	count := 0
+	for _, metric := range metrics {
+		if current := value(metric); current != nil {
+			total += *current
+			count++
+		}
+	}
+	if count == 0 {
+		return nil
+	}
+	result := total / float64(count)
+	return &result
+}
+
+func averageModelMonitorBuckets(metrics []ModelMonitorGroupMetrics, aggregate []ModelMonitorMetricBucket) []ModelMonitorMetricBucket {
+	times := make(map[time.Time]struct{}, len(aggregate))
+	for _, bucket := range aggregate {
+		times[bucket.StartedAt.UTC()] = struct{}{}
+	}
+	for _, metric := range metrics {
+		for _, bucket := range metric.Buckets {
+			times[bucket.StartedAt.UTC()] = struct{}{}
+		}
+	}
+	if len(times) == 0 {
+		return nil
+	}
+	startedAt := make([]time.Time, 0, len(times))
+	for value := range times {
+		startedAt = append(startedAt, value)
+	}
+	sort.Slice(startedAt, func(i, j int) bool { return startedAt[i].Before(startedAt[j]) })
+	result := make([]ModelMonitorMetricBucket, 0, len(startedAt))
+	for _, started := range startedAt {
+		var successTotal, ttftTotal float64
+		var successCount, ttftCount int
+		for _, metric := range metrics {
+			for _, bucket := range metric.Buckets {
+				if !bucket.StartedAt.UTC().Equal(started) {
+					continue
+				}
+				if bucket.SuccessRate != nil {
+					successTotal += *bucket.SuccessRate
+					successCount++
+				}
+				if bucket.TTFTMs != nil {
+					ttftTotal += *bucket.TTFTMs
+					ttftCount++
+				}
+			}
+		}
+		bucket := ModelMonitorMetricBucket{StartedAt: started}
+		if successCount > 0 {
+			value := successTotal / float64(successCount)
+			bucket.SuccessRate = &value
+		}
+		if ttftCount > 0 {
+			value := ttftTotal / float64(ttftCount)
+			bucket.TTFTMs = &value
+		}
+		result = append(result, bucket)
+	}
+	return result
 }
 
 type ModelMonitorRunner struct {

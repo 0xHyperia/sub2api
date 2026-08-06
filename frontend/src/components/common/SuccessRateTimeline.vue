@@ -95,7 +95,8 @@ function rateClass(rate: number | null | undefined, text = false): string {
   if (rate == null || !Number.isFinite(rate)) return text ? 'text-foreground-subtle' : 'bg-outline-strong'
   if (props.variant === 'availability') {
     if (rate >= 99.9) return text ? 'text-success-foreground' : 'bg-success'
-    return rate >= 70 ? (text ? 'text-success-foreground' : 'bg-success/70') : (text ? 'text-danger-foreground' : 'bg-danger')
+    if (rate >= 70) return text ? 'text-success-foreground' : 'bg-success/70'
+    return rate <= 30 ? (text ? 'text-danger-foreground' : 'bg-danger') : (text ? 'text-warning-foreground' : 'bg-warning')
   }
   if (rate >= 99.9) return text ? 'text-success-foreground' : 'bg-success'
   if (rate >= 90) return text ? 'text-success-foreground' : 'bg-success/70'

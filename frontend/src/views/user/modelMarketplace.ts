@@ -155,6 +155,14 @@ export function recentModelSuccessRates(
   return [...empty, ...recent]
 }
 
+export function modelAvailabilityBarClass(rate?: number | null): string {
+  if (rate == null || !Number.isFinite(rate)) return 'bg-outline-strong'
+  if (rate >= 99.9) return 'bg-success'
+  if (rate >= 70) return 'bg-success/70'
+  if (rate <= 30) return 'bg-danger'
+  return 'bg-warning'
+}
+
 export function buildMarketplaceEntries(platforms: UserMarketplacePlatform[]): MarketplaceModelEntry[] {
   return platforms.flatMap((section) =>
     section.supported_models.map((model) => ({

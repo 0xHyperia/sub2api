@@ -10,6 +10,7 @@ import {
   effectiveRateForEntry,
   imagePriceRows,
   inferMarketplaceModelCapabilities,
+  modelAvailabilityBarClass,
   recentModelSuccessRates,
   realtimeRate,
   scaledPrice,
@@ -257,5 +258,15 @@ describe('model marketplace data', () => {
     expect(recentModelSuccessRates(buckets.slice(0, 1))).toEqual([null, null, 99.9])
     expect(recentModelSuccessRates([])).toEqual([null, null, null])
     expect(recentModelSuccessRates(buckets, 0)).toEqual([])
+  })
+
+  it('uses the same lenient colors as model availability', () => {
+    expect(modelAvailabilityBarClass(null)).toBe('bg-outline-strong')
+    expect(modelAvailabilityBarClass(30)).toBe('bg-danger')
+    expect(modelAvailabilityBarClass(30.1)).toBe('bg-warning')
+    expect(modelAvailabilityBarClass(69.9)).toBe('bg-warning')
+    expect(modelAvailabilityBarClass(70)).toBe('bg-success/70')
+    expect(modelAvailabilityBarClass(90)).toBe('bg-success/70')
+    expect(modelAvailabilityBarClass(99.9)).toBe('bg-success')
   })
 })

@@ -228,6 +228,37 @@ func TestModelMonitorListRowsLoadsAllMetricsInOneBatch(t *testing.T) {
 	require.InDelta(t, rate, *rows[1].Summary.Metrics.SuccessRate, 0.0001)
 }
 
+func TestAverageModelMonitorMetricsUsesEqualGroupWeights(t *testing.T) {
+	weightedRate := 99.0
+	groupOneRate, groupTwoRate := 100.0, 50.0
+	groupOneLatency, groupTwoLatency := 100.0, 300.0
+	groupOneTTFT, groupTwoTTFT := 40.0, 80.0
+	groupOneTPS, groupTwoTPS := 20.0, 60.0
+	groupOneBucketRate, groupTwoBucketRate := 100.0, 50.0
+	groupOneBucketTTFT, groupTwoBucketTTFT := 30.0, 90.0
+	requests, successes, failures := int64(101), int64(100), int64(1)
+	probeCost := 0.25
+	startedAt := time.Date(2026, time.August, 6, 0, 0, 0, 0, time.UTC)
+	metrics, ok := averageModelMonitorMetrics(map[int64]ModelMonitorGroupMetrics{
+		0: {SuccessRate: &weightedRate, RequestCount: &requests, SuccessCount: &successes, FailureCount: &failures, ProbeCost: &probeCost, Buckets: []ModelMonitorMetricBucket{{StartedAt: startedAt, SuccessRate: &weightedRate}}},
+		1: {SuccessRate: &groupOneRate, AverageLatencyMs: &groupOneLatency, TTFTMs: &groupOneTTFT, TPS: &groupOneTPS, Buckets: []ModelMonitorMetricBucket{{StartedAt: startedAt, SuccessRate: &groupOneBucketRate, TTFTMs: &groupOneBucketTTFT}}},
+		2: {SuccessRate: &groupTwoRate, AverageLatencyMs: &groupTwoLatency, TTFTMs: &groupTwoTTFT, TPS: &groupTwoTPS, Buckets: []ModelMonitorMetricBucket{{StartedAt: startedAt, SuccessRate: &groupTwoBucketRate, TTFTMs: &groupTwoBucketTTFT}}},
+	}, []int64{1, 2})
+
+	require.True(t, ok)
+	require.InDelta(t, 75.0, *metrics.SuccessRate, 0.0001)
+	require.InDelta(t, 200.0, *metrics.AverageLatencyMs, 0.0001)
+	require.InDelta(t, 60.0, *metrics.TTFTMs, 0.0001)
+	require.InDelta(t, 40.0, *metrics.TPS, 0.0001)
+	require.Equal(t, requests, *metrics.RequestCount)
+	require.Equal(t, successes, *metrics.SuccessCount)
+	require.Equal(t, failures, *metrics.FailureCount)
+	require.InDelta(t, probeCost, *metrics.ProbeCost, 0.0001)
+	require.Len(t, metrics.Buckets, 1)
+	require.InDelta(t, 75.0, *metrics.Buckets[0].SuccessRate, 0.0001)
+	require.InDelta(t, 60.0, *metrics.Buckets[0].TTFTMs, 0.0001)
+}
+
 func TestApplyProbeCostMultiplierUsesAccountRate(t *testing.T) {
 	cost := 0.25
 	multiplier := 1.6
