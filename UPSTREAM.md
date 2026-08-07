@@ -9,7 +9,7 @@
 - 上一 USA0 版本：v1.0.14
 - 上游集成提交：`5ec957fa171e7f4ab05b8e975429f270ae5bb12d`
 - 发布范围：模型广场与模型监控整体 TPS、TTFT、平均耗时和成功率改为有效分组等权汇总；主动检测改为自然时间片调度，新增流量窗口跳过、失败补偿、多实例条件认领、下架模型筛选和对应管理界面，并增加迁移 `211_model_monitor_aligned_probe_compensation.sql`
-- 发布状态：已合入并推送 `usa0/main`，已创建并推送 v1.0.15 annotated tag；tag 自动触发未生成运行记录，已通过 `workflow_dispatch` 补触发 [Release workflow 31127729066](https://github.com/0xHyperia/sub2api/actions/runs/31127729066)
+- 发布状态：已合入并推送 `usa0/main`，已创建并推送 v1.0.15 annotated tag；通过 `workflow_dispatch` 执行 [Release workflow 31176639187](https://github.com/0xHyperia/sub2api/actions/runs/31176639187) 成功，GitHub Release 已发布并上传 darwin amd64/arm64、linux amd64/arm64、Windows amd64 资产及 checksums
 - 记录日期：2026-08-07
 
 ## USA0 v1.0.14
