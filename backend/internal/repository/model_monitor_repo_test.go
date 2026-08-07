@@ -157,3 +157,21 @@ func TestModelMonitorCompensationClaimRequiresPendingRetry(t *testing.T) {
 	require.True(t, claimed)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestModelMonitorUpsertGroupConfigCastsIntervalForTimestampAlignment(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	mock.ExpectExec(`(?s)INSERT INTO model_monitor_groups.*\$4::integer.*to_timestamp\(floor\(extract\(epoch FROM NOW\(\)\) / \(\(\$4::integer\)::double precision\)\) \* \(\(\$4::integer\)::double precision\)\)`).
+		WithArgs(int64(3), int64(7), true, 300, true).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	repo := &modelMonitorRepository{db: db}
+	err = repo.UpsertGroupConfig(context.Background(), service.ModelMonitorGroupConfig{
+		MonitorID: 3, GroupID: 7, Enabled: true, IntervalSeconds: 300,
+		FailureCompensationEnabled: true,
+	})
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}

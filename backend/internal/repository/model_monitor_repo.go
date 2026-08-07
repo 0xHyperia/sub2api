@@ -215,8 +215,8 @@ func (r *modelMonitorRepository) ReplaceGroups(ctx context.Context, monitorID in
 func (r *modelMonitorRepository) UpsertGroupConfig(ctx context.Context, config service.ModelMonitorGroupConfig) error {
 	_, err := r.db.ExecContext(ctx, `
 INSERT INTO model_monitor_groups (monitor_id,group_id,priority,enabled,interval_seconds,failure_compensation_enabled,last_scheduled_slot_at)
-VALUES ($1,$2,COALESCE((SELECT MAX(priority)+1 FROM model_monitor_groups WHERE monitor_id=$1),0),$3,$4,$5,
-        to_timestamp(floor(extract(epoch FROM NOW()) / $4) * $4))
+VALUES ($1,$2,COALESCE((SELECT MAX(priority)+1 FROM model_monitor_groups WHERE monitor_id=$1),0),$3,$4::integer,$5,
+        to_timestamp(floor(extract(epoch FROM NOW()) / (($4::integer)::double precision)) * (($4::integer)::double precision)))
 ON CONFLICT (monitor_id,group_id) DO UPDATE
 SET enabled=EXCLUDED.enabled,
     interval_seconds=EXCLUDED.interval_seconds,
