@@ -9,7 +9,7 @@
 - 上一 USA0 版本：v1.0.15
 - 修复提交：`0dbb47bf65f675a427366c9dc0923b12629d9d07`
 - 发布范围：修复模型监控分组配置写入 PostgreSQL 时 `interval_seconds` 参数类型推断不一致的问题；对时间片对齐表达式显式转换为 `integer` 与 `double precision`，并增加回归测试，避免主动检测配置保存失败
-- 发布状态：本地发布准备中，尚未创建或推送 v1.0.16 tag
+- 发布状态：已合入并推送 `usa0/main`，已创建并推送 v1.0.16 annotated tag；Release workflow 已自动触发 [31190985507](https://github.com/0xHyperia/sub2api/actions/runs/31190985507)，按要求不等待其完成
 - 记录日期：2026-08-07
 
 ## USA0 v1.0.15
