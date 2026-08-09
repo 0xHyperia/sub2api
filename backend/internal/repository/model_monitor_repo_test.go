@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql/driver"
 	"testing"
 	"time"
 
@@ -99,7 +100,7 @@ func TestModelMonitorGroupMetricsBatchKeepsMonitorsSeparateAndReadsHourlyRollups
 	require.Equal(t, hour, metrics[3][0].Buckets[service.ModelMonitorMetricBucketCount-1].StartedAt)
 }
 
-func TestModelMonitorDueGroupsUseAlignedSlotsAndCompensationPriority(t *testing.T) {
+func TestModelMonitorDueGroupsUseAlignedSlotsAndFairCompensationPriority(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
@@ -114,7 +115,7 @@ func TestModelMonitorDueGroupsUseAlignedSlotsAndCompensationPriority(t *testing.
 		"last_traffic_at", "last_probe_at", "last_scheduled_slot_at", "next_compensation_at", "consecutive_failures", "group_name",
 	}
 	lastSlot := now.Add(-5 * time.Minute)
-	mock.ExpectQuery(`(?s)to_timestamp\(floor\(extract\(epoch FROM \$1::timestamptz\).*ORDER BY CASE WHEN mg\.failure_compensation_pending`).
+	mock.ExpectQuery(`(?s)to_timestamp\(floor\(extract\(epoch FROM \$1::timestamptz\).*ORDER BY ROW_NUMBER\(\) OVER.*PARTITION BY mg\.failure_compensation_pending.*CASE WHEN mg\.failure_compensation_pending`).
 		WithArgs(now, 100).
 		WillReturnRows(sqlmock.NewRows(columns).AddRow(
 			3, "openai", "gpt-5", false, 300, 0, "", nil, 0, createdAt, createdAt,
@@ -174,4 +175,137 @@ func TestModelMonitorUpsertGroupConfigCastsIntervalForTimestampAlignment(t *test
 	})
 	require.NoError(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestModelMonitorPersistGroupProbeResultCommitsAtomically(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	checkedAt := time.Date(2026, 8, 9, 12, 31, 7, 0, time.UTC)
+	slot := checkedAt.Truncate(time.Minute)
+	groupID := int64(7)
+	latency, ttft, cost := 1200, 180, 0.012
+	monitor := &service.ModelMonitor{ID: 3}
+	history := &service.ModelMonitorHistory{
+		MonitorID: 3, GroupID: &groupID, GroupName: "Standard", Status: service.MonitorStatusOperational,
+		LatencyMs: &latency, FirstTokenMs: &ttft, OutputTokens: 20, GenerationMs: 1000,
+		ProbeCost: &cost, ProbeCostKnown: true, CheckedAt: checkedAt,
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(`(?s)INSERT INTO model_monitor_histories.*scheduled_slot_at.*ON CONFLICT.*RETURNING id`).
+		WithArgs(anyArgs(14)...).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(99)))
+	mock.ExpectExec(`(?s)INSERT INTO model_monitor_metric_buckets.*ON CONFLICT`).
+		WithArgs(anyArgs(13)...).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(`(?s)UPDATE model_monitor_groups.*last_probe_at.*probe_claimed_until=CASE`).
+		WithArgs(monitor.ID, groupID, slot, checkedAt, true, false).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(`UPDATE model_monitors SET last_checked_at=GREATEST`).
+		WithArgs(monitor.ID, checkedAt).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	repo := &modelMonitorRepository{db: db}
+	require.NoError(t, repo.PersistGroupProbeResult(context.Background(), monitor, history, &slot))
+	require.EqualValues(t, 99, history.ID)
+	require.Equal(t, checkedAt, *monitor.LastCheckedAt)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestModelMonitorPersistGroupProbeResultReusesCommittedSlot(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	checkedAt := time.Date(2026, 8, 9, 12, 31, 7, 0, time.UTC)
+	existingCheckedAt := checkedAt.Add(-2 * time.Second)
+	slot := checkedAt.Truncate(time.Minute)
+	groupID := int64(7)
+	monitor := &service.ModelMonitor{ID: 3}
+	history := &service.ModelMonitorHistory{MonitorID: 3, GroupID: &groupID, Status: service.MonitorStatusOperational, CheckedAt: checkedAt}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(`(?s)INSERT INTO model_monitor_histories.*ON CONFLICT`).
+		WithArgs(anyArgs(14)...).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+	mock.ExpectQuery(`SELECT id,status,checked_at FROM model_monitor_histories`).
+		WithArgs(monitor.ID, groupID, slot).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status", "checked_at"}).AddRow(int64(88), service.MonitorStatusFailed, existingCheckedAt))
+	mock.ExpectExec(`UPDATE model_monitor_groups SET probe_claimed_until=NULL`).
+		WithArgs(monitor.ID, groupID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	repo := &modelMonitorRepository{db: db}
+	require.NoError(t, repo.PersistGroupProbeResult(context.Background(), monitor, history, &slot))
+	require.EqualValues(t, 88, history.ID)
+	require.Equal(t, service.MonitorStatusFailed, history.Status)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestModelMonitorTrafficRefreshClaimIsMultiInstanceSafe(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	now := time.Date(2026, 8, 9, 12, 31, 0, 0, time.UTC)
+	until := now.Add(2 * time.Minute)
+	cursor := now.Add(-10 * time.Minute)
+
+	mock.ExpectQuery(`(?s)UPDATE model_monitor_runtime_state SET traffic_claimed_until=.*RETURNING traffic_cursor_at`).
+		WithArgs(now, until).
+		WillReturnRows(sqlmock.NewRows([]string{"traffic_cursor_at"}).AddRow(cursor))
+	repo := &modelMonitorRepository{db: db}
+	got, claimed, err := repo.ClaimTrafficMetricsRefresh(context.Background(), now, until)
+	require.NoError(t, err)
+	require.True(t, claimed)
+	require.Equal(t, cursor, *got)
+
+	mock.ExpectQuery(`(?s)UPDATE model_monitor_runtime_state SET traffic_claimed_until=.*RETURNING traffic_cursor_at`).
+		WithArgs(now, until).
+		WillReturnRows(sqlmock.NewRows([]string{"traffic_cursor_at"}))
+	got, claimed, err = repo.ClaimTrafficMetricsRefresh(context.Background(), now, until)
+	require.NoError(t, err)
+	require.False(t, claimed)
+	require.Nil(t, got)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestModelMonitorPassiveRefreshExcludesClientCancellation(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	from := time.Date(2026, 8, 9, 12, 30, 23, 0, time.UTC)
+	to := from.Add(2 * time.Minute)
+	normalizedFrom := from.Truncate(time.Minute)
+	normalizedTo := to.Truncate(time.Minute).Add(time.Minute)
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`DELETE FROM model_monitor_metric_buckets`).
+		WithArgs(normalizedFrom, normalizedTo).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectExec(`(?s)WITH successful AS.*status_code=499.*error_type.*cancel.*error_owner.*client.*INSERT INTO model_monitor_metric_buckets`).
+		WithArgs(normalizedFrom, normalizedTo).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(`(?s)UPDATE model_monitor_groups mg SET last_traffic_at=.*status_code=499.*error_type.*cancel.*error_owner.*client`).
+		WithArgs(normalizedFrom, normalizedTo).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(`(?s)UPDATE model_monitor_groups mg.*failure_compensation_pending=FALSE`).
+		WithArgs(normalizedFrom, normalizedTo).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	repo := &modelMonitorRepository{db: db}
+	require.NoError(t, repo.RefreshTrafficMetrics(context.Background(), from, to))
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func anyArgs(count int) []driver.Value {
+	args := make([]driver.Value, count)
+	for i := range args {
+		args[i] = sqlmock.AnyArg()
+	}
+	return args
 }

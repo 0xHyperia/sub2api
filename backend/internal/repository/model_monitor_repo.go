@@ -84,8 +84,11 @@ WHERE mg.enabled=TRUE
           > COALESCE(mg.last_scheduled_slot_at,to_timestamp(0))
     )
   )
-ORDER BY CASE WHEN mg.failure_compensation_pending THEN 0 ELSE 1 END,
-         COALESCE(mg.next_compensation_at,mg.last_scheduled_slot_at,to_timestamp(0)),m.id,mg.priority
+ORDER BY ROW_NUMBER() OVER (
+           PARTITION BY mg.failure_compensation_pending
+           ORDER BY COALESCE(mg.next_compensation_at,mg.last_scheduled_slot_at,to_timestamp(0)),m.id,mg.priority
+         ),
+         CASE WHEN mg.failure_compensation_pending THEN 0 ELSE 1 END
 LIMIT $2`, now, limit)
 	if err != nil {
 		return nil, err
@@ -243,23 +246,104 @@ SET enabled=EXCLUDED.enabled,
 	return err
 }
 
-func (r *modelMonitorRepository) UpdateGroupProbeAt(ctx context.Context, monitorID, groupID int64, checkedAt time.Time) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE model_monitor_groups SET last_probe_at=$3 WHERE monitor_id=$1 AND group_id=$2`, monitorID, groupID, checkedAt)
+func (r *modelMonitorRepository) ReleaseGroupProbeClaim(ctx context.Context, monitorID, groupID int64) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE model_monitor_groups SET probe_claimed_until=NULL WHERE monitor_id=$1 AND group_id=$2`, monitorID, groupID)
 	return err
 }
 
-func (r *modelMonitorRepository) FinishGroupProbe(ctx context.Context, monitorID, groupID int64, scheduledSlot *time.Time, checkedAt time.Time, status string) error {
-	success := status == service.MonitorStatusOperational || status == service.MonitorStatusDegraded
-	retryableFailure := status == service.MonitorStatusFailed
-	_, err := r.db.ExecContext(ctx, `
-UPDATE model_monitor_groups
-SET last_scheduled_slot_at=CASE WHEN $3::timestamptz IS NULL THEN last_scheduled_slot_at ELSE GREATEST(COALESCE(last_scheduled_slot_at,$3),$3) END,
-    failure_compensation_pending=CASE WHEN $5 THEN FALSE WHEN enabled AND failure_compensation_enabled AND $6 THEN TRUE ELSE FALSE END,
-    next_compensation_at=CASE WHEN NOT $5 AND enabled AND failure_compensation_enabled AND $6 THEN date_trunc('minute',$4::timestamptz)+interval '1 minute' ELSE NULL END,
-    consecutive_probe_failures=CASE WHEN $5 THEN 0 WHEN enabled AND failure_compensation_enabled AND $6 THEN consecutive_probe_failures+1 ELSE 0 END,
-    probe_claimed_until=CASE WHEN $3::timestamptz IS NULL THEN probe_claimed_until ELSE NULL END
-WHERE monitor_id=$1 AND group_id=$2`, monitorID, groupID, scheduledSlot, checkedAt, success, retryableFailure)
-	return err
+// PersistGroupProbeResult makes the history, metrics, model timestamp and
+// scheduling state one durable state transition. A failed transition is safe
+// to retry because the history row is only committed with the metric update.
+func (r *modelMonitorRepository) PersistGroupProbeResult(ctx context.Context, monitor *service.ModelMonitor, h *service.ModelMonitorHistory, scheduledSlot *time.Time) error {
+	if h == nil || h.GroupID == nil || monitor == nil {
+		return fmt.Errorf("monitor group result is incomplete")
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err = tx.QueryRowContext(ctx, `INSERT INTO model_monitor_histories
+	 (monitor_id,status,latency_ms,attempts,message,group_id,group_name,first_token_ms,input_tokens,output_tokens,generation_ms,probe_cost,checked_at,scheduled_slot_at)
+	 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+	 ON CONFLICT (monitor_id,group_id,scheduled_slot_at) WHERE scheduled_slot_at IS NOT NULL AND group_id IS NOT NULL DO NOTHING
+	 RETURNING id`,
+		h.MonitorID, h.Status, h.LatencyMs, h.Attempts, h.Message, h.GroupID, h.GroupName,
+		h.FirstTokenMs, h.InputTokens, h.OutputTokens, h.GenerationMs, h.ProbeCost, h.CheckedAt, scheduledSlot).Scan(&h.ID); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if scheduledSlot == nil {
+			return fmt.Errorf("manual probe history insert returned no row")
+		}
+		if err = tx.QueryRowContext(ctx, `SELECT id,status,checked_at FROM model_monitor_histories
+		 WHERE monitor_id=$1 AND group_id=$2 AND scheduled_slot_at=$3`, monitor.ID, *h.GroupID, *scheduledSlot).
+			Scan(&h.ID, &h.Status, &h.CheckedAt); err != nil {
+			return err
+		}
+		if _, err = tx.ExecContext(ctx, `UPDATE model_monitor_groups SET probe_claimed_until=NULL WHERE monitor_id=$1 AND group_id=$2`, monitor.ID, *h.GroupID); err != nil {
+			return err
+		}
+		if err = tx.Commit(); err != nil {
+			return err
+		}
+		monitor.LastCheckedAt = &h.CheckedAt
+		return nil
+	}
+	cost := 0.0
+	if h.ProbeCost != nil {
+		cost = *h.ProbeCost
+	}
+	requestCount, successCount := int64(1), int64(0)
+	var latencySum, latencyCount, ttftSum, ttftCount, outputTokens, generationMs int64
+	if h.Status == service.MonitorStatusOperational || h.Status == service.MonitorStatusDegraded {
+		successCount = 1
+		if h.LatencyMs != nil {
+			latencySum, latencyCount = int64(*h.LatencyMs), 1
+		}
+		if h.FirstTokenMs != nil {
+			ttftSum, ttftCount = int64(*h.FirstTokenMs), 1
+		}
+		outputTokens, generationMs = int64(h.OutputTokens), h.GenerationMs
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT INTO model_monitor_metric_buckets
+	 (monitor_id,group_id,resolution,source,bucket_start,request_count,success_count,latency_sum_ms,latency_count,ttft_sum_ms,ttft_count,output_tokens,generation_ms,probe_cost,probe_cost_known)
+	 VALUES ($1,$2,'minute','probe',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+	 ON CONFLICT (monitor_id,group_id,resolution,source,bucket_start) DO UPDATE SET
+	 request_count=model_monitor_metric_buckets.request_count+EXCLUDED.request_count,
+	 success_count=model_monitor_metric_buckets.success_count+EXCLUDED.success_count,
+	 latency_sum_ms=model_monitor_metric_buckets.latency_sum_ms+EXCLUDED.latency_sum_ms,
+	 latency_count=model_monitor_metric_buckets.latency_count+EXCLUDED.latency_count,
+	 ttft_sum_ms=model_monitor_metric_buckets.ttft_sum_ms+EXCLUDED.ttft_sum_ms,
+	 ttft_count=model_monitor_metric_buckets.ttft_count+EXCLUDED.ttft_count,
+	 output_tokens=model_monitor_metric_buckets.output_tokens+EXCLUDED.output_tokens,
+	 generation_ms=model_monitor_metric_buckets.generation_ms+EXCLUDED.generation_ms,
+	 probe_cost=model_monitor_metric_buckets.probe_cost+EXCLUDED.probe_cost,
+	 probe_cost_known=model_monitor_metric_buckets.probe_cost_known AND EXCLUDED.probe_cost_known,
+	 updated_at=NOW()`, h.MonitorID, *h.GroupID, h.CheckedAt.UTC().Truncate(time.Minute), requestCount, successCount,
+		latencySum, latencyCount, ttftSum, ttftCount, outputTokens, generationMs, cost, h.ProbeCostKnown); err != nil {
+		return err
+	}
+	success := h.Status == service.MonitorStatusOperational || h.Status == service.MonitorStatusDegraded
+	retryable := h.Status == service.MonitorStatusFailed
+	if _, err = tx.ExecContext(ctx, `UPDATE model_monitor_groups
+	 SET last_probe_at=GREATEST(COALESCE(last_probe_at,$4),$4),
+	 last_scheduled_slot_at=CASE WHEN $3::timestamptz IS NULL THEN last_scheduled_slot_at ELSE GREATEST(COALESCE(last_scheduled_slot_at,$3),$3) END,
+	 failure_compensation_pending=CASE WHEN $5 THEN FALSE WHEN enabled AND failure_compensation_enabled AND $6 THEN TRUE ELSE FALSE END,
+	 next_compensation_at=CASE WHEN NOT $5 AND enabled AND failure_compensation_enabled AND $6 THEN date_trunc('minute',$4::timestamptz)+interval '1 minute' ELSE NULL END,
+	 consecutive_probe_failures=CASE WHEN $5 THEN 0 WHEN enabled AND failure_compensation_enabled AND $6 THEN consecutive_probe_failures+1 ELSE 0 END,
+	 probe_claimed_until=CASE WHEN $3::timestamptz IS NULL THEN probe_claimed_until ELSE NULL END
+	 WHERE monitor_id=$1 AND group_id=$2`, monitor.ID, *h.GroupID, scheduledSlot, h.CheckedAt, success, retryable); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE model_monitors SET last_checked_at=GREATEST(COALESCE(last_checked_at,$2),$2),updated_at=NOW() WHERE id=$1`, monitor.ID, h.CheckedAt); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	monitor.LastCheckedAt = &h.CheckedAt
+	return nil
 }
 
 func (r *modelMonitorRepository) CompleteGroupSlotWithoutProbe(ctx context.Context, monitorID, groupID int64, scheduledSlot time.Time) error {
@@ -426,6 +510,7 @@ WITH successful AS (
   WHERE e.created_at >= $1 AND e.created_at < $2 AND e.group_id IS NOT NULL
     AND COALESCE(e.is_count_tokens,FALSE)=FALSE AND COALESCE(e.is_business_limited,FALSE)=FALSE
     AND COALESCE(e.status_code,0) >= 400 AND e.error_phase IN ('upstream','network','internal')
+    AND NOT (e.status_code=499 AND (lower(COALESCE(e.error_type,'')) LIKE '%cancel%' OR lower(COALESCE(e.error_type,'')) LIKE '%disconnect%' OR lower(COALESCE(e.error_owner,''))='client'))
     AND NOT EXISTS (
       SELECT 1 FROM usage_logs completed
       WHERE completed.request_id=e.request_id
@@ -467,6 +552,7 @@ FROM (
     WHERE e.created_at >= $1 AND e.created_at < $2 AND e.group_id IS NOT NULL
       AND COALESCE(e.is_count_tokens,FALSE)=FALSE AND COALESCE(e.is_business_limited,FALSE)=FALSE
       AND COALESCE(e.status_code,0) >= 400 AND e.error_phase IN ('upstream','network','internal')
+      AND NOT (e.status_code=499 AND (lower(COALESCE(e.error_type,'')) LIKE '%cancel%' OR lower(COALESCE(e.error_type,'')) LIKE '%disconnect%' OR lower(COALESCE(e.error_owner,''))='client'))
   ) activity
   GROUP BY monitor_id,group_id
 ) x WHERE mg.monitor_id=x.monitor_id AND mg.group_id=x.group_id
@@ -495,23 +581,26 @@ WHERE mg.monitor_id=recovered.monitor_id AND mg.group_id=recovered.group_id
 	return tx.Commit()
 }
 
-func (r *modelMonitorRepository) UpsertMetricDelta(ctx context.Context, d service.ModelMonitorMetricDelta) error {
-	_, err := r.db.ExecContext(ctx, `
-INSERT INTO model_monitor_metric_buckets
- (monitor_id,group_id,resolution,source,bucket_start,request_count,success_count,latency_sum_ms,latency_count,ttft_sum_ms,ttft_count,output_tokens,generation_ms,probe_cost,probe_cost_known)
-VALUES ($1,$2,'minute',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-ON CONFLICT (monitor_id,group_id,resolution,source,bucket_start) DO UPDATE SET
- request_count=model_monitor_metric_buckets.request_count+EXCLUDED.request_count,
- success_count=model_monitor_metric_buckets.success_count+EXCLUDED.success_count,
- latency_sum_ms=model_monitor_metric_buckets.latency_sum_ms+EXCLUDED.latency_sum_ms,
- latency_count=model_monitor_metric_buckets.latency_count+EXCLUDED.latency_count,
- ttft_sum_ms=model_monitor_metric_buckets.ttft_sum_ms+EXCLUDED.ttft_sum_ms,
- ttft_count=model_monitor_metric_buckets.ttft_count+EXCLUDED.ttft_count,
- output_tokens=model_monitor_metric_buckets.output_tokens+EXCLUDED.output_tokens,
- generation_ms=model_monitor_metric_buckets.generation_ms+EXCLUDED.generation_ms,
- probe_cost=model_monitor_metric_buckets.probe_cost+EXCLUDED.probe_cost,
- probe_cost_known=model_monitor_metric_buckets.probe_cost_known AND EXCLUDED.probe_cost_known,
- updated_at=NOW()`, d.MonitorID, d.GroupID, d.Source, d.BucketStart.UTC().Truncate(time.Minute), d.RequestCount, d.SuccessCount, d.LatencySumMs, d.LatencyCount, d.TTFTSumMs, d.TTFTCount, d.OutputTokens, d.GenerationMs, d.ProbeCost, d.ProbeCostKnown)
+func (r *modelMonitorRepository) ClaimTrafficMetricsRefresh(ctx context.Context, now, claimedUntil time.Time) (*time.Time, bool, error) {
+	var cursor *time.Time
+	err := r.db.QueryRowContext(ctx, `UPDATE model_monitor_runtime_state SET traffic_claimed_until=$2,updated_at=NOW()
+	 WHERE id=TRUE AND (traffic_claimed_until IS NULL OR traffic_claimed_until <= $1)
+	 RETURNING traffic_cursor_at`, now, claimedUntil).Scan(&cursor)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, false, nil
+	}
+	return cursor, err == nil, err
+}
+
+func (r *modelMonitorRepository) FinishTrafficMetricsRefresh(ctx context.Context, cursor time.Time) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE model_monitor_runtime_state
+	 SET traffic_cursor_at=GREATEST(COALESCE(traffic_cursor_at,'epoch'::timestamptz),$1),traffic_claimed_until=NULL,updated_at=NOW()
+	 WHERE id=TRUE`, cursor.UTC())
+	return err
+}
+
+func (r *modelMonitorRepository) ReleaseTrafficMetricsRefresh(ctx context.Context) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE model_monitor_runtime_state SET traffic_claimed_until=NULL,updated_at=NOW() WHERE id=TRUE`)
 	return err
 }
 

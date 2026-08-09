@@ -36,6 +36,38 @@ type modelMonitorTestRepo struct {
 	summaries  map[string]ModelMonitorSummary
 }
 
+type modelMonitorTrafficCursorRepo struct {
+	ModelMonitorRepository
+	cursor      *time.Time
+	refreshFrom time.Time
+	refreshTo   time.Time
+	savedCursor time.Time
+	rolledHours []time.Time
+}
+
+func (r *modelMonitorTrafficCursorRepo) ClaimTrafficMetricsRefresh(context.Context, time.Time, time.Time) (*time.Time, bool, error) {
+	return r.cursor, true, nil
+}
+
+func (r *modelMonitorTrafficCursorRepo) RefreshTrafficMetrics(_ context.Context, from, to time.Time) error {
+	r.refreshFrom, r.refreshTo = from, to
+	return nil
+}
+
+func (r *modelMonitorTrafficCursorRepo) FinishTrafficMetricsRefresh(_ context.Context, cursor time.Time) error {
+	r.savedCursor = cursor
+	return nil
+}
+
+func (r *modelMonitorTrafficCursorRepo) ReleaseTrafficMetricsRefresh(context.Context) error {
+	return nil
+}
+
+func (r *modelMonitorTrafficCursorRepo) RollupHourlyMetrics(_ context.Context, hour time.Time) error {
+	r.rolledHours = append(r.rolledHours, hour)
+	return nil
+}
+
 func (r modelMonitorTestRepo) List(context.Context) ([]ModelMonitor, error) {
 	return r.configs, nil
 }
@@ -119,6 +151,29 @@ func TestModelMonitorCompensationUsesNaturalMinuteDueTime(t *testing.T) {
 	require.True(t, modelMonitorCompensationDue(group, next))
 	group.Enabled = false
 	require.False(t, modelMonitorCompensationDue(group, next))
+}
+
+func TestModelMonitorPassiveRefreshResumesFromPersistentCursorWithOverlap(t *testing.T) {
+	now := time.Date(2026, 8, 9, 12, 37, 42, 0, time.UTC)
+	cursor := now.Add(-20*time.Minute - 17*time.Second)
+	repo := &modelMonitorTrafficCursorRepo{cursor: &cursor}
+	runner := NewModelMonitorRunner(&ModelMonitorService{repo: repo}, nil)
+
+	require.NoError(t, runner.refreshTrafficMetrics(context.Background(), now))
+	require.Equal(t, cursor.Add(-3*time.Minute).Truncate(time.Minute), repo.refreshFrom)
+	require.Equal(t, now.UTC(), repo.refreshTo)
+	require.Equal(t, repo.refreshTo, repo.savedCursor)
+}
+
+func TestModelMonitorPassiveRefreshColdStartUsesRetentionWindow(t *testing.T) {
+	now := time.Date(2026, 8, 9, 12, 37, 42, 0, time.UTC)
+	repo := &modelMonitorTrafficCursorRepo{}
+	runner := NewModelMonitorRunner(&ModelMonitorService{repo: repo}, nil)
+
+	require.NoError(t, runner.refreshTrafficMetrics(context.Background(), now))
+	require.Equal(t, now.Add(-ModelMonitorMinuteRetentionHours*time.Hour).Truncate(time.Minute), repo.refreshFrom)
+	require.Equal(t, now.UTC(), repo.savedCursor)
+	require.Len(t, repo.rolledHours, ModelMonitorMinuteRetentionHours-1)
 }
 
 func TestModelMonitorCatalogModelsDoesNotInferDefaultsFromUnrestrictedAccount(t *testing.T) {

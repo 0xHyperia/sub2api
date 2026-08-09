@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"sync"
@@ -409,7 +410,7 @@ func (s *ModelMonitorService) RunGroupByKey(ctx context.Context, platform, model
 				if runErr != nil {
 					return nil, runErr
 				}
-				if err := s.repo.FinishGroupProbe(ctx, m.ID, groupID, nil, history.CheckedAt, history.Status); err != nil {
+				if err := s.repo.PersistGroupProbeResult(ctx, m, history, nil); err != nil {
 					return nil, err
 				}
 				return history, nil
@@ -467,9 +468,6 @@ func (s *ModelMonitorService) RunGroup(ctx context.Context, monitor *ModelMonito
 		h.InputTokens = finalResult.InputTokens
 		h.OutputTokens = finalResult.OutputTokens
 		h.GenerationMs = finalResult.GenerationMs
-	}
-	if err := s.persistGroupResult(ctx, monitor, h); err != nil {
-		return nil, err
 	}
 	return h, nil
 }
@@ -644,43 +642,6 @@ func (s *ModelMonitorService) persistResult(ctx context.Context, m *ModelMonitor
 	return s.repo.UpdateLastChecked(ctx, m.ID, h.CheckedAt)
 }
 
-func (s *ModelMonitorService) persistGroupResult(ctx context.Context, m *ModelMonitor, h *ModelMonitorHistory) error {
-	if h.GroupID == nil {
-		return fmt.Errorf("monitor group is required")
-	}
-	if err := s.repo.InsertHistory(ctx, h); err != nil {
-		return err
-	}
-	cost := 0.0
-	if h.ProbeCost != nil {
-		cost = *h.ProbeCost
-	}
-	delta := ModelMonitorMetricDelta{
-		MonitorID: m.ID, GroupID: *h.GroupID, Source: "probe", BucketStart: h.CheckedAt,
-		RequestCount: 1, ProbeCost: cost, ProbeCostKnown: h.ProbeCostKnown,
-	}
-	if h.Status == MonitorStatusOperational || h.Status == MonitorStatusDegraded {
-		delta.SuccessCount = 1
-		if h.LatencyMs != nil {
-			delta.LatencySumMs = int64(*h.LatencyMs)
-			delta.LatencyCount = 1
-		}
-		if h.FirstTokenMs != nil {
-			delta.TTFTSumMs = int64(*h.FirstTokenMs)
-			delta.TTFTCount = 1
-		}
-		delta.OutputTokens = int64(h.OutputTokens)
-		delta.GenerationMs = h.GenerationMs
-	}
-	if err := s.repo.UpsertMetricDelta(ctx, delta); err != nil {
-		return err
-	}
-	if err := s.repo.UpdateGroupProbeAt(ctx, m.ID, *h.GroupID, h.CheckedAt); err != nil {
-		return err
-	}
-	m.LastCheckedAt = &h.CheckedAt
-	return s.repo.UpdateLastChecked(ctx, m.ID, h.CheckedAt)
-}
 func (s *ModelMonitorService) History(ctx context.Context, id int64, limit int) ([]ModelMonitorHistory, error) {
 	return s.repo.ListHistory(ctx, id, limit)
 }
@@ -893,7 +854,6 @@ type ModelMonitorRunner struct {
 	sem         chan struct{}
 	inFlight    sync.Map
 	lastCleanup time.Time
-	lastRollup  time.Time
 }
 
 func NewModelMonitorRunner(service *ModelMonitorService, settings *SettingService) *ModelMonitorRunner {
@@ -929,17 +889,16 @@ func (r *ModelMonitorRunner) tick() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 	now := time.Now()
-	catalog, err := r.service.DiscoverCatalog(ctx)
-	if err != nil {
-		return
+	catalog, catalogErr := r.service.DiscoverCatalog(ctx)
+	if catalogErr == nil {
+		r.reconcileLegacyGroups(ctx, catalog)
 	}
-	r.reconcileLegacyGroups(ctx, catalog)
-	_ = r.service.repo.RefreshTrafficMetrics(ctx, now.Add(-3*time.Minute), now)
-	rollupHour := now.UTC().Truncate(time.Hour).Add(-time.Hour)
-	if !r.lastRollup.Equal(rollupHour) {
-		if err := r.service.repo.RollupHourlyMetrics(ctx, rollupHour); err == nil {
-			r.lastRollup = rollupHour
-		}
+	if err := r.refreshTrafficMetrics(ctx, now); err != nil {
+		slog.Warn("model_monitor: passive traffic refresh failed", "error", err)
+	}
+	if catalogErr != nil {
+		slog.Warn("model_monitor: catalog discovery failed", "error", catalogErr)
+		return
 	}
 	if r.settings == nil || !r.settings.GetModelMonitorRuntime(ctx).Enabled {
 		r.cleanup(ctx, now)
@@ -986,7 +945,9 @@ func (r *ModelMonitorRunner) tick() {
 		}
 		if !compensation {
 			if modelMonitorSlotHasTraffic(item.Group, scheduledSlot) {
-				_ = r.service.repo.CompleteGroupSlotWithoutProbe(ctx, item.Monitor.ID, item.Group.GroupID, scheduledSlot)
+				if err := r.service.repo.CompleteGroupSlotWithoutProbe(ctx, item.Monitor.ID, item.Group.GroupID, scheduledSlot); err != nil {
+					slog.Warn("model_monitor: complete skipped slot failed", "monitor_id", item.Monitor.ID, "group_id", item.Group.GroupID, "error", err)
+				}
 				r.inFlight.Delete(flightKey)
 				<-r.sem
 				continue
@@ -998,12 +959,85 @@ func (r *ModelMonitorRunner) tick() {
 			defer runCancel()
 			history, runErr := r.service.RunGroup(runCtx, &item.Monitor, group)
 			if runErr != nil || history == nil {
+				releaseCtx, releaseCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				if err := r.service.repo.ReleaseGroupProbeClaim(releaseCtx, item.Monitor.ID, item.Group.GroupID); err != nil {
+					slog.Warn("model_monitor: release failed probe claim", "monitor_id", item.Monitor.ID, "group_id", item.Group.GroupID, "error", err)
+				}
+				releaseCancel()
+				if runErr != nil {
+					slog.Warn("model_monitor: probe run failed", "monitor_id", item.Monitor.ID, "group_id", item.Group.GroupID, "error", runErr)
+				}
 				return
 			}
-			_ = r.service.repo.FinishGroupProbe(runCtx, item.Monitor.ID, item.Group.GroupID, &slot, history.CheckedAt, history.Status)
+			persistCtx, persistCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			if err := r.service.repo.PersistGroupProbeResult(persistCtx, &item.Monitor, history, &slot); err != nil {
+				slog.Error("model_monitor: persist probe result failed", "monitor_id", item.Monitor.ID, "group_id", item.Group.GroupID, "error", err)
+				releaseCtx, releaseCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				if releaseErr := r.service.repo.ReleaseGroupProbeClaim(releaseCtx, item.Monitor.ID, item.Group.GroupID); releaseErr != nil {
+					slog.Warn("model_monitor: release claim after persist failure", "monitor_id", item.Monitor.ID, "group_id", item.Group.GroupID, "error", releaseErr)
+				}
+				releaseCancel()
+			}
+			persistCancel()
 		}(item, group, flightKey, scheduledSlot)
 	}
 	r.cleanup(ctx, now)
+}
+
+func (r *ModelMonitorRunner) refreshTrafficMetrics(ctx context.Context, now time.Time) error {
+	cursor, claimed, err := r.service.repo.ClaimTrafficMetricsRefresh(ctx, now, now.Add(2*time.Minute))
+	if err != nil {
+		return err
+	}
+	if !claimed {
+		return nil
+	}
+	finished := false
+	defer func() {
+		if finished {
+			return
+		}
+		releaseCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if releaseErr := r.service.repo.ReleaseTrafficMetricsRefresh(releaseCtx); releaseErr != nil {
+			slog.Warn("model_monitor: release passive refresh claim failed", "error", releaseErr)
+		}
+	}()
+	// Keep a three-minute overlap for asynchronous usage/error log writers, and
+	// never rebuild data outside the retained minute window.
+	to := now.UTC()
+	from := now.UTC().Add(-ModelMonitorMinuteRetentionHours * time.Hour).Truncate(time.Minute)
+	if cursor != nil {
+		candidate := cursor.UTC().Add(-3 * time.Minute).Truncate(time.Minute)
+		if candidate.After(from) {
+			from = candidate
+		}
+	}
+	if !to.After(from) {
+		if err := r.service.repo.FinishTrafficMetricsRefresh(ctx, to); err != nil {
+			return err
+		}
+		finished = true
+		return nil
+	}
+	if err := r.service.repo.RefreshTrafficMetrics(ctx, from, to); err != nil {
+		return err
+	}
+	lastCompletedHour := now.UTC().Truncate(time.Hour).Add(-time.Hour)
+	firstRollupHour := from.UTC().Truncate(time.Hour)
+	if cursor == nil && from.After(firstRollupHour) {
+		firstRollupHour = firstRollupHour.Add(time.Hour)
+	}
+	for hour := firstRollupHour; !hour.After(lastCompletedHour); hour = hour.Add(time.Hour) {
+		if err := r.service.repo.RollupHourlyMetrics(ctx, hour); err != nil {
+			return fmt.Errorf("roll up passive metrics for %s: %w", hour.Format(time.RFC3339), err)
+		}
+	}
+	if err := r.service.repo.FinishTrafficMetricsRefresh(ctx, to); err != nil {
+		return err
+	}
+	finished = true
+	return nil
 }
 
 func alignedModelMonitorSlot(now time.Time, intervalSeconds int) time.Time {

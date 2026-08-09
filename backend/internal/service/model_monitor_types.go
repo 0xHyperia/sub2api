@@ -95,23 +95,6 @@ type ModelMonitorDueGroup struct {
 	Name    string
 }
 
-type ModelMonitorMetricDelta struct {
-	MonitorID      int64
-	GroupID        int64
-	Source         string
-	BucketStart    time.Time
-	RequestCount   int64
-	SuccessCount   int64
-	LatencySumMs   int64
-	LatencyCount   int64
-	TTFTSumMs      int64
-	TTFTCount      int64
-	OutputTokens   int64
-	GenerationMs   int64
-	ProbeCost      float64
-	ProbeCostKnown bool
-}
-
 type ModelMonitorMetricScope struct {
 	MonitorID int64
 	GroupIDs  []int64
@@ -188,15 +171,17 @@ type ModelMonitorRepository interface {
 	ListGroupConfigs(ctx context.Context) (map[int64][]ModelMonitorGroupConfig, error)
 	ReplaceGroups(ctx context.Context, monitorID int64, groupIDs []int64) error
 	UpsertGroupConfig(ctx context.Context, config ModelMonitorGroupConfig) error
-	UpdateGroupProbeAt(ctx context.Context, monitorID, groupID int64, checkedAt time.Time) error
-	FinishGroupProbe(ctx context.Context, monitorID, groupID int64, scheduledSlot *time.Time, checkedAt time.Time, status string) error
 	CompleteGroupSlotWithoutProbe(ctx context.Context, monitorID, groupID int64, scheduledSlot time.Time) error
+	ReleaseGroupProbeClaim(ctx context.Context, monitorID, groupID int64) error
+	PersistGroupProbeResult(ctx context.Context, monitor *ModelMonitor, history *ModelMonitorHistory, scheduledSlot *time.Time) error
 	UpdateLastChecked(ctx context.Context, id int64, checkedAt time.Time) error
 	InsertHistory(ctx context.Context, history *ModelMonitorHistory) error
 	ListHistory(ctx context.Context, monitorID int64, limit int) ([]ModelMonitorHistory, error)
 	Summaries(ctx context.Context, keys []ModelCatalogEntry, timelineLimit int) (map[string]ModelMonitorSummary, error)
 	RefreshTrafficMetrics(ctx context.Context, from, to time.Time) error
-	UpsertMetricDelta(ctx context.Context, delta ModelMonitorMetricDelta) error
+	ClaimTrafficMetricsRefresh(ctx context.Context, now, claimedUntil time.Time) (*time.Time, bool, error)
+	FinishTrafficMetricsRefresh(ctx context.Context, cursor time.Time) error
+	ReleaseTrafficMetricsRefresh(ctx context.Context) error
 	GroupMetrics(ctx context.Context, monitorID int64, groupIDs []int64, resolution ModelMonitorResolution, now time.Time) (map[int64]ModelMonitorGroupMetrics, error)
 	GroupMetricsBatch(ctx context.Context, scopes []ModelMonitorMetricScope, resolution ModelMonitorResolution, now time.Time) (map[int64]map[int64]ModelMonitorGroupMetrics, error)
 	RollupHourlyMetrics(ctx context.Context, hour time.Time) error
