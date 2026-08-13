@@ -54,6 +54,24 @@ func distributionAgentUserID(c *gin.Context, distributionService *service.Distri
 	return userID, true
 }
 
+func distributionAnalyticsFilter(c *gin.Context) (service.DistributionAnalyticsFilter, error) {
+	days, _ := strconv.Atoi(c.DefaultQuery("days", "30"))
+	filter := service.DistributionAnalyticsFilter{Days: days}
+	location := time.FixedZone("Asia/Shanghai", 8*60*60)
+	for raw, target := range map[string]**time.Time{"date_from": &filter.DateFrom, "date_to": &filter.DateTo} {
+		value := strings.TrimSpace(c.Query(raw))
+		if value == "" {
+			continue
+		}
+		parsed, err := time.ParseInLocation("2006-01-02", value, location)
+		if err != nil {
+			return service.DistributionAnalyticsFilter{}, err
+		}
+		*target = &parsed
+	}
+	return filter, nil
+}
+
 func (h *DistributionHandler) GetAccess(c *gin.Context) {
 	uid, ok := distributionUserID(c)
 	if !ok {
@@ -270,6 +288,48 @@ func (h *DistributionHandler) GrantL2Agent(c *gin.Context) {
 	}
 	response.Success(c, agent)
 }
+
+func (h *DistributionHandler) GetTeamAgentRewardRule(c *gin.Context) {
+	uid, ok := distributionAgentUserID(c, h.service)
+	if !ok {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+	agentID, err := strconv.ParseInt(c.Param("agent_id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "invalid agent id")
+		return
+	}
+	rule, err := h.service.GetAgentRewardRule(c.Request.Context(), uid, agentID, false)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, rule)
+}
+
+func (h *DistributionHandler) UpdateTeamAgentRewardRule(c *gin.Context) {
+	uid, ok := distributionAgentUserID(c, h.service)
+	if !ok {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+	agentID, err := strconv.ParseInt(c.Param("agent_id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "invalid agent id")
+		return
+	}
+	var req service.DistributionRewardRuleInput
+	if err = c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if err = h.service.UpdateAgentRewardRule(c.Request.Context(), uid, agentID, false, req); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"updated": true})
+}
 func (h *DistributionHandler) ListCustomers(c *gin.Context) {
 	uid, ok := distributionAgentUserID(c, h.service)
 	if !ok {
@@ -306,14 +366,42 @@ func (h *DistributionHandler) ListTeam(c *gin.Context) {
 		return
 	}
 	page, pageSize := response.ParsePagination(c)
+	analyticsFilter, filterErr := distributionAnalyticsFilter(c)
+	if filterErr != nil {
+		response.BadRequest(c, "invalid analytics date range")
+		return
+	}
 	v, total, err := h.service.ListTeam(c.Request.Context(), uid, service.DistributionUserListFilter{
-		Page: page, PageSize: pageSize, Search: c.Query("search"), Status: c.Query("status"),
+		Page: page, PageSize: pageSize, Search: c.Query("search"), Status: c.Query("status"), Days: analyticsFilter.Days, DateFrom: analyticsFilter.DateFrom, DateTo: analyticsFilter.DateTo,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 	response.Paginated(c, v, total, page, pageSize)
+}
+
+func (h *DistributionHandler) GetTeamAgentAnalytics(c *gin.Context) {
+	uid, ok := distributionAgentUserID(c, h.service)
+	if !ok {
+		return
+	}
+	agentID, err := strconv.ParseInt(c.Param("agent_id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "invalid agent id")
+		return
+	}
+	filter, err := distributionAnalyticsFilter(c)
+	if err != nil {
+		response.BadRequest(c, "invalid analytics date range")
+		return
+	}
+	result, err := h.service.GetTeamAgentAnalytics(c.Request.Context(), uid, agentID, filter)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 func (h *DistributionHandler) UpdateTeamAgentStatus(c *gin.Context) {
 	uid, ok := distributionAgentUserID(c, h.service)
@@ -345,7 +433,12 @@ func (h *DistributionHandler) GetOverview(c *gin.Context) {
 	if !ok {
 		return
 	}
-	overview, err := h.service.GetOverview(c.Request.Context(), userID)
+	filter, filterErr := distributionAnalyticsFilter(c)
+	if filterErr != nil {
+		response.BadRequest(c, "invalid analytics date range")
+		return
+	}
+	overview, err := h.service.GetOverview(c.Request.Context(), userID, filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

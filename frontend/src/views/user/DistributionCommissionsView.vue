@@ -53,6 +53,7 @@
               <option value="reversed">已冲正</option>
             </select>
           </div>
+          <DistributionFilterSummary class="mt-2" :items="filterSummary" @remove="removeFilter" @clear="clearFilters" />
         </template>
         <template #table>
           <DataTable
@@ -169,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import TablePageLayout from "@/components/layout/TablePageLayout.vue";
 import DataTable from "@/components/common/DataTable.vue";
@@ -183,12 +184,20 @@ import {
 import type { Column } from "@/components/common/types";
 import { useAppStore } from "@/stores/app";
 import { extractApiErrorMessage } from "@/utils/apiError";
+import DistributionFilterSummary, { type DistributionFilterItem } from "@/components/distribution/DistributionFilterSummary.vue";
 
 const app = useAppStore();
 const items = ref<DistributionCommission[]>([]);
 const loading = ref(false);
 const search = ref("");
 const status = ref("");
+const filterSummary = computed<DistributionFilterItem[]>(() => [
+  search.value ? { key: 'search', label: '搜索', value: search.value } : null,
+  entryType.value ? { key: 'type', label: '来源', value: entryType.value === 'direct' ? '直属' : '团队差额' } : null,
+  status.value ? { key: 'status', label: '状态', value: statusText(status.value) } : null,
+].filter((item): item is DistributionFilterItem => Boolean(item)));
+function removeFilter(key: string) { if (key === 'search') search.value = ''; if (key === 'type') entryType.value = ''; if (key === 'status') status.value = ''; }
+function clearFilters() { search.value = ''; entryType.value = ''; status.value = ''; }
 const entryType = ref("");
 const pagination = ref({ page: 1, page_size: 20, total: 0, pages: 1 });
 let searchTimer: number | null = null;

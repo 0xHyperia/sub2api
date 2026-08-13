@@ -4,7 +4,7 @@
     aria-label="代理中心导航"
   >
     <div
-      class="distribution-tabs"
+      class="distribution-tabs overflow-x-auto"
       :style="{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }"
     >
       <RouterLink
@@ -65,12 +65,15 @@ onMounted(() => {
 .distribution-tabs {
   display: grid;
   width: 100%;
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
 }
+.distribution-tabs::-webkit-scrollbar { display: none; }
 .distribution-tab:hover {
   color: var(--ui-text);
 }
 .distribution-tab-active {
-  border-bottom-color: var(--ui-primary);
+  border-bottom-color: var(--ui-focus);
   color: var(--ui-text);
   font-weight: 600;
 }
@@ -79,6 +82,7 @@ onMounted(() => {
     display: flex;
     width: auto;
     gap: 4px;
+    overflow-x: visible;
   }
   .distribution-tab {
     min-width: 58px;

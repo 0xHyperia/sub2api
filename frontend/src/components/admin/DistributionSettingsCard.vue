@@ -44,6 +44,23 @@
         <label class="form-field"><span class="form-label">单笔提现上限</span><div class="relative"><input v-model="settings.maximum_withdrawal_cny" class="input pl-8" type="number" min="0" step="0.01"><span class="input-prefix">¥</span></div></label>
       </div>
 
+      <section class="space-y-4 border-t border-outline pt-5" aria-labelledby="distribution-reward-switches-title">
+        <div>
+          <h3 id="distribution-reward-switches-title" class="font-semibold text-foreground">{{ t('common.distributionRewards.title') }}</h3>
+          <p class="mt-1 text-sm text-foreground-subtle">{{ t('common.distributionRewards.description') }}</p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="flex min-h-10 items-center justify-between gap-3 rounded-panel border border-outline px-4 py-3">
+            <div><p class="form-label">{{ t('common.distributionRewards.registration') }}</p><p class="text-xs text-foreground-subtle">{{ t('common.distributionRewards.registrationHint') }}</p></div>
+            <Toggle v-model="settings.registration_reward_enabled" :aria-label="t('common.distributionRewards.registration')" />
+          </div>
+          <div class="flex min-h-10 items-center justify-between gap-3 rounded-panel border border-outline px-4 py-3">
+            <div><p class="form-label">{{ t('common.distributionRewards.recharge') }}</p><p class="text-xs text-foreground-subtle">{{ t('common.distributionRewards.rechargeHint') }}</p></div>
+            <Toggle v-model="settings.recharge_reward_enabled" :aria-label="t('common.distributionRewards.recharge')" />
+          </div>
+        </div>
+      </section>
+
       <div class="grid gap-4 border-t border-outline pt-5 sm:grid-cols-2 lg:grid-cols-4">
         <div class="flex min-h-10 items-center justify-between gap-3 sm:col-span-2 lg:col-span-1">
           <div><p class="form-label">允许代理提现</p><p class="text-xs text-foreground-subtle">关闭后只允许转入平台余额</p></div>
@@ -116,6 +133,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave, type NavigationGuardNext } from 'vue-router'
 import Icon from '@/components/icons/Icon.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -123,6 +141,7 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Toggle from '@/components/common/Toggle.vue'
 import { getSettings, updateSettings, type DistributionSettings } from '@/api/admin/distribution'
 const emit = defineEmits<{ success: [message: string]; error: [message: string] }>()
+const { t } = useI18n()
 const loading = ref(false)
 const loadError = ref(false)
 const saving = ref(false)

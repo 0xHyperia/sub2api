@@ -26,10 +26,10 @@ describe("distribution user view contracts", () => {
 
   it("adds team agents only through an exact email and granted permission", () => {
     const { template, source } = view("DistributionTeamView.vue");
-    expect(template).toContain('title="添加下级代理"');
+    expect(template).toContain("common.distributionCenter.addChild");
     expect(template).toContain('type="email"');
-    expect(template).toContain('placeholder="输入完整邮箱"');
-    expect(template).toContain("仅支持完整邮箱精确匹配");
+    expect(template).toContain("common.distributionCenter.emailPlaceholder");
+    expect(template).toContain("common.distributionCenter.exactEmailHint");
     expect(template).toContain("overview?.agent.can_recruit_subagents");
     expect(template).not.toContain("<RemoteEntityCombobox");
     expect(source).not.toContain("lookupTeamCandidates");
@@ -149,5 +149,21 @@ describe("distribution user view contracts", () => {
     expect(source).toContain("async function loadMoreVisits");
     expect(template).toContain("bg-info");
     expect(template).toContain("bg-success");
+  });
+
+  it("separates direct and team operations for L1 agents", () => {
+    const overview = view("DistributionView.vue");
+    const team = view("DistributionTeamView.vue");
+
+    expect(overview.template).toContain("common.distributionCenter.directTeamTitle");
+    expect(overview.template).toContain("common.distributionCenter.childRanking");
+    expect(overview.template).toContain("common.distributionCenter.settle");
+    expect(overview.template).toContain("<DistributionBusinessChart");
+    expect(overview.template).toContain("<DistributionAnalyticsRange");
+    expect(overview.source).toContain("analyticsRangeParams(range.value)");
+    expect(team.template).toContain("common.distributionCenter.teamBusiness");
+    expect(team.template).toContain("common.distributionCenter.teamCustomerPaid");
+    expect(team.template).toContain("<DistributionAnalyticsRange");
+    expect(team.source).toContain("...analyticsRangeParams(range.value)");
   });
 });

@@ -10,6 +10,7 @@
           <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
         </button>
       </header>
+      <AdminDistributionNav />
 
       <section class="card p-4 sm:p-5" aria-labelledby="promotion-filters-title">
         <div class="flex items-center justify-between gap-3">
@@ -175,6 +176,7 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import RemoteEntityCombobox from '@/components/admin/distribution/RemoteEntityCombobox.vue'
+import AdminDistributionNav from '@/components/admin/distribution/AdminDistributionNav.vue'
 import type { DistributionPickerOption } from '@/components/admin/distribution/types'
 import { getPromotionAnalytics, listPromotionVisits, lookupAgents, type DistributionPromotionAnalytics, type DistributionPromotionVisit } from '@/api/admin/distribution'
 import { useAppStore } from '@/stores/app'

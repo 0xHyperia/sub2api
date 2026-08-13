@@ -61,9 +61,79 @@ type DistributionAgent struct {
 	PayingCustomerCount    int64           `json:"paying_customer_count"`
 	CustomerPaidCNY        decimal.Decimal `json:"customer_paid_cny"`
 	ThisMonthCommissionCNY decimal.Decimal `json:"this_month_commission_cny"`
+	PeriodCustomerCount    int64           `json:"period_customer_count"`
+	PeriodPayingCustomers  int64           `json:"period_paying_customers"`
+	PeriodCustomerPaidCNY  decimal.Decimal `json:"period_customer_paid_cny"`
+	PeriodCommissionCNY    decimal.Decimal `json:"period_commission_cny"`
+	TeamCustomerCount      int64           `json:"team_customer_count"`
+	TeamPayingCustomers    int64           `json:"team_paying_customers"`
+	TeamCustomerPaidCNY    decimal.Decimal `json:"team_customer_paid_cny"`
+	TeamCommissionCNY      decimal.Decimal `json:"team_commission_cny"`
 	TotalConvertedCNY      decimal.Decimal `json:"total_converted_cny"`
 	LastCommissionAt       *time.Time      `json:"last_commission_at,omitempty"`
 	CreatedAt              time.Time       `json:"created_at,omitempty"`
+}
+
+type DistributionBusinessMetrics struct {
+	NewCustomers    int64           `json:"new_customers"`
+	PayingCustomers int64           `json:"paying_customers"`
+	PaidOrders      int64           `json:"paid_orders"`
+	CustomerPaidCNY decimal.Decimal `json:"customer_paid_cny"`
+	CommissionCNY   decimal.Decimal `json:"commission_cny"`
+	ConversionRate  decimal.Decimal `json:"conversion_rate"`
+	AverageOrderCNY decimal.Decimal `json:"average_order_cny"`
+}
+
+type DistributionPeriodComparison struct {
+	Current              DistributionBusinessMetrics `json:"current"`
+	Previous             DistributionBusinessMetrics `json:"previous"`
+	PaidGrowthRate       *decimal.Decimal            `json:"paid_growth_rate,omitempty"`
+	CommissionGrowthRate *decimal.Decimal            `json:"commission_growth_rate,omitempty"`
+}
+
+type DistributionDailyMetric struct {
+	Date            string          `json:"date"`
+	NewCustomers    int64           `json:"new_customers"`
+	PayingCustomers int64           `json:"paying_customers"`
+	CustomerPaidCNY decimal.Decimal `json:"customer_paid_cny"`
+	CommissionCNY   decimal.Decimal `json:"commission_cny"`
+}
+
+type DistributionBusinessAnalytics struct {
+	Days            int                          `json:"days"`
+	DateFrom        string                       `json:"date_from"`
+	DateTo          string                       `json:"date_to"`
+	TrendResolution string                       `json:"trend_resolution"`
+	Direct          DistributionPeriodComparison `json:"direct"`
+	Team            DistributionPeriodComparison `json:"team"`
+	Total           DistributionPeriodComparison `json:"total"`
+	DailyDirect     []DistributionDailyMetric    `json:"daily_direct"`
+	DailyTeam       []DistributionDailyMetric    `json:"daily_team"`
+	ActiveAgents    int64                        `json:"active_agents"`
+}
+
+type DistributionAnalyticsFilter struct {
+	Days     int
+	DateFrom *time.Time
+	DateTo   *time.Time
+}
+
+type DistributionAgentRanking struct {
+	AgentID         int64           `json:"agent_id"`
+	Email           string          `json:"email"`
+	Username        string          `json:"username"`
+	Depth           int             `json:"depth"`
+	CustomerPaidCNY decimal.Decimal `json:"customer_paid_cny"`
+	CommissionCNY   decimal.Decimal `json:"commission_cny"`
+	NewCustomers    int64           `json:"new_customers"`
+	PayingCustomers int64           `json:"paying_customers"`
+	ConversionRate  decimal.Decimal `json:"conversion_rate"`
+}
+
+type DistributionAgentAnalytics struct {
+	Agent     *DistributionAgent             `json:"agent"`
+	Analytics *DistributionBusinessAnalytics `json:"analytics"`
+	Ranking   []DistributionAgentRanking     `json:"ranking"`
 }
 
 type DistributionAdminListFilter struct {
@@ -75,6 +145,9 @@ type DistributionAdminListFilter struct {
 	AgentID   int64
 	SortBy    string
 	SortOrder string
+	Days      int
+	DateFrom  *time.Time
+	DateTo    *time.Time
 }
 
 type DistributionAdminCommissionListFilter struct {
@@ -118,6 +191,9 @@ type DistributionUserListFilter struct {
 	Search    string
 	Status    string
 	EntryType string
+	Days      int
+	DateFrom  *time.Time
+	DateTo    *time.Time
 }
 
 type DistributionUserOption struct {
@@ -189,40 +265,46 @@ type DistributionCommissionResult struct {
 }
 
 type DistributionOverview struct {
-	Agent                    *DistributionAgent `json:"agent"`
-	DistributionEnabled      bool               `json:"distribution_enabled"`
-	PromotionTrackingEnabled bool               `json:"promotion_tracking_enabled"`
-	CustomerCount            int64              `json:"customer_count"`
-	TeamCount                int64              `json:"team_count"`
-	PayingCustomerCount      int64              `json:"paying_customer_count"`
-	NewCustomersThisMonth    int64              `json:"new_customers_this_month"`
-	CustomerPaidCNY          decimal.Decimal    `json:"customer_paid_cny"`
-	ThisMonthCustomerPaid    decimal.Decimal    `json:"this_month_customer_paid_cny"`
-	ThisMonthCommissionCNY   decimal.Decimal    `json:"this_month_commission_cny"`
+	Agent                    *DistributionAgent             `json:"agent"`
+	DistributionEnabled      bool                           `json:"distribution_enabled"`
+	PromotionTrackingEnabled bool                           `json:"promotion_tracking_enabled"`
+	CustomerCount            int64                          `json:"customer_count"`
+	TeamCount                int64                          `json:"team_count"`
+	PayingCustomerCount      int64                          `json:"paying_customer_count"`
+	NewCustomersThisMonth    int64                          `json:"new_customers_this_month"`
+	CustomerPaidCNY          decimal.Decimal                `json:"customer_paid_cny"`
+	ThisMonthCustomerPaid    decimal.Decimal                `json:"this_month_customer_paid_cny"`
+	ThisMonthCommissionCNY   decimal.Decimal                `json:"this_month_commission_cny"`
+	Analytics                *DistributionBusinessAnalytics `json:"analytics"`
+	TeamRanking              []DistributionAgentRanking     `json:"team_ranking"`
 }
 
 type DistributionAdminOverview struct {
-	TotalAgents            int64           `json:"total_agents"`
-	ActiveAgents           int64           `json:"active_agents"`
-	SuspendedAgents        int64           `json:"suspended_agents"`
-	NewAgentsThisMonth     int64           `json:"new_agents_this_month"`
-	TotalCustomers         int64           `json:"total_customers"`
-	PayingCustomers        int64           `json:"paying_customers"`
-	NewCustomersThisMonth  int64           `json:"new_customers_this_month"`
-	CustomerPaidCNY        decimal.Decimal `json:"customer_paid_cny"`
-	TotalCommissionCNY     decimal.Decimal `json:"total_commission_cny"`
-	MonthCommissionCNY     decimal.Decimal `json:"month_commission_cny"`
-	ReversedCommissionCNY  decimal.Decimal `json:"reversed_commission_cny"`
-	AvailableCommissionCNY decimal.Decimal `json:"available_commission_cny"`
-	FrozenCommissionCNY    decimal.Decimal `json:"frozen_commission_cny"`
-	ReservedCommissionCNY  decimal.Decimal `json:"reserved_commission_cny"`
-	DebtCommissionCNY      decimal.Decimal `json:"debt_commission_cny"`
-	PendingWithdrawals     int64           `json:"pending_withdrawals"`
-	PendingWithdrawalCNY   decimal.Decimal `json:"pending_withdrawal_cny"`
-	PayingWithdrawals      int64           `json:"paying_withdrawals"`
-	PayingWithdrawalCNY    decimal.Decimal `json:"paying_withdrawal_cny"`
-	PaidThisMonthCNY       decimal.Decimal `json:"paid_this_month_cny"`
-	OverduePendingCount    int64           `json:"overdue_pending_count"`
+	TotalAgents                 int64                          `json:"total_agents"`
+	ActiveAgents                int64                          `json:"active_agents"`
+	SuspendedAgents             int64                          `json:"suspended_agents"`
+	NewAgentsThisMonth          int64                          `json:"new_agents_this_month"`
+	TotalCustomers              int64                          `json:"total_customers"`
+	PayingCustomers             int64                          `json:"paying_customers"`
+	NewCustomersThisMonth       int64                          `json:"new_customers_this_month"`
+	CustomerPaidCNY             decimal.Decimal                `json:"customer_paid_cny"`
+	TotalCommissionCNY          decimal.Decimal                `json:"total_commission_cny"`
+	MonthCommissionCNY          decimal.Decimal                `json:"month_commission_cny"`
+	ReversedCommissionCNY       decimal.Decimal                `json:"reversed_commission_cny"`
+	AvailableCommissionCNY      decimal.Decimal                `json:"available_commission_cny"`
+	FrozenCommissionCNY         decimal.Decimal                `json:"frozen_commission_cny"`
+	ReservedCommissionCNY       decimal.Decimal                `json:"reserved_commission_cny"`
+	DebtCommissionCNY           decimal.Decimal                `json:"debt_commission_cny"`
+	PendingWithdrawals          int64                          `json:"pending_withdrawals"`
+	PendingWithdrawalCNY        decimal.Decimal                `json:"pending_withdrawal_cny"`
+	PayingWithdrawals           int64                          `json:"paying_withdrawals"`
+	PayingWithdrawalCNY         decimal.Decimal                `json:"paying_withdrawal_cny"`
+	PaidThisMonthCNY            decimal.Decimal                `json:"paid_this_month_cny"`
+	OverduePendingCount         int64                          `json:"overdue_pending_count"`
+	PeriodRegistrationRewardCNY decimal.Decimal                `json:"period_registration_reward_cny"`
+	PeriodRechargeRewardCNY     decimal.Decimal                `json:"period_recharge_reward_cny"`
+	Analytics                   *DistributionBusinessAnalytics `json:"analytics"`
+	AgentRanking                []DistributionAgentRanking     `json:"agent_ranking"`
 }
 
 type DistributionSettings struct {
@@ -249,6 +331,25 @@ type DistributionSettings struct {
 	PromotionCollectDevice       bool            `json:"promotion_collect_device"`
 	PromotionBotFilterEnabled    bool            `json:"promotion_bot_filter_enabled"`
 	PromotionDetailRetentionDays int             `json:"promotion_detail_retention_days"`
+	RegistrationRewardEnabled    bool            `json:"registration_reward_enabled"`
+	RechargeRewardEnabled        bool            `json:"recharge_reward_enabled"`
+}
+
+type DistributionRewardRule struct {
+	AgentID               int64           `json:"agent_id"`
+	RegistrationEnabled   bool            `json:"registration_enabled"`
+	RegistrationRewardCNY decimal.Decimal `json:"registration_reward_cny"`
+	RechargeEnabled       bool            `json:"recharge_enabled"`
+	RechargeThresholdCNY  decimal.Decimal `json:"recharge_threshold_cny"`
+	RechargeRewardCNY     decimal.Decimal `json:"recharge_reward_cny"`
+}
+
+type DistributionRewardRuleInput struct {
+	RegistrationEnabled   bool            `json:"registration_enabled"`
+	RegistrationRewardCNY decimal.Decimal `json:"registration_reward_cny"`
+	RechargeEnabled       bool            `json:"recharge_enabled"`
+	RechargeThresholdCNY  decimal.Decimal `json:"recharge_threshold_cny"`
+	RechargeRewardCNY     decimal.Decimal `json:"recharge_reward_cny"`
 }
 
 type DistributionPromotionVisitInput struct {
@@ -398,6 +499,7 @@ type DistributionGrantAgentInput struct {
 	ParentAgentID   *int64 `json:"parent_agent_id,omitempty"`
 	RateOverrideBPS *int   `json:"rate_override_bps,omitempty"`
 	PromotionCode   string `json:"promotion_code,omitempty"`
+	UpgradeCustomer bool   `json:"upgrade_customer,omitempty"`
 	GrantedBy       int64  `json:"-"`
 }
 
@@ -497,6 +599,7 @@ type DistributionCustomer struct {
 	UserID             int64           `json:"user_id"`
 	Email              string          `json:"email"`
 	Username           string          `json:"username"`
+	RegisteredAt       *time.Time      `json:"registered_at,omitempty"`
 	AgentID            int64           `json:"agent_id,omitempty"`
 	AgentUserID        int64           `json:"agent_user_id,omitempty"`
 	AgentPromotionCode string          `json:"agent_promotion_code,omitempty"`
@@ -556,11 +659,13 @@ type DistributionRepository interface {
 	CleanupPromotionDetails(ctx context.Context, batchSize int) (DistributionPromotionCleanupResult, error)
 	GetAgentByUserID(ctx context.Context, userID int64) (*DistributionAgent, error)
 	IsAgent(ctx context.Context, userID int64) (bool, error)
-	GetOverview(ctx context.Context, userID int64) (*DistributionOverview, error)
+	GetOverview(ctx context.Context, userID int64, filter DistributionAnalyticsFilter) (*DistributionOverview, error)
 	AccruePaidOrder(ctx context.Context, input DistributionCommissionInput) (*DistributionCommissionResult, error)
+	AccrueRegistrationReward(ctx context.Context, customerUserID int64) error
 	ReverseRefund(ctx context.Context, paymentOrderID int64, refundedActualAmount decimal.Decimal) error
 	AdminGetSettings(ctx context.Context) (*DistributionSettings, error)
-	AdminGetOverview(ctx context.Context) (*DistributionAdminOverview, error)
+	AdminGetOverview(ctx context.Context, filter DistributionAnalyticsFilter) (*DistributionAdminOverview, error)
+	AdminGetAgentAnalytics(ctx context.Context, agentID int64, filter DistributionAnalyticsFilter) (*DistributionAgentAnalytics, error)
 	AdminUpdateSettings(ctx context.Context, settings DistributionSettings, adminID int64) error
 	AdminSetFXRate(ctx context.Context, currency string, rate decimal.Decimal, adminID int64) error
 	AdminGrantAgent(ctx context.Context, input DistributionGrantAgentInput) (*DistributionAgent, error)
@@ -568,6 +673,8 @@ type DistributionRepository interface {
 	AdminUpdateAgentRate(ctx context.Context, agentID, adminID int64, rateOverrideBPS *int, reason string) error
 	AdminUpdateAgentRecruitmentPermission(ctx context.Context, agentID, adminID int64, enabled bool, reason string) error
 	AdminUpdateAgentPromotionStatsPermission(ctx context.Context, agentID, adminID int64, enabled bool, reason string) error
+	GetAgentRewardRule(ctx context.Context, actorUserID, agentID int64, admin bool) (*DistributionRewardRule, error)
+	UpdateAgentRewardRule(ctx context.Context, actorUserID, agentID int64, admin bool, input DistributionRewardRuleInput) error
 	AdminReviewWithdrawal(ctx context.Context, withdrawalID, adminID int64, status, note, reference string) error
 	AdminBatchReviewWithdrawals(ctx context.Context, withdrawalIDs []int64, adminID int64, status, note string) error
 	AdminListWithdrawals(ctx context.Context, filter DistributionAdminWithdrawalListFilter) ([]DistributionWithdrawal, int64, error)
@@ -581,6 +688,7 @@ type DistributionRepository interface {
 	ListCustomers(ctx context.Context, userID int64, filter DistributionUserListFilter) ([]DistributionCustomer, int64, error)
 	ListCommissions(ctx context.Context, userID int64, filter DistributionUserListFilter) ([]DistributionCommission, int64, error)
 	ListTeam(ctx context.Context, userID int64, filter DistributionUserListFilter) ([]DistributionAgent, int64, error)
+	GetTeamAgentAnalytics(ctx context.Context, userID, agentID int64, filter DistributionAnalyticsFilter) (*DistributionAgentAnalytics, error)
 	UpdateTeamAgentStatus(ctx context.Context, userID, agentID int64, status string) error
 	AdminUpdateLevel(ctx context.Context, depth, defaultRateBPS, maxChildRateBPS int, active bool) error
 	AdminCorrectCustomerBinding(ctx context.Context, userID, agentID, adminID int64, reason string) error
@@ -600,8 +708,52 @@ func (s *DistributionService) GetPayoutAccount(ctx context.Context, userID int64
 	return s.repo.GetPayoutAccount(ctx, userID)
 }
 
-func (s *DistributionService) AdminGetOverview(ctx context.Context) (*DistributionAdminOverview, error) {
-	return s.repo.AdminGetOverview(ctx)
+func normalizeDistributionAnalyticsDays(days int) int {
+	switch days {
+	case 7, 30, 90:
+		return days
+	default:
+		return 30
+	}
+}
+
+func normalizeDistributionAnalyticsFilter(filter DistributionAnalyticsFilter) (DistributionAnalyticsFilter, error) {
+	if filter.DateFrom == nil && filter.DateTo == nil {
+		filter.Days = normalizeDistributionAnalyticsDays(filter.Days)
+		return filter, nil
+	}
+	if filter.DateFrom == nil || filter.DateTo == nil {
+		return DistributionAnalyticsFilter{}, infraerrors.BadRequest("INVALID_ANALYTICS_RANGE", "date_from and date_to are required together")
+	}
+	location := time.FixedZone("Asia/Shanghai", 8*60*60)
+	from := filter.DateFrom.In(location)
+	to := filter.DateTo.In(location)
+	from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, location)
+	to = time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, location)
+	days := int(to.Sub(from).Hours()/24) + 1
+	today := time.Now().In(location)
+	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, location)
+	if days < 1 || days > 366 || to.After(today) {
+		return DistributionAnalyticsFilter{}, infraerrors.BadRequest("INVALID_ANALYTICS_RANGE", "analytics range must contain 1 to 366 days and cannot end in the future")
+	}
+	filter.Days, filter.DateFrom, filter.DateTo = days, &from, &to
+	return filter, nil
+}
+
+func (s *DistributionService) AdminGetOverview(ctx context.Context, filter DistributionAnalyticsFilter) (*DistributionAdminOverview, error) {
+	normalized, err := normalizeDistributionAnalyticsFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.AdminGetOverview(ctx, normalized)
+}
+
+func (s *DistributionService) AdminGetAgentAnalytics(ctx context.Context, agentID int64, filter DistributionAnalyticsFilter) (*DistributionAgentAnalytics, error) {
+	normalized, err := normalizeDistributionAnalyticsFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.AdminGetAgentAnalytics(ctx, agentID, normalized)
 }
 
 func (s *DistributionService) AdminListAgentEvents(ctx context.Context, agentID int64) ([]DistributionAgentEvent, error) {
@@ -647,7 +799,23 @@ func (s *DistributionService) ListCommissions(ctx context.Context, userID int64,
 	return s.repo.ListCommissions(ctx, userID, normalizeDistributionUserListFilter(filter))
 }
 func (s *DistributionService) ListTeam(ctx context.Context, userID int64, filter DistributionUserListFilter) ([]DistributionAgent, int64, error) {
+	normalized, err := normalizeDistributionAnalyticsFilter(DistributionAnalyticsFilter{Days: filter.Days, DateFrom: filter.DateFrom, DateTo: filter.DateTo})
+	if err != nil {
+		return nil, 0, err
+	}
+	filter.Days, filter.DateFrom, filter.DateTo = normalized.Days, normalized.DateFrom, normalized.DateTo
 	return s.repo.ListTeam(ctx, userID, normalizeDistributionUserListFilter(filter))
+}
+
+func (s *DistributionService) GetTeamAgentAnalytics(ctx context.Context, userID, agentID int64, filter DistributionAnalyticsFilter) (*DistributionAgentAnalytics, error) {
+	if agentID <= 0 {
+		return nil, infraerrors.BadRequest("INVALID_AGENT", "invalid team agent")
+	}
+	normalized, err := normalizeDistributionAnalyticsFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.GetTeamAgentAnalytics(ctx, userID, agentID, normalized)
 }
 
 func (s *DistributionService) UpdateTeamAgentStatus(ctx context.Context, userID, agentID int64, status string) error {
@@ -804,6 +972,11 @@ func normalizeAdminAnomalyFilter(filter DistributionAdminAnomalyListFilter) Dist
 }
 
 func (s *DistributionService) AdminListAgents(ctx context.Context, filter DistributionAdminListFilter) ([]DistributionAgent, int64, error) {
+	normalized, err := normalizeDistributionAnalyticsFilter(DistributionAnalyticsFilter{Days: filter.Days, DateFrom: filter.DateFrom, DateTo: filter.DateTo})
+	if err != nil {
+		return nil, 0, err
+	}
+	filter.Days, filter.DateFrom, filter.DateTo = normalized.Days, normalized.DateFrom, normalized.DateTo
 	return s.repo.AdminListAgents(ctx, normalizeDistributionAdminListFilter(filter))
 }
 func (s *DistributionService) AdminListCustomers(ctx context.Context, filter DistributionAdminListFilter) ([]DistributionCustomer, int64, error) {
@@ -1143,11 +1316,19 @@ func (s *DistributionService) ValidatePromotionCode(ctx context.Context, rawCode
 	return s.repo.ValidatePromotionCode(ctx, code)
 }
 
-func (s *DistributionService) GetOverview(ctx context.Context, userID int64) (*DistributionOverview, error) {
+func (s *DistributionService) GetOverview(ctx context.Context, userID int64, filters ...DistributionAnalyticsFilter) (*DistributionOverview, error) {
 	if s == nil || s.repo == nil {
 		return nil, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "distribution service unavailable")
 	}
-	return s.repo.GetOverview(ctx, userID)
+	filter := DistributionAnalyticsFilter{Days: 30}
+	if len(filters) > 0 {
+		filter = filters[0]
+	}
+	normalized, err := normalizeDistributionAnalyticsFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.GetOverview(ctx, userID, normalized)
 }
 
 func (s *DistributionService) IsAgent(ctx context.Context, userID int64) bool {
@@ -1221,15 +1402,35 @@ func (s *DistributionService) AdminSetFXRate(ctx context.Context, currency strin
 	return s.repo.AdminSetFXRate(ctx, currency, rate, adminID)
 }
 func (s *DistributionService) AdminGrantAgent(ctx context.Context, input DistributionGrantAgentInput) (*DistributionAgent, error) {
-	if input.UserID <= 0 || input.Depth != 1 {
+	if input.UserID <= 0 || (input.Depth != 1 && input.Depth != 2) {
 		return nil, infraerrors.BadRequest("INVALID_AGENT", "invalid agent")
 	}
-	input.ParentAgentID = nil
+	if input.Depth == 1 {
+		input.ParentAgentID = nil
+	} else if input.ParentAgentID == nil {
+		return nil, infraerrors.BadRequest("PARENT_AGENT_REQUIRED", "L2 agent requires an L1 parent")
+	}
 	input.PromotionCode = normalizeDistributionCode(input.PromotionCode)
 	if input.PromotionCode != "" && !validDistributionCode(input.PromotionCode) {
 		return nil, ErrDistributionCodeInvalid
 	}
 	return s.repo.AdminGrantAgent(ctx, input)
+}
+func (s *DistributionService) GetAgentRewardRule(ctx context.Context, actorUserID, agentID int64, admin bool) (*DistributionRewardRule, error) {
+	if agentID <= 0 || (!admin && actorUserID <= 0) {
+		return nil, infraerrors.BadRequest("INVALID_AGENT", "invalid agent")
+	}
+	return s.repo.GetAgentRewardRule(ctx, actorUserID, agentID, admin)
+}
+func (s *DistributionService) UpdateAgentRewardRule(ctx context.Context, actorUserID, agentID int64, admin bool, input DistributionRewardRuleInput) error {
+	if agentID <= 0 || (!admin && actorUserID <= 0) || input.RegistrationRewardCNY.IsNegative() ||
+		input.RechargeThresholdCNY.IsNegative() || input.RechargeRewardCNY.IsNegative() {
+		return infraerrors.BadRequest("INVALID_REWARD_RULE", "reward amounts cannot be negative")
+	}
+	if input.RechargeRewardCNY.IsPositive() && !input.RechargeThresholdCNY.IsPositive() {
+		return infraerrors.BadRequest("INVALID_REWARD_RULE", "recharge threshold must be positive when reward is enabled")
+	}
+	return s.repo.UpdateAgentRewardRule(ctx, actorUserID, agentID, admin, input)
 }
 func (s *DistributionService) GrantL2Agent(ctx context.Context, l1UserID int64, request DistributionGrantChildAgentInput) (*DistributionAgent, error) {
 	parent, err := s.repo.GetAgentByUserID(ctx, l1UserID)

@@ -10,6 +10,7 @@
             </div>
             <div class="flex shrink-0 items-center gap-2"><button type="button" class="btn btn-secondary h-10 px-3" title="导出当前筛选" aria-label="导出代理客户" :disabled="exporting" @click="downloadExport"><Icon name="download" size="sm" /><span class="hidden sm:inline">导出</span></button><button type="button" class="btn btn-secondary btn-icon" title="刷新" aria-label="刷新" :disabled="loading" @click="load"><Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" /></button></div>
           </header>
+          <AdminDistributionNav class="mt-5" />
         </template>
 
         <template #filters>
@@ -36,6 +37,7 @@
               <span v-if="activeFilterCount" class="badge badge-primary ml-1">{{ activeFilterCount }}</span>
             </button>
           </div>
+          <DistributionFilterSummary class="mt-2" :items="filterSummary" @remove="removeFilter" @clear="clearFilters" />
         </template>
 
         <template #table>
@@ -67,6 +69,7 @@
 			<template #cell-total_paid="{ row }"><span class="font-medium tabular-nums">{{ money(row.total_paid_cny) }}</span></template>
 			<template #cell-commission="{ row }"><span class="font-semibold tabular-nums text-success-foreground">{{ money(row.commission_cny) }}</span></template>
 			<template #cell-refunded="{ row }"><span class="tabular-nums" :class="Number(row.refunded_cny) > 0 ? 'text-danger-foreground' : 'text-foreground-subtle'">{{ money(row.refunded_cny) }}</span></template>
+			<template #cell-registered_at="{ row }"><span class="whitespace-nowrap text-sm text-foreground-muted">{{ row.registered_at ? formatDate(row.registered_at) : '-' }}</span></template>
 			<template #cell-last_paid_at="{ row }"><span class="whitespace-nowrap text-sm text-foreground-muted">{{ row.last_paid_at ? formatDate(row.last_paid_at) : '尚未付费' }}</span></template>
             <template #cell-actions="{ row }">
               <button
@@ -100,7 +103,7 @@
                 </div>
 				<dl class="grid grid-cols-3 gap-2 rounded-control bg-surface-subtle px-3 py-2.5 text-xs"><div><dt class="text-foreground-subtle">实付金额</dt><dd class="mt-1 font-semibold">{{ money(row.total_paid_cny) }}</dd></div><div class="text-center"><dt class="text-foreground-subtle">贡献佣金</dt><dd class="mt-1 font-semibold text-success-foreground">{{ money(row.commission_cny) }}</dd></div><div class="text-right"><dt class="text-foreground-subtle">订单 / 退款</dt><dd class="mt-1 font-semibold">{{ row.order_count || 0 }} / {{ money(row.refunded_cny) }}</dd></div></dl>
                 <div class="flex items-center justify-between gap-3 border-t border-outline pt-3">
-				  <time class="text-xs text-foreground-muted">{{ row.last_paid_at ? `最近付费 ${formatDate(row.last_paid_at)}` : `绑定于 ${formatDate(row.bound_at)}` }}</time>
+				  <div class="text-xs text-foreground-muted"><time class="block">注册于 {{ row.registered_at ? formatDate(row.registered_at) : '-' }}</time><time class="mt-0.5 block">绑定于 {{ formatDate(row.bound_at) }}</time></div>
                   <button type="button" class="btn btn-secondary btn-sm" @click="openCorrectionDialog(row)">
                     <Icon name="edit" size="sm" />调整归属
                   </button>
@@ -248,6 +251,7 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import RemoteEntityCombobox from '@/components/admin/distribution/RemoteEntityCombobox.vue'
+import AdminDistributionNav from '@/components/admin/distribution/AdminDistributionNav.vue'
 import type { DistributionPickerOption } from '@/components/admin/distribution/types'
 import type { Column } from '@/components/common/types'
 import type { DistributionCustomer } from '@/api/distribution'
@@ -262,6 +266,7 @@ import {
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { saveDistributionExport } from '@/utils/distributionExport'
+import DistributionFilterSummary, { type DistributionFilterItem } from '@/components/distribution/DistributionFilterSummary.vue'
 
 const app = useAppStore()
 const route = useRoute()
@@ -288,6 +293,17 @@ const correctionReason = ref('')
 const correctionSaving = ref(false)
 const bindingEvents = ref<DistributionBindingEvent[]>([])
 
+const requestedAgentId = Number(route.query.agent_id || 0)
+if (requestedAgentId > 0) {
+  void lookupAgents(String(requestedAgentId), { include_inactive: true }).then((agents) => {
+    const agent = agents.find((item) => item.agent_id === requestedAgentId)
+    if (!agent) return
+    appliedAgent.value = { id: agent.agent_id, email: agent.email, username: agent.username }
+    draftAgent.value = appliedAgent.value
+    void load()
+  })
+}
+
 const columns: Column[] = [
 	{ key: 'email', label: '客户', sortable: true },
 	{ key: 'agent', label: '所属代理', sortable: true },
@@ -295,11 +311,22 @@ const columns: Column[] = [
 	{ key: 'total_paid', label: '累计实付', sortable: true },
 	{ key: 'commission', label: '贡献佣金', sortable: true },
 	{ key: 'refunded', label: '退款金额', sortable: true },
+	{ key: 'registered_at', label: '注册时间', sortable: true },
 	{ key: 'last_paid_at', label: '最近付费', sortable: true },
   { key: 'actions', label: '操作' },
 ]
 
 const activeFilterCount = computed(() => Number(Boolean(appliedDepth.value)) + Number(Boolean(appliedAgent.value)))
+const filterSummary = computed<DistributionFilterItem[]>(() => [
+  search.value ? { key: 'search', label: '搜索', value: search.value } : null,
+  appliedDepth.value ? { key: 'depth', label: '等级', value: appliedDepth.value === '1' ? '一级代理' : '二级代理' } : null,
+  appliedAgent.value ? { key: 'agent', label: '代理', value: appliedAgent.value.email || appliedAgent.value.username } : null,
+].filter((item): item is DistributionFilterItem => Boolean(item)))
+function removeFilter(key: string) {
+  if (key === 'search') search.value = ''
+  if (key === 'depth') { appliedDepth.value = ''; draftDepth.value = ''; void load() }
+  if (key === 'agent') { appliedAgent.value = null; draftAgent.value = null; void load() }
+}
 const canReviewCorrection = computed(() => Boolean(
   selectedCustomer.value
   && targetAgent.value

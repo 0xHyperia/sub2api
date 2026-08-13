@@ -1,78 +1,32 @@
 <template>
   <AppLayout>
     <div class="mx-auto w-full max-w-[1440px] space-y-5">
-      <header class="flex min-w-0 items-center justify-between gap-3">
-        <div class="min-w-0">
-          <h1 class="page-title">代理中心</h1>
-          <p class="page-description">经营数据与佣金概览</p>
-        </div>
-        <button class="btn btn-secondary btn-icon shrink-0" :disabled="loading" title="刷新" aria-label="刷新" @click="load">
-          <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
-        </button>
+      <header class="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0"><h1 class="page-title">{{ t('common.distributionCenter.title') }}</h1><p class="page-description">{{ t('common.distributionCenter.description') }}</p></div>
+        <div class="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 xl:flex-none"><DistributionAnalyticsRange v-model="range" @change="load" /><button class="btn btn-secondary btn-icon" :disabled="loading" :title="t('common.refresh')" :aria-label="t('common.refresh')" @click="load"><Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" /></button></div>
       </header>
-
       <DistributionNav />
+      <div v-if="loading && !overview" class="card flex min-h-48 items-center justify-center"><LoadingSpinner /></div>
+      <template v-else-if="overview && analytics">
+        <section v-if="overview.agent.status !== 'active'" class="flex items-start gap-3 rounded-panel border border-warning/40 bg-warning-subtle p-4 text-sm text-warning-foreground"><Icon name="exclamationTriangle" size="sm" class="mt-0.5 shrink-0" /><div><p class="font-medium">{{ t('common.distributionCenter.inactiveTitle', { status: t(overview.agent.status === 'suspended' ? 'common.distributionCenter.suspended' : 'common.distributionCenter.revoked') }) }}</p><p class="mt-1">{{ t('common.distributionCenter.inactiveHint') }}</p></div></section>
 
-      <div v-if="loading && !overview" class="card flex min-h-48 items-center justify-center">
-        <LoadingSpinner />
-      </div>
-
-      <template v-else-if="overview">
-        <section
-          v-if="overview.agent.status !== 'active'"
-          class="flex items-start gap-3 rounded-panel border border-warning/40 bg-warning-subtle p-4 text-sm text-warning-foreground"
-        >
-          <Icon name="exclamationTriangle" size="sm" class="mt-0.5 shrink-0" />
-          <div>
-            <p class="font-medium">代理账号{{ overview.agent.status === 'suspended' ? '已暂停' : '已撤销' }}</p>
-            <p class="mt-1">推广链接暂时不能绑定新客户，结算和团队操作也不可用。请联系平台管理员处理。</p>
-          </div>
+        <section class="agent-balance">
+          <div class="balance-primary"><p>{{ t('common.distributionCenter.availableCommission') }}</p><strong>{{ money(overview.agent.available_cny) }}</strong><RouterLink to="/distribution/withdrawals" class="btn btn-primary btn-sm"><Icon name="creditCard" size="sm" />{{ t('common.distributionCenter.settle') }}</RouterLink></div>
+          <dl><div><dt>{{ t('common.distributionCenter.frozenCommission') }}</dt><dd>{{ money(overview.agent.frozen_cny) }}</dd></div><div><dt>{{ t('common.distributionAnalytics.currentCommission') }}</dt><dd>{{ money(analytics.total.current.commission_cny) }}</dd><small :class="growthClass(analytics.total.commission_growth_rate)">{{ growthText(analytics.total.commission_growth_rate) }}</small></div><div><dt>{{ t('common.distributionAnalytics.currentPaid') }}</dt><dd>{{ money(analytics.total.current.customer_paid_cny) }}</dd><small :class="growthClass(analytics.total.paid_growth_rate)">{{ growthText(analytics.total.paid_growth_rate) }}</small></div><div><dt>{{ t('common.distributionAnalytics.newCustomers') }}</dt><dd>{{ analytics.total.current.new_customers }}</dd><small>{{ t('common.distributionCenter.payingCount', { count: analytics.total.current.paying_customers }) }}</small></div><div><dt>{{ t('common.distributionAnalytics.conversionRate') }}</dt><dd>{{ percent(analytics.total.current.conversion_rate) }}</dd><small>{{ t('common.distributionAnalytics.cohortHint') }}</small></div></dl>
         </section>
 
-        <section class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6" aria-label="代理经营指标">
-          <article v-for="metric in metrics" :key="metric.label" class="card min-w-0 p-4">
-            <div class="flex items-center justify-between gap-2">
-              <p class="truncate text-sm text-foreground-subtle">{{ metric.label }}</p>
-              <Icon :name="metric.icon" size="sm" class="shrink-0 text-foreground-muted" />
-            </div>
-            <p class="mt-2 truncate text-xl font-semibold tabular-nums" :class="metric.emphasis ? 'text-success-foreground' : ''">
-              {{ metric.value }}
-            </p>
-            <p v-if="metric.hint" class="mt-1 truncate text-xs text-foreground-muted">{{ metric.hint }}</p>
-          </article>
+        <DistributionBusinessChart :direct="analytics.daily_direct" :team="analytics.daily_team" :resolution="analytics.trend_resolution" :date-from="analytics.date_from" :date-to="analytics.date_to" :show-scope="isL1" :title="t('common.distributionAnalytics.trend')" :subtitle="rangeLabel" />
+
+        <section v-if="isL1" class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,.85fr)]">
+          <div class="panel"><div class="panel-heading"><div><h2>{{ t('common.distributionCenter.directTeamTitle') }}</h2><p>{{ t('common.distributionCenter.directTeamHint') }}</p></div><RouterLink to="/distribution/team" class="text-xs font-medium text-brand">{{ t('common.distributionCenter.teamManagement') }}</RouterLink></div><div class="hidden overflow-x-auto sm:block"><table class="business-table"><thead><tr><th>{{ t('common.distributionAnalytics.businessScope') }}</th><th>{{ t('common.distributionAnalytics.newCustomers') }}</th><th>{{ t('common.distributionAnalytics.payingCustomers') }}</th><th>{{ t('common.distributionAnalytics.conversionRate') }}</th><th>{{ t('common.distributionAnalytics.customerPaid') }}</th><th>{{ t('common.distributionCenter.myCommission') }}</th></tr></thead><tbody><tr v-for="row in businessRows" :key="row.label"><td><span :class="row.badge">{{ row.label }}</span></td><td>{{ row.data.new_customers }}</td><td>{{ row.data.paying_customers }}</td><td>{{ percent(row.data.conversion_rate) }}</td><td>{{ money(row.data.customer_paid_cny) }}</td><td>{{ money(row.data.commission_cny) }}</td></tr></tbody></table></div><div class="business-summaries sm:hidden"><article v-for="row in businessRows" :key="row.label"><div class="flex items-center justify-between gap-3"><span :class="row.badge">{{ row.label }}</span><strong>{{ percent(row.data.conversion_rate) }}</strong></div><dl><div><dt>{{ t('common.distributionAnalytics.newCustomers') }} / {{ t('common.distributionAnalytics.payingCustomers') }}</dt><dd>{{ row.data.new_customers }} / {{ row.data.paying_customers }}</dd></div><div><dt>{{ t('common.distributionAnalytics.customerPaid') }}</dt><dd>{{ money(row.data.customer_paid_cny) }}</dd></div><div><dt>{{ t('common.distributionCenter.myCommission') }}</dt><dd>{{ money(row.data.commission_cny) }}</dd></div></dl></article></div></div>
+          <div class="panel"><div class="panel-heading"><div><h2>{{ t('common.distributionCenter.childRanking') }}</h2><p>{{ t('common.distributionCenter.childRankingHint') }}</p></div><span class="badge badge-gray">{{ t('common.distributionCenter.activeCount', { count: analytics.active_agents }) }}</span></div><div v-if="overview.team_ranking.length" class="divide-y divide-outline"><RouterLink v-for="(agent,index) in overview.team_ranking" :key="agent.agent_id" to="/distribution/team" class="ranking-row"><span class="rank">{{ index + 1 }}</span><span class="min-w-0 flex-1"><strong class="block truncate text-sm">{{ agent.username || agent.email }}</strong><small class="block truncate">{{ t('common.distributionCenter.acquiredPaid', { newCount: agent.new_customers, payingCount: agent.paying_customers }) }}</small></span><span class="text-right"><strong class="block text-sm tabular-nums">{{ money(agent.customer_paid_cny) }}</strong><small class="block">{{ t('common.distributionCenter.teamCommission', { amount: money(agent.commission_cny) }) }}</small></span></RouterLink></div><div v-else class="empty">{{ t('common.distributionCenter.noChildSales') }}</div></div>
         </section>
 
-        <section class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
-          <div class="card p-4 sm:p-5">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h2 class="text-base font-semibold">本月经营</h2>
-                <p class="mt-1 text-sm text-foreground-subtle">客户充值与新增关系</p>
-              </div>
-              <span class="badge" :class="statusClass">{{ statusText }}</span>
-            </div>
-            <dl class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div><dt class="text-xs text-foreground-subtle">本月客户实付</dt><dd class="mt-1 font-semibold tabular-nums">{{ money(overview.this_month_customer_paid_cny) }}</dd></div>
-              <div><dt class="text-xs text-foreground-subtle">本月新增客户</dt><dd class="mt-1 font-semibold tabular-nums">{{ overview.new_customers_this_month }}</dd></div>
-              <div><dt class="text-xs text-foreground-subtle">付费客户</dt><dd class="mt-1 font-semibold tabular-nums">{{ overview.paying_customer_count }}</dd></div>
-              <div><dt class="text-xs text-foreground-subtle">下级代理</dt><dd class="mt-1 font-semibold tabular-nums">{{ overview.team_count }}</dd></div>
-            </dl>
-          </div>
-
-          <div class="card p-4 sm:p-5">
-            <h2 class="text-base font-semibold">快捷操作</h2>
-            <nav class="mt-3 divide-y divide-outline" aria-label="代理快捷操作">
-              <RouterLink v-for="action in quickActions" :key="action.path" :to="action.path" class="flex items-center justify-between gap-3 py-3 text-sm hover:text-brand">
-                <span class="flex items-center gap-2"><Icon :name="action.icon" size="sm" />{{ action.label }}</span>
-                <Icon name="chevronRight" size="sm" class="text-foreground-muted" />
-              </RouterLink>
-            </nav>
-          </div>
+        <section class="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]">
+          <div class="panel"><div class="panel-heading"><div><h2>{{ t(isL1 ? 'common.distributionCenter.teamSummary' : 'common.distributionCenter.customerSummary') }}</h2><p>{{ t(isL1 ? 'common.distributionCenter.teamSummaryHint' : 'common.distributionCenter.customerSummaryHint') }}</p></div></div><dl class="detail-grid"><template v-if="isL1"><div><dt>{{ t('common.distributionCenter.childAgents') }}</dt><dd>{{ overview.team_count }}</dd></div><div><dt>{{ t('common.distributionCenter.activeChildren') }}</dt><dd>{{ analytics.active_agents }}</dd></div><div><dt>{{ t('common.distributionCenter.teamNewCustomers') }}</dt><dd>{{ analytics.team.current.new_customers }}</dd></div><div><dt>{{ t('common.distributionCenter.teamCustomerPaid') }}</dt><dd>{{ money(analytics.team.current.customer_paid_cny) }}</dd></div></template><div><dt>{{ t('common.distributionCenter.directCustomersTotal') }}</dt><dd>{{ overview.customer_count }}</dd></div><div><dt>{{ t('common.distributionCenter.cumulativeCustomerPaid') }}</dt><dd>{{ money(overview.customer_paid_cny) }}</dd></div></dl></div>
+          <div class="panel"><div class="panel-heading"><div><h2>{{ t('common.distributionCenter.commonTasks') }}</h2><p>{{ t('common.distributionCenter.commonTasksHint') }}</p></div></div><nav class="divide-y divide-outline" :aria-label="t('common.distributionCenter.quickActions')"><RouterLink v-for="action in quickActions" :key="action.path" :to="action.path" class="action-row"><span><Icon :name="action.icon" size="sm" /><span><strong>{{ action.label }}</strong><small>{{ action.hint }}</small></span></span><Icon name="chevronRight" size="sm" /></RouterLink></nav></div>
         </section>
-
-        <section v-if="Number(overview.agent.debt_cny) > 0" class="rounded-panel border border-danger/40 bg-danger/5 p-4 text-sm text-danger-foreground">
-          当前退款负债 {{ money(overview.agent.debt_cny) }}，后续佣金会优先抵扣。
-        </section>
+        <section v-if="Number(overview.agent.debt_cny) > 0" class="rounded-panel border border-danger/40 bg-danger/5 p-4 text-sm text-danger-foreground">{{ t('common.distributionCenter.debtHint', { amount: money(overview.agent.debt_cny) }) }}</section>
       </template>
     </div>
   </AppLayout>
@@ -80,47 +34,34 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import DistributionNav from '@/components/distribution/DistributionNav.vue'
+import DistributionBusinessChart from '@/components/distribution/DistributionBusinessChart.vue'
+import DistributionAnalyticsRange from '@/components/distribution/DistributionAnalyticsRange.vue'
+import { analyticsRangeParams, defaultDistributionAnalyticsRange, formatAnalyticsRangeLabel } from '@/components/distribution/distributionAnalyticsRange'
 import { getDistributionOverview, type DistributionOverview } from '@/api/distribution'
 import { useAppStore } from '@/stores/app'
 
-const appStore = useAppStore()
-const router = useRouter()
-const overview = ref<DistributionOverview | null>(null)
-const loading = ref(false)
-
-const money = (value: string) => `¥${Number(value || 0).toFixed(2)}`
-const statusText = computed(() => ({ active: '正常经营', suspended: '已暂停', revoked: '已撤销' })[overview.value?.agent.status || 'active'])
-const statusClass = computed(() => overview.value?.agent.status === 'active' ? 'badge-success' : overview.value?.agent.status === 'suspended' ? 'badge-warning' : 'badge-gray')
-const metrics = computed(() => overview.value ? [
-  { label: '可用佣金', value: money(overview.value.agent.available_cny), hint: '可结算', icon: 'creditCard' as const, emphasis: true },
-  { label: '冻结佣金', value: money(overview.value.agent.frozen_cny), hint: '等待释放', icon: 'clock' as const },
-  { label: '本月佣金', value: money(overview.value.this_month_commission_cny), hint: '含冻结佣金', icon: 'calendar' as const },
-  { label: '累计佣金', value: money(overview.value.agent.total_earned_cny), hint: '扣除冲正', icon: 'gift' as const },
-  { label: '累计实付', value: money(overview.value.customer_paid_cny), hint: '计佣客户订单', icon: 'creditCard' as const },
-  { label: '直属客户', value: String(overview.value.customer_count), hint: `${overview.value.paying_customer_count} 位已付费`, icon: 'users' as const },
-] : [])
-const quickActions = computed(() => [
-  { path: '/distribution/promotion', label: '分享推广链接', icon: 'link' as const },
-  { path: '/distribution/customers', label: '查看客户贡献', icon: 'users' as const },
-  { path: '/distribution/withdrawals', label: '结算可用佣金', icon: 'creditCard' as const },
-])
-
-async function load() {
-  loading.value = true
-  try {
-    overview.value = await getDistributionOverview()
-  } catch {
-    appStore.showError('当前账号没有代理权限')
-    void router.replace('/dashboard')
-  } finally {
-    loading.value = false
-  }
-}
-
+const appStore = useAppStore(); const router = useRouter(); const overview = ref<DistributionOverview | null>(null); const loading = ref(false)
+const { t } = useI18n()
+const range = ref(defaultDistributionAnalyticsRange()); const analytics = computed(() => overview.value?.analytics); const isL1 = computed(() => overview.value?.agent.depth === 1)
+const rangeLabel = computed(() => formatAnalyticsRangeLabel(range.value))
+const money = (value: string | number) => new Intl.NumberFormat(undefined,{ style:'currency',currency:'CNY',minimumFractionDigits:2 }).format(Number(value || 0)); const percent = (value: string | number) => `${Number(value || 0).toFixed(1)}%`
+const growthText = (value?: string) => value == null ? t('common.distributionAnalytics.previousUnavailable') : t(Number(value)>=0?'common.distributionAnalytics.comparedUp':'common.distributionAnalytics.comparedDown',{value:Number(value).toFixed(1)}); const growthClass = (value?: string) => value == null ? 'growth-neutral' : Number(value)>0?'growth-positive':Number(value)<0?'growth-negative':'growth-neutral'
+const businessRows = computed(() => analytics.value ? [{ label:t('common.distributionAnalytics.directBusiness'),badge:'badge badge-primary',data:analytics.value.direct.current },{ label:t('common.distributionAnalytics.teamBusiness'),badge:'badge badge-gray',data:analytics.value.team.current },{ label:t('common.distributionAnalytics.businessTotal'),badge:'badge badge-success',data:analytics.value.total.current }] : [])
+const quickActions = computed(() => [{ path:'/distribution/promotion',label:t('common.distributionCenter.shareLink'),hint:t('common.distributionCenter.shareLinkHint'),icon:'link' as const },...(isL1.value?[{ path:'/distribution/team',label:t('common.distributionCenter.manageTeam'),hint:t('common.distributionCenter.manageTeamHint'),icon:'userPlus' as const }]:[]),{ path:'/distribution/customers',label:t('common.distributionCenter.viewCustomers'),hint:t('common.distributionCenter.viewCustomersHint'),icon:'users' as const },{ path:'/distribution/withdrawals',label:t('common.distributionCenter.settleCommission'),hint:t('common.distributionCenter.settleCommissionHint'),icon:'creditCard' as const }])
+let requestSequence=0
+async function load(){ const sequence=++requestSequence; loading.value=true; try { const value=await getDistributionOverview(analyticsRangeParams(range.value)); if(sequence===requestSequence) overview.value=value } catch { if(sequence===requestSequence){ appStore.showError(t('common.distributionCenter.noAccess')); void router.replace('/dashboard') } } finally { if(sequence===requestSequence) loading.value=false } }
 onMounted(load)
 </script>
+
+<style scoped>
+.agent-balance{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,2.2fr);overflow:hidden;border:1px solid var(--ui-border);border-radius:8px;background:var(--ui-surface)}.balance-primary{display:flex;flex-direction:column;align-items:flex-start;padding:18px;border-right:1px solid var(--ui-border)}.balance-primary p,.agent-balance dt{color:var(--ui-text-muted);font-size:12px}.balance-primary strong{margin:7px 0 14px;font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}.agent-balance dl{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}.agent-balance dl>div{min-width:0;padding:18px 14px;border-right:1px solid var(--ui-border)}.agent-balance dl>div:last-child{border-right:0}.agent-balance dd{margin-top:7px;overflow:hidden;font-size:17px;font-weight:650;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}.agent-balance small{display:block;margin-top:4px;color:var(--ui-text-subtle);font-size:10px;white-space:nowrap}
+.growth-positive{color:rgb(var(--color-success-foreground))!important}.growth-negative{color:rgb(var(--color-danger-foreground))!important}.growth-neutral{color:var(--ui-text-subtle)!important}.panel{min-width:0;border:1px solid var(--ui-border);border-radius:8px;background:var(--ui-surface);padding:16px}.panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.panel-heading h2{font-size:14px;font-weight:650}.panel-heading p{margin-top:3px;color:var(--ui-text-muted);font-size:12px}.business-table{width:100%;min-width:620px;border-collapse:collapse;font-size:12px}.business-table th,.business-table td{padding:11px 10px;border-bottom:1px solid var(--ui-border);text-align:right;font-variant-numeric:tabular-nums}.business-table th{color:var(--ui-text-muted);font-weight:600}.business-table th:first-child,.business-table td:first-child{text-align:left}.business-table tbody tr:last-child td{border-bottom:0}.ranking-row{display:flex;min-height:58px;align-items:center;gap:10px}.ranking-row small{margin-top:2px;color:var(--ui-text-subtle);font-size:11px}.rank{display:flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:6px;color:var(--ui-text-muted);background:var(--ui-surface-subtle);font-size:11px;font-weight:700}.empty{display:flex;min-height:150px;align-items:center;justify-content:center;color:var(--ui-text-muted);font-size:13px}.detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.detail-grid dt{color:var(--ui-text-muted);font-size:12px}.detail-grid dd{margin-top:5px;font-size:16px;font-weight:650;font-variant-numeric:tabular-nums}.action-row{display:flex;min-height:54px;align-items:center;justify-content:space-between;gap:12px}.action-row>span{display:flex;min-width:0;align-items:center;gap:10px}.action-row strong,.action-row small{display:block;font-size:12px}.action-row small{margin-top:2px;color:var(--ui-text-subtle)}
+.business-summaries article{padding:13px 0;border-bottom:1px solid var(--ui-border)}.business-summaries article:first-child{padding-top:2px}.business-summaries article:last-child{padding-bottom:0;border-bottom:0}.business-summaries article>div>strong{font-size:14px;font-variant-numeric:tabular-nums}.business-summaries dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.business-summaries dt{color:var(--ui-text-subtle);font-size:11px}.business-summaries dd{margin-top:3px;overflow-wrap:anywhere;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+@media(max-width:1100px){.agent-balance{grid-template-columns:1fr}.balance-primary{border-right:0;border-bottom:1px solid var(--ui-border)}.agent-balance dl{grid-template-columns:repeat(3,minmax(0,1fr))}.agent-balance dl>div{border-bottom:1px solid var(--ui-border)}}@media(max-width:639px){.agent-balance dl{grid-template-columns:repeat(2,minmax(0,1fr))}.agent-balance dd{font-size:15px}.panel{padding:14px}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>

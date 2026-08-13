@@ -15,6 +15,7 @@
             <Icon name="search" size="sm" class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle" />
             <input v-model="search" class="input pl-9" type="search" placeholder="搜索邮箱或用户名" aria-label="搜索代理客户" />
           </div>
+          <DistributionFilterSummary class="mt-2" :items="filterSummary" @remove="removeFilter" @clear="clearFilters" />
         </template>
 
         <template #table>
@@ -51,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -62,11 +63,15 @@ import { listCustomers, type DistributionCustomer } from '@/api/distribution'
 import type { Column } from '@/components/common/types'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import DistributionFilterSummary, { type DistributionFilterItem } from '@/components/distribution/DistributionFilterSummary.vue'
 
 const app = useAppStore()
 const items = ref<DistributionCustomer[]>([])
 const loading = ref(false)
 const search = ref('')
+const filterSummary = computed<DistributionFilterItem[]>(() => search.value ? [{ key: 'search', label: '搜索', value: search.value }] : [])
+function removeFilter() { search.value = '' }
+function clearFilters() { search.value = '' }
 const pagination = ref({ page: 1, page_size: 20, total: 0, pages: 1 })
 let searchTimer: number | null = null
 const columns: Column[] = [

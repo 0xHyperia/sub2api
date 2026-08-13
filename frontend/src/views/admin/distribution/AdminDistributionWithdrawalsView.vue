@@ -36,6 +36,7 @@
               </button>
             </div>
           </header>
+          <AdminDistributionNav class="mt-5" />
         </template>
 
         <template #filters>
@@ -110,6 +111,7 @@
                 清除筛选
               </button>
             </div>
+            <DistributionFilterSummary :items="filterSummary" @remove="removeFilter" @clear="clearFilters" />
           </div>
         </template>
 
@@ -304,10 +306,10 @@
       </TablePageLayout>
     </div>
 
-    <BaseDialog
+    <BaseDrawer
       :show="detailDialog"
       title="提现申请详情"
-      width="wide"
+      description="审核状态、收款信息、凭证和处理记录"
       @close="closeDetail"
     >
       <div
@@ -589,7 +591,7 @@
           </button>
         </div>
       </div>
-    </BaseDialog>
+    </BaseDrawer>
 
     <BaseDialog
       :show="actionDialog"
@@ -742,8 +744,11 @@ import TablePageLayout from "@/components/layout/TablePageLayout.vue";
 import DataTable from "@/components/common/DataTable.vue";
 import Pagination from "@/components/common/Pagination.vue";
 import BaseDialog from "@/components/common/BaseDialog.vue";
+import BaseDrawer from "@/components/common/BaseDrawer.vue";
+import AdminDistributionNav from "@/components/admin/distribution/AdminDistributionNav.vue";
 import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
 import Icon from "@/components/icons/Icon.vue";
+import DistributionFilterSummary, { type DistributionFilterItem } from "@/components/distribution/DistributionFilterSummary.vue";
 import type { Column } from "@/components/common/types";
 import {
   batchReviewWithdrawals,
@@ -820,6 +825,13 @@ const columns: Column[] = [
 const hasFilters = computed(() =>
   Boolean(search.value || status.value || dateFrom.value || dateTo.value),
 );
+const filterSummary = computed<DistributionFilterItem[]>(() => [
+  search.value ? { key: 'search', label: '搜索', value: search.value } : null,
+  status.value ? { key: 'status', label: '状态', value: statusText(status.value) } : null,
+  dateFrom.value ? { key: 'from', label: '开始', value: dateFrom.value } : null,
+  dateTo.value ? { key: 'to', label: '结束', value: dateTo.value } : null,
+].filter((item): item is DistributionFilterItem => Boolean(item)));
+function removeFilter(key: string) { if (key === 'search') search.value = ''; if (key === 'status') status.value = ''; if (key === 'from') dateFrom.value = ''; if (key === 'to') dateTo.value = ''; }
 const activeFilterCount = computed(
   () => [status.value, dateFrom.value, dateTo.value].filter(Boolean).length,
 );

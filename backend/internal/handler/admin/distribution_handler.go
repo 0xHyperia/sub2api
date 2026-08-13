@@ -31,6 +31,24 @@ func adminSubjectID(c *gin.Context) int64 {
 	return subject.UserID
 }
 
+func adminDistributionAnalyticsFilter(c *gin.Context) (service.DistributionAnalyticsFilter, error) {
+	days, _ := strconv.Atoi(c.DefaultQuery("days", "30"))
+	filter := service.DistributionAnalyticsFilter{Days: days}
+	location := time.FixedZone("Asia/Shanghai", 8*60*60)
+	for raw, target := range map[string]**time.Time{"date_from": &filter.DateFrom, "date_to": &filter.DateTo} {
+		value := strings.TrimSpace(c.Query(raw))
+		if value == "" {
+			continue
+		}
+		parsed, err := time.ParseInLocation("2006-01-02", value, location)
+		if err != nil {
+			return service.DistributionAnalyticsFilter{}, err
+		}
+		*target = &parsed
+	}
+	return filter, nil
+}
+
 func (h *DistributionHandler) GetSettings(c *gin.Context) {
 	v, err := h.service.AdminGetSettings(c.Request.Context())
 	if err != nil {
@@ -41,12 +59,36 @@ func (h *DistributionHandler) GetSettings(c *gin.Context) {
 }
 
 func (h *DistributionHandler) GetOverview(c *gin.Context) {
-	v, err := h.service.AdminGetOverview(c.Request.Context())
+	filter, err := adminDistributionAnalyticsFilter(c)
+	if err != nil {
+		response.BadRequest(c, "invalid analytics date range")
+		return
+	}
+	v, err := h.service.AdminGetOverview(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 	response.Success(c, v)
+}
+
+func (h *DistributionHandler) GetAgentAnalytics(c *gin.Context) {
+	agentID, err := strconv.ParseInt(c.Param("agent_id"), 10, 64)
+	if err != nil || agentID <= 0 {
+		response.BadRequest(c, "invalid agent id")
+		return
+	}
+	filter, filterErr := adminDistributionAnalyticsFilter(c)
+	if filterErr != nil {
+		response.BadRequest(c, "invalid analytics date range")
+		return
+	}
+	value, err := h.service.AdminGetAgentAnalytics(c.Request.Context(), agentID, filter)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, value)
 }
 
 func adminPromotionStatsFilter(c *gin.Context) service.DistributionPromotionStatsFilter {
@@ -148,14 +190,47 @@ func (h *DistributionHandler) GrantAgent(c *gin.Context) {
 		return
 	}
 	req.GrantedBy = adminSubjectID(c)
-	req.Depth = 1
-	req.ParentAgentID = nil
+	if req.Depth == 0 {
+		req.Depth = 1
+	}
 	agent, err := h.service.AdminGrantAgent(c.Request.Context(), req)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 	response.Success(c, agent)
+}
+
+func (h *DistributionHandler) GetAgentRewardRule(c *gin.Context) {
+	agentID, err := strconv.ParseInt(c.Param("agent_id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "invalid agent id")
+		return
+	}
+	rule, err := h.service.GetAgentRewardRule(c.Request.Context(), adminSubjectID(c), agentID, true)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, rule)
+}
+
+func (h *DistributionHandler) UpdateAgentRewardRule(c *gin.Context) {
+	agentID, err := strconv.ParseInt(c.Param("agent_id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "invalid agent id")
+		return
+	}
+	var req service.DistributionRewardRuleInput
+	if err = c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if err = h.service.UpdateAgentRewardRule(c.Request.Context(), adminSubjectID(c), agentID, true, req); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"updated": true})
 }
 
 func (h *DistributionHandler) UpdateAgentStatus(c *gin.Context) {
@@ -432,9 +507,14 @@ func (h *DistributionHandler) CorrectBinding(c *gin.Context) {
 func (h *DistributionHandler) ListAgents(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
 	depth, _ := strconv.Atoi(c.Query("depth"))
+	analyticsFilter, filterErr := adminDistributionAnalyticsFilter(c)
+	if filterErr != nil {
+		response.BadRequest(c, "invalid analytics date range")
+		return
+	}
 	items, total, err := h.service.AdminListAgents(c.Request.Context(), service.DistributionAdminListFilter{
 		Page: page, PageSize: pageSize, Search: c.Query("search"), Status: c.Query("status"), Depth: depth,
-		SortBy: c.Query("sort_by"), SortOrder: c.Query("sort_order"),
+		SortBy: c.Query("sort_by"), SortOrder: c.Query("sort_order"), Days: analyticsFilter.Days, DateFrom: analyticsFilter.DateFrom, DateTo: analyticsFilter.DateTo,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -540,7 +620,12 @@ const distributionExportLimit = 50000
 
 func (h *DistributionHandler) ExportAgents(c *gin.Context) {
 	depth, _ := strconv.Atoi(c.Query("depth"))
-	filter := service.DistributionAdminListFilter{Search: c.Query("search"), Status: c.Query("status"), Depth: depth, SortBy: c.Query("sort_by"), SortOrder: c.Query("sort_order")}
+	analyticsFilter, filterErr := adminDistributionAnalyticsFilter(c)
+	if filterErr != nil {
+		response.BadRequest(c, "invalid analytics date range")
+		return
+	}
+	filter := service.DistributionAdminListFilter{Search: c.Query("search"), Status: c.Query("status"), Depth: depth, SortBy: c.Query("sort_by"), SortOrder: c.Query("sort_order"), Days: analyticsFilter.Days, DateFrom: analyticsFilter.DateFrom, DateTo: analyticsFilter.DateTo}
 	rows := make([][]string, 0)
 	for page := 1; len(rows) < distributionExportLimit; page++ {
 		filter.Page, filter.PageSize = page, 100
@@ -576,11 +661,15 @@ func (h *DistributionHandler) ExportCustomers(c *gin.Context) {
 			return
 		}
 		for _, item := range items {
+			registeredAt := ""
+			if item.RegisteredAt != nil {
+				registeredAt = item.RegisteredAt.Format(time.RFC3339)
+			}
 			lastPaid := ""
 			if item.LastPaidAt != nil {
 				lastPaid = item.LastPaidAt.Format(time.RFC3339)
 			}
-			rows = append(rows, []string{strconv.FormatInt(item.UserID, 10), item.Email, item.Username, item.AgentEmail, item.AgentPromotionCode, strconv.Itoa(item.AgentDepth),
+			rows = append(rows, []string{strconv.FormatInt(item.UserID, 10), item.Email, item.Username, registeredAt, item.AgentEmail, item.AgentPromotionCode, strconv.Itoa(item.AgentDepth),
 				strconv.FormatInt(item.OrderCount, 10), item.TotalPaidCNY.StringFixed(2), item.CommissionCNY.StringFixed(2), item.RefundedCNY.StringFixed(2), lastPaid, item.BoundAt.Format(time.RFC3339)})
 			if len(rows) >= distributionExportLimit {
 				break
@@ -590,7 +679,7 @@ func (h *DistributionHandler) ExportCustomers(c *gin.Context) {
 			break
 		}
 	}
-	writeDistributionCSV(c, "distribution-customers", []string{"用户ID", "邮箱", "用户名", "归属代理", "代理推广码", "代理层级", "订单数", "累计实付(CNY)", "贡献佣金(CNY)", "退款金额(CNY)", "最近付费", "绑定时间"}, rows)
+	writeDistributionCSV(c, "distribution-customers", []string{"用户ID", "邮箱", "用户名", "注册时间", "归属代理", "代理推广码", "代理层级", "订单数", "累计实付(CNY)", "贡献佣金(CNY)", "退款金额(CNY)", "最近付费", "绑定时间"}, rows)
 }
 
 func (h *DistributionHandler) ExportCommissions(c *gin.Context) {

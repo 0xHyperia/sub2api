@@ -14,12 +14,12 @@ const view = (name: string) => {
 describe("enterprise distribution administration contracts", () => {
   it("provides an operating and audit overview", () => {
     const { template, source } = view("AdminDistributionOverviewView.vue");
-    expect(template).toContain("资金与佣金负债");
-    expect(template).toContain("运营与审计待办");
-    expect(template).toContain("审核超时超过 24 小时");
+    expect(template).toContain("admin.distribution.analytics.liability");
+    expect(template).toContain("admin.distribution.analytics.operations");
+    expect(source).toContain("admin.distribution.analytics.overdueReview");
     expect(template).not.toContain("打款或已付款但缺少凭证");
     expect(source).toContain("getOverview");
-    expect(template).toContain("佣金自动解冻任务");
+    expect(template).toContain("admin.distribution.analytics.maturity");
     expect(source).toContain("getMaturityStatus");
   });
 
@@ -36,9 +36,9 @@ describe("enterprise distribution administration contracts", () => {
 
   it("supports audited rate editing and server-side financial sorting for agents", () => {
     const { template, source } = view("AdminDistributionAgentsView.vue");
-    expect(template).toContain("编辑代理返佣比例");
-    expect(template).toContain("沿用系统默认");
-    expect(template).toContain("变更原因");
+    expect(template).toContain("admin.distribution.agents.editRate");
+    expect(template).toContain("admin.distribution.agents.inheritDefault");
+    expect(template).toContain("admin.distribution.agents.changeReason");
     expect(template).toContain(':server-side-sort="true"');
     expect(source).toContain("updateAgentRate");
     expect(source).toContain("sort_by: sortBy.value");
@@ -47,8 +47,8 @@ describe("enterprise distribution administration contracts", () => {
     expect(source).toMatch(/class:\s*["']text-right["']/);
     expect(source).toMatch(/class:\s*["']text-center["']/);
     expect(source).toMatch(/class:\s*["']w-16 text-center["']/);
-    expect(template).toContain("下级招募");
-    expect(template).toContain("授予招募权限");
+    expect(template).toContain("admin.distribution.agents.recruitment");
+    expect(template).toContain("admin.distribution.agents.grantRecruitment");
     expect(source).toContain("updateAgentRecruitmentPermission");
   });
 
@@ -95,7 +95,7 @@ describe("enterprise distribution administration contracts", () => {
   it("exports full filtered agent and customer ledgers", () => {
     const agents = view("AdminDistributionAgentsView.vue");
     const customers = view("AdminDistributionCustomersView.vue");
-    expect(agents.template).toContain('aria-label="导出代理"');
+    expect(agents.template).toContain("admin.distribution.agents.exportFiltered");
     expect(agents.source).toContain("exportAgents");
     expect(customers.template).toContain('aria-label="导出代理客户"');
     expect(customers.source).toContain("exportCustomers");

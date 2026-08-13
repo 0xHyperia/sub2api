@@ -28,8 +28,80 @@ export interface DistributionAgent {
   paying_customer_count: number;
   customer_paid_cny: string;
   this_month_commission_cny: string;
+  period_customer_count: number;
+  period_paying_customers: number;
+  period_customer_paid_cny: string;
+  period_commission_cny: string;
+  team_customer_count: number;
+  team_paying_customers: number;
+  team_customer_paid_cny: string;
+  team_commission_cny: string;
   last_commission_at?: string;
   created_at?: string;
+}
+
+export interface DistributionBusinessMetrics {
+  new_customers: number;
+  paying_customers: number;
+  paid_orders: number;
+  customer_paid_cny: string;
+  commission_cny: string;
+  conversion_rate: string;
+  average_order_cny: string;
+}
+
+export interface DistributionPeriodComparison {
+  current: DistributionBusinessMetrics;
+  previous: DistributionBusinessMetrics;
+  paid_growth_rate?: string;
+  commission_growth_rate?: string;
+}
+
+export interface DistributionDailyMetric {
+  date: string;
+  new_customers: number;
+  paying_customers: number;
+  customer_paid_cny: string;
+  commission_cny: string;
+}
+
+export interface DistributionBusinessAnalytics {
+  days: number;
+  date_from: string;
+  date_to: string;
+  trend_resolution: 'hour' | 'day' | 'week' | 'month';
+  direct: DistributionPeriodComparison;
+  team: DistributionPeriodComparison;
+  total: DistributionPeriodComparison;
+  daily_direct: DistributionDailyMetric[];
+  daily_team: DistributionDailyMetric[];
+  active_agents: number;
+}
+
+export interface DistributionAgentRanking {
+  agent_id: number;
+  email: string;
+  username: string;
+  depth: 1 | 2;
+  customer_paid_cny: string;
+  commission_cny: string;
+  new_customers: number;
+  paying_customers: number;
+  conversion_rate: string;
+}
+
+export interface DistributionAgentAnalytics {
+  agent: DistributionAgent;
+  analytics: DistributionBusinessAnalytics;
+  ranking: DistributionAgentRanking[];
+}
+export interface DistributionRewardRule {
+  agent_id: number;
+  registration_enabled: boolean;
+  registration_reward_cny: string;
+  recharge_enabled: boolean;
+  recharge_threshold_cny: string;
+  recharge_reward_cny: string;
 }
 
 export interface DistributionOverview {
@@ -43,6 +115,8 @@ export interface DistributionOverview {
   customer_paid_cny: string;
   this_month_customer_paid_cny: string;
   this_month_commission_cny: string;
+  analytics: DistributionBusinessAnalytics;
+  team_ranking: DistributionAgentRanking[];
 }
 
 export interface DistributionAccess {
@@ -165,6 +239,7 @@ export interface DistributionCustomer {
   user_id: number;
   email: string;
   username: string;
+  registered_at?: string;
   bound_at: string;
   order_count: number;
   total_paid_cny: string;
@@ -194,6 +269,15 @@ export interface DistributionListParams {
   search?: string;
   status?: string;
   entry_type?: string;
+  days?: number;
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface DistributionAnalyticsParams {
+  days?: number;
+  date_from?: string;
+  date_to?: string;
 }
 
 export async function getDistributionAccess() {
@@ -229,10 +313,9 @@ export interface DistributionPromotionTrackResult {
   attribution_days: number;
 }
 
-export async function getDistributionOverview() {
-  const { data } = await apiClient.get<DistributionOverview>(
-    "/distribution/overview",
-  );
+export async function getDistributionOverview(params: number | DistributionAnalyticsParams = 30) {
+  const query = typeof params === 'number' ? { days: params } : params;
+  const { data } = await apiClient.get<DistributionOverview>("/distribution/overview", { params: query });
   return data;
 }
 
@@ -297,11 +380,24 @@ export async function listTeam(params: DistributionListParams = {}) {
   return data;
 }
 
+export async function getTeamAgentAnalytics(agentId: number, params: number | DistributionAnalyticsParams = 30) {
+  const query = typeof params === 'number' ? { days: params } : params;
+  const { data } = await apiClient.get<DistributionAgentAnalytics>(`/distribution/team/${agentId}/analytics`, { params: query });
+  return data;
+}
+
 export async function updateTeamAgentStatus(
   agentId: number,
   status: "active" | "suspended",
 ) {
   await apiClient.put(`/distribution/team/${agentId}/status`, { status });
+}
+export async function updateTeamAgentRewardRule(agentId: number, payload: Omit<DistributionRewardRule, "agent_id">) {
+  await apiClient.put(`/distribution/team/${agentId}/reward-rule`, payload);
+}
+export async function getTeamAgentRewardRule(agentId: number) {
+  const { data } = await apiClient.get<DistributionRewardRule>(`/distribution/team/${agentId}/reward-rule`);
+  return data;
 }
 
 export async function listCommissions(params: DistributionListParams = {}) {

@@ -119,6 +119,21 @@ func (r *distributionRepository) BindCustomerByCode(ctx context.Context, userID 
 			return fmt.Errorf("complete distribution attribution: %w", err)
 		}
 	}
+	if err = accrueDistributionRewardTx(ctx, tx, userID, "registration", 0, decimal.Zero); err != nil {
+		return fmt.Errorf("accrue registration reward: %w", err)
+	}
+	return tx.Commit()
+}
+
+func (r *distributionRepository) AccrueRegistrationReward(ctx context.Context, customerUserID int64) error {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err = accrueDistributionRewardTx(ctx, tx, customerUserID, "registration", 0, decimal.Zero); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
@@ -212,16 +227,18 @@ func (r *distributionRepository) AdminGetSettings(ctx context.Context) (*service
 		s.withdrawal_fee_rate_bps,s.withdrawal_fee_fixed_cny,s.daily_withdrawal_limit_cny,s.monthly_withdrawal_limit_cny,s.cny_per_platform_usd,
 		COALESCE((SELECT rate_to_cny FROM distribution_fx_rates WHERE currency='USD'), 7),
 		s.promotion_tracking_enabled,s.promotion_attribution_enabled,s.promotion_attribution_days,s.promotion_attribution_model,
-		s.promotion_collect_source,s.promotion_collect_device,s.promotion_bot_filter_enabled,s.promotion_detail_retention_days
+		s.promotion_collect_source,s.promotion_collect_device,s.promotion_bot_filter_enabled,s.promotion_detail_retention_days,
+		s.registration_reward_enabled,s.recharge_reward_enabled
 		FROM distribution_settings s WHERE s.id=1`).Scan(&s.Enabled, &s.L1DefaultRateBPS, &s.L1MaxChildRateBPS, &s.L2DefaultRateBPS,
 		&s.FreezeHours, &s.WithdrawalEnabled, &s.WithdrawalDualApproval, &s.MinimumWithdrawalCNY, &s.MaximumWithdrawalCNY, &s.WithdrawalFeeRateBPS,
 		&s.WithdrawalFeeFixedCNY, &s.DailyWithdrawalLimitCNY, &s.MonthlyWithdrawalLimitCNY, &s.CNYPerPlatformUSD, &s.USDToCNY,
 		&s.PromotionTrackingEnabled, &s.PromotionAttributionEnabled, &s.PromotionAttributionDays, &s.PromotionAttributionModel,
-		&s.PromotionCollectSource, &s.PromotionCollectDevice, &s.PromotionBotFilterEnabled, &s.PromotionDetailRetentionDays)
+		&s.PromotionCollectSource, &s.PromotionCollectDevice, &s.PromotionBotFilterEnabled, &s.PromotionDetailRetentionDays,
+		&s.RegistrationRewardEnabled, &s.RechargeRewardEnabled)
 	return &s, err
 }
 
-func (r *distributionRepository) AdminGetOverview(ctx context.Context) (*service.DistributionAdminOverview, error) {
+func (r *distributionRepository) AdminGetOverview(ctx context.Context, filter service.DistributionAnalyticsFilter) (*service.DistributionAdminOverview, error) {
 	if err := r.releaseAllMatured(ctx); err != nil {
 		return nil, err
 	}
@@ -257,7 +274,344 @@ func (r *distributionRepository) AdminGetOverview(ctx context.Context) (*service
 	if err != nil {
 		return nil, err
 	}
+	overview.Analytics, err = r.distributionBusinessAnalytics(ctx, 0, filter)
+	if err != nil {
+		return nil, err
+	}
+	overview.AgentRanking, err = r.distributionAgentRanking(ctx, 0, filter, 8)
+	if err != nil {
+		return nil, err
+	}
+	scope := newDistributionAnalyticsScope(filter)
+	err = r.db.QueryRowContext(ctx, `SELECT
+		COALESCE(SUM(total_reward_cny) FILTER (WHERE reward_type='registration'),0),
+		COALESCE(SUM(total_reward_cny) FILTER (WHERE reward_type='recharge_threshold'),0)
+		FROM distribution_reward_events WHERE created_at>=$1 AND created_at<$2`, scope.currentStart, scope.currentEnd).
+		Scan(&overview.PeriodRegistrationRewardCNY, &overview.PeriodRechargeRewardCNY)
+	if err != nil {
+		return nil, err
+	}
 	return &overview, nil
+}
+
+type distributionAnalyticsScope struct {
+	currentStart  time.Time
+	currentEnd    time.Time
+	previousStart time.Time
+}
+
+func newDistributionAnalyticsScope(filter service.DistributionAnalyticsFilter) distributionAnalyticsScope {
+	location := time.FixedZone("Asia/Shanghai", 8*60*60)
+	var currentStart, currentEnd time.Time
+	if filter.DateFrom != nil && filter.DateTo != nil {
+		from, to := filter.DateFrom.In(location), filter.DateTo.In(location)
+		currentStart = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, location)
+		currentEnd = time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, location).AddDate(0, 0, 1)
+	} else {
+		now := time.Now().In(location)
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location)
+		currentStart = today.AddDate(0, 0, -(filter.Days - 1))
+		currentEnd = today.AddDate(0, 0, 1)
+	}
+	days := int(currentEnd.Sub(currentStart).Hours() / 24)
+	return distributionAnalyticsScope{currentStart: currentStart, currentEnd: currentEnd, previousStart: currentStart.AddDate(0, 0, -days)}
+}
+
+func distributionTrendResolution(days int) (string, string) {
+	switch {
+	case days <= 1:
+		return "hour", "1 hour"
+	case days <= 31:
+		return "day", "1 day"
+	case days <= 92:
+		return "week", "1 week"
+	default:
+		return "month", "1 month"
+	}
+}
+
+func distributionMetricRate(numerator decimal.Decimal, denominator int64) decimal.Decimal {
+	if denominator <= 0 {
+		return decimal.Zero
+	}
+	return numerator.Div(decimal.NewFromInt(denominator)).Round(2)
+}
+
+func distributionGrowth(current, previous decimal.Decimal) *decimal.Decimal {
+	if previous.IsZero() {
+		return nil
+	}
+	value := current.Sub(previous).Div(previous).Mul(decimal.NewFromInt(100)).Round(2)
+	return &value
+}
+
+func finalizeDistributionMetrics(value *service.DistributionBusinessMetrics) {
+	value.ConversionRate = distributionMetricRate(decimal.NewFromInt(value.PayingCustomers).Mul(decimal.NewFromInt(100)), value.NewCustomers)
+	value.AverageOrderCNY = distributionMetricRate(value.CustomerPaidCNY, value.PaidOrders)
+}
+
+func addDistributionMetrics(left, right service.DistributionBusinessMetrics) service.DistributionBusinessMetrics {
+	value := service.DistributionBusinessMetrics{
+		NewCustomers:    left.NewCustomers + right.NewCustomers,
+		PayingCustomers: left.PayingCustomers + right.PayingCustomers,
+		PaidOrders:      left.PaidOrders + right.PaidOrders,
+		CustomerPaidCNY: left.CustomerPaidCNY.Add(right.CustomerPaidCNY),
+		CommissionCNY:   left.CommissionCNY.Add(right.CommissionCNY),
+	}
+	finalizeDistributionMetrics(&value)
+	return value
+}
+
+func finalizeDistributionComparison(value *service.DistributionPeriodComparison) {
+	finalizeDistributionMetrics(&value.Current)
+	finalizeDistributionMetrics(&value.Previous)
+	value.PaidGrowthRate = distributionGrowth(value.Current.CustomerPaidCNY, value.Previous.CustomerPaidCNY)
+	value.CommissionGrowthRate = distributionGrowth(value.Current.CommissionCNY, value.Previous.CommissionCNY)
+}
+
+func (r *distributionRepository) distributionBusinessAnalytics(ctx context.Context, agentID int64, filter service.DistributionAnalyticsFilter) (*service.DistributionBusinessAnalytics, error) {
+	scope := newDistributionAnalyticsScope(filter)
+	days := int(scope.currentEnd.Sub(scope.currentStart).Hours() / 24)
+	trendResolution, trendInterval := distributionTrendResolution(days)
+	result := &service.DistributionBusinessAnalytics{Days: days, DateFrom: scope.currentStart.Format("2006-01-02"), DateTo: scope.currentEnd.AddDate(0, 0, -1).Format("2006-01-02"), TrendResolution: trendResolution}
+
+	// Segment 0 is direct business, segment 1 is business produced by an L2 team.
+	rows, err := r.db.QueryContext(ctx, `WITH periods AS (
+		SELECT 0 AS period,$2::timestamptz AS starts_at,$3::timestamptz AS ends_at
+		UNION ALL SELECT 1,$1::timestamptz,$2::timestamptz
+	), scoped AS (
+		SELECT binding.user_id,binding.bound_at,
+			CASE WHEN $4=0 THEN CASE WHEN level.depth=2 THEN 1 ELSE 0 END
+			ELSE CASE WHEN agent.parent_agent_id=$4 THEN 1 ELSE 0 END END AS segment
+		FROM distribution_customer_bindings binding
+		JOIN distribution_agents agent ON agent.id=binding.agent_id
+		JOIN distribution_agent_levels level ON level.id=agent.level_id
+		WHERE ($4=0 OR agent.id=$4 OR agent.parent_agent_id=$4)
+	)
+	SELECT period,segment,COUNT(*) FROM periods JOIN scoped ON scoped.bound_at>=starts_at AND scoped.bound_at<ends_at
+	GROUP BY period,segment`, scope.previousStart, scope.currentStart, scope.currentEnd, agentID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var period, segment int
+		var count int64
+		if err = rows.Scan(&period, &segment, &count); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		target := distributionMetricsTarget(result, period, segment)
+		target.NewCustomers = count
+	}
+	if err = rows.Close(); err != nil {
+		return nil, err
+	}
+
+	rows, err = r.db.QueryContext(ctx, `WITH periods AS (
+		SELECT 0 AS period,$2::timestamptz AS starts_at,$3::timestamptz AS ends_at
+		UNION ALL SELECT 1,$1::timestamptz,$2::timestamptz
+	), scoped AS (
+		SELECT source.id,source.customer_user_id,source.paid_at,binding.bound_at,GREATEST(COALESCE(source.commission_base_cny,0)-source.refunded_amount_cny,0) AS paid,
+			CASE WHEN $4=0 THEN CASE WHEN level.depth=2 THEN 1 ELSE 0 END
+			ELSE CASE WHEN direct.parent_agent_id=$4 THEN 1 ELSE 0 END END AS segment
+		FROM distribution_commission_sources source
+		JOIN distribution_agents direct ON direct.id=source.direct_agent_id
+		JOIN distribution_agent_levels level ON level.id=direct.level_id
+		JOIN distribution_customer_bindings binding ON binding.user_id=source.customer_user_id
+		WHERE source.status<>'void' AND ($4=0 OR direct.id=$4 OR direct.parent_agent_id=$4)
+	)
+	SELECT period,segment,COUNT(*),COUNT(DISTINCT customer_user_id) FILTER (WHERE bound_at>=starts_at AND bound_at<ends_at),COALESCE(SUM(paid),0)
+	FROM periods JOIN scoped ON scoped.paid_at>=starts_at AND scoped.paid_at<ends_at
+	GROUP BY period,segment`, scope.previousStart, scope.currentStart, scope.currentEnd, agentID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var period, segment int
+		target := service.DistributionBusinessMetrics{}
+		if err = rows.Scan(&period, &segment, &target.PaidOrders, &target.PayingCustomers, &target.CustomerPaidCNY); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		metrics := distributionMetricsTarget(result, period, segment)
+		metrics.PaidOrders, metrics.PayingCustomers, metrics.CustomerPaidCNY = target.PaidOrders, target.PayingCustomers, target.CustomerPaidCNY
+	}
+	if err = rows.Close(); err != nil {
+		return nil, err
+	}
+
+	rows, err = r.db.QueryContext(ctx, `WITH periods AS (
+		SELECT 0 AS period,$2::timestamptz AS starts_at,$3::timestamptz AS ends_at
+		UNION ALL SELECT 1,$1::timestamptz,$2::timestamptz
+	)
+	SELECT period,CASE WHEN $4=0 THEN CASE WHEN direct.parent_agent_id IS NOT NULL THEN 1 ELSE 0 END
+		ELSE CASE WHEN direct.id=$4 THEN 0 ELSE 1 END END AS segment,
+		COALESCE(SUM(GREATEST(entry.original_amount_cny-entry.reversed_amount_cny,0)),0)
+	FROM periods JOIN distribution_commission_entries entry ON entry.created_at>=starts_at AND entry.created_at<ends_at
+	JOIN distribution_commission_sources source ON source.id=entry.source_id
+	JOIN distribution_agents direct ON direct.id=source.direct_agent_id
+	WHERE ($4=0 OR entry.beneficiary_agent_id=$4)
+	GROUP BY period,segment`, scope.previousStart, scope.currentStart, scope.currentEnd, agentID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var period, segment int
+		var amount decimal.Decimal
+		if err = rows.Scan(&period, &segment, &amount); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		distributionMetricsTarget(result, period, segment).CommissionCNY = amount
+	}
+	if err = rows.Close(); err != nil {
+		return nil, err
+	}
+
+	trendEnd := scope.currentEnd
+	now := time.Now().In(scope.currentEnd.Location())
+	if now.Before(trendEnd) {
+		trendEnd = now
+	}
+	trendQueryEnd := trendEnd.Add(-time.Nanosecond)
+	rows, err = r.db.QueryContext(ctx, `WITH buckets AS (
+		SELECT generate_series(date_trunc($4,timezone('Asia/Shanghai',$1)),date_trunc($4,timezone('Asia/Shanghai',$2)), $5::interval) AS bucket),
+	bindings AS (SELECT date_trunc($4,timezone('Asia/Shanghai',binding.bound_at)) AS bucket,CASE WHEN $3=0 THEN CASE WHEN level.depth=2 THEN 1 ELSE 0 END ELSE CASE WHEN agent.parent_agent_id=$3 THEN 1 ELSE 0 END END segment,COUNT(*) count
+		FROM distribution_customer_bindings binding JOIN distribution_agents agent ON agent.id=binding.agent_id JOIN distribution_agent_levels level ON level.id=agent.level_id
+		WHERE binding.bound_at>=$1 AND binding.bound_at<$2 AND ($3=0 OR agent.id=$3 OR agent.parent_agent_id=$3) GROUP BY 1,2),
+	sources AS (SELECT date_trunc($4,timezone('Asia/Shanghai',source.paid_at)) AS bucket,CASE WHEN $3=0 THEN CASE WHEN level.depth=2 THEN 1 ELSE 0 END ELSE CASE WHEN direct.parent_agent_id=$3 THEN 1 ELSE 0 END END segment,
+		COUNT(DISTINCT source.customer_user_id) customers,COALESCE(SUM(GREATEST(COALESCE(source.commission_base_cny,0)-source.refunded_amount_cny,0)),0) paid
+		FROM distribution_commission_sources source JOIN distribution_agents direct ON direct.id=source.direct_agent_id JOIN distribution_agent_levels level ON level.id=direct.level_id
+		WHERE source.status<>'void' AND source.paid_at>=$1 AND source.paid_at<$2 AND ($3=0 OR direct.id=$3 OR direct.parent_agent_id=$3) GROUP BY 1,2),
+	commissions AS (SELECT date_trunc($4,timezone('Asia/Shanghai',entry.created_at)) AS bucket,CASE WHEN $3=0 THEN CASE WHEN direct.parent_agent_id IS NOT NULL THEN 1 ELSE 0 END ELSE CASE WHEN direct.id=$3 THEN 0 ELSE 1 END END segment,COALESCE(SUM(GREATEST(entry.original_amount_cny-entry.reversed_amount_cny,0)),0) commission
+		FROM distribution_commission_entries entry JOIN distribution_commission_sources source ON source.id=entry.source_id JOIN distribution_agents direct ON direct.id=source.direct_agent_id
+		WHERE entry.created_at>=$1 AND entry.created_at<$2 AND ($3=0 OR entry.beneficiary_agent_id=$3) GROUP BY 1,2)
+	SELECT buckets.bucket,segment.value,COALESCE(bindings.count,0),COALESCE(sources.customers,0),COALESCE(sources.paid,0),COALESCE(commissions.commission,0)
+	FROM buckets CROSS JOIN (VALUES(0),(1)) segment(value)
+	LEFT JOIN bindings ON bindings.bucket=buckets.bucket AND bindings.segment=segment.value
+	LEFT JOIN sources ON sources.bucket=buckets.bucket AND sources.segment=segment.value
+	LEFT JOIN commissions ON commissions.bucket=buckets.bucket AND commissions.segment=segment.value ORDER BY buckets.bucket,segment.value`, scope.currentStart, trendQueryEnd, agentID, trendResolution, trendInterval)
+	if err != nil {
+		return nil, err
+	}
+	result.DailyDirect = make([]service.DistributionDailyMetric, 0)
+	result.DailyTeam = make([]service.DistributionDailyMetric, 0)
+	for rows.Next() {
+		var bucket time.Time
+		var segment int
+		var item service.DistributionDailyMetric
+		if err = rows.Scan(&bucket, &segment, &item.NewCustomers, &item.PayingCustomers, &item.CustomerPaidCNY, &item.CommissionCNY); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		if trendResolution == "hour" {
+			item.Date = bucket.Format("2006-01-02T15:04:05") + "+08:00"
+		} else {
+			item.Date = bucket.Format("2006-01-02")
+		}
+		if segment == 0 {
+			result.DailyDirect = append(result.DailyDirect, item)
+		} else {
+			result.DailyTeam = append(result.DailyTeam, item)
+		}
+	}
+	if err = rows.Close(); err != nil {
+		return nil, err
+	}
+
+	finalizeDistributionComparison(&result.Direct)
+	finalizeDistributionComparison(&result.Team)
+	result.Total.Current = addDistributionMetrics(result.Direct.Current, result.Team.Current)
+	result.Total.Previous = addDistributionMetrics(result.Direct.Previous, result.Team.Previous)
+	result.Total.PaidGrowthRate = distributionGrowth(result.Total.Current.CustomerPaidCNY, result.Total.Previous.CustomerPaidCNY)
+	result.Total.CommissionGrowthRate = distributionGrowth(result.Total.Current.CommissionCNY, result.Total.Previous.CommissionCNY)
+	if agentID == 0 {
+		err = r.db.QueryRowContext(ctx, `SELECT COUNT(DISTINCT source.direct_agent_id) FROM distribution_commission_sources source WHERE source.status<>'void' AND source.paid_at>=$1 AND source.paid_at<$2`, scope.currentStart, scope.currentEnd).Scan(&result.ActiveAgents)
+	} else {
+		err = r.db.QueryRowContext(ctx, `SELECT COUNT(DISTINCT direct.id) FROM distribution_commission_sources source JOIN distribution_agents direct ON direct.id=source.direct_agent_id WHERE source.status<>'void' AND source.paid_at>=$2 AND source.paid_at<$3 AND direct.parent_agent_id=$1`, agentID, scope.currentStart, scope.currentEnd).Scan(&result.ActiveAgents)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func distributionMetricsTarget(result *service.DistributionBusinessAnalytics, period, segment int) *service.DistributionBusinessMetrics {
+	comparison := &result.Direct
+	if segment == 1 {
+		comparison = &result.Team
+	}
+	if period == 1 {
+		return &comparison.Previous
+	}
+	return &comparison.Current
+}
+
+func (r *distributionRepository) distributionAgentRanking(ctx context.Context, parentAgentID int64, filter service.DistributionAnalyticsFilter, limit int) ([]service.DistributionAgentRanking, error) {
+	scope := newDistributionAnalyticsScope(filter)
+	rows, err := r.db.QueryContext(ctx, `SELECT direct.id,COALESCE(agent_user.email,''),COALESCE(agent_user.username,''),level.depth,
+		COALESCE((SELECT SUM(GREATEST(COALESCE(source.commission_base_cny,0)-source.refunded_amount_cny,0)) FROM distribution_commission_sources source
+			JOIN distribution_agents source_agent ON source_agent.id=source.direct_agent_id
+			WHERE (source_agent.id=direct.id OR ($1=0 AND source_agent.parent_agent_id=direct.id)) AND source.status<>'void' AND source.paid_at>=$2 AND source.paid_at<$3),0) paid,
+		COALESCE((SELECT SUM(GREATEST(entry.original_amount_cny-entry.reversed_amount_cny,0)) FROM distribution_commission_entries entry
+			JOIN distribution_commission_sources entry_source ON entry_source.id=entry.source_id
+			JOIN distribution_agents entry_direct ON entry_direct.id=entry_source.direct_agent_id
+			WHERE (($1=0 AND (entry_direct.id=direct.id OR entry_direct.parent_agent_id=direct.id))
+				OR ($1<>0 AND entry.beneficiary_agent_id=$1 AND entry_direct.id=direct.id))
+			AND entry.created_at>=$2 AND entry.created_at<$3),0) commission,
+		(SELECT COUNT(*) FROM distribution_customer_bindings binding JOIN distribution_agents binding_agent ON binding_agent.id=binding.agent_id
+			WHERE (binding_agent.id=direct.id OR ($1=0 AND binding_agent.parent_agent_id=direct.id)) AND binding.bound_at>=$2 AND binding.bound_at<$3) new_customers,
+		(SELECT COUNT(DISTINCT source.customer_user_id) FROM distribution_commission_sources source JOIN distribution_agents source_agent ON source_agent.id=source.direct_agent_id
+			JOIN distribution_customer_bindings binding ON binding.user_id=source.customer_user_id
+			WHERE (source_agent.id=direct.id OR ($1=0 AND source_agent.parent_agent_id=direct.id)) AND source.status<>'void' AND source.paid_at>=$2 AND source.paid_at<$3 AND binding.bound_at>=$2 AND binding.bound_at<$3) paying_customers
+	FROM distribution_agents direct
+	JOIN distribution_agent_levels level ON level.id=direct.level_id
+	JOIN users agent_user ON agent_user.id=direct.user_id
+	WHERE (($1=0 AND direct.parent_agent_id IS NULL) OR direct.parent_agent_id=$1) AND direct.status<>'revoked'
+	ORDER BY paid DESC,direct.id LIMIT $4`, parentAgentID, scope.currentStart, scope.currentEnd, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	items := make([]service.DistributionAgentRanking, 0)
+	for rows.Next() {
+		var item service.DistributionAgentRanking
+		if err = rows.Scan(&item.AgentID, &item.Email, &item.Username, &item.Depth, &item.CustomerPaidCNY, &item.CommissionCNY, &item.NewCustomers, &item.PayingCustomers); err != nil {
+			return nil, err
+		}
+		item.ConversionRate = distributionMetricRate(decimal.NewFromInt(item.PayingCustomers).Mul(decimal.NewFromInt(100)), item.NewCustomers)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (r *distributionRepository) AdminGetAgentAnalytics(ctx context.Context, agentID int64, filter service.DistributionAnalyticsFilter) (*service.DistributionAgentAnalytics, error) {
+	var userID int64
+	var email, username string
+	err := r.db.QueryRowContext(ctx, `SELECT agent.user_id,COALESCE(users.email,''),COALESCE(users.username,'') FROM distribution_agents agent JOIN users ON users.id=agent.user_id WHERE agent.id=$1`, agentID).Scan(&userID, &email, &username)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrDistributionNotAgent
+	}
+	if err != nil {
+		return nil, err
+	}
+	agent, err := r.GetAgentByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	agent.Email, agent.Username = email, username
+	analytics, err := r.distributionBusinessAnalytics(ctx, agentID, filter)
+	if err != nil {
+		return nil, err
+	}
+	ranking := make([]service.DistributionAgentRanking, 0)
+	if agent.Depth == 1 {
+		ranking, err = r.distributionAgentRanking(ctx, agentID, filter, 8)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &service.DistributionAgentAnalytics{Agent: agent, Analytics: analytics, Ranking: ranking}, nil
 }
 
 func (r *distributionRepository) AdminUpdateSettings(ctx context.Context, s service.DistributionSettings, adminID int64) error {
@@ -271,11 +625,13 @@ func (r *distributionRepository) AdminUpdateSettings(ctx context.Context, s serv
 		daily_withdrawal_limit_cny=$8,monthly_withdrawal_limit_cny=$9,cny_per_platform_usd=$10,withdrawal_dual_approval_enabled=$11,
 		promotion_tracking_enabled=$12,promotion_attribution_enabled=$13,promotion_attribution_days=$14,promotion_attribution_model=$15,
 		promotion_collect_source=$16,promotion_collect_device=$17,promotion_bot_filter_enabled=$18,promotion_detail_retention_days=$19,
-		updated_by=$20,updated_at=NOW() WHERE id=1`,
+		registration_reward_enabled=$20,recharge_reward_enabled=$21,
+		updated_by=$22,updated_at=NOW() WHERE id=1`,
 		s.Enabled, s.FreezeHours, s.WithdrawalEnabled, s.MinimumWithdrawalCNY, s.MaximumWithdrawalCNY, s.WithdrawalFeeRateBPS, s.WithdrawalFeeFixedCNY,
 		s.DailyWithdrawalLimitCNY, s.MonthlyWithdrawalLimitCNY, s.CNYPerPlatformUSD, s.WithdrawalDualApproval,
 		s.PromotionTrackingEnabled, s.PromotionAttributionEnabled, s.PromotionAttributionDays, s.PromotionAttributionModel,
-		s.PromotionCollectSource, s.PromotionCollectDevice, s.PromotionBotFilterEnabled, s.PromotionDetailRetentionDays, adminID); err != nil {
+		s.PromotionCollectSource, s.PromotionCollectDevice, s.PromotionBotFilterEnabled, s.PromotionDetailRetentionDays,
+		s.RegistrationRewardEnabled, s.RechargeRewardEnabled, adminID); err != nil {
 		return err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE distribution_agent_levels SET default_rate_bps=CASE depth WHEN 1 THEN $1::integer ELSE $3::integer END,max_child_rate_bps=CASE depth WHEN 1 THEN $2::integer ELSE 0 END,updated_at=NOW() WHERE depth IN (1,2)`, s.L1DefaultRateBPS, s.L1MaxChildRateBPS, s.L2DefaultRateBPS); err != nil {
@@ -317,6 +673,69 @@ func (r *distributionRepository) AdminSetFXRate(ctx context.Context, currency st
 	return nil
 }
 
+func (r *distributionRepository) GetAgentRewardRule(ctx context.Context, actorUserID, agentID int64, admin bool) (*service.DistributionRewardRule, error) {
+	var allowed bool
+	if admin {
+		allowed = true
+	} else if err := r.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM distribution_agents child JOIN distribution_agents parent ON parent.id=child.parent_agent_id WHERE child.id=$2 AND parent.user_id=$1 AND parent.status='active')`, actorUserID, agentID).Scan(&allowed); err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, service.ErrDistributionNotAgent
+	}
+	rule := &service.DistributionRewardRule{AgentID: agentID}
+	err := r.db.QueryRowContext(ctx, `SELECT registration_enabled,registration_reward_cny,recharge_enabled,recharge_threshold_cny,recharge_reward_cny FROM distribution_agent_reward_rules WHERE agent_id=$1`, agentID).
+		Scan(&rule.RegistrationEnabled, &rule.RegistrationRewardCNY, &rule.RechargeEnabled, &rule.RechargeThresholdCNY, &rule.RechargeRewardCNY)
+	if errors.Is(err, sql.ErrNoRows) {
+		return rule, nil
+	}
+	return rule, err
+}
+
+func (r *distributionRepository) UpdateAgentRewardRule(ctx context.Context, actorUserID, agentID int64, admin bool, in service.DistributionRewardRuleInput) error {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	var depth int
+	var parentID sql.NullInt64
+	if err = tx.QueryRowContext(ctx, `SELECT l.depth,a.parent_agent_id FROM distribution_agents a JOIN distribution_agent_levels l ON l.id=a.level_id WHERE a.id=$1 AND a.status<>'revoked' FOR UPDATE OF a`, agentID).Scan(&depth, &parentID); err != nil {
+		return service.ErrDistributionNotAgent
+	}
+	if admin {
+		if depth != 1 {
+			return infraBadRequest("REWARD_RULE_L1_REQUIRED", "administrator can configure hierarchy rewards only for L1 agents")
+		}
+	} else {
+		if depth != 2 || !parentID.Valid {
+			return service.ErrDistributionNotAgent
+		}
+		var parentUserID int64
+		var rootRegistration, rootRecharge decimal.Decimal
+		if err = tx.QueryRowContext(ctx, `SELECT parent.user_id,COALESCE(rule.registration_reward_cny,0),COALESCE(rule.recharge_reward_cny,0)
+			FROM distribution_agents parent LEFT JOIN distribution_agent_reward_rules rule ON rule.agent_id=parent.id WHERE parent.id=$1 AND parent.status='active' FOR UPDATE OF parent`, parentID.Int64).
+			Scan(&parentUserID, &rootRegistration, &rootRecharge); err != nil || parentUserID != actorUserID {
+			return service.ErrDistributionNotAgent
+		}
+		if in.RegistrationRewardCNY.GreaterThan(rootRegistration) || in.RechargeRewardCNY.GreaterThan(rootRecharge) {
+			return infraBadRequest("REWARD_SHARE_EXCEEDS_BUDGET", "L2 reward share exceeds L1 hierarchy budget")
+		}
+		// The recharge threshold belongs to the hierarchy and is inherited by L2.
+		in.RechargeThresholdCNY = decimal.Zero
+	}
+	_, err = tx.ExecContext(ctx, `INSERT INTO distribution_agent_reward_rules
+		(agent_id,registration_enabled,registration_reward_cny,recharge_enabled,recharge_threshold_cny,recharge_reward_cny,updated_by)
+		VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(agent_id) DO UPDATE SET registration_enabled=EXCLUDED.registration_enabled,registration_reward_cny=EXCLUDED.registration_reward_cny,
+		recharge_enabled=EXCLUDED.recharge_enabled,
+		recharge_threshold_cny=EXCLUDED.recharge_threshold_cny,recharge_reward_cny=EXCLUDED.recharge_reward_cny,updated_by=EXCLUDED.updated_by,updated_at=NOW()`,
+		agentID, in.RegistrationEnabled, in.RegistrationRewardCNY, in.RechargeEnabled, in.RechargeThresholdCNY, in.RechargeRewardCNY, actorUserID)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 func (r *distributionRepository) AdminGrantAgent(ctx context.Context, in service.DistributionGrantAgentInput) (*service.DistributionAgent, error) {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
@@ -324,14 +743,39 @@ func (r *distributionRepository) AdminGrantAgent(ctx context.Context, in service
 	}
 	defer func() { _ = tx.Rollback() }()
 	var eligible bool
+	var oldAgentID sql.NullInt64
+	var oldCode sql.NullString
 	err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id=$1 AND deleted_at IS NULL)
-		AND NOT EXISTS(SELECT 1 FROM distribution_customer_bindings WHERE user_id=$1)
+		AND NOT EXISTS(SELECT 1 FROM distribution_agents WHERE user_id=$1)
 		AND NOT EXISTS(SELECT 1 FROM user_affiliates WHERE user_id=$1 AND inviter_id IS NOT NULL)`, in.UserID).Scan(&eligible)
 	if err != nil {
 		return nil, err
 	}
 	if !eligible {
-		return nil, infraBadRequest("AGENT_USER_INELIGIBLE", "user has an invitation or distribution customer binding")
+		return nil, infraBadRequest("AGENT_USER_INELIGIBLE", "user is inactive, already an agent, or has an invitation binding")
+	}
+	err = tx.QueryRowContext(ctx, `SELECT agent_id,promotion_code FROM distribution_customer_bindings WHERE user_id=$1 FOR UPDATE`, in.UserID).Scan(&oldAgentID, &oldCode)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	if oldAgentID.Valid && !in.UpgradeCustomer {
+		return nil, infraBadRequest("AGENT_USER_INELIGIBLE", "user has a distribution customer binding; upgrade is required")
+	}
+	if in.UpgradeCustomer && !oldAgentID.Valid {
+		return nil, infraBadRequest("CUSTOMER_BINDING_REQUIRED", "upgrade requires an existing distribution customer binding")
+	}
+	if in.Depth == 2 {
+		var parentDepth int
+		var parentStatus string
+		if err = tx.QueryRowContext(ctx, `SELECT l.depth,a.status FROM distribution_agents a JOIN distribution_agent_levels l ON l.id=a.level_id WHERE a.id=$1 FOR UPDATE`, *in.ParentAgentID).Scan(&parentDepth, &parentStatus); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, infraBadRequest("PARENT_AGENT_NOT_FOUND", "parent agent not found")
+			}
+			return nil, err
+		}
+		if parentDepth != 1 || parentStatus != "active" {
+			return nil, infraBadRequest("PARENT_AGENT_INVALID", "parent agent must be an active L1 agent")
+		}
 	}
 	var levelID int64
 	var defaultRate, maxChild int
@@ -391,6 +835,16 @@ func (r *distributionRepository) AdminGrantAgent(ctx context.Context, in service
 		(agent_id,event_type,new_status,new_rate_override_bps,new_effective_rate_bps,reason,actor_user_id)
 		VALUES($1,'created','active',$2,$3,'agent granted',$4)`, agentID, in.RateOverrideBPS, effectiveDistributionRate(in.RateOverrideBPS, defaultRate), in.GrantedBy); err != nil {
 		return nil, err
+	}
+	if oldAgentID.Valid {
+		if _, err = tx.ExecContext(ctx, `DELETE FROM distribution_customer_bindings WHERE user_id=$1`, in.UserID); err != nil {
+			return nil, err
+		}
+		if _, err = tx.ExecContext(ctx, `INSERT INTO distribution_binding_events
+			(customer_user_id,old_agent_id,new_agent_id,old_promotion_code,new_promotion_code,reason,actor_user_id)
+			VALUES($1,$2,$3,$4,$5,$6,$7)`, in.UserID, oldAgentID.Int64, agentID, oldCode.String, code, "customer upgraded to distribution agent", in.GrantedBy); err != nil {
+			return nil, err
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, err
@@ -653,18 +1107,33 @@ func (r *distributionRepository) AdminListAgents(ctx context.Context, filter ser
 		(SELECT COUNT(*) FROM distribution_agents child WHERE child.parent_agent_id=a.id AND child.status<>'revoked') AS team_count,
 		(SELECT COUNT(DISTINCT s.customer_user_id) FROM distribution_commission_sources s
 			JOIN distribution_agents direct ON direct.id=s.direct_agent_id
-			WHERE (direct.id=a.id OR direct.parent_agent_id=a.id) AND COALESCE(s.commission_base_cny,0)>0) AS paying_customer_count,
-		COALESCE((SELECT SUM(s.commission_base_cny) FROM distribution_commission_sources s
+			WHERE (direct.id=a.id OR direct.parent_agent_id=a.id) AND s.status<>'void' AND COALESCE(s.commission_base_cny,0)>0) AS paying_customer_count,
+		COALESCE((SELECT SUM(GREATEST(COALESCE(s.commission_base_cny,0)-s.refunded_amount_cny,0)) FROM distribution_commission_sources s
 			JOIN distribution_agents direct ON direct.id=s.direct_agent_id
-			WHERE direct.id=a.id OR direct.parent_agent_id=a.id),0) AS customer_paid_cny,
+			WHERE (direct.id=a.id OR direct.parent_agent_id=a.id) AND s.status<>'void'),0) AS customer_paid_cny,
 		COALESCE((SELECT SUM(GREATEST(e.original_amount_cny-e.reversed_amount_cny,0)) FROM distribution_commission_entries e
 			WHERE e.beneficiary_agent_id=a.id AND e.created_at>=DATE_TRUNC('month',NOW())),0) AS this_month_commission_cny,
+		(SELECT COUNT(*) FROM distribution_customer_bindings binding WHERE binding.agent_id=a.id AND binding.bound_at>=$5 AND binding.bound_at<$6) AS period_customer_count,
+		(SELECT COUNT(DISTINCT source.customer_user_id) FROM distribution_commission_sources source JOIN distribution_customer_bindings binding ON binding.user_id=source.customer_user_id
+			WHERE source.direct_agent_id=a.id AND source.status<>'void' AND source.paid_at>=$5 AND source.paid_at<$6 AND binding.bound_at>=$5 AND binding.bound_at<$6) AS period_paying_customers,
+		COALESCE((SELECT SUM(GREATEST(COALESCE(source.commission_base_cny,0)-source.refunded_amount_cny,0)) FROM distribution_commission_sources source
+			WHERE source.direct_agent_id=a.id AND source.status<>'void' AND source.paid_at>=$5 AND source.paid_at<$6),0) AS period_customer_paid_cny,
+		COALESCE((SELECT SUM(GREATEST(entry.original_amount_cny-entry.reversed_amount_cny,0)) FROM distribution_commission_entries entry
+			WHERE entry.beneficiary_agent_id=a.id AND entry.entry_type='direct' AND entry.created_at>=$5 AND entry.created_at<$6),0) AS period_commission_cny,
+		(SELECT COUNT(*) FROM distribution_customer_bindings binding JOIN distribution_agents child ON child.id=binding.agent_id WHERE child.parent_agent_id=a.id AND binding.bound_at>=$5 AND binding.bound_at<$6) AS team_customer_count,
+		(SELECT COUNT(DISTINCT source.customer_user_id) FROM distribution_commission_sources source JOIN distribution_agents child ON child.id=source.direct_agent_id JOIN distribution_customer_bindings binding ON binding.user_id=source.customer_user_id
+			WHERE child.parent_agent_id=a.id AND source.status<>'void' AND source.paid_at>=$5 AND source.paid_at<$6 AND binding.bound_at>=$5 AND binding.bound_at<$6) AS team_paying_customers,
+		COALESCE((SELECT SUM(GREATEST(COALESCE(source.commission_base_cny,0)-source.refunded_amount_cny,0)) FROM distribution_commission_sources source JOIN distribution_agents child ON child.id=source.direct_agent_id
+			WHERE child.parent_agent_id=a.id AND source.status<>'void' AND source.paid_at>=$5 AND source.paid_at<$6),0) AS team_customer_paid_cny,
+		COALESCE((SELECT SUM(GREATEST(entry.original_amount_cny-entry.reversed_amount_cny,0)) FROM distribution_commission_entries entry
+			WHERE entry.beneficiary_agent_id=a.id AND entry.entry_type='team' AND entry.created_at>=$5 AND entry.created_at<$6),0) AS team_commission_cny,
 		COALESCE(w.total_converted_cny,0),
 		(SELECT MAX(e.created_at) FROM distribution_commission_entries e WHERE e.beneficiary_agent_id=a.id) AS last_commission_at,
 		a.created_at`
 	offset := (filter.Page - 1) * filter.PageSize
+	scope := newDistributionAnalyticsScope(service.DistributionAnalyticsFilter{Days: filter.Days, DateFrom: filter.DateFrom, DateTo: filter.DateTo})
 	sortExpr := distributionAgentSortExpression(filter.SortBy)
-	rows, err := r.db.QueryContext(ctx, selectColumns+from+` ORDER BY `+sortExpr+` `+filter.SortOrder+` NULLS LAST,a.id DESC LIMIT $5 OFFSET $6`, filter.Search, like, filter.Status, filter.Depth, filter.PageSize, offset)
+	rows, err := r.db.QueryContext(ctx, selectColumns+from+` ORDER BY `+sortExpr+` `+filter.SortOrder+` NULLS LAST,a.id DESC LIMIT $7 OFFSET $8`, filter.Search, like, filter.Status, filter.Depth, scope.currentStart, scope.currentEnd, filter.PageSize, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -677,7 +1146,9 @@ func (r *distributionRepository) AdminListAgents(ctx context.Context, filter ser
 			&a.ReservedCNY, &a.DebtCNY, &a.TotalEarnedCNY, &a.TotalWithdrawnCNY,
 			&a.Email, &a.Username, &a.UserStatus, &a.ParentUserID, &a.ParentEmail, &a.ParentUsername,
 			&a.CustomerCount, &a.TeamCount, &a.PayingCustomerCount, &a.CustomerPaidCNY,
-			&a.ThisMonthCommissionCNY, &a.TotalConvertedCNY, &a.LastCommissionAt, &a.CreatedAt); err != nil {
+			&a.ThisMonthCommissionCNY, &a.PeriodCustomerCount, &a.PeriodPayingCustomers, &a.PeriodCustomerPaidCNY, &a.PeriodCommissionCNY,
+			&a.TeamCustomerCount, &a.TeamPayingCustomers, &a.TeamCustomerPaidCNY, &a.TeamCommissionCNY,
+			&a.TotalConvertedCNY, &a.LastCommissionAt, &a.CreatedAt); err != nil {
 			return nil, 0, err
 		}
 		items = append(items, a)
@@ -733,7 +1204,7 @@ func (r *distributionRepository) AdminListCustomers(ctx context.Context, filter 
 	}
 	offset := (filter.Page - 1) * filter.PageSize
 	sortExpr := distributionCustomerSortExpression(filter.SortBy)
-	rows, err := r.db.QueryContext(ctx, `SELECT u.id,COALESCE(u.email,''),COALESCE(u.username,''),
+	rows, err := r.db.QueryContext(ctx, `SELECT u.id,COALESCE(u.email,''),COALESCE(u.username,''),u.created_at,
 		a.id,a.user_id,a.promotion_code,COALESCE(agent_user.email,''),COALESCE(agent_user.username,''),l.depth,b.bound_at,
 		(SELECT COUNT(*) FROM distribution_commission_sources s WHERE s.customer_user_id=u.id) AS order_count,
 		COALESCE((SELECT SUM(s.commission_base_cny) FROM distribution_commission_sources s WHERE s.customer_user_id=u.id),0) AS total_paid_cny,
@@ -749,7 +1220,7 @@ func (r *distributionRepository) AdminListCustomers(ctx context.Context, filter 
 	items := make([]service.DistributionCustomer, 0)
 	for rows.Next() {
 		var item service.DistributionCustomer
-		if err = rows.Scan(&item.UserID, &item.Email, &item.Username, &item.AgentID, &item.AgentUserID,
+		if err = rows.Scan(&item.UserID, &item.Email, &item.Username, &item.RegisteredAt, &item.AgentID, &item.AgentUserID,
 			&item.AgentPromotionCode, &item.AgentEmail, &item.AgentUsername, &item.AgentDepth, &item.BoundAt,
 			&item.OrderCount, &item.TotalPaidCNY, &item.CommissionCNY, &item.RefundedCNY, &item.LastPaidAt); err != nil {
 			return nil, 0, err
@@ -775,6 +1246,8 @@ func distributionCustomerSortExpression(sortBy string) string {
 		return "refunded_cny"
 	case "last_paid_at":
 		return "last_paid_at"
+	case "registered_at":
+		return "u.created_at"
 	default:
 		return "b.bound_at"
 	}
@@ -784,9 +1257,8 @@ func (r *distributionRepository) AdminLookupAgentCandidates(ctx context.Context,
 	like := "%" + query + "%"
 	rows, err := r.db.QueryContext(ctx, `SELECT u.id,COALESCE(u.email,''),COALESCE(u.username,''),u.status,
 		(u.status='active'
-		 AND NOT EXISTS(SELECT 1 FROM distribution_agents a WHERE a.user_id=u.id)
-		 AND NOT EXISTS(SELECT 1 FROM distribution_customer_bindings b WHERE b.user_id=u.id)
-		 AND NOT EXISTS(SELECT 1 FROM user_affiliates ua WHERE ua.user_id=u.id AND ua.inviter_id IS NOT NULL)),
+			 AND NOT EXISTS(SELECT 1 FROM distribution_agents a WHERE a.user_id=u.id)
+			 AND NOT EXISTS(SELECT 1 FROM user_affiliates ua WHERE ua.user_id=u.id AND ua.inviter_id IS NOT NULL)),
 		CASE
 			WHEN u.status<>'active' THEN 'user_inactive'
 			WHEN EXISTS(SELECT 1 FROM distribution_agents a WHERE a.user_id=u.id) THEN 'already_agent'
@@ -1541,7 +2013,7 @@ func randomDistributionCode() (string, error) {
 
 func infraBadRequest(code, message string) error { return infraerrors.BadRequest(code, message) }
 
-func (r *distributionRepository) GetOverview(ctx context.Context, userID int64) (*service.DistributionOverview, error) {
+func (r *distributionRepository) GetOverview(ctx context.Context, userID int64, filter service.DistributionAnalyticsFilter) (*service.DistributionOverview, error) {
 	a, err := r.GetAgentByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -1566,6 +2038,18 @@ func (r *distributionRepository) GetOverview(ctx context.Context, userID int64) 
 	)
 	if err != nil {
 		return nil, err
+	}
+	overview.Analytics, err = r.distributionBusinessAnalytics(ctx, a.ID, filter)
+	if err != nil {
+		return nil, err
+	}
+	if a.Depth == 1 {
+		overview.TeamRanking, err = r.distributionAgentRanking(ctx, a.ID, filter, 8)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		overview.TeamRanking = make([]service.DistributionAgentRanking, 0)
 	}
 	return &overview, nil
 }
@@ -1628,7 +2112,16 @@ func (r *distributionRepository) ListTeam(ctx context.Context, userID int64, fil
 	if err != nil {
 		return nil, 0, err
 	}
-	rows, err := r.db.QueryContext(ctx, `SELECT a.id,a.user_id,a.level_id,l.depth,a.parent_agent_id,a.promotion_code,COALESCE(a.rate_override_bps,l.default_rate_bps),l.max_child_rate_bps,a.can_recruit_subagents,a.can_view_promotion_stats,a.status,COALESCE(w.available_cny,0),COALESCE(w.frozen_cny,0),COALESCE(w.reserved_cny,0),COALESCE(w.debt_cny,0),COALESCE(w.total_earned_cny,0),COALESCE(w.total_withdrawn_cny,0),COALESCE(u.email,''),COALESCE(u.username,''),u.status,(SELECT COUNT(*) FROM distribution_customer_bindings b WHERE b.agent_id=a.id),a.created_at`+from+` ORDER BY a.created_at DESC LIMIT $5 OFFSET $6`, userID, filter.Status, filter.Search, like, filter.PageSize, (filter.Page-1)*filter.PageSize)
+	scope := newDistributionAnalyticsScope(service.DistributionAnalyticsFilter{Days: filter.Days, DateFrom: filter.DateFrom, DateTo: filter.DateTo})
+	rows, err := r.db.QueryContext(ctx, `SELECT a.id,a.user_id,a.level_id,l.depth,a.parent_agent_id,a.promotion_code,COALESCE(a.rate_override_bps,l.default_rate_bps),l.max_child_rate_bps,a.can_recruit_subagents,a.can_view_promotion_stats,a.status,COALESCE(w.available_cny,0),COALESCE(w.frozen_cny,0),COALESCE(w.reserved_cny,0),COALESCE(w.debt_cny,0),COALESCE(w.total_earned_cny,0),COALESCE(w.total_withdrawn_cny,0),COALESCE(u.email,''),COALESCE(u.username,''),u.status,
+		(SELECT COUNT(*) FROM distribution_customer_bindings b WHERE b.agent_id=a.id),
+		(SELECT COUNT(DISTINCT source.customer_user_id) FROM distribution_commission_sources source WHERE source.direct_agent_id=a.id AND source.status<>'void'),
+		COALESCE((SELECT SUM(GREATEST(COALESCE(source.commission_base_cny,0)-source.refunded_amount_cny,0)) FROM distribution_commission_sources source WHERE source.direct_agent_id=a.id AND source.status<>'void'),0),
+		COALESCE((SELECT SUM(GREATEST(entry.original_amount_cny-entry.reversed_amount_cny,0)) FROM distribution_commission_entries entry WHERE entry.beneficiary_agent_id=a.id AND entry.created_at>=DATE_TRUNC('month',NOW())),0),
+		(SELECT COUNT(*) FROM distribution_customer_bindings b WHERE b.agent_id=a.id AND b.bound_at>=$5 AND b.bound_at<$6),
+		(SELECT COUNT(DISTINCT source.customer_user_id) FROM distribution_commission_sources source JOIN distribution_customer_bindings b ON b.user_id=source.customer_user_id WHERE source.direct_agent_id=a.id AND source.status<>'void' AND b.bound_at>=$5 AND b.bound_at<$6 AND source.paid_at>=$5 AND source.paid_at<$6),
+		COALESCE((SELECT SUM(GREATEST(COALESCE(source.commission_base_cny,0)-source.refunded_amount_cny,0)) FROM distribution_commission_sources source WHERE source.direct_agent_id=a.id AND source.status<>'void' AND source.paid_at>=$5 AND source.paid_at<$6),0),
+		COALESCE((SELECT SUM(GREATEST(entry.original_amount_cny-entry.reversed_amount_cny,0)) FROM distribution_commission_entries entry WHERE entry.beneficiary_agent_id=a.id AND entry.entry_type='direct' AND entry.created_at>=$5 AND entry.created_at<$6),0),a.created_at`+from+` ORDER BY a.created_at DESC LIMIT $7 OFFSET $8`, userID, filter.Status, filter.Search, like, scope.currentStart, scope.currentEnd, filter.PageSize, (filter.Page-1)*filter.PageSize)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1636,12 +2129,32 @@ func (r *distributionRepository) ListTeam(ctx context.Context, userID int64, fil
 	items := make([]service.DistributionAgent, 0)
 	for rows.Next() {
 		var a service.DistributionAgent
-		if err = rows.Scan(&a.ID, &a.UserID, &a.LevelID, &a.Depth, &a.ParentAgentID, &a.PromotionCode, &a.EffectiveRateBPS, &a.MaxChildRateBPS, &a.CanRecruitSubagents, &a.CanViewPromotionStats, &a.Status, &a.AvailableCNY, &a.FrozenCNY, &a.ReservedCNY, &a.DebtCNY, &a.TotalEarnedCNY, &a.TotalWithdrawnCNY, &a.Email, &a.Username, &a.UserStatus, &a.CustomerCount, &a.CreatedAt); err != nil {
+		if err = rows.Scan(&a.ID, &a.UserID, &a.LevelID, &a.Depth, &a.ParentAgentID, &a.PromotionCode, &a.EffectiveRateBPS, &a.MaxChildRateBPS, &a.CanRecruitSubagents, &a.CanViewPromotionStats, &a.Status, &a.AvailableCNY, &a.FrozenCNY, &a.ReservedCNY, &a.DebtCNY, &a.TotalEarnedCNY, &a.TotalWithdrawnCNY, &a.Email, &a.Username, &a.UserStatus, &a.CustomerCount, &a.PayingCustomerCount, &a.CustomerPaidCNY, &a.ThisMonthCommissionCNY, &a.PeriodCustomerCount, &a.PeriodPayingCustomers, &a.PeriodCustomerPaidCNY, &a.PeriodCommissionCNY, &a.CreatedAt); err != nil {
 			return nil, 0, err
 		}
 		items = append(items, a)
 	}
 	return items, total, rows.Err()
+}
+
+func (r *distributionRepository) GetTeamAgentAnalytics(ctx context.Context, userID, agentID int64, filter service.DistributionAnalyticsFilter) (*service.DistributionAgentAnalytics, error) {
+	var childUserID int64
+	err := r.db.QueryRowContext(ctx, `SELECT child.user_id FROM distribution_agents child JOIN distribution_agents parent ON parent.id=child.parent_agent_id WHERE child.id=$2 AND parent.user_id=$1 AND child.status<>'revoked'`, userID, agentID).Scan(&childUserID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrDistributionNotAgent
+	}
+	if err != nil {
+		return nil, err
+	}
+	agent, err := r.GetAgentByUserID(ctx, childUserID)
+	if err != nil {
+		return nil, err
+	}
+	analytics, err := r.distributionBusinessAnalytics(ctx, agentID, filter)
+	if err != nil {
+		return nil, err
+	}
+	return &service.DistributionAgentAnalytics{Agent: agent, Analytics: analytics, Ranking: make([]service.DistributionAgentRanking, 0)}, nil
 }
 func (r *distributionRepository) UpdateTeamAgentStatus(ctx context.Context, userID, agentID int64, status string) error {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
@@ -1766,6 +2279,9 @@ func (r *distributionRepository) AccruePaidOrder(ctx context.Context, in service
 		}
 		return &service.DistributionCommissionResult{SourceID: sourceID, Status: status, Created: true}, nil
 	}
+	if err = accrueDistributionRewardTx(ctx, tx, in.CustomerUserID, "recharge_threshold", in.PaymentOrderID, baseCNY); err != nil {
+		return nil, err
+	}
 
 	availableAt := in.PaidAt.Add(time.Duration(freezeHours) * time.Hour)
 	total := decimal.Zero
@@ -1808,6 +2324,143 @@ func nullableDecimal(v decimal.Decimal) any {
 		return nil
 	}
 	return v
+}
+
+func accrueDistributionRewardTx(ctx context.Context, tx *sql.Tx, customerUserID int64, rewardType string, paymentOrderID int64, paidCNY decimal.Decimal) error {
+	var enabled, rewardEnabled bool
+	var freezeHours int
+	err := tx.QueryRowContext(ctx, `SELECT enabled,freeze_hours,
+		CASE $1 WHEN 'registration' THEN registration_reward_enabled ELSE recharge_reward_enabled END
+		FROM distribution_settings WHERE id=1`, rewardType).Scan(&enabled, &freezeHours, &rewardEnabled)
+	if err != nil || !enabled || !rewardEnabled {
+		return err
+	}
+
+	var directID, rootID int64
+	var depth int
+	err = tx.QueryRowContext(ctx, `SELECT direct.id,l.depth,COALESCE(parent.id,direct.id)
+		FROM distribution_customer_bindings binding
+		JOIN distribution_agents direct ON direct.id=binding.agent_id AND direct.status='active'
+		JOIN distribution_agent_levels l ON l.id=direct.level_id AND l.is_active=TRUE
+		LEFT JOIN distribution_agents parent ON parent.id=direct.parent_agent_id AND parent.status='active'
+		WHERE binding.user_id=$1 AND NOT EXISTS(SELECT 1 FROM distribution_agents self WHERE self.user_id=binding.user_id)
+		AND (l.depth=1 OR parent.id IS NOT NULL)`, customerUserID).Scan(&directID, &depth, &rootID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	var rootRegistration, threshold, rootRecharge decimal.Decimal
+	var rootRegistrationEnabled, rootRechargeEnabled bool
+	err = tx.QueryRowContext(ctx, `SELECT registration_enabled,registration_reward_cny,recharge_enabled,recharge_threshold_cny,recharge_reward_cny
+		FROM distribution_agent_reward_rules WHERE agent_id=$1`, rootID).Scan(&rootRegistrationEnabled, &rootRegistration, &rootRechargeEnabled, &threshold, &rootRecharge)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if rewardType == "registration" && !rootRegistrationEnabled || rewardType == "recharge_threshold" && !rootRechargeEnabled {
+		return nil
+	}
+	total := rootRegistration
+	if rewardType == "recharge_threshold" {
+		total = rootRecharge
+		if !threshold.IsPositive() || paidCNY.LessThan(threshold) {
+			return nil
+		}
+	}
+	if !total.IsPositive() {
+		return nil
+	}
+
+	directShare := decimal.Zero
+	if depth == 2 {
+		var shareRegistration, shareRecharge decimal.Decimal
+		var shareRegistrationEnabled, shareRechargeEnabled bool
+		err = tx.QueryRowContext(ctx, `SELECT registration_enabled,registration_reward_cny,recharge_enabled,recharge_reward_cny
+			FROM distribution_agent_reward_rules WHERE agent_id=$1`, directID).Scan(&shareRegistrationEnabled, &shareRegistration, &shareRechargeEnabled, &shareRecharge)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if err == nil {
+			directShare = shareRegistration
+			if !shareRegistrationEnabled {
+				directShare = decimal.Zero
+			}
+			if rewardType == "recharge_threshold" {
+				directShare = shareRecharge
+				if !shareRechargeEnabled {
+					directShare = decimal.Zero
+				}
+			}
+		}
+		if directShare.GreaterThan(total) {
+			directShare = total
+		}
+	}
+
+	snapshot, _ := json.Marshal(map[string]any{"root_agent_id": rootID, "direct_agent_id": directID, "threshold_cny": threshold.String(), "total_reward_cny": total.String(), "direct_share_cny": directShare.String()})
+	var eventID int64
+	var trigger any
+	if paymentOrderID > 0 {
+		trigger = paymentOrderID
+	}
+	err = tx.QueryRowContext(ctx, `INSERT INTO distribution_reward_events
+		(customer_user_id,root_agent_id,direct_agent_id,reward_type,trigger_payment_order_id,threshold_cny,total_reward_cny,direct_share_cny,config_snapshot)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(customer_user_id,reward_type) DO NOTHING RETURNING id`,
+		customerUserID, rootID, directID, rewardType, trigger, threshold, total, directShare, snapshot).Scan(&eventID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	availableAt := time.Now().Add(time.Duration(freezeHours) * time.Hour)
+	grants := []struct {
+		agentID int64
+		role    string
+		amount  decimal.Decimal
+	}{{rootID, "root", total.Sub(directShare)}}
+	if depth == 2 && directShare.IsPositive() {
+		grants = append(grants, struct {
+			agentID int64
+			role    string
+			amount  decimal.Decimal
+		}{directID, "direct", directShare})
+	}
+	for _, grant := range grants {
+		if !grant.amount.IsPositive() {
+			continue
+		}
+		var grantID int64
+		if err = tx.QueryRowContext(ctx, `INSERT INTO distribution_reward_grants
+			(event_id,beneficiary_agent_id,beneficiary_role,original_amount_cny,available_at)
+			VALUES($1,$2,$3,$4,$5) RETURNING id`, eventID, grant.agentID, grant.role, grant.amount, availableAt).Scan(&grantID); err != nil {
+			return err
+		}
+		if err = creditFrozenRewardWallet(ctx, tx, grant.agentID, grantID, grant.amount); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func creditFrozenRewardWallet(ctx context.Context, tx *sql.Tx, agentID, grantID int64, amount decimal.Decimal) error {
+	_, err := tx.ExecContext(ctx, `INSERT INTO distribution_wallets(agent_id,frozen_cny,total_earned_cny) VALUES($1,$2,$2)
+		ON CONFLICT(agent_id) DO UPDATE SET frozen_cny=distribution_wallets.frozen_cny+EXCLUDED.frozen_cny,
+		total_earned_cny=distribution_wallets.total_earned_cny+EXCLUDED.total_earned_cny,updated_at=NOW()`, agentID, amount)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, `INSERT INTO distribution_wallet_ledger
+		(agent_id,reward_grant_id,entry_type,amount_cny,frozen_after_cny,available_after_cny,reserved_after_cny,debt_after_cny,idempotency_key)
+		SELECT agent_id,$2,'reward_frozen',$3,frozen_cny,available_cny,reserved_cny,debt_cny,$4 FROM distribution_wallets WHERE agent_id=$1`,
+		agentID, grantID, amount, fmt.Sprintf("reward:%d:frozen", grantID))
+	return err
 }
 
 func creditFrozenWallet(ctx context.Context, tx *sql.Tx, agentID, entryID int64, amount decimal.Decimal) error {
@@ -1891,8 +2544,60 @@ func (r *distributionRepository) releaseMaturedForUser(ctx context.Context, user
 			return 0, err
 		}
 	}
+	rewardCount, err := releaseMaturedRewardsTx(ctx, tx, userID)
+	if err != nil {
+		return 0, err
+	}
 	if err = tx.Commit(); err != nil {
 		return 0, err
+	}
+	return len(items) + rewardCount, nil
+}
+
+func releaseMaturedRewardsTx(ctx context.Context, tx *sql.Tx, userID int64) (int, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT g.id,g.beneficiary_agent_id,(g.original_amount_cny-g.reversed_amount_cny)
+		FROM distribution_reward_grants g JOIN distribution_agents a ON a.id=g.beneficiary_agent_id
+		WHERE ($1=0 OR a.user_id=$1) AND g.status='frozen' AND g.available_at<=NOW() ORDER BY g.id FOR UPDATE OF g`, userID)
+	if err != nil {
+		return 0, err
+	}
+	type maturedReward struct {
+		id, agent int64
+		amount    decimal.Decimal
+	}
+	var items []maturedReward
+	for rows.Next() {
+		var m maturedReward
+		if err = rows.Scan(&m.id, &m.agent, &m.amount); err != nil {
+			_ = rows.Close()
+			return 0, err
+		}
+		items = append(items, m)
+	}
+	if err = rows.Close(); err != nil {
+		return 0, err
+	}
+	for _, m := range items {
+		var frozen, available, reserved, debt decimal.Decimal
+		if err = tx.QueryRowContext(ctx, `SELECT frozen_cny,available_cny,reserved_cny,debt_cny FROM distribution_wallets WHERE agent_id=$1 FOR UPDATE`, m.agent).Scan(&frozen, &available, &reserved, &debt); err != nil {
+			return 0, err
+		}
+		offset := decimal.Min(m.amount, debt)
+		net := m.amount.Sub(offset)
+		if _, err = tx.ExecContext(ctx, `UPDATE distribution_wallets SET frozen_cny=frozen_cny-$2,available_cny=available_cny+$3,debt_cny=debt_cny-$4,updated_at=NOW() WHERE agent_id=$1`, m.agent, m.amount, net, offset); err != nil {
+			return 0, err
+		}
+		if _, err = tx.ExecContext(ctx, `UPDATE distribution_reward_grants SET status='available',updated_at=NOW() WHERE id=$1`, m.id); err != nil {
+			return 0, err
+		}
+		kind := "reward_released"
+		if offset.Equal(m.amount) {
+			kind = "debt_offset"
+		}
+		if _, err = tx.ExecContext(ctx, `INSERT INTO distribution_wallet_ledger(agent_id,reward_grant_id,entry_type,amount_cny,frozen_after_cny,available_after_cny,reserved_after_cny,debt_after_cny,idempotency_key)
+			SELECT agent_id,$2,$3,$4,frozen_cny,available_cny,reserved_cny,debt_cny,$5 FROM distribution_wallets WHERE agent_id=$1`, m.agent, m.id, kind, net, fmt.Sprintf("reward:%d:release", m.id)); err != nil {
+			return 0, err
+		}
 	}
 	return len(items), nil
 }
@@ -1979,6 +2684,9 @@ func (r *distributionRepository) ReverseRefund(ctx context.Context, orderID int6
 			return err
 		}
 	}
+	if err = reverseDistributionRewardEventsTx(ctx, tx, orderID); err != nil {
+		return err
+	}
 	newRefunded := already.Add(refundCNY)
 	newStatus := "partially_refunded"
 	if newRefunded.GreaterThanOrEqual(base) {
@@ -1989,4 +2697,55 @@ func (r *distributionRepository) ReverseRefund(ctx context.Context, orderID int6
 		return err
 	}
 	return tx.Commit()
+}
+
+func reverseDistributionRewardEventsTx(ctx context.Context, tx *sql.Tx, orderID int64) error {
+	rows, err := tx.QueryContext(ctx, `SELECT g.id,g.beneficiary_agent_id,g.original_amount_cny,g.reversed_amount_cny,g.status
+		FROM distribution_reward_events event JOIN distribution_reward_grants g ON g.event_id=event.id
+		WHERE event.trigger_payment_order_id=$1 FOR UPDATE OF g`, orderID)
+	if err != nil {
+		return err
+	}
+	type rewardGrant struct {
+		id, agent          int64
+		original, reversed decimal.Decimal
+		status             string
+	}
+	var grants []rewardGrant
+	for rows.Next() {
+		var g rewardGrant
+		if err = rows.Scan(&g.id, &g.agent, &g.original, &g.reversed, &g.status); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		grants = append(grants, g)
+	}
+	if err = rows.Close(); err != nil {
+		return err
+	}
+	for _, g := range grants {
+		reversal := g.original.Sub(g.reversed)
+		if !reversal.IsPositive() || g.status == "reversed" {
+			continue
+		}
+		var frozen, available, reserved, debt decimal.Decimal
+		if err = tx.QueryRowContext(ctx, `SELECT frozen_cny,available_cny,reserved_cny,debt_cny FROM distribution_wallets WHERE agent_id=$1 FOR UPDATE`, g.agent).Scan(&frozen, &available, &reserved, &debt); err != nil {
+			return err
+		}
+		fromFrozen := decimal.Min(frozen, reversal)
+		left := reversal.Sub(fromFrozen)
+		fromAvailable := decimal.Min(available, left)
+		debtAdd := left.Sub(fromAvailable)
+		if _, err = tx.ExecContext(ctx, `UPDATE distribution_wallets SET frozen_cny=frozen_cny-$2,available_cny=available_cny-$3,debt_cny=debt_cny+$4,updated_at=NOW() WHERE agent_id=$1`, g.agent, fromFrozen, fromAvailable, debtAdd); err != nil {
+			return err
+		}
+		if _, err = tx.ExecContext(ctx, `UPDATE distribution_reward_grants SET reversed_amount_cny=original_amount_cny,status='reversed',updated_at=NOW() WHERE id=$1`, g.id); err != nil {
+			return err
+		}
+		if _, err = tx.ExecContext(ctx, `INSERT INTO distribution_wallet_ledger(agent_id,reward_grant_id,entry_type,amount_cny,frozen_after_cny,available_after_cny,reserved_after_cny,debt_after_cny,idempotency_key)
+			SELECT agent_id,$2,'reward_reversal',$3,frozen_cny,available_cny,reserved_cny,debt_cny,$4 FROM distribution_wallets WHERE agent_id=$1`, g.agent, g.id, reversal.Neg(), fmt.Sprintf("reward:%d:reversal", g.id)); err != nil {
+			return err
+		}
+	}
+	return nil
 }

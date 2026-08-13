@@ -36,6 +36,7 @@
               </button>
             </div>
           </header>
+          <AdminDistributionNav class="mt-5" />
         </template>
 
         <template #filters>
@@ -129,6 +130,7 @@
                 清除筛选
               </button>
             </div>
+            <DistributionFilterSummary :items="filterSummary" @remove="removeFilter" @clear="clearFilters" />
           </div>
         </template>
 
@@ -282,10 +284,10 @@
       </TablePageLayout>
     </div>
 
-    <BaseDialog
+    <BaseDrawer
       :show="detailDialog"
       title="佣金记录详情"
-      width="normal"
+      description="订单、计佣和入账信息"
       @close="detailDialog = false"
     >
       <div v-if="selected" class="space-y-5">
@@ -366,7 +368,7 @@
           }}
         </p>
       </div>
-    </BaseDialog>
+    </BaseDrawer>
     <BaseDialog
       :show="filterDialog"
       title="筛选佣金记录"
@@ -432,7 +434,10 @@ import TablePageLayout from "@/components/layout/TablePageLayout.vue";
 import DataTable from "@/components/common/DataTable.vue";
 import Pagination from "@/components/common/Pagination.vue";
 import BaseDialog from "@/components/common/BaseDialog.vue";
+import BaseDrawer from "@/components/common/BaseDrawer.vue";
+import AdminDistributionNav from "@/components/admin/distribution/AdminDistributionNav.vue";
 import Icon from "@/components/icons/Icon.vue";
+import DistributionFilterSummary, { type DistributionFilterItem } from "@/components/distribution/DistributionFilterSummary.vue";
 import type { Column } from "@/components/common/types";
 import type { DistributionCommission } from "@/api/distribution";
 import { exportCommissions, listCommissions } from "@/api/admin/distribution";
@@ -480,6 +485,22 @@ const hasFilters = computed(() =>
     dateTo.value,
   ),
 );
+const filterSummary = computed<DistributionFilterItem[]>(() => [
+  search.value ? { key: 'search', label: '搜索', value: search.value } : null,
+  status.value ? { key: 'status', label: '状态', value: statusText(status.value) } : null,
+  entryType.value ? { key: 'type', label: '来源', value: entryType.value === 'direct' ? '直属佣金' : '团队差额' } : null,
+  paymentType.value ? { key: 'payment', label: '支付', value: paymentLabel(paymentType.value) } : null,
+  dateFrom.value ? { key: 'from', label: '开始', value: dateFrom.value } : null,
+  dateTo.value ? { key: 'to', label: '结束', value: dateTo.value } : null,
+].filter((item): item is DistributionFilterItem => Boolean(item)));
+function removeFilter(key: string) {
+  if (key === 'search') search.value = '';
+  if (key === 'status') status.value = '';
+  if (key === 'type') entryType.value = '';
+  if (key === 'payment') paymentType.value = '';
+  if (key === 'from') dateFrom.value = '';
+  if (key === 'to') dateTo.value = '';
+}
 const activeFilterCount = computed(
   () =>
     [

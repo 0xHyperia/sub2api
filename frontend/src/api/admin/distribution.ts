@@ -1,6 +1,9 @@
 import { apiClient } from "../client";
 import type {
   DistributionAgent,
+  DistributionAgentAnalytics,
+  DistributionAgentRanking,
+  DistributionBusinessAnalytics,
   DistributionCommission,
   DistributionCustomer,
 } from "../distribution";
@@ -30,6 +33,16 @@ export interface DistributionSettings {
   promotion_collect_device: boolean;
   promotion_bot_filter_enabled: boolean;
   promotion_detail_retention_days: number;
+  registration_reward_enabled: boolean;
+  recharge_reward_enabled: boolean;
+}
+export interface DistributionRewardRule {
+  agent_id: number;
+  registration_enabled: boolean;
+  registration_reward_cny: string;
+  recharge_enabled: boolean;
+  recharge_threshold_cny: string;
+  recharge_reward_cny: string;
 }
 
 export interface DistributionAdminOverview {
@@ -54,6 +67,10 @@ export interface DistributionAdminOverview {
   paying_withdrawal_cny: string;
   paid_this_month_cny: string;
   overdue_pending_count: number;
+  period_registration_reward_cny: string;
+  period_recharge_reward_cny: string;
+  analytics: DistributionBusinessAnalytics;
+  agent_ranking: DistributionAgentRanking[];
 }
 
 export interface DistributionAdminAnomaly {
@@ -86,9 +103,18 @@ export interface DistributionMaturityStatus {
   last_error?: string;
 }
 
-export async function getOverview() {
+export async function getOverview(params: number | DistributionListParams = 30) {
+  const query = typeof params === 'number' ? { days: params } : params;
   const { data } = await apiClient.get<DistributionAdminOverview>(
-    "/admin/distribution/overview",
+    "/admin/distribution/overview", { params: query },
+  );
+  return data;
+}
+
+export async function getAgentAnalytics(agentId: number, params: number | DistributionListParams = 30) {
+  const query = typeof params === 'number' ? { days: params } : params;
+  const { data } = await apiClient.get<DistributionAgentAnalytics>(
+    `/admin/distribution/agents/${agentId}/analytics`, { params: query },
   );
   return data;
 }
@@ -117,14 +143,24 @@ export async function setFXRate(currency: string, rate: string) {
 }
 export async function grantAgent(payload: {
   user_id: number;
+  depth?: number;
+  parent_agent_id?: number;
   rate_override_bps?: number;
   promotion_code?: string;
+  upgrade_customer?: boolean;
 }) {
   const { data } = await apiClient.post<DistributionAgent>(
     "/admin/distribution/agents",
     payload,
   );
   return data;
+}
+export async function getAgentRewardRule(agentId: number) {
+  const { data } = await apiClient.get<DistributionRewardRule>(`/admin/distribution/agents/${agentId}/reward-rule`);
+  return data;
+}
+export async function updateAgentRewardRule(agentId: number, payload: Omit<DistributionRewardRule, "agent_id">) {
+  await apiClient.put(`/admin/distribution/agents/${agentId}/reward-rule`, payload);
 }
 export interface DistributionWithdrawal {
   id: number;
@@ -233,6 +269,7 @@ export interface DistributionListParams {
   date_to?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
+  days?: number;
 }
 
 export interface DistributionAnomalyListParams {

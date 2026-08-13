@@ -5,6 +5,10 @@
       <slot name="actions" />
     </div>
 
+    <div v-if="$slots.summary" class="layout-section-fixed">
+      <slot name="summary" />
+    </div>
+
     <!-- 固定区域：搜索和过滤器 -->
     <div v-if="$slots.filters" class="layout-section-fixed">
       <slot name="filters" />

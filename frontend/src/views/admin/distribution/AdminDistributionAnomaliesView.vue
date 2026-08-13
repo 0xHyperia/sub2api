@@ -24,6 +24,7 @@
               />
             </button>
           </header>
+          <AdminDistributionNav class="mt-5" />
         </template>
 
         <template #filters>
@@ -92,6 +93,7 @@
                 清除筛选
               </button>
             </div>
+            <DistributionFilterSummary :items="filterSummary" @remove="removeFilter" @clear="clearFilters" />
           </div>
         </template>
 
@@ -265,12 +267,15 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter, type RouteLocationRaw } from "vue-router";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import TablePageLayout from "@/components/layout/TablePageLayout.vue";
 import DataTable from "@/components/common/DataTable.vue";
 import Pagination from "@/components/common/Pagination.vue";
 import BaseDialog from "@/components/common/BaseDialog.vue";
+import DistributionFilterSummary, { type DistributionFilterItem } from "@/components/distribution/DistributionFilterSummary.vue";
+import AdminDistributionNav from "@/components/admin/distribution/AdminDistributionNav.vue";
 import Icon from "@/components/icons/Icon.vue";
 import type { Column } from "@/components/common/types";
 import {
@@ -281,6 +286,7 @@ import { useAppStore } from "@/stores/app";
 import { extractApiErrorMessage } from "@/utils/apiError";
 
 const app = useAppStore();
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const items = ref<DistributionAdminAnomaly[]>([]);
@@ -313,13 +319,19 @@ const columns: Column[] = [
 const activeFilterCount = computed(
   () => Number(Boolean(type.value)) + Number(Boolean(severity.value)),
 );
+const filterSummary = computed<DistributionFilterItem[]>(() => [
+  search.value ? { key: 'search', label: '搜索', value: search.value } : null,
+  type.value ? { key: 'type', label: '类型', value: typeText(type.value) } : null,
+  severity.value ? { key: 'severity', label: '等级', value: severityText(severity.value) } : null,
+].filter((item): item is DistributionFilterItem => Boolean(item)));
+function removeFilter(key: string) { if (key === 'search') search.value = ''; if (key === 'type') type.value = ''; if (key === 'severity') severity.value = ''; }
 const hasFilters = computed(() =>
   Boolean(search.value || type.value || severity.value),
 );
 const money = (value: string | number) => `¥${Number(value || 0).toFixed(2)}`;
 const dateTime = (value: string) => new Date(value).toLocaleString();
 const severityText = (value: string) =>
-  ({ critical: "严重", high: "高风险", medium: "需关注" })[value] || value;
+  ({ critical: t('admin.distribution.anomalySeverityCritical'), high: t('admin.distribution.anomalySeverityHigh'), medium: t('admin.distribution.anomalySeverityMedium') })[value] || value;
 const severityClass = (value: string) =>
   ({
     critical: "badge-danger",
@@ -328,11 +340,11 @@ const severityClass = (value: string) =>
   })[value] || "badge-gray";
 const typeText = (value: string) =>
   ({
-    overdue_withdrawal: "提现审核超时",
-    pending_fx: "汇率待处理",
-    agent_debt: "代理钱包负债",
-    inactive_agent_customers: "非活跃代理客户",
-    matured_commission: "佣金解冻延迟",
+    overdue_withdrawal: t('admin.distribution.anomalyOverdueWithdrawal'),
+    pending_fx: t('admin.distribution.anomalyPendingFx'),
+    agent_debt: t('admin.distribution.anomalyAgentDebt'),
+    inactive_agent_customers: t('admin.distribution.anomalyInactiveCustomers'),
+    matured_commission: t('admin.distribution.anomalyMaturedCommission'),
   })[value] || value;
 
 function targetFor(item: DistributionAdminAnomaly): RouteLocationRaw {
