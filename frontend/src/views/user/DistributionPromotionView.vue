@@ -38,7 +38,7 @@
           <div v-if="linkEnabled" class="card flex min-w-0 flex-col items-center p-5 text-center">
             <h2 id="promotion-tools-title" class="text-base font-semibold">推广二维码</h2>
             <p class="mt-1 text-sm text-foreground-subtle">扫码后进入注册页面</p>
-            <div class="mt-4 flex size-44 shrink-0 items-center justify-center rounded-panel border border-outline bg-white p-3">
+            <div class="mt-4 flex size-44 shrink-0 items-center justify-center rounded-panel border border-outline bg-surface p-3">
               <canvas v-show="!qrError" ref="qrCanvas" class="size-full" role="img" aria-label="打开专属注册页面的推广二维码">专属注册链接二维码</canvas>
               <div v-if="qrError" class="flex size-full flex-col items-center justify-center gap-2 rounded-control bg-inverse text-xs text-inverse-foreground" role="alert"><span>二维码生成失败</span><button type="button" class="min-h-11 text-inverse-foreground underline" @click="renderQr">重试</button></div>
             </div>

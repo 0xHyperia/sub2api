@@ -18,6 +18,17 @@ const {
   showError: vi.fn(),
 }))
 
+
+vi.mock('@/utils/featureFlags', () => ({
+  isChannelMonitorV1Mode: () => true,
+  isChannelMonitorV2Mode: () => false,
+  getChannelMonitorMode: () => 'v1' as const,
+}))
+
+vi.mock('@/features/channel-monitor-v2/MonitorSettingsPanel.vue', () => ({
+  default: { name: 'MonitorSettingsPanel', template: '<div data-testid="v2-settings" />' },
+}))
+
 vi.mock('@/api/admin', () => ({
   adminAPI: {
     channelMonitor: {
@@ -31,7 +42,11 @@ vi.mock('@/api/admin', () => ({
 }))
 
 vi.mock('@/stores/app', () => ({
-  useAppStore: () => ({ showSuccess, showError }),
+  useAppStore: () => ({
+    cachedPublicSettings: { channel_monitor_enabled: false, channel_monitor_mode: 'v1' },
+    showSuccess,
+    showError,
+  }),
 }))
 
 vi.mock('vue-i18n', async () => {
@@ -138,6 +153,19 @@ describe('ChannelMonitorView duplicate action', () => {
     expect(duplicateMonitor).toHaveBeenCalledWith(42)
     expect(showSuccess).toHaveBeenCalledWith('admin.channelMonitor.duplicateSuccess')
     expect(listMonitors.mock.calls.length).toBeGreaterThan(1)
+    wrapper.unmount()
+  })
+
+  it('keeps disabled channel monitoring on the legacy tab without mounting V2 config', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const v2Tab = wrapper.findAll('button').find((button) =>
+      button.text().includes('channelMonitorV2.admin.tabV2'),
+    )
+    expect(v2Tab?.attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="v2-settings"]').exists()).toBe(false)
+    expect(listMonitors).toHaveBeenCalled()
     wrapper.unmount()
   })
 

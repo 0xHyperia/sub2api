@@ -235,7 +235,7 @@
           <template #cell-actions="{ row }">
             <button
               type="button"
-              class="inline-flex items-center gap-1 font-medium text-brand transition-colors hover:text-brand  dark:hover:text-brand"
+              class="inline-flex items-center gap-1 font-medium text-brand transition-colors hover:text-brand  hover:text-brand"
               @click="openDetail(row.id)"
             >
               <Icon name="eye" size="sm" />

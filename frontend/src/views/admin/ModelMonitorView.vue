@@ -62,7 +62,7 @@
               <button type="button" class="min-w-0 flex-1 text-left" @click="toggleExpanded(row)">
                 <span class="flex min-w-0 items-center gap-2">
                   <strong class="truncate font-mono text-sm font-semibold text-foreground" :title="row.model">{{ row.model }}</strong>
-                  <span v-if="row.label" class="badge max-w-20 shrink-0 truncate bg-black text-white">{{ row.label }}</span>
+                  <span v-if="row.label" class="badge max-w-20 shrink-0 truncate bg-black text-inverse-foreground">{{ row.label }}</span>
                   <span v-if="!row.catalog_available" class="badge shrink-0 bg-warning-subtle text-warning-foreground">{{ t('admin.modelMonitor.unavailable') }}</span>
                 </span>
                 <span class="mt-0.5 block truncate text-[10px] text-foreground-subtle">{{ row.platform }} · {{ t('admin.modelMonitor.groupTotal', { count: row.groups.length }) }}</span>

@@ -82,6 +82,8 @@ var ProviderSet = wire.NewSet(
 	NewTicketRepository,
 	NewUsageLogRepository,
 	NewBusinessAnalyticsRepository,
+	wire.Bind(new(service.BusinessAnalyticsRepository), new(*businessAnalyticsRepository)),
+	wire.Bind(new(service.BusinessAnalyticsAggregator), new(*businessAnalyticsRepository)),
 	NewUsageBillingRepository,
 	NewBatchImageRepository,
 	NewIdempotencyRepository,
@@ -101,6 +103,7 @@ var ProviderSet = wire.NewSet(
 	NewChannelRepository,
 	NewChannelMonitorRepository,
 	NewModelMonitorRepository,
+	NewChannelMonitorV2Repository,
 	NewChannelMonitorRequestTemplateRepository,
 	NewContentModerationRepository,
 	NewAffiliateRepository,
@@ -157,6 +160,8 @@ var ProviderSet = wire.NewSet(
 
 	// HTTP service ports (DI Strategy A: return interface directly)
 	NewTurnstileVerifier,
+	NewTencentCaptchaVerifier,
+	NewAliyunCaptchaVerifier,
 	ProvidePricingRemoteClient,
 	ProvideGitHubReleaseClient,
 	NewSoftwareCatalogRepository,

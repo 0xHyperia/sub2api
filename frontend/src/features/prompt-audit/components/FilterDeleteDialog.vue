@@ -12,7 +12,7 @@
             class="cursor-pointer"
           >
             <input v-model="preset" type="radio" name="prompt-delete-range" :value="option.id" class="peer sr-only" :data-test="`range-preset-${option.id}`" @change="criteriaChanged" />
-            <span class="inline-flex items-center rounded-full border border-outline px-3 py-1.5 text-xs font-medium text-foreground-muted transition-colors peer-checked:border-danger/20 peer-checked:bg-danger-subtle peer-checked:text-danger-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-danger/20/30   dark:peer-checked:border-danger/20 dark:peer-checked:bg-danger/40 dark:peer-checked:text-danger-foreground">
+            <span class="inline-flex items-center rounded-full border border-outline px-3 py-1.5 text-xs font-medium text-foreground-muted transition-colors peer-checked:border-danger/20 peer-checked:bg-danger-subtle peer-checked:text-danger-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-danger/30">
               {{ t(`admin.promptAudit.events.timePresets.${option.id}`) }}
             </span>
           </label>

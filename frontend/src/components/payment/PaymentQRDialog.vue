@@ -21,7 +21,7 @@
 
       <!-- QR Code mode -->
       <template v-if="qrUrl">
-        <div class="w-full max-w-64 rounded-panel border border-outline bg-white p-3">
+        <div class="w-full max-w-64 rounded-panel border border-outline bg-surface p-3">
           <canvas ref="qrCanvas" class="mx-auto block h-auto w-full max-w-[220px]" role="img" :aria-label="dialogTitle"></canvas>
         </div>
         <p v-if="scanHint" class="text-center text-sm text-foreground-muted">

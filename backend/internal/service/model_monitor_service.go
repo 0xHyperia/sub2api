@@ -503,7 +503,7 @@ func (s *ModelMonitorService) probeCost(ctx context.Context, model string, group
 		return nil
 	}
 	tokens := UsageTokens{InputTokens: result.InputTokens, OutputTokens: result.OutputTokens}
-	if cost := resolveAccountStatsCost(ctx, s.channels, s.billing, account.ID, groupID, model, tokens, 1, 0); cost != nil {
+	if cost := resolveAccountStatsCost(ctx, s.channels, s.billing, account.ID, groupID, model, tokens, 1, 0, ""); cost != nil {
 		return applyProbeCostMultiplier(cost, account)
 	}
 	if s.billing == nil {

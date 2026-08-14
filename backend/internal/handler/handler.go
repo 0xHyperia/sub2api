@@ -60,6 +60,7 @@ type Handlers struct {
 	Ticket           *TicketHandler
 	ChannelMonitor   *ChannelMonitorUserHandler
 	Distribution     *DistributionHandler
+	ChannelMonitorV2 *ChannelMonitorV2Handler
 	Admin            *AdminHandlers
 	Gateway          *GatewayHandler
 	OpenAIGateway    *OpenAIGatewayHandler

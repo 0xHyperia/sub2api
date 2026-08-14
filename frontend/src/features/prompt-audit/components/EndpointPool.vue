@@ -40,7 +40,7 @@
               @click="toggleEndpoint(endpoint.id)"
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ease-in-out"
+                class="pointer-events-none inline-block h-5 w-5 rounded-full bg-surface shadow transition-transform duration-200 ease-in-out"
                 :class="endpoint.enabled ? 'translate-x-5' : 'translate-x-0'"
               />
             </button>
@@ -86,7 +86,7 @@
               {{ probingIds.includes(endpoint.id) ? t('admin.promptAudit.pool.probing') : t('admin.promptAudit.pool.probe') }}
             </button>
             <button type="button" class="btn btn-ghost btn-sm" @click="openEdit(endpoint)">{{ t('common.edit') }}</button>
-            <button type="button" class="btn btn-ghost btn-sm text-danger-foreground hover:bg-danger-subtle  dark:hover:bg-danger/30" @click="removeEndpoint(endpoint)">{{ t('common.delete') }}</button>
+            <button type="button" class="btn btn-ghost btn-sm text-danger-foreground hover:bg-danger-subtle  hover:bg-danger/30" @click="removeEndpoint(endpoint)">{{ t('common.delete') }}</button>
           </div>
         </article>
       </div>

@@ -285,7 +285,7 @@
                     </h2>
                     <span
                       v-if="entry.label"
-                      class="inline-flex h-4 max-w-20 shrink-0 items-center truncate rounded-control bg-black px-1.5 text-[9px] font-bold leading-none text-white"
+                      class="inline-flex h-4 max-w-20 shrink-0 items-center truncate rounded-control bg-black px-1.5 text-[9px] font-bold leading-none text-inverse-foreground"
                       :title="entry.label"
                     >{{ entry.label }}</span>
                   </div>

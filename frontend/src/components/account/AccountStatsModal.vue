@@ -15,7 +15,7 @@
           <div
             class="flex h-10 w-10 items-center justify-center rounded-control bg-brand text-brand-foreground"
           >
-            <Icon name="chartBar" size="md" class="text-white" :stroke-width="2" />
+            <Icon name="chartBar" size="md" class="text-inverse-foreground" :stroke-width="2" />
           </div>
           <div>
             <div class="font-semibold text-foreground">{{ account.name }}</div>

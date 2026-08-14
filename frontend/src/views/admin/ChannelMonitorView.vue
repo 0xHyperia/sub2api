@@ -1,6 +1,56 @@
 <template>
   <AppLayout>
-    <TablePageLayout class="channel-monitor-page">
+    <div class="w-full min-w-0 space-y-6 pb-8">
+      <header
+        class="page-header mb-0 rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-outline bg-surface-raised ring-outline sm:p-6"
+      >
+        <h1 class="page-title flex items-center gap-2 text-xl font-black text-foreground text-inverse-foreground">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-info-subtle text-info-foreground bg-info-subtle/30 text-info-foreground">
+            <Icon name="chart" size="sm" />
+          </span>
+          {{ t('admin.channelMonitor.title') }}
+        </h1>
+        <p class="page-description mt-1.5 text-xs text-foreground-subtle text-foreground-subtle">
+          {{
+            isV1Mode
+              ? t('channelMonitorV2.admin.descriptionV1')
+              : t('channelMonitorV2.admin.descriptionV2')
+          }}
+        </p>
+        <div class="mt-4 border-t border-outline pt-4 border-outline">
+          <div
+            class="tabs inline-flex w-full max-w-xl flex-wrap sm:w-auto"
+            role="tablist"
+            :aria-label="t('channelMonitorV2.admin.tabAria')"
+          >
+            <button
+              type="button"
+              role="tab"
+              class="tab flex-1 sm:flex-none"
+              :class="adminMonitorTab === 'v2' ? 'tab-active' : ''"
+              :aria-selected="adminMonitorTab === 'v2'"
+              :disabled="!channelMonitorEnabled"
+              @click="adminMonitorTab = 'v2'"
+            >
+              {{ t('channelMonitorV2.admin.tabV2') }}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="tab flex-1 sm:flex-none"
+              :class="adminMonitorTab === 'legacy' ? 'tab-active' : ''"
+              :aria-selected="adminMonitorTab === 'legacy'"
+              @click="adminMonitorTab = 'legacy'"
+            >
+              {{ isV1Mode ? t('channelMonitorV2.admin.tabV1Active') : t('channelMonitorV2.admin.tabV1History') }}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <MonitorSettingsPanel v-if="adminMonitorTab === 'v2'" />
+
+      <TablePageLayout v-else class="channel-monitor-page">
       <template #filters>
         <MonitorFiltersBar
           v-model:search="searchQuery"
@@ -162,7 +212,8 @@
           @update:pageSize="onPageSizeChange"
         />
       </template>
-    </TablePageLayout>
+      </TablePageLayout>
+    </div>
 
     <MonitorFormDialog
       :show="showDialog"
@@ -197,7 +248,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
@@ -226,9 +277,18 @@ import MonitorPrimaryModelCell from '@/components/admin/monitor/MonitorPrimaryMo
 import MonitorActionsCell from '@/components/admin/monitor/MonitorActionsCell.vue'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { useChannelMonitorFormat } from '@/composables/useChannelMonitorFormat'
+import MonitorSettingsPanel from '@/features/channel-monitor-v2/MonitorSettingsPanel.vue'
+import { getChannelMonitorMode } from '@/utils/featureFlags'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const channelMonitorEnabled = computed(
+  () => appStore.cachedPublicSettings?.channel_monitor_enabled === true,
+)
+const isV1Mode = computed(() => getChannelMonitorMode() === 'v1')
+const adminMonitorTab = ref<'v2' | 'legacy'>(
+  channelMonitorEnabled.value && !isV1Mode.value ? 'v2' : 'legacy',
+)
 const {
   providerLabel,
   providerBadgeClass,
@@ -349,6 +409,10 @@ async function toggleEnabled(row: ChannelMonitor) {
 }
 
 async function handleRunNow(row: ChannelMonitor) {
+  if (!isV1Mode.value) {
+    appStore.showError(t('admin.channelMonitor.runFailed'))
+    return
+  }
   if (runningId.value != null) return
   runningId.value = row.id
   try {
@@ -402,7 +466,12 @@ async function confirmDelete() {
   }
 }
 
-onMounted(reload)
+watch(adminMonitorTab, (tab) => {
+  if (tab === 'legacy' && monitors.value.length === 0) void reload()
+})
+onMounted(() => {
+  if (adminMonitorTab.value === 'legacy') void reload()
+})
 onUnmounted(() => {
   if (searchTimeout) clearTimeout(searchTimeout)
   abortController?.abort()

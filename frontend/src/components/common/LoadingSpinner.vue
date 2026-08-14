@@ -41,7 +41,7 @@ const colorClass = computed(() => {
   const colors: Record<SpinnerColor, string> = {
     primary: 'text-brand',
     secondary: 'text-foreground-muted',
-    white: 'text-white',
+    white: 'text-inverse-foreground',
     gray: 'text-foreground-subtle'
   }
   return colors[props.color]

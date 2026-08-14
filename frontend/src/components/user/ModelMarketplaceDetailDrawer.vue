@@ -25,7 +25,7 @@
                     <h2 :id="titleId" class="truncate font-mono text-lg font-bold text-foreground sm:text-xl">{{ entry.name }}</h2>
                     <span
                       v-if="entry.label"
-                      class="inline-flex h-5 max-w-28 shrink-0 items-center truncate rounded-control bg-black px-2 text-[10px] font-bold leading-none text-white"
+                      class="inline-flex h-5 max-w-28 shrink-0 items-center truncate rounded-control bg-black px-2 text-[10px] font-bold leading-none text-inverse-foreground"
                       :title="entry.label"
                     >{{ entry.label }}</span>
                   </div>
