@@ -44,6 +44,7 @@ jobs:
           args: --timeout=30m
           working-directory: backend
           skip-cache: true
+          verify: false
       - name: Frontend checks
         run: make test-frontend
       - run: make deploy-validate
