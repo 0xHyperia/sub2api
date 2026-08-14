@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -123,6 +124,27 @@ func TestDistributionDifferentialCommissionAndRefund(t *testing.T) {
 	l1Overview, err = svc.GetOverview(ctx, l1UserID)
 	require.NoError(t, err)
 	require.True(t, l1Overview.Agent.AvailableCNY.Equal(decimal.NewFromInt(46)))
+
+	transactionOrder, err := integrationEntClient.PaymentOrder.Create().
+		SetUserID(customerID).SetUserEmail("customer@example.com").SetUserName("customer").
+		SetAmount(10).SetPayAmount(10).SetRechargeCode(fmt.Sprintf("DIST-TX-%d", suffix)).
+		SetOutTradeNo(fmt.Sprintf("DISTTXORDER%d", suffix)).SetPaymentType("stripe").SetPaymentTradeNo(fmt.Sprintf("trade-tx-%d", suffix)).
+		SetProviderSnapshot(map[string]any{"currency": "USD"}).SetStatus("COMPLETED").
+		SetClientIP("127.0.0.1").SetSrcHost("localhost").SetExpiresAt(now.Add(time.Hour)).SetPaidAt(now).Save(ctx)
+	require.NoError(t, err)
+	_, err = svc.AccruePaidOrder(ctx, service.DistributionCommissionInput{
+		PaymentOrderID: transactionOrder.ID, CustomerUserID: customerID, PaymentType: "stripe", PaymentCurrency: "USD",
+		ActualPaid: decimal.NewFromInt(10), PaidAt: now,
+	})
+	require.NoError(t, err)
+	outerTx, err := integrationEntClient.Tx(ctx)
+	require.NoError(t, err)
+	txCtx := dbent.NewTxContext(ctx, outerTx)
+	require.NoError(t, svc.ReverseRefund(txCtx, transactionOrder.ID, decimal.NewFromInt(10)))
+	require.NoError(t, outerTx.Rollback())
+	var refundedAfterRollback decimal.Decimal
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT refunded_amount_cny FROM distribution_commission_sources WHERE payment_order_id=$1`, transactionOrder.ID).Scan(&refundedAfterRollback))
+	require.True(t, refundedAfterRollback.IsZero(), "distribution reversal must participate in the caller transaction")
 }
 
 func TestDistributionAdminManagementQueries(t *testing.T) {

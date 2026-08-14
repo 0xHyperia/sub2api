@@ -103,6 +103,9 @@ export interface PaymentOrder {
   user_id: number
   amount: number
   pay_amount: number
+  payment_principal_amount?: number
+  entitlement_principal_amount?: number
+  surcharge_amount?: number
   provider_amount?: number
   fee_mode?: PaymentFeeMode
   currency?: string

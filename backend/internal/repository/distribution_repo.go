@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/lib/pq"
@@ -2661,18 +2662,33 @@ func releaseMaturedRewardsTx(ctx context.Context, tx *sql.Tx, userID int64) (int
 }
 
 func (r *distributionRepository) ReverseRefund(ctx context.Context, orderID int64, refundedActual decimal.Decimal) error {
+	if contextTx := dbent.TxFromContext(ctx); contextTx != nil {
+		return reverseDistributionRefundTx(ctx, contextTx.Client(), orderID, refundedActual)
+	}
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
+	if err = reverseDistributionRefundTx(ctx, tx, orderID, refundedActual); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+type distributionRefundExecutor interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
+
+func reverseDistributionRefundTx(ctx context.Context, tx distributionRefundExecutor, orderID int64, refundedActual decimal.Decimal) error {
 	var sourceID int64
 	var actual, fx, base, already decimal.Decimal
 	var status string
-	err = tx.QueryRowContext(ctx, `SELECT id,actual_paid_amount,COALESCE(fx_rate_to_cny,0),COALESCE(commission_base_cny,0),refunded_amount_cny,status
-		FROM distribution_commission_sources WHERE payment_order_id=$1 FOR UPDATE`, orderID).Scan(&sourceID, &actual, &fx, &base, &already, &status)
+	err := scanSingleRow(ctx, tx, `SELECT id,actual_paid_amount,COALESCE(fx_rate_to_cny,0),COALESCE(commission_base_cny,0),refunded_amount_cny,status
+		FROM distribution_commission_sources WHERE payment_order_id=$1 FOR UPDATE`, []any{orderID}, &sourceID, &actual, &fx, &base, &already, &status)
 	if errors.Is(err, sql.ErrNoRows) || status == "pending_fx" || status == "void" {
-		return tx.Commit()
+		return nil
 	}
 	if err != nil {
 		return err
@@ -2683,7 +2699,7 @@ func (r *distributionRepository) ReverseRefund(ctx context.Context, orderID int6
 		refundCNY = remainingBase
 	}
 	if !refundCNY.IsPositive() {
-		return tx.Commit()
+		return nil
 	}
 	ratio := refundCNY.Div(base)
 	rows, err := tx.QueryContext(ctx, `SELECT id,beneficiary_agent_id,original_amount_cny,reversed_amount_cny,status FROM distribution_commission_entries WHERE source_id=$1 FOR UPDATE`, sourceID)
@@ -2715,7 +2731,7 @@ func (r *distributionRepository) ReverseRefund(ctx context.Context, orderID int6
 			continue
 		}
 		var frozen, available, reserved, debt decimal.Decimal
-		if err = tx.QueryRowContext(ctx, `SELECT frozen_cny,available_cny,reserved_cny,debt_cny FROM distribution_wallets WHERE agent_id=$1 FOR UPDATE`, e.agent).Scan(&frozen, &available, &reserved, &debt); err != nil {
+		if err = scanSingleRow(ctx, tx, `SELECT frozen_cny,available_cny,reserved_cny,debt_cny FROM distribution_wallets WHERE agent_id=$1 FOR UPDATE`, []any{e.agent}, &frozen, &available, &reserved, &debt); err != nil {
 			return err
 		}
 		fromFrozen := decimal.Min(frozen, reversal)
@@ -2754,10 +2770,10 @@ func (r *distributionRepository) ReverseRefund(ctx context.Context, orderID int6
 	if err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 
-func reverseDistributionRewardEventsTx(ctx context.Context, tx *sql.Tx, orderID int64) error {
+func reverseDistributionRewardEventsTx(ctx context.Context, tx distributionRefundExecutor, orderID int64) error {
 	rows, err := tx.QueryContext(ctx, `SELECT g.id,g.beneficiary_agent_id,g.original_amount_cny,g.reversed_amount_cny,g.status
 		FROM distribution_reward_events event JOIN distribution_reward_grants g ON g.event_id=event.id
 		WHERE event.trigger_payment_order_id=$1 FOR UPDATE OF g`, orderID)
@@ -2787,7 +2803,7 @@ func reverseDistributionRewardEventsTx(ctx context.Context, tx *sql.Tx, orderID 
 			continue
 		}
 		var frozen, available, reserved, debt decimal.Decimal
-		if err = tx.QueryRowContext(ctx, `SELECT frozen_cny,available_cny,reserved_cny,debt_cny FROM distribution_wallets WHERE agent_id=$1 FOR UPDATE`, g.agent).Scan(&frozen, &available, &reserved, &debt); err != nil {
+		if err = scanSingleRow(ctx, tx, `SELECT frozen_cny,available_cny,reserved_cny,debt_cny FROM distribution_wallets WHERE agent_id=$1 FOR UPDATE`, []any{g.agent}, &frozen, &available, &reserved, &debt); err != nil {
 			return err
 		}
 		fromFrozen := decimal.Min(frozen, reversal)

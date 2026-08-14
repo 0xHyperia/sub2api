@@ -31,6 +31,12 @@ type PaymentOrder struct {
 	Amount float64 `json:"amount,omitempty"`
 	// PayAmount holds the value of the "pay_amount" field.
 	PayAmount float64 `json:"pay_amount,omitempty"`
+	// PaymentPrincipalAmount holds the value of the "payment_principal_amount" field.
+	PaymentPrincipalAmount float64 `json:"payment_principal_amount,omitempty"`
+	// EntitlementPrincipalAmount holds the value of the "entitlement_principal_amount" field.
+	EntitlementPrincipalAmount float64 `json:"entitlement_principal_amount,omitempty"`
+	// SurchargeAmount holds the value of the "surcharge_amount" field.
+	SurchargeAmount float64 `json:"surcharge_amount,omitempty"`
 	// ProviderAmount holds the value of the "provider_amount" field.
 	ProviderAmount float64 `json:"provider_amount,omitempty"`
 	// FeeRate holds the value of the "fee_rate" field.
@@ -136,7 +142,7 @@ func (*PaymentOrder) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case paymentorder.FieldForceRefund:
 			values[i] = new(sql.NullBool)
-		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldProviderAmount, paymentorder.FieldFeeRate, paymentorder.FieldRefundAmount:
+		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldPaymentPrincipalAmount, paymentorder.FieldEntitlementPrincipalAmount, paymentorder.FieldSurchargeAmount, paymentorder.FieldProviderAmount, paymentorder.FieldFeeRate, paymentorder.FieldRefundAmount:
 			values[i] = new(sql.NullFloat64)
 		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldPlanID, paymentorder.FieldSubscriptionGroupID, paymentorder.FieldSubscriptionDays:
 			values[i] = new(sql.NullInt64)
@@ -201,6 +207,24 @@ func (_m *PaymentOrder) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field pay_amount", values[i])
 			} else if value.Valid {
 				_m.PayAmount = value.Float64
+			}
+		case paymentorder.FieldPaymentPrincipalAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field payment_principal_amount", values[i])
+			} else if value.Valid {
+				_m.PaymentPrincipalAmount = value.Float64
+			}
+		case paymentorder.FieldEntitlementPrincipalAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field entitlement_principal_amount", values[i])
+			} else if value.Valid {
+				_m.EntitlementPrincipalAmount = value.Float64
+			}
+		case paymentorder.FieldSurchargeAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field surcharge_amount", values[i])
+			} else if value.Valid {
+				_m.SurchargeAmount = value.Float64
 			}
 		case paymentorder.FieldProviderAmount:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -492,6 +516,15 @@ func (_m *PaymentOrder) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("pay_amount=")
 	builder.WriteString(fmt.Sprintf("%v", _m.PayAmount))
+	builder.WriteString(", ")
+	builder.WriteString("payment_principal_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.PaymentPrincipalAmount))
+	builder.WriteString(", ")
+	builder.WriteString("entitlement_principal_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.EntitlementPrincipalAmount))
+	builder.WriteString(", ")
+	builder.WriteString("surcharge_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SurchargeAmount))
 	builder.WriteString(", ")
 	builder.WriteString("provider_amount=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ProviderAmount))

@@ -47,6 +47,19 @@ func (PaymentOrder) Fields() []ent.Field {
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}),
 		field.Float("pay_amount").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}),
+		// payment_principal_amount is the immutable payment-currency amount
+		// before any user-facing surcharge. Legacy rows keep the zero default.
+		field.Float("payment_principal_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
+		// entitlement_principal_amount is the delivered platform value after
+		// the recharge multiplier but before a quick-recharge bonus.
+		field.Float("entitlement_principal_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
+		field.Float("surcharge_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
 		field.Float("provider_amount").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
 			Default(0),

@@ -26,6 +26,12 @@ const (
 	FieldAmount = "amount"
 	// FieldPayAmount holds the string denoting the pay_amount field in the database.
 	FieldPayAmount = "pay_amount"
+	// FieldPaymentPrincipalAmount holds the string denoting the payment_principal_amount field in the database.
+	FieldPaymentPrincipalAmount = "payment_principal_amount"
+	// FieldEntitlementPrincipalAmount holds the string denoting the entitlement_principal_amount field in the database.
+	FieldEntitlementPrincipalAmount = "entitlement_principal_amount"
+	// FieldSurchargeAmount holds the string denoting the surcharge_amount field in the database.
+	FieldSurchargeAmount = "surcharge_amount"
 	// FieldProviderAmount holds the string denoting the provider_amount field in the database.
 	FieldProviderAmount = "provider_amount"
 	// FieldFeeRate holds the string denoting the fee_rate field in the database.
@@ -118,6 +124,9 @@ var Columns = []string{
 	FieldUserNotes,
 	FieldAmount,
 	FieldPayAmount,
+	FieldPaymentPrincipalAmount,
+	FieldEntitlementPrincipalAmount,
+	FieldSurchargeAmount,
 	FieldProviderAmount,
 	FieldFeeRate,
 	FieldFeeMode,
@@ -170,6 +179,12 @@ var (
 	UserEmailValidator func(string) error
 	// UserNameValidator is a validator for the "user_name" field. It is called by the builders before save.
 	UserNameValidator func(string) error
+	// DefaultPaymentPrincipalAmount holds the default value on creation for the "payment_principal_amount" field.
+	DefaultPaymentPrincipalAmount float64
+	// DefaultEntitlementPrincipalAmount holds the default value on creation for the "entitlement_principal_amount" field.
+	DefaultEntitlementPrincipalAmount float64
+	// DefaultSurchargeAmount holds the default value on creation for the "surcharge_amount" field.
+	DefaultSurchargeAmount float64
 	// DefaultProviderAmount holds the default value on creation for the "provider_amount" field.
 	DefaultProviderAmount float64
 	// DefaultFeeRate holds the default value on creation for the "fee_rate" field.
@@ -254,6 +269,21 @@ func ByAmount(opts ...sql.OrderTermOption) OrderOption {
 // ByPayAmount orders the results by the pay_amount field.
 func ByPayAmount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPayAmount, opts...).ToFunc()
+}
+
+// ByPaymentPrincipalAmount orders the results by the payment_principal_amount field.
+func ByPaymentPrincipalAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPaymentPrincipalAmount, opts...).ToFunc()
+}
+
+// ByEntitlementPrincipalAmount orders the results by the entitlement_principal_amount field.
+func ByEntitlementPrincipalAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEntitlementPrincipalAmount, opts...).ToFunc()
+}
+
+// BySurchargeAmount orders the results by the surcharge_amount field.
+func BySurchargeAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSurchargeAmount, opts...).ToFunc()
 }
 
 // ByProviderAmount orders the results by the provider_amount field.

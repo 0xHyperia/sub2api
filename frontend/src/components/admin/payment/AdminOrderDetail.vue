@@ -20,18 +20,30 @@
           </dd>
         </div>
         <div class="min-w-0">
-          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.baseAmount') }}</dt>
-          <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ baseAmount.toFixed(2) }}</dd>
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.paymentPrincipal') }}</dt>
+          <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ paymentPrincipal.toFixed(2) }}</dd>
         </div>
         <div v-if="order.fee_rate > 0" class="min-w-0">
           <dt class="text-xs text-foreground-muted">{{ t('payment.orders.fee') }} ({{ order.fee_rate }}%)</dt>
-          <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ feeAmount.toFixed(2) }}</dd>
+          <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ surchargeAmount.toFixed(2) }}</dd>
         </div>
         <div class="min-w-0">
           <dt class="text-xs text-foreground-muted">{{ t('payment.orders.payAmount') }}</dt>
           <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ order.pay_amount.toFixed(2) }}</dd>
         </div>
-        <div v-if="order.amount !== order.pay_amount" class="min-w-0">
+        <div v-if="providerAmount !== order.pay_amount" class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.providerAmount') }}</dt>
+          <dd class="break-all text-sm font-medium text-foreground">{{ paymentAmountSymbol }}{{ providerAmount.toFixed(2) }}</dd>
+        </div>
+        <div v-if="entitlementPrincipal !== order.amount" class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.entitlementPrincipal') }}</dt>
+          <dd class="break-all text-sm font-medium text-foreground">{{ creditedAmountSymbol }}{{ entitlementPrincipal.toFixed(2) }}</dd>
+        </div>
+        <div v-if="bonusAmount > 0" class="min-w-0">
+          <dt class="text-xs text-foreground-muted">{{ t('payment.orders.bonusAmount') }}</dt>
+          <dd class="break-all text-sm font-medium text-success-foreground">+{{ creditedAmountSymbol }}{{ bonusAmount.toFixed(2) }}</dd>
+        </div>
+        <div class="min-w-0">
           <dt class="text-xs text-foreground-muted">{{ t('payment.orders.creditedAmount') }}</dt>
           <dd class="break-all text-sm font-medium text-foreground">{{ creditedAmountSymbol }}{{ order.amount.toFixed(2) }}</dd>
         </div>
@@ -137,21 +149,25 @@ const creditedAmountSymbol = currencySymbol('USD')
 
 const paymentAmountSymbol = computed(() => currencySymbol(props.order?.currency))
 
-/** 充值金额 (base amount before fee) = pay_amount - fee = pay_amount / (1 + fee_rate/100) */
-const baseAmount = computed(() => {
+const paymentPrincipal = computed(() => {
   if (!props.order) return 0
+  if ((props.order.payment_principal_amount || 0) > 0) return props.order.payment_principal_amount || 0
   const feeRate = Number(props.order.fee_rate) || 0
   if (feeRate <= 0) return props.order.pay_amount
   return props.order.pay_amount / (1 + feeRate / 100)
 })
 
-/** 手续费 = pay_amount - baseAmount */
-const feeAmount = computed(() => {
+const surchargeAmount = computed(() => {
   if (!props.order) return 0
+  if ((props.order.payment_principal_amount || 0) > 0) return props.order.surcharge_amount || 0
   const feeRate = Number(props.order.fee_rate) || 0
   if (feeRate <= 0) return 0
-  return props.order.pay_amount - baseAmount.value
+  return props.order.pay_amount - paymentPrincipal.value
 })
+
+const providerAmount = computed(() => props.order?.provider_amount || props.order?.pay_amount || 0)
+const entitlementPrincipal = computed(() => props.order?.entitlement_principal_amount || props.order?.amount || 0)
+const bonusAmount = computed(() => Math.max(0, (props.order?.amount || 0) - entitlementPrincipal.value))
 
 const emit = defineEmits<{
   (e: 'close'): void

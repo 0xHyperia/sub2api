@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"testing"
 	"time"
@@ -14,6 +15,67 @@ import (
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
+
+type refundAffiliateRepoStub struct {
+	AffiliateRepository
+	reverseErr   error
+	reverseCalls int
+}
+
+func (r *refundAffiliateRepoStub) ReverseQuotaForOrder(context.Context, int64, float64) error {
+	r.reverseCalls++
+	return r.reverseErr
+}
+
+func TestPrepDeductRequiresForceAndRecoversFullEntitlement(t *testing.T) {
+	order := &dbent.PaymentOrder{OrderType: payment.OrderTypeBalance, UserID: 42}
+	svc := &PaymentService{userRepo: &mockUserRepo{getByIDUser: &User{ID: 42, Balance: 3}}}
+
+	plan := &RefundPlan{Order: order, RefundAmount: 9}
+	early := svc.prepDeduct(context.Background(), order, plan, false)
+	require.NotNil(t, early)
+	require.True(t, early.RequireForce)
+	require.Zero(t, plan.BalanceToDeduct)
+
+	plan = &RefundPlan{Order: order, RefundAmount: 9}
+	early = svc.prepDeduct(context.Background(), order, plan, true)
+	require.Nil(t, early)
+	require.Equal(t, 9.0, plan.BalanceToDeduct)
+}
+
+func TestRefundFinancialReconciliationCanRetryWithoutProvider(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+	user, err := client.User.Create().SetEmail("refund-reconcile@example.com").SetPasswordHash("hash").SetUsername("refund-reconcile").Save(ctx)
+	require.NoError(t, err)
+	order, err := client.PaymentOrder.Create().
+		SetUserID(user.ID).SetUserEmail(user.Email).SetUserName(user.Username).
+		SetAmount(10).SetPayAmount(70).SetRechargeCode("REFUND-RECONCILE").
+		SetOutTradeNo("refund-reconcile-order").SetPaymentType(payment.TypeAlipay).
+		SetPaymentTradeNo("refund-reconcile-trade").SetOrderType(payment.OrderTypeSubscription).
+		SetStatus(OrderStatusRefunding).SetExpiresAt(time.Now().Add(time.Hour)).
+		SetClientIP("127.0.0.1").SetSrcHost("localhost").Save(ctx)
+	require.NoError(t, err)
+
+	repo := &refundAffiliateRepoStub{reverseErr: errors.New("temporary affiliate failure")}
+	svc := &PaymentService{entClient: client, affiliateService: NewAffiliateService(repo, nil, nil, nil)}
+	plan := &RefundPlan{OrderID: order.ID, Order: order, RefundAmount: order.Amount, Reason: "test", Force: true}
+	result, err := svc.markRefundOk(ctx, plan)
+	require.Error(t, err)
+	require.Nil(t, result)
+	pending, err := client.PaymentOrder.Get(ctx, order.ID)
+	require.NoError(t, err)
+	require.Equal(t, OrderStatusRefundPending, pending.Status)
+
+	repo.reverseErr = nil
+	result, err = svc.QueryAndFinalizeRefund(ctx, order.ID)
+	require.NoError(t, err)
+	require.True(t, result.Success)
+	refunded, err := client.PaymentOrder.Get(ctx, order.ID)
+	require.NoError(t, err)
+	require.Equal(t, OrderStatusRefunded, refunded.Status)
+	require.Equal(t, 2, repo.reverseCalls)
+}
 
 func TestValidateRefundRequestRejectsLegacyGuessedProviderInstance(t *testing.T) {
 	ctx := context.Background()
@@ -403,6 +465,33 @@ func TestQueryAndFinalizeRefundFinalizesProviderStatuses(t *testing.T) {
 	}
 }
 
+func TestQueryAndFinalizeRefundUsesGatewayAmountForEntitlementRefund(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+	order := createPendingRefundOrderForTest(t, ctx, client, "query-gateway-amount")
+	order, err := client.PaymentOrder.UpdateOne(order).
+		SetAmount(9).
+		SetPayAmount(52).
+		SetProviderAmount(50).
+		SetPaymentPrincipalAmount(50).
+		SetEntitlementPrincipalAmount(7).
+		SetSurchargeAmount(2).
+		SetRefundAmount(4.5).
+		Save(ctx)
+	require.NoError(t, err)
+
+	providerDouble := &refundQueryProviderTestDouble{
+		refundResponse: &payment.RefundResponse{RefundID: "rf_test", Status: payment.ProviderStatusPending},
+	}
+	svc := &PaymentService{entClient: client, loadBalancer: &captureLoadBalancer{}}
+	restore := replacePaymentProviderFactoryForTest(t, providerDouble)
+	defer restore()
+
+	_, err = svc.QueryAndFinalizeRefund(ctx, order.ID)
+	require.NoError(t, err)
+	require.Equal(t, "25.00", providerDouble.queryRequest.Amount)
+}
+
 func TestQueryAndFinalizeRefundUnsupportedProviderReturnsClearError(t *testing.T) {
 	ctx := context.Background()
 	client := newPaymentConfigServiceTestClient(t)
@@ -504,8 +593,10 @@ func (refundProviderTestDouble) Refund(context.Context, payment.RefundRequest) (
 type refundQueryProviderTestDouble struct {
 	refundProviderTestDouble
 	refundResponse *payment.RefundResponse
+	queryRequest   payment.RefundQueryRequest
 }
 
-func (p *refundQueryProviderTestDouble) QueryRefund(context.Context, payment.RefundQueryRequest) (*payment.RefundResponse, error) {
+func (p *refundQueryProviderTestDouble) QueryRefund(_ context.Context, req payment.RefundQueryRequest) (*payment.RefundResponse, error) {
+	p.queryRequest = req
 	return p.refundResponse, nil
 }

@@ -77,8 +77,19 @@ func paymentStatsTestOrder(userID int64, email, currency string, amount float64,
 	return &dbent.PaymentOrder{
 		UserID:           userID,
 		UserEmail:        email,
+		Amount:           amount,
 		PayAmount:        amount,
 		PaidAt:           paidAt,
 		ProviderSnapshot: map[string]any{"currency": currency},
 	}
+}
+
+func TestPaymentDashboardUsesNewOrderPrincipal(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	order := paymentStatsTestOrder(1, "bonus@example.com", "CNY", 52, &now)
+	order.PaymentPrincipalAmount = 50
+	stats := &DashboardStats{}
+	computeBasicStats(stats, []*dbent.PaymentOrder{order}, now.Add(-time.Hour))
+	require.Equal(t, CurrencyAmounts{"CNY": 50}, stats.TotalAmount)
 }

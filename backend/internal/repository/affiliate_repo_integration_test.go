@@ -170,6 +170,62 @@ func TestAffiliateRepository_AccrueQuota_ReusesOuterTransaction(t *testing.T) {
 		"AccrueQuota must propagate the outer tx — found persisted rows after rollback")
 }
 
+func TestAffiliateRepository_ReverseQuotaForOrder(t *testing.T) {
+	tests := []struct {
+		name        string
+		freezeHours int
+		transfer    bool
+		wantBalance float64
+		wantFrozen  float64
+		wantQuota   float64
+	}{
+		{name: "frozen rebate", freezeHours: 24, wantBalance: 10},
+		{name: "available rebate", wantBalance: 10},
+		{name: "transferred rebate", transfer: true, wantBalance: 10},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			tx := testEntTx(t)
+			txCtx := dbent.NewTxContext(ctx, tx)
+			client := tx.Client()
+			repo := NewAffiliateRepository(client, integrationDB)
+			suffix := time.Now().UnixNano()
+			inviter := mustCreateUser(t, client, &service.User{Email: fmt.Sprintf("affiliate-refund-inviter-%d@example.com", suffix), PasswordHash: "hash", Role: service.RoleUser, Status: service.StatusActive, Balance: 10, Concurrency: 5})
+			invitee := mustCreateUser(t, client, &service.User{Email: fmt.Sprintf("affiliate-refund-invitee-%d@example.com", suffix), PasswordHash: "hash", Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5})
+			_, err := repo.EnsureUserAffiliate(txCtx, inviter.ID)
+			require.NoError(t, err)
+			_, err = repo.EnsureUserAffiliate(txCtx, invitee.ID)
+			require.NoError(t, err)
+			bound, err := repo.BindInviter(txCtx, invitee.ID, inviter.ID)
+			require.NoError(t, err)
+			require.True(t, bound)
+			order, err := client.PaymentOrder.Create().
+				SetUserID(invitee.ID).SetUserEmail(invitee.Email).SetUserName("invitee").
+				SetAmount(9).SetPayAmount(52).SetRechargeCode(fmt.Sprintf("AFFREF-%d", suffix)).
+				SetOutTradeNo(fmt.Sprintf("AFFREFORDER-%d", suffix)).SetPaymentType("alipay").
+				SetPaymentTradeNo(fmt.Sprintf("AFFREFTRADE-%d", suffix)).SetStatus("COMPLETED").
+				SetExpiresAt(time.Now().Add(time.Hour)).SetClientIP("127.0.0.1").SetSrcHost("localhost").Save(txCtx)
+			require.NoError(t, err)
+			applied, err := repo.AccrueQuota(txCtx, inviter.ID, invitee.ID, 3, tt.freezeHours, &order.ID)
+			require.NoError(t, err)
+			require.True(t, applied)
+			if tt.transfer {
+				_, _, err = repo.TransferQuotaToBalance(txCtx, inviter.ID)
+				require.NoError(t, err)
+			}
+
+			require.NoError(t, repo.ReverseQuotaForOrder(txCtx, order.ID, 1))
+			require.NoError(t, repo.ReverseQuotaForOrder(txCtx, order.ID, 1), "retry must be idempotent")
+			require.InDelta(t, tt.wantBalance, querySingleFloat(t, txCtx, client, "SELECT balance::double precision FROM users WHERE id=$1", inviter.ID), 1e-9)
+			require.InDelta(t, tt.wantFrozen, querySingleFloat(t, txCtx, client, "SELECT aff_frozen_quota::double precision FROM user_affiliates WHERE user_id=$1", inviter.ID), 1e-9)
+			require.InDelta(t, tt.wantQuota, querySingleFloat(t, txCtx, client, "SELECT aff_quota::double precision FROM user_affiliates WHERE user_id=$1", inviter.ID), 1e-9)
+			require.InDelta(t, 0, querySingleFloat(t, txCtx, client, "SELECT aff_history_quota::double precision FROM user_affiliates WHERE user_id=$1", inviter.ID), 1e-9)
+			require.Equal(t, 1, querySingleInt(t, txCtx, client, "SELECT COUNT(*) FROM user_affiliate_ledger WHERE source_order_id=$1 AND action='refund_reversal'", order.ID))
+		})
+	}
+}
+
 func TestAffiliateRepository_TransferQuotaToBalance_EmptyQuota(t *testing.T) {
 	ctx := context.Background()
 	tx := testEntTx(t)

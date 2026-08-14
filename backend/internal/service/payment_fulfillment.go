@@ -752,7 +752,15 @@ func (s *PaymentService) applyAffiliateRebateForOrder(ctx context.Context, o *db
 }
 
 func affiliateRebateBaseAmount(o *dbent.PaymentOrder) float64 {
-	return commissionableOrderAmount(o)
+	if o == nil {
+		return 0
+	}
+	switch o.OrderType {
+	case payment.OrderTypeBalance, payment.OrderTypeSubscription:
+		return PaymentOrderEntitlementPrincipalAmount(o)
+	default:
+		return 0
+	}
 }
 
 func commissionableOrderAmount(o *dbent.PaymentOrder) float64 {
@@ -761,6 +769,9 @@ func commissionableOrderAmount(o *dbent.PaymentOrder) float64 {
 	}
 	switch o.OrderType {
 	case payment.OrderTypeBalance, payment.OrderTypeSubscription:
+		if o.PaymentPrincipalAmount > 0 {
+			return o.PaymentPrincipalAmount
+		}
 		return o.Amount
 	default:
 		return 0

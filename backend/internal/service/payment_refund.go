@@ -277,7 +277,12 @@ func (s *PaymentService) prepDeduct(ctx context.Context, o *dbent.PaymentOrder, 
 		return nil
 	}
 	p.DeductionType = payment.DeductionTypeBalance
-	p.BalanceToDeduct = math.Min(p.RefundAmount, u.Balance)
+	if u.Balance < p.RefundAmount && !force {
+		return &RefundResult{Success: false, Warning: "refund amount exceeds current balance, use force", RequireForce: true}
+	}
+	// The repository supports overdraft. A forced refund must reverse the full
+	// delivered entitlement even when part of it has already been consumed.
+	p.BalanceToDeduct = p.RefundAmount
 	return nil
 }
 
@@ -411,6 +416,20 @@ func (s *PaymentService) QueryAndFinalizeRefund(ctx context.Context, oid int64) 
 		return nil, infraerrors.BadRequest("INVALID_STATUS", "only refund pending orders can be finalized")
 	}
 
+	pendingDetail := s.latestRefundPendingDetail(ctx, oid)
+	if pendingDetail.ProviderConfirmed {
+		plan := s.refundFinalizePlan(o)
+		if pendingDetail.DeductionRollbackOK {
+			if err := s.applyRefundFinalDeduction(ctx, plan); err != nil {
+				return nil, err
+			}
+		} else {
+			plan.BalanceToDeduct = 0
+			plan.SubDaysToDeduct = 0
+		}
+		return s.markRefundOk(ctx, plan)
+	}
+
 	prov, err := s.getRefundProvider(ctx, o)
 	if err != nil {
 		return nil, fmt.Errorf("get refund provider: %w", err)
@@ -420,13 +439,18 @@ func (s *PaymentService) QueryAndFinalizeRefund(ctx context.Context, oid int64) 
 		return nil, infraerrors.BadRequest("REFUND_QUERY_UNSUPPORTED", "this payment provider does not support refund status query; please verify manually")
 	}
 
-	pendingDetail := s.latestRefundPendingDetail(ctx, oid)
+	gatewayRefundAmount := calculateGatewayRefundAmount(
+		o.Amount,
+		PaymentOrderProviderAmount(o),
+		o.RefundAmount,
+		PaymentOrderCurrency(o),
+	)
 	finishProviderCall := servertiming.ObserveDependency(ctx, "payment")
 	resp, err := queryProvider.QueryRefund(ctx, payment.RefundQueryRequest{
 		TradeNo:  o.PaymentTradeNo,
 		OrderID:  o.OutTradeNo,
 		RefundID: pendingDetail.RefundID,
-		Amount:   formatGatewayRefundAmount(o.RefundAmount, o),
+		Amount:   formatGatewayRefundAmount(gatewayRefundAmount, o),
 	})
 	finishProviderCall()
 	if err != nil {
@@ -518,11 +542,12 @@ func (s *PaymentService) finalizeRefundFailed(ctx context.Context, o *dbent.Paym
 type refundPendingAuditDetail struct {
 	RefundID            string `json:"refundID"`
 	DeductionRollbackOK bool   `json:"deductionRollbackOK"`
+	ProviderConfirmed   bool   `json:"providerConfirmed"`
 }
 
 func (s *PaymentService) latestRefundPendingDetail(ctx context.Context, oid int64) refundPendingAuditDetail {
 	logEntry, err := s.entClient.PaymentAuditLog.Query().
-		Where(paymentauditlog.OrderIDEQ(strconv.FormatInt(oid, 10)), paymentauditlog.ActionEQ("REFUND_PENDING")).
+		Where(paymentauditlog.OrderIDEQ(strconv.FormatInt(oid, 10)), paymentauditlog.ActionIn("REFUND_PENDING", "REFUND_RECONCILIATION_PENDING")).
 		Order(paymentauditlog.ByCreatedAt(sql.OrderDesc())).
 		First(ctx)
 	if err != nil || logEntry == nil {
@@ -564,19 +589,81 @@ func (s *PaymentService) markRefundOk(ctx context.Context, p *RefundPlan) (*Refu
 	if p.RefundAmount < p.Order.Amount {
 		fs = OrderStatusPartiallyRefunded
 	}
-	now := time.Now()
-	_, err := s.entClient.PaymentOrder.UpdateOneID(p.OrderID).SetStatus(fs).SetRefundAmount(p.RefundAmount).SetRefundReason(p.Reason).SetRefundAt(now).SetForceRefund(p.Force).Save(ctx)
+	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("mark refund: %w", err)
+		return s.markRefundReconciliationPending(ctx, p, fmt.Errorf("begin refund finalization: %w", err))
+	}
+	defer func() { _ = tx.Rollback() }()
+	fail := func(cause error) (*RefundResult, error) {
+		_ = tx.Rollback()
+		return s.markRefundReconciliationPending(ctx, p, cause)
+	}
+	txCtx := dbent.NewTxContext(ctx, tx)
+	now := time.Now()
+	_, err = tx.Client().PaymentOrder.UpdateOneID(p.OrderID).SetStatus(fs).SetRefundAmount(p.RefundAmount).SetRefundReason(p.Reason).SetRefundAt(now).SetForceRefund(p.Force).Save(txCtx)
+	if err != nil {
+		return fail(fmt.Errorf("mark refund: %w", err))
+	}
+	refundRatio := 1.0
+	if p.Order.Amount > 0 && p.RefundAmount < p.Order.Amount {
+		refundRatio = p.RefundAmount / p.Order.Amount
+	}
+	if s.affiliateService != nil {
+		if err = s.affiliateService.ReverseInviteRebateForOrder(txCtx, p.OrderID, refundRatio); err != nil {
+			return fail(fmt.Errorf("reverse affiliate rebate: %w", err))
+		}
 	}
 	if s.distributionService != nil && p.RefundAmount > 0 {
-		if err := s.distributionService.ReverseRefund(ctx, p.OrderID, decimal.NewFromFloat(p.RefundAmount)); err != nil {
-			s.writeAuditLog(ctx, p.OrderID, "DISTRIBUTION_REFUND_REVERSAL_FAILED", "system", map[string]any{"error": err.Error(), "refundAmount": p.RefundAmount})
-			return nil, fmt.Errorf("reverse distribution commission: %w", err)
+		principalRefund := paymentPrincipalRefundAmount(p.Order.Amount, commissionableOrderAmount(p.Order), p.RefundAmount)
+		if err = s.distributionService.ReverseRefund(txCtx, p.OrderID, decimal.NewFromFloat(principalRefund)); err != nil {
+			return fail(fmt.Errorf("reverse distribution commission: %w", err))
 		}
+	}
+	if err = tx.Commit(); err != nil {
+		return fail(fmt.Errorf("commit refund finalization: %w", err))
 	}
 	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "force": p.Force})
 	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct}, nil
+}
+
+func (s *PaymentService) markRefundReconciliationPending(ctx context.Context, p *RefundPlan, cause error) (*RefundResult, error) {
+	rollbackOK := s.RollbackRefund(ctx, p, cause)
+	tx, txErr := s.entClient.Tx(ctx)
+	if txErr != nil {
+		return nil, errors.Join(cause, fmt.Errorf("begin refund reconciliation pending transaction: %w", txErr))
+	}
+	defer func() { _ = tx.Rollback() }()
+	txCtx := dbent.NewTxContext(ctx, tx)
+	_, updateErr := tx.Client().PaymentOrder.UpdateOneID(p.OrderID).
+		SetStatus(OrderStatusRefundPending).
+		SetRefundAmount(p.RefundAmount).
+		SetRefundReason(p.Reason).
+		ClearRefundAt().
+		SetForceRefund(p.Force).
+		Save(txCtx)
+	if updateErr != nil {
+		return nil, errors.Join(cause, fmt.Errorf("mark refund reconciliation pending: %w", updateErr))
+	}
+	detail, _ := json.Marshal(map[string]any{
+		"providerConfirmed":   true,
+		"deductionRollbackOK": rollbackOK,
+		"error":               cause.Error(),
+	})
+	orderID := strconv.FormatInt(p.OrderID, 10)
+	updated, auditErr := tx.Client().PaymentAuditLog.Update().
+		Where(paymentauditlog.OrderIDEQ(orderID), paymentauditlog.ActionEQ("REFUND_RECONCILIATION_PENDING")).
+		SetDetail(string(detail)).SetOperator("system").Save(txCtx)
+	if auditErr == nil && updated == 0 {
+		_, auditErr = tx.Client().PaymentAuditLog.Create().SetOrderID(orderID).
+			SetAction("REFUND_RECONCILIATION_PENDING").SetDetail(string(detail)).SetOperator("system").Save(txCtx)
+	}
+	if auditErr != nil {
+		return nil, errors.Join(cause, fmt.Errorf("record refund reconciliation pending: %w", auditErr))
+	}
+	if commitErr := tx.Commit(); commitErr != nil {
+		return nil, errors.Join(cause, fmt.Errorf("commit refund reconciliation pending: %w", commitErr))
+	}
+	return nil, fmt.Errorf("refund completed at provider but financial reconciliation is pending: %w", cause)
 }
 
 func (s *PaymentService) markRefundPending(ctx context.Context, p *RefundPlan, resp *payment.RefundResponse) (*RefundResult, error) {

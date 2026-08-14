@@ -3,6 +3,7 @@ package service
 import (
 	"math"
 
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/shopspring/decimal"
 )
@@ -35,6 +36,58 @@ func calculateCreditedBalance(paymentAmount, multiplier float64) float64 {
 func calculateCreditedBalanceWithBonus(paymentAmount, multiplier, bonus float64) float64 {
 	return decimal.NewFromFloat(calculateCreditedBalance(paymentAmount, multiplier)).
 		Add(decimal.NewFromFloat(math.Max(0, bonus))).
+		Round(2).
+		InexactFloat64()
+}
+
+func calculatePaymentSurcharge(principal, payAmount float64) float64 {
+	if principal <= 0 || payAmount <= principal {
+		return 0
+	}
+	return decimal.NewFromFloat(payAmount).
+		Sub(decimal.NewFromFloat(principal)).
+		Round(2).
+		InexactFloat64()
+}
+
+// PaymentOrderPrincipalAmount returns the payment-currency principal used by
+// new-order cash reporting. The PayAmount fallback preserves the existing
+// payment dashboard behavior for legacy rows without rewriting data.
+func PaymentOrderPrincipalAmount(order *dbent.PaymentOrder) float64 {
+	if order == nil {
+		return 0
+	}
+	if order.PaymentPrincipalAmount > 0 {
+		return order.PaymentPrincipalAmount
+	}
+	if order.PayAmount > 0 {
+		return order.PayAmount
+	}
+	return order.Amount
+}
+
+// PaymentOrderEntitlementPrincipalAmount excludes quick-recharge bonuses. The
+// legacy fallback preserves the historical affiliate rebate behavior.
+func PaymentOrderEntitlementPrincipalAmount(order *dbent.PaymentOrder) float64 {
+	if order == nil {
+		return 0
+	}
+	if order.EntitlementPrincipalAmount > 0 {
+		return order.EntitlementPrincipalAmount
+	}
+	return order.Amount
+}
+
+func paymentPrincipalRefundAmount(orderAmount, principalAmount, refundAmount float64) float64 {
+	if orderAmount <= 0 || principalAmount <= 0 || refundAmount <= 0 {
+		return 0
+	}
+	if refundAmount >= orderAmount {
+		return decimal.NewFromFloat(principalAmount).Round(2).InexactFloat64()
+	}
+	return decimal.NewFromFloat(principalAmount).
+		Mul(decimal.NewFromFloat(refundAmount)).
+		Div(decimal.NewFromFloat(orderAmount)).
 		Round(2).
 		InexactFloat64()
 }

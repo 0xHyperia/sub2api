@@ -69,7 +69,7 @@
               <dd class="mt-1 text-base font-semibold tabular-nums text-foreground">
                 {{ paymentAmountSymbol(row) }}{{ row.pay_amount.toFixed(2) }}
               </dd>
-              <p v-if="row.amount !== row.pay_amount" class="mt-0.5 truncate text-[11px] text-foreground-subtle">
+              <p v-if="shouldShowCreditedAmount(row)" class="mt-0.5 truncate text-[11px] text-foreground-subtle">
                 {{ t('payment.orders.creditedAmount') }}: {{ creditedAmountSymbol }}{{ row.amount.toFixed(2) }}
               </p>
             </div>
@@ -123,7 +123,7 @@
           <span v-if="row.fee_rate > 0" class="ml-1 text-xs text-foreground-subtle" :title="t('payment.orders.fee') + ': ' + row.fee_rate + '%'">
             ({{ row.fee_rate }}%)
           </span>
-          <div v-if="row.amount !== row.pay_amount" class="text-xs text-foreground-subtle">
+          <div v-if="shouldShowCreditedAmount(row)" class="text-xs text-foreground-subtle">
             {{ t('payment.orders.creditedAmount') }}: {{ creditedAmountSymbol }}{{ row.amount.toFixed(2) }}
           </div>
         </div>
@@ -238,6 +238,10 @@ const creditedAmountSymbol = currencySymbol('USD')
 
 function paymentAmountSymbol(order: PaymentOrder): string {
   return currencySymbol(order.currency)
+}
+
+function shouldShowCreditedAmount(order: PaymentOrder): boolean {
+  return order.order_type === 'balance' || order.amount !== order.pay_amount
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null

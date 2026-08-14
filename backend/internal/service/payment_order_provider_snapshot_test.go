@@ -86,6 +86,9 @@ func TestCreateOrderInTx_WritesProviderSnapshot(t *testing.T) {
 		},
 		88,
 		88,
+		88,
+		80,
+		0,
 		8,
 		0,
 		88,
@@ -102,6 +105,9 @@ func TestCreateOrderInTx_WritesProviderSnapshot(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.Equal(t, float64(8), order.ProviderSnapshot["recharge_bonus"])
+	require.Equal(t, float64(88), order.PaymentPrincipalAmount)
+	require.Equal(t, float64(80), order.EntitlementPrincipalAmount)
+	require.Zero(t, order.SurchargeAmount)
 	require.Equal(t, strconv.FormatInt(instance.ID, 10), valueOrEmpty(order.ProviderInstanceID))
 	require.Equal(t, payment.TypeAlipay, valueOrEmpty(order.ProviderKey))
 	require.Equal(t, float64(2), order.ProviderSnapshot["schema_version"])

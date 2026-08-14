@@ -32,7 +32,7 @@
             <dt class="shrink-0 text-foreground-subtle">{{ t('payment.orders.orderNo') }}</dt>
             <dd class="min-w-0 break-all text-right font-mono text-foreground">{{ row.out_trade_no }}</dd>
           </div>
-          <div v-if="row.amount !== row.pay_amount" class="flex items-center justify-between gap-4 py-2">
+          <div v-if="shouldShowCreditedAmount(row)" class="flex items-center justify-between gap-4 py-2">
             <dt class="text-foreground-subtle">{{ t('payment.orders.creditedAmount') }}</dt>
             <dd class="font-medium tabular-nums text-foreground">{{ creditedAmountSymbol }}{{ row.amount.toFixed(2) }}</dd>
           </div>
@@ -77,7 +77,7 @@
         <span v-if="row.fee_rate > 0" class="ml-1 text-xs text-foreground-subtle" :title="t('payment.orders.fee') + ': ' + row.fee_rate + '%'">
           ({{ t('payment.orders.fee') }} {{ row.fee_rate }}%)
         </span>
-        <div v-if="row.amount !== row.pay_amount" class="text-xs text-foreground-subtle">
+        <div v-if="shouldShowCreditedAmount(row)" class="text-xs text-foreground-subtle">
           {{ t('payment.orders.creditedAmount') }}: {{ creditedAmountSymbol }}{{ row.amount.toFixed(2) }}
         </div>
       </div>
@@ -127,6 +127,10 @@ const creditedAmountSymbol = currencySymbol('USD')
 
 function paymentAmountSymbol(order: PaymentOrder): string {
   return currencySymbol(order.currency)
+}
+
+function shouldShowCreditedAmount(order: PaymentOrder): boolean {
+  return order.order_type === 'balance' || order.amount !== order.pay_amount
 }
 
 function paymentMethodLabel(paymentType: string): string {

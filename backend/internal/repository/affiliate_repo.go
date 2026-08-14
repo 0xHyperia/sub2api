@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -192,10 +193,99 @@ VALUES ($1, 'accrue', $2, $3, $4, NOW(), NOW())`, inviterID, amount, inviteeUser
 	return applied, nil
 }
 
+func (r *affiliateRepository) ReverseQuotaForOrder(ctx context.Context, sourceOrderID int64, refundRatio float64) error {
+	if sourceOrderID <= 0 || refundRatio <= 0 {
+		return nil
+	}
+	if refundRatio > 1 {
+		refundRatio = 1
+	}
+	return r.withTx(ctx, func(txCtx context.Context, txClient *dbent.Client) error {
+		var inviterID, inviteeID int64
+		var accrued, reversed, frozenQuota, availableQuota float64
+		err := scanSingleRow(txCtx, txClient, `
+SELECT accrue.user_id,COALESCE(accrue.source_user_id,0),
+	       COALESCE((SELECT SUM(original.amount) FROM user_affiliate_ledger original
+	                 WHERE original.source_order_id=$1 AND original.action='accrue'),0)::double precision,
+       COALESCE((SELECT SUM(reversal.amount) FROM user_affiliate_ledger reversal
+                 WHERE reversal.source_order_id=$1 AND reversal.action='refund_reversal'), 0)::double precision,
+       ua.aff_frozen_quota::double precision,
+       ua.aff_quota::double precision
+FROM user_affiliate_ledger accrue
+JOIN user_affiliates ua ON ua.user_id=accrue.user_id
+WHERE accrue.source_order_id=$1 AND accrue.action='accrue'
+ORDER BY accrue.id
+LIMIT 1
+FOR UPDATE OF ua`, []any{sourceOrderID}, &inviterID, &inviteeID, &accrued, &reversed, &frozenQuota, &availableQuota)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("lock affiliate rebate for refund: %w", err)
+		}
+
+		target := accrued * refundRatio
+		delta := target - reversed
+		if delta <= 0.000000001 {
+			return nil
+		}
+		if delta > accrued-reversed {
+			delta = accrued - reversed
+		}
+
+		var stillFrozen float64
+		if err = scanSingleRow(txCtx, txClient, `
+SELECT COALESCE(SUM(amount),0)::double precision
+FROM user_affiliate_ledger
+WHERE source_order_id=$1 AND action='accrue' AND frozen_until IS NOT NULL`, []any{sourceOrderID}, &stillFrozen); err != nil {
+			return fmt.Errorf("query frozen affiliate rebate: %w", err)
+		}
+		fromFrozen := math.Min(delta, math.Min(stillFrozen, frozenQuota))
+		remaining := delta - fromFrozen
+		fromAvailable := math.Min(remaining, availableQuota)
+		fromBalance := remaining - fromAvailable
+
+		res, err := txClient.ExecContext(txCtx, `
+UPDATE user_affiliates
+SET aff_frozen_quota=GREATEST(aff_frozen_quota-$1,0),
+    aff_quota=GREATEST(aff_quota-$2,0),
+    aff_history_quota=GREATEST(aff_history_quota-$3,0),
+    updated_at=NOW()
+WHERE user_id=$4`, fromFrozen, fromAvailable, delta, inviterID)
+		if err != nil {
+			return fmt.Errorf("reverse affiliate quota: %w", err)
+		}
+		if affected, _ := res.RowsAffected(); affected == 0 {
+			return service.ErrUserNotFound
+		}
+		if fromBalance > 0 {
+			if _, err = txClient.ExecContext(txCtx, `
+UPDATE users
+SET balance=balance-$1,total_recharged=total_recharged-$1,updated_at=NOW()
+WHERE id=$2`, fromBalance, inviterID); err != nil {
+				return fmt.Errorf("reverse transferred affiliate rebate: %w", err)
+			}
+		}
+		if _, err = txClient.ExecContext(txCtx, `
+INSERT INTO user_affiliate_ledger (
+    user_id,action,amount,source_user_id,source_order_id,balance_after,
+    aff_quota_after,aff_frozen_quota_after,aff_history_quota_after,created_at,updated_at
+)
+SELECT ua.user_id,'refund_reversal',$1,$2,$3,u.balance,
+       ua.aff_quota,ua.aff_frozen_quota,ua.aff_history_quota,NOW(),NOW()
+FROM user_affiliates ua JOIN users u ON u.id=ua.user_id
+WHERE ua.user_id=$4`, delta, inviteeID, sourceOrderID, inviterID); err != nil {
+			return fmt.Errorf("insert affiliate refund reversal ledger: %w", err)
+		}
+		return nil
+	})
+}
+
 func (r *affiliateRepository) GetAccruedRebateFromInvitee(ctx context.Context, inviterID, inviteeUserID int64) (float64, error) {
 	client := clientFromContext(ctx, r.client)
 	rows, err := client.QueryContext(ctx,
-		`SELECT COALESCE(SUM(amount), 0)::double precision FROM user_affiliate_ledger WHERE user_id = $1 AND source_user_id = $2 AND action = 'accrue'`,
+		`SELECT COALESCE(SUM(CASE WHEN action='accrue' THEN amount WHEN action='refund_reversal' THEN -amount ELSE 0 END), 0)::double precision
+		 FROM user_affiliate_ledger WHERE user_id=$1 AND source_user_id=$2 AND action IN ('accrue','refund_reversal')`,
 		inviterID, inviteeUserID)
 	if err != nil {
 		return 0, fmt.Errorf("query accrued rebate from invitee: %w", err)

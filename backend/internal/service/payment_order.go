@@ -55,12 +55,15 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	}
 	orderAmount := req.Amount
 	limitAmount := req.Amount
+	entitlementPrincipalAmount := req.Amount
 	rechargeBonus := 0.0
 	if plan != nil {
 		orderAmount = plan.Price
 		limitAmount = plan.Price
+		entitlementPrincipalAmount = plan.Price
 	} else if req.OrderType == payment.OrderTypeBalance {
 		rechargeBonus, _ = quickRechargeBonus(req.Amount, cfg.QuickRechargeAmounts)
+		entitlementPrincipalAmount = calculateCreditedBalance(req.Amount, cfg.BalanceRechargeMultiplier)
 		orderAmount = calculateCreditedBalanceWithBonus(req.Amount, cfg.BalanceRechargeMultiplier, rechargeBonus)
 	}
 	methodCurrency := payment.DefaultPaymentCurrency
@@ -110,7 +113,12 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if oauthResp != nil {
 		return oauthResp, nil
 	}
-	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, rechargeBonus, feeRate, payAmount, providerAmount, sel)
+	paymentPrincipalAmount := limitAmount
+	if req.OrderType == payment.OrderTypeSubscription {
+		paymentPrincipalAmount = calculateSubscriptionGatewayBaseAmount(limitAmount, cfg.SubscriptionUSDToCNYRate, selectedCurrency)
+	}
+	surchargeAmount := calculatePaymentSurcharge(paymentPrincipalAmount, payAmount)
+	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, paymentPrincipalAmount, entitlementPrincipalAmount, surchargeAmount, rechargeBonus, feeRate, payAmount, providerAmount, sel)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +170,7 @@ func (s *PaymentService) validateSubOrder(ctx context.Context, req CreateOrderRe
 	return plan, nil
 }
 
-func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, rechargeBonus, feeRate, payAmount, providerAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
+func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, paymentPrincipalAmount, entitlementPrincipalAmount, surchargeAmount, rechargeBonus, feeRate, payAmount, providerAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
@@ -203,6 +211,9 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		SetNillableUserNotes(psNilIfEmpty(user.Notes)).
 		SetAmount(orderAmount).
 		SetPayAmount(payAmount).
+		SetPaymentPrincipalAmount(paymentPrincipalAmount).
+		SetEntitlementPrincipalAmount(entitlementPrincipalAmount).
+		SetSurchargeAmount(surchargeAmount).
 		SetProviderAmount(providerAmount).
 		SetFeeRate(feeRate).
 		SetFeeMode(normalizePaymentFeeMode(cfg.FeeMode)).

@@ -38,6 +38,73 @@ type paymentOrderLifecycleRedeemRepo struct {
 	}
 }
 
+func TestFiftyYuanBalanceOrderCompletesWithProviderFeeAndBonus(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentOrderLifecycleTestClient(t)
+	user, err := client.User.Create().
+		SetEmail("fifty-yuan-payment@example.com").SetPasswordHash("hash").SetUsername("fifty-yuan-payment").Save(ctx)
+	require.NoError(t, err)
+
+	cfg := &PaymentConfig{
+		BalanceRechargeMultiplier: 1,
+		QuickRechargeAmounts:      []QuickRechargeAmount{{Amount: 50, Bonus: 2}},
+		FeeMode:                   PaymentFeeModeProvider,
+		MaxPendingOrders:          3,
+		OrderTimeoutMin:           30,
+	}
+	principal := 50.0
+	bonus, matched := quickRechargeBonus(principal, cfg.QuickRechargeAmounts)
+	require.True(t, matched)
+	entitlementPrincipal := calculateCreditedBalance(principal, cfg.BalanceRechargeMultiplier)
+	creditedAmount := calculateCreditedBalanceWithBonus(principal, cfg.BalanceRechargeMultiplier, bonus)
+	_, payAmount, _, providerAmount, err := calculateCreateOrderAmountsForOrderType(principal, 4, "CNY", payment.OrderTypeBalance, 0, cfg.FeeMode)
+	require.NoError(t, err)
+
+	svc := &PaymentService{entClient: client}
+	order, err := svc.createOrderInTx(ctx, CreateOrderRequest{
+		UserID: user.ID, PaymentType: payment.TypeAlipay, OrderType: payment.OrderTypeBalance,
+		ClientIP: "127.0.0.1", SrcHost: "localhost",
+	}, &User{ID: user.ID, Email: user.Email, Username: user.Username}, nil, cfg,
+		creditedAmount, principal, principal, entitlementPrincipal,
+		calculatePaymentSurcharge(principal, payAmount), bonus, 4, payAmount, providerAmount,
+		&payment.InstanceSelection{InstanceID: "6", ProviderKey: payment.TypeEasyPay, SupportedTypes: "alipay,wxpay", Config: map[string]string{"currency": "CNY"}},
+	)
+	require.NoError(t, err)
+	require.Equal(t, 50.0, order.PaymentPrincipalAmount)
+	require.Equal(t, 50.0, order.EntitlementPrincipalAmount)
+	require.Equal(t, 2.0, order.SurchargeAmount)
+	require.Equal(t, 52.0, order.PayAmount)
+	require.Equal(t, 50.0, order.ProviderAmount)
+	require.Equal(t, 52.0, order.Amount)
+	require.Equal(t, 50.0, commissionableOrderAmount(order))
+	require.Equal(t, 50.0, affiliateRebateBaseAmount(order))
+
+	order, err = client.PaymentOrder.UpdateOne(order).
+		SetStatus(OrderStatusPaid).SetPaymentTradeNo("simulated-paid-trade-50").SetPaidAt(time.Now()).Save(ctx)
+	require.NoError(t, err)
+	userRepo := &mockUserRepo{getByIDUser: &User{ID: user.ID, Email: user.Email, Username: user.Username}}
+	userRepo.updateBalanceFn = func(_ context.Context, id int64, amount float64) error {
+		require.Equal(t, user.ID, id)
+		userRepo.getByIDUser.Balance += amount
+		return nil
+	}
+	redeemRepo := &paymentOrderLifecycleRedeemRepo{codesByCode: map[string]*RedeemCode{
+		order.RechargeCode: {ID: 50, Code: order.RechargeCode, Type: RedeemTypeBalance, Value: order.Amount, Status: StatusUnused},
+	}}
+	svc.userRepo = userRepo
+	svc.redeemService = NewRedeemService(redeemRepo, userRepo, nil, nil, nil, client, nil, nil)
+	require.NoError(t, svc.ExecuteBalanceFulfillment(ctx, order.ID))
+
+	completed, err := client.PaymentOrder.Get(ctx, order.ID)
+	require.NoError(t, err)
+	require.Equal(t, OrderStatusCompleted, completed.Status)
+	require.Equal(t, 52.0, userRepo.getByIDUser.Balance)
+	require.Len(t, redeemRepo.useCalls, 1)
+	require.NoError(t, svc.ExecuteBalanceFulfillment(ctx, order.ID))
+	require.Equal(t, 52.0, userRepo.getByIDUser.Balance, "duplicate paid notifications must not credit balance twice")
+	require.Len(t, redeemRepo.useCalls, 1)
+}
+
 func (p *paymentOrderLifecycleQueryProvider) Name() string {
 	return "payment-order-lifecycle-query-provider"
 }

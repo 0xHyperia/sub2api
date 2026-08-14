@@ -31004,63 +31004,69 @@ func (m *PaymentAuditLogMutation) ResetEdge(name string) error {
 // PaymentOrderMutation represents an operation that mutates the PaymentOrder nodes in the graph.
 type PaymentOrderMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *int64
-	user_email               *string
-	user_name                *string
-	user_notes               *string
-	amount                   *float64
-	addamount                *float64
-	pay_amount               *float64
-	addpay_amount            *float64
-	provider_amount          *float64
-	addprovider_amount       *float64
-	fee_rate                 *float64
-	addfee_rate              *float64
-	fee_mode                 *string
-	recharge_code            *string
-	out_trade_no             *string
-	payment_type             *string
-	payment_trade_no         *string
-	pay_url                  *string
-	qr_code                  *string
-	qr_code_img              *string
-	order_type               *string
-	plan_id                  *int64
-	addplan_id               *int64
-	subscription_group_id    *int64
-	addsubscription_group_id *int64
-	subscription_days        *int
-	addsubscription_days     *int
-	provider_instance_id     *string
-	provider_key             *string
-	provider_snapshot        *map[string]interface{}
-	status                   *string
-	refund_amount            *float64
-	addrefund_amount         *float64
-	refund_reason            *string
-	refund_at                *time.Time
-	force_refund             *bool
-	refund_requested_at      *time.Time
-	refund_request_reason    *string
-	refund_requested_by      *string
-	expires_at               *time.Time
-	paid_at                  *time.Time
-	completed_at             *time.Time
-	failed_at                *time.Time
-	failed_reason            *string
-	client_ip                *string
-	src_host                 *string
-	src_url                  *string
-	created_at               *time.Time
-	updated_at               *time.Time
-	clearedFields            map[string]struct{}
-	user                     *int64
-	cleareduser              bool
-	done                     bool
-	oldValue                 func(context.Context) (*PaymentOrder, error)
-	predicates               []predicate.PaymentOrder
+	op                              Op
+	typ                             string
+	id                              *int64
+	user_email                      *string
+	user_name                       *string
+	user_notes                      *string
+	amount                          *float64
+	addamount                       *float64
+	pay_amount                      *float64
+	addpay_amount                   *float64
+	payment_principal_amount        *float64
+	addpayment_principal_amount     *float64
+	entitlement_principal_amount    *float64
+	addentitlement_principal_amount *float64
+	surcharge_amount                *float64
+	addsurcharge_amount             *float64
+	provider_amount                 *float64
+	addprovider_amount              *float64
+	fee_rate                        *float64
+	addfee_rate                     *float64
+	fee_mode                        *string
+	recharge_code                   *string
+	out_trade_no                    *string
+	payment_type                    *string
+	payment_trade_no                *string
+	pay_url                         *string
+	qr_code                         *string
+	qr_code_img                     *string
+	order_type                      *string
+	plan_id                         *int64
+	addplan_id                      *int64
+	subscription_group_id           *int64
+	addsubscription_group_id        *int64
+	subscription_days               *int
+	addsubscription_days            *int
+	provider_instance_id            *string
+	provider_key                    *string
+	provider_snapshot               *map[string]interface{}
+	status                          *string
+	refund_amount                   *float64
+	addrefund_amount                *float64
+	refund_reason                   *string
+	refund_at                       *time.Time
+	force_refund                    *bool
+	refund_requested_at             *time.Time
+	refund_request_reason           *string
+	refund_requested_by             *string
+	expires_at                      *time.Time
+	paid_at                         *time.Time
+	completed_at                    *time.Time
+	failed_at                       *time.Time
+	failed_reason                   *string
+	client_ip                       *string
+	src_host                        *string
+	src_url                         *string
+	created_at                      *time.Time
+	updated_at                      *time.Time
+	clearedFields                   map[string]struct{}
+	user                            *int64
+	cleareduser                     bool
+	done                            bool
+	oldValue                        func(context.Context) (*PaymentOrder, error)
+	predicates                      []predicate.PaymentOrder
 }
 
 var _ ent.Mutation = (*PaymentOrderMutation)(nil)
@@ -31428,6 +31434,174 @@ func (m *PaymentOrderMutation) AddedPayAmount() (r float64, exists bool) {
 func (m *PaymentOrderMutation) ResetPayAmount() {
 	m.pay_amount = nil
 	m.addpay_amount = nil
+}
+
+// SetPaymentPrincipalAmount sets the "payment_principal_amount" field.
+func (m *PaymentOrderMutation) SetPaymentPrincipalAmount(f float64) {
+	m.payment_principal_amount = &f
+	m.addpayment_principal_amount = nil
+}
+
+// PaymentPrincipalAmount returns the value of the "payment_principal_amount" field in the mutation.
+func (m *PaymentOrderMutation) PaymentPrincipalAmount() (r float64, exists bool) {
+	v := m.payment_principal_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPaymentPrincipalAmount returns the old "payment_principal_amount" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldPaymentPrincipalAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPaymentPrincipalAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPaymentPrincipalAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPaymentPrincipalAmount: %w", err)
+	}
+	return oldValue.PaymentPrincipalAmount, nil
+}
+
+// AddPaymentPrincipalAmount adds f to the "payment_principal_amount" field.
+func (m *PaymentOrderMutation) AddPaymentPrincipalAmount(f float64) {
+	if m.addpayment_principal_amount != nil {
+		*m.addpayment_principal_amount += f
+	} else {
+		m.addpayment_principal_amount = &f
+	}
+}
+
+// AddedPaymentPrincipalAmount returns the value that was added to the "payment_principal_amount" field in this mutation.
+func (m *PaymentOrderMutation) AddedPaymentPrincipalAmount() (r float64, exists bool) {
+	v := m.addpayment_principal_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPaymentPrincipalAmount resets all changes to the "payment_principal_amount" field.
+func (m *PaymentOrderMutation) ResetPaymentPrincipalAmount() {
+	m.payment_principal_amount = nil
+	m.addpayment_principal_amount = nil
+}
+
+// SetEntitlementPrincipalAmount sets the "entitlement_principal_amount" field.
+func (m *PaymentOrderMutation) SetEntitlementPrincipalAmount(f float64) {
+	m.entitlement_principal_amount = &f
+	m.addentitlement_principal_amount = nil
+}
+
+// EntitlementPrincipalAmount returns the value of the "entitlement_principal_amount" field in the mutation.
+func (m *PaymentOrderMutation) EntitlementPrincipalAmount() (r float64, exists bool) {
+	v := m.entitlement_principal_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEntitlementPrincipalAmount returns the old "entitlement_principal_amount" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldEntitlementPrincipalAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEntitlementPrincipalAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEntitlementPrincipalAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEntitlementPrincipalAmount: %w", err)
+	}
+	return oldValue.EntitlementPrincipalAmount, nil
+}
+
+// AddEntitlementPrincipalAmount adds f to the "entitlement_principal_amount" field.
+func (m *PaymentOrderMutation) AddEntitlementPrincipalAmount(f float64) {
+	if m.addentitlement_principal_amount != nil {
+		*m.addentitlement_principal_amount += f
+	} else {
+		m.addentitlement_principal_amount = &f
+	}
+}
+
+// AddedEntitlementPrincipalAmount returns the value that was added to the "entitlement_principal_amount" field in this mutation.
+func (m *PaymentOrderMutation) AddedEntitlementPrincipalAmount() (r float64, exists bool) {
+	v := m.addentitlement_principal_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetEntitlementPrincipalAmount resets all changes to the "entitlement_principal_amount" field.
+func (m *PaymentOrderMutation) ResetEntitlementPrincipalAmount() {
+	m.entitlement_principal_amount = nil
+	m.addentitlement_principal_amount = nil
+}
+
+// SetSurchargeAmount sets the "surcharge_amount" field.
+func (m *PaymentOrderMutation) SetSurchargeAmount(f float64) {
+	m.surcharge_amount = &f
+	m.addsurcharge_amount = nil
+}
+
+// SurchargeAmount returns the value of the "surcharge_amount" field in the mutation.
+func (m *PaymentOrderMutation) SurchargeAmount() (r float64, exists bool) {
+	v := m.surcharge_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSurchargeAmount returns the old "surcharge_amount" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldSurchargeAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSurchargeAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSurchargeAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSurchargeAmount: %w", err)
+	}
+	return oldValue.SurchargeAmount, nil
+}
+
+// AddSurchargeAmount adds f to the "surcharge_amount" field.
+func (m *PaymentOrderMutation) AddSurchargeAmount(f float64) {
+	if m.addsurcharge_amount != nil {
+		*m.addsurcharge_amount += f
+	} else {
+		m.addsurcharge_amount = &f
+	}
+}
+
+// AddedSurchargeAmount returns the value that was added to the "surcharge_amount" field in this mutation.
+func (m *PaymentOrderMutation) AddedSurchargeAmount() (r float64, exists bool) {
+	v := m.addsurcharge_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSurchargeAmount resets all changes to the "surcharge_amount" field.
+func (m *PaymentOrderMutation) ResetSurchargeAmount() {
+	m.surcharge_amount = nil
+	m.addsurcharge_amount = nil
 }
 
 // SetProviderAmount sets the "provider_amount" field.
@@ -33121,7 +33295,7 @@ func (m *PaymentOrderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PaymentOrderMutation) Fields() []string {
-	fields := make([]string, 0, 41)
+	fields := make([]string, 0, 44)
 	if m.user != nil {
 		fields = append(fields, paymentorder.FieldUserID)
 	}
@@ -33139,6 +33313,15 @@ func (m *PaymentOrderMutation) Fields() []string {
 	}
 	if m.pay_amount != nil {
 		fields = append(fields, paymentorder.FieldPayAmount)
+	}
+	if m.payment_principal_amount != nil {
+		fields = append(fields, paymentorder.FieldPaymentPrincipalAmount)
+	}
+	if m.entitlement_principal_amount != nil {
+		fields = append(fields, paymentorder.FieldEntitlementPrincipalAmount)
+	}
+	if m.surcharge_amount != nil {
+		fields = append(fields, paymentorder.FieldSurchargeAmount)
 	}
 	if m.provider_amount != nil {
 		fields = append(fields, paymentorder.FieldProviderAmount)
@@ -33265,6 +33448,12 @@ func (m *PaymentOrderMutation) Field(name string) (ent.Value, bool) {
 		return m.Amount()
 	case paymentorder.FieldPayAmount:
 		return m.PayAmount()
+	case paymentorder.FieldPaymentPrincipalAmount:
+		return m.PaymentPrincipalAmount()
+	case paymentorder.FieldEntitlementPrincipalAmount:
+		return m.EntitlementPrincipalAmount()
+	case paymentorder.FieldSurchargeAmount:
+		return m.SurchargeAmount()
 	case paymentorder.FieldProviderAmount:
 		return m.ProviderAmount()
 	case paymentorder.FieldFeeRate:
@@ -33356,6 +33545,12 @@ func (m *PaymentOrderMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldAmount(ctx)
 	case paymentorder.FieldPayAmount:
 		return m.OldPayAmount(ctx)
+	case paymentorder.FieldPaymentPrincipalAmount:
+		return m.OldPaymentPrincipalAmount(ctx)
+	case paymentorder.FieldEntitlementPrincipalAmount:
+		return m.OldEntitlementPrincipalAmount(ctx)
+	case paymentorder.FieldSurchargeAmount:
+		return m.OldSurchargeAmount(ctx)
 	case paymentorder.FieldProviderAmount:
 		return m.OldProviderAmount(ctx)
 	case paymentorder.FieldFeeRate:
@@ -33476,6 +33671,27 @@ func (m *PaymentOrderMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPayAmount(v)
+		return nil
+	case paymentorder.FieldPaymentPrincipalAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPaymentPrincipalAmount(v)
+		return nil
+	case paymentorder.FieldEntitlementPrincipalAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEntitlementPrincipalAmount(v)
+		return nil
+	case paymentorder.FieldSurchargeAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSurchargeAmount(v)
 		return nil
 	case paymentorder.FieldProviderAmount:
 		v, ok := value.(float64)
@@ -33736,6 +33952,15 @@ func (m *PaymentOrderMutation) AddedFields() []string {
 	if m.addpay_amount != nil {
 		fields = append(fields, paymentorder.FieldPayAmount)
 	}
+	if m.addpayment_principal_amount != nil {
+		fields = append(fields, paymentorder.FieldPaymentPrincipalAmount)
+	}
+	if m.addentitlement_principal_amount != nil {
+		fields = append(fields, paymentorder.FieldEntitlementPrincipalAmount)
+	}
+	if m.addsurcharge_amount != nil {
+		fields = append(fields, paymentorder.FieldSurchargeAmount)
+	}
 	if m.addprovider_amount != nil {
 		fields = append(fields, paymentorder.FieldProviderAmount)
 	}
@@ -33766,6 +33991,12 @@ func (m *PaymentOrderMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedAmount()
 	case paymentorder.FieldPayAmount:
 		return m.AddedPayAmount()
+	case paymentorder.FieldPaymentPrincipalAmount:
+		return m.AddedPaymentPrincipalAmount()
+	case paymentorder.FieldEntitlementPrincipalAmount:
+		return m.AddedEntitlementPrincipalAmount()
+	case paymentorder.FieldSurchargeAmount:
+		return m.AddedSurchargeAmount()
 	case paymentorder.FieldProviderAmount:
 		return m.AddedProviderAmount()
 	case paymentorder.FieldFeeRate:
@@ -33800,6 +34031,27 @@ func (m *PaymentOrderMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddPayAmount(v)
+		return nil
+	case paymentorder.FieldPaymentPrincipalAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPaymentPrincipalAmount(v)
+		return nil
+	case paymentorder.FieldEntitlementPrincipalAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddEntitlementPrincipalAmount(v)
+		return nil
+	case paymentorder.FieldSurchargeAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSurchargeAmount(v)
 		return nil
 	case paymentorder.FieldProviderAmount:
 		v, ok := value.(float64)
@@ -34010,6 +34262,15 @@ func (m *PaymentOrderMutation) ResetField(name string) error {
 		return nil
 	case paymentorder.FieldPayAmount:
 		m.ResetPayAmount()
+		return nil
+	case paymentorder.FieldPaymentPrincipalAmount:
+		m.ResetPaymentPrincipalAmount()
+		return nil
+	case paymentorder.FieldEntitlementPrincipalAmount:
+		m.ResetEntitlementPrincipalAmount()
+		return nil
+	case paymentorder.FieldSurchargeAmount:
+		m.ResetSurchargeAmount()
 		return nil
 	case paymentorder.FieldProviderAmount:
 		m.ResetProviderAmount()

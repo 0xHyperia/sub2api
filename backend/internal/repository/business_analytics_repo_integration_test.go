@@ -264,6 +264,29 @@ func TestBusinessPaymentFactPreservesEstimatedFXOnRefund(t *testing.T) {
 	require.True(t, estimated)
 }
 
+func TestBusinessPaymentFactUsesPrincipalWithoutSurchargeOrBonus(t *testing.T) {
+	ctx := context.Background()
+	suffix := time.Now().UnixNano()
+	now := time.Now().UTC()
+	user := mustCreateUser(t, integrationEntClient, &service.User{Email: fmt.Sprintf("business-principal-%d@example.com", suffix)})
+	order, err := integrationEntClient.PaymentOrder.Create().
+		SetUserID(user.ID).SetUserEmail(user.Email).SetUserName("business-principal").
+		SetAmount(52).SetPayAmount(52).SetProviderAmount(50).
+		SetPaymentPrincipalAmount(50).SetEntitlementPrincipalAmount(50).SetSurchargeAmount(2).
+		SetRechargeCode(fmt.Sprintf("BIZPRINCIPAL-%d", suffix)).SetOutTradeNo(fmt.Sprintf("BIZPRINCIPALORDER%d", suffix)).
+		SetPaymentType("alipay").SetPaymentTradeNo(fmt.Sprintf("biz-principal-%d", suffix)).
+		SetProviderSnapshot(map[string]any{"currency": "CNY"}).SetStatus("COMPLETED").
+		SetClientIP("127.0.0.1").SetSrcHost("localhost").SetExpiresAt(now.Add(time.Hour)).SetPaidAt(now).Save(ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM users WHERE id=$1`, user.ID)
+	})
+
+	var gross float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT gross_amount FROM business_payment_facts WHERE payment_order_id=$1`, order.ID).Scan(&gross))
+	require.Equal(t, 50.0, gross)
+}
+
 func TestBusinessPaymentFactSurvivesRefundLifecycleUntilRefundCompletes(t *testing.T) {
 	ctx := context.Background()
 	suffix := time.Now().UnixNano()

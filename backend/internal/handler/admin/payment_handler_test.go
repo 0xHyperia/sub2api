@@ -13,18 +13,22 @@ import (
 func TestSanitizeAdminPaymentOrderForResponseAddsCurrency(t *testing.T) {
 	now := time.Now()
 	order := &dbent.PaymentOrder{
-		ID:          1,
-		UserID:      2,
-		Amount:      100,
-		PayAmount:   108,
-		FeeRate:     8,
-		OutTradeNo:  "sub2_202606250001",
-		PaymentType: "stripe",
-		OrderType:   "subscription",
-		Status:      "COMPLETED",
-		ExpiresAt:   now,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:                         1,
+		UserID:                     2,
+		Amount:                     100,
+		PayAmount:                  108,
+		PaymentPrincipalAmount:     100,
+		EntitlementPrincipalAmount: 95,
+		SurchargeAmount:            8,
+		ProviderAmount:             100,
+		FeeRate:                    8,
+		OutTradeNo:                 "sub2_202606250001",
+		PaymentType:                "stripe",
+		OrderType:                  "subscription",
+		Status:                     "COMPLETED",
+		ExpiresAt:                  now,
+		CreatedAt:                  now,
+		UpdatedAt:                  now,
 		ProviderSnapshot: map[string]any{
 			"schema_version": 2,
 			"currency":       "USD",
@@ -37,6 +41,9 @@ func TestSanitizeAdminPaymentOrderForResponseAddsCurrency(t *testing.T) {
 	}
 	if got.Currency != "USD" {
 		t.Fatalf("expected currency USD, got %q", got.Currency)
+	}
+	if got.PaymentPrincipalAmount != 100 || got.EntitlementPrincipalAmount != 95 || got.SurchargeAmount != 8 || got.ProviderAmount != 100 {
+		t.Fatalf("expected exact amount snapshots, got %+v", got)
 	}
 
 	body, err := json.Marshal(got)

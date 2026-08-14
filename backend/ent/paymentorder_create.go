@@ -67,6 +67,48 @@ func (_c *PaymentOrderCreate) SetPayAmount(v float64) *PaymentOrderCreate {
 	return _c
 }
 
+// SetPaymentPrincipalAmount sets the "payment_principal_amount" field.
+func (_c *PaymentOrderCreate) SetPaymentPrincipalAmount(v float64) *PaymentOrderCreate {
+	_c.mutation.SetPaymentPrincipalAmount(v)
+	return _c
+}
+
+// SetNillablePaymentPrincipalAmount sets the "payment_principal_amount" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillablePaymentPrincipalAmount(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetPaymentPrincipalAmount(*v)
+	}
+	return _c
+}
+
+// SetEntitlementPrincipalAmount sets the "entitlement_principal_amount" field.
+func (_c *PaymentOrderCreate) SetEntitlementPrincipalAmount(v float64) *PaymentOrderCreate {
+	_c.mutation.SetEntitlementPrincipalAmount(v)
+	return _c
+}
+
+// SetNillableEntitlementPrincipalAmount sets the "entitlement_principal_amount" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableEntitlementPrincipalAmount(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetEntitlementPrincipalAmount(*v)
+	}
+	return _c
+}
+
+// SetSurchargeAmount sets the "surcharge_amount" field.
+func (_c *PaymentOrderCreate) SetSurchargeAmount(v float64) *PaymentOrderCreate {
+	_c.mutation.SetSurchargeAmount(v)
+	return _c
+}
+
+// SetNillableSurchargeAmount sets the "surcharge_amount" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSurchargeAmount(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSurchargeAmount(*v)
+	}
+	return _c
+}
+
 // SetProviderAmount sets the "provider_amount" field.
 func (_c *PaymentOrderCreate) SetProviderAmount(v float64) *PaymentOrderCreate {
 	_c.mutation.SetProviderAmount(v)
@@ -541,6 +583,18 @@ func (_c *PaymentOrderCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *PaymentOrderCreate) defaults() {
+	if _, ok := _c.mutation.PaymentPrincipalAmount(); !ok {
+		v := paymentorder.DefaultPaymentPrincipalAmount
+		_c.mutation.SetPaymentPrincipalAmount(v)
+	}
+	if _, ok := _c.mutation.EntitlementPrincipalAmount(); !ok {
+		v := paymentorder.DefaultEntitlementPrincipalAmount
+		_c.mutation.SetEntitlementPrincipalAmount(v)
+	}
+	if _, ok := _c.mutation.SurchargeAmount(); !ok {
+		v := paymentorder.DefaultSurchargeAmount
+		_c.mutation.SetSurchargeAmount(v)
+	}
 	if _, ok := _c.mutation.ProviderAmount(); !ok {
 		v := paymentorder.DefaultProviderAmount
 		_c.mutation.SetProviderAmount(v)
@@ -609,6 +663,15 @@ func (_c *PaymentOrderCreate) check() error {
 	}
 	if _, ok := _c.mutation.PayAmount(); !ok {
 		return &ValidationError{Name: "pay_amount", err: errors.New(`ent: missing required field "PaymentOrder.pay_amount"`)}
+	}
+	if _, ok := _c.mutation.PaymentPrincipalAmount(); !ok {
+		return &ValidationError{Name: "payment_principal_amount", err: errors.New(`ent: missing required field "PaymentOrder.payment_principal_amount"`)}
+	}
+	if _, ok := _c.mutation.EntitlementPrincipalAmount(); !ok {
+		return &ValidationError{Name: "entitlement_principal_amount", err: errors.New(`ent: missing required field "PaymentOrder.entitlement_principal_amount"`)}
+	}
+	if _, ok := _c.mutation.SurchargeAmount(); !ok {
+		return &ValidationError{Name: "surcharge_amount", err: errors.New(`ent: missing required field "PaymentOrder.surcharge_amount"`)}
 	}
 	if _, ok := _c.mutation.ProviderAmount(); !ok {
 		return &ValidationError{Name: "provider_amount", err: errors.New(`ent: missing required field "PaymentOrder.provider_amount"`)}
@@ -767,6 +830,18 @@ func (_c *PaymentOrderCreate) createSpec() (*PaymentOrder, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.PayAmount(); ok {
 		_spec.SetField(paymentorder.FieldPayAmount, field.TypeFloat64, value)
 		_node.PayAmount = value
+	}
+	if value, ok := _c.mutation.PaymentPrincipalAmount(); ok {
+		_spec.SetField(paymentorder.FieldPaymentPrincipalAmount, field.TypeFloat64, value)
+		_node.PaymentPrincipalAmount = value
+	}
+	if value, ok := _c.mutation.EntitlementPrincipalAmount(); ok {
+		_spec.SetField(paymentorder.FieldEntitlementPrincipalAmount, field.TypeFloat64, value)
+		_node.EntitlementPrincipalAmount = value
+	}
+	if value, ok := _c.mutation.SurchargeAmount(); ok {
+		_spec.SetField(paymentorder.FieldSurchargeAmount, field.TypeFloat64, value)
+		_node.SurchargeAmount = value
 	}
 	if value, ok := _c.mutation.ProviderAmount(); ok {
 		_spec.SetField(paymentorder.FieldProviderAmount, field.TypeFloat64, value)
@@ -1064,6 +1139,60 @@ func (u *PaymentOrderUpsert) UpdatePayAmount() *PaymentOrderUpsert {
 // AddPayAmount adds v to the "pay_amount" field.
 func (u *PaymentOrderUpsert) AddPayAmount(v float64) *PaymentOrderUpsert {
 	u.Add(paymentorder.FieldPayAmount, v)
+	return u
+}
+
+// SetPaymentPrincipalAmount sets the "payment_principal_amount" field.
+func (u *PaymentOrderUpsert) SetPaymentPrincipalAmount(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldPaymentPrincipalAmount, v)
+	return u
+}
+
+// UpdatePaymentPrincipalAmount sets the "payment_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdatePaymentPrincipalAmount() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldPaymentPrincipalAmount)
+	return u
+}
+
+// AddPaymentPrincipalAmount adds v to the "payment_principal_amount" field.
+func (u *PaymentOrderUpsert) AddPaymentPrincipalAmount(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldPaymentPrincipalAmount, v)
+	return u
+}
+
+// SetEntitlementPrincipalAmount sets the "entitlement_principal_amount" field.
+func (u *PaymentOrderUpsert) SetEntitlementPrincipalAmount(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldEntitlementPrincipalAmount, v)
+	return u
+}
+
+// UpdateEntitlementPrincipalAmount sets the "entitlement_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateEntitlementPrincipalAmount() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldEntitlementPrincipalAmount)
+	return u
+}
+
+// AddEntitlementPrincipalAmount adds v to the "entitlement_principal_amount" field.
+func (u *PaymentOrderUpsert) AddEntitlementPrincipalAmount(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldEntitlementPrincipalAmount, v)
+	return u
+}
+
+// SetSurchargeAmount sets the "surcharge_amount" field.
+func (u *PaymentOrderUpsert) SetSurchargeAmount(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSurchargeAmount, v)
+	return u
+}
+
+// UpdateSurchargeAmount sets the "surcharge_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSurchargeAmount() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSurchargeAmount)
+	return u
+}
+
+// AddSurchargeAmount adds v to the "surcharge_amount" field.
+func (u *PaymentOrderUpsert) AddSurchargeAmount(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldSurchargeAmount, v)
 	return u
 }
 
@@ -1772,6 +1901,69 @@ func (u *PaymentOrderUpsertOne) AddPayAmount(v float64) *PaymentOrderUpsertOne {
 func (u *PaymentOrderUpsertOne) UpdatePayAmount() *PaymentOrderUpsertOne {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.UpdatePayAmount()
+	})
+}
+
+// SetPaymentPrincipalAmount sets the "payment_principal_amount" field.
+func (u *PaymentOrderUpsertOne) SetPaymentPrincipalAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetPaymentPrincipalAmount(v)
+	})
+}
+
+// AddPaymentPrincipalAmount adds v to the "payment_principal_amount" field.
+func (u *PaymentOrderUpsertOne) AddPaymentPrincipalAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddPaymentPrincipalAmount(v)
+	})
+}
+
+// UpdatePaymentPrincipalAmount sets the "payment_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdatePaymentPrincipalAmount() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdatePaymentPrincipalAmount()
+	})
+}
+
+// SetEntitlementPrincipalAmount sets the "entitlement_principal_amount" field.
+func (u *PaymentOrderUpsertOne) SetEntitlementPrincipalAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetEntitlementPrincipalAmount(v)
+	})
+}
+
+// AddEntitlementPrincipalAmount adds v to the "entitlement_principal_amount" field.
+func (u *PaymentOrderUpsertOne) AddEntitlementPrincipalAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddEntitlementPrincipalAmount(v)
+	})
+}
+
+// UpdateEntitlementPrincipalAmount sets the "entitlement_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateEntitlementPrincipalAmount() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateEntitlementPrincipalAmount()
+	})
+}
+
+// SetSurchargeAmount sets the "surcharge_amount" field.
+func (u *PaymentOrderUpsertOne) SetSurchargeAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSurchargeAmount(v)
+	})
+}
+
+// AddSurchargeAmount adds v to the "surcharge_amount" field.
+func (u *PaymentOrderUpsertOne) AddSurchargeAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSurchargeAmount(v)
+	})
+}
+
+// UpdateSurchargeAmount sets the "surcharge_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSurchargeAmount() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSurchargeAmount()
 	})
 }
 
@@ -2739,6 +2931,69 @@ func (u *PaymentOrderUpsertBulk) AddPayAmount(v float64) *PaymentOrderUpsertBulk
 func (u *PaymentOrderUpsertBulk) UpdatePayAmount() *PaymentOrderUpsertBulk {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.UpdatePayAmount()
+	})
+}
+
+// SetPaymentPrincipalAmount sets the "payment_principal_amount" field.
+func (u *PaymentOrderUpsertBulk) SetPaymentPrincipalAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetPaymentPrincipalAmount(v)
+	})
+}
+
+// AddPaymentPrincipalAmount adds v to the "payment_principal_amount" field.
+func (u *PaymentOrderUpsertBulk) AddPaymentPrincipalAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddPaymentPrincipalAmount(v)
+	})
+}
+
+// UpdatePaymentPrincipalAmount sets the "payment_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdatePaymentPrincipalAmount() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdatePaymentPrincipalAmount()
+	})
+}
+
+// SetEntitlementPrincipalAmount sets the "entitlement_principal_amount" field.
+func (u *PaymentOrderUpsertBulk) SetEntitlementPrincipalAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetEntitlementPrincipalAmount(v)
+	})
+}
+
+// AddEntitlementPrincipalAmount adds v to the "entitlement_principal_amount" field.
+func (u *PaymentOrderUpsertBulk) AddEntitlementPrincipalAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddEntitlementPrincipalAmount(v)
+	})
+}
+
+// UpdateEntitlementPrincipalAmount sets the "entitlement_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateEntitlementPrincipalAmount() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateEntitlementPrincipalAmount()
+	})
+}
+
+// SetSurchargeAmount sets the "surcharge_amount" field.
+func (u *PaymentOrderUpsertBulk) SetSurchargeAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSurchargeAmount(v)
+	})
+}
+
+// AddSurchargeAmount adds v to the "surcharge_amount" field.
+func (u *PaymentOrderUpsertBulk) AddSurchargeAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSurchargeAmount(v)
+	})
+}
+
+// UpdateSurchargeAmount sets the "surcharge_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSurchargeAmount() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSurchargeAmount()
 	})
 }
 

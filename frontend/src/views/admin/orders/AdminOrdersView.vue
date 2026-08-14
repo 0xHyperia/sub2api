@@ -156,8 +156,13 @@
           <div><dt>{{ t('payment.orders.orderId') }}</dt><dd class="font-mono">#{{ selectedOrder.id }}</dd></div>
           <div><dt>{{ t('payment.orders.orderNo') }}</dt><dd class="break-all">{{ selectedOrder.out_trade_no }}</dd></div>
           <div><dt>{{ t('payment.orders.status') }}</dt><dd><OrderStatusBadge :status="selectedOrder.status" /></dd></div>
-          <div><dt>{{ t('payment.orders.amount') }}</dt><dd class="tabular-nums">{{ creditedAmountSymbol }}{{ selectedOrder.amount.toFixed(2) }}</dd></div>
+          <div><dt>{{ t('payment.orders.paymentPrincipal') }}</dt><dd class="tabular-nums">{{ paymentAmountSymbol(selectedOrder) }}{{ paymentPrincipal(selectedOrder).toFixed(2) }}</dd></div>
+          <div v-if="surchargeAmount(selectedOrder) > 0"><dt>{{ t('payment.orders.fee') }}</dt><dd class="tabular-nums">{{ paymentAmountSymbol(selectedOrder) }}{{ surchargeAmount(selectedOrder).toFixed(2) }}</dd></div>
           <div><dt>{{ t('payment.orders.payAmount') }}</dt><dd class="tabular-nums">{{ paymentAmountSymbol(selectedOrder) }}{{ selectedOrder.pay_amount.toFixed(2) }}</dd></div>
+          <div v-if="providerAmount(selectedOrder) !== selectedOrder.pay_amount"><dt>{{ t('payment.orders.providerAmount') }}</dt><dd class="tabular-nums">{{ paymentAmountSymbol(selectedOrder) }}{{ providerAmount(selectedOrder).toFixed(2) }}</dd></div>
+          <div v-if="entitlementPrincipal(selectedOrder) !== selectedOrder.amount"><dt>{{ t('payment.orders.entitlementPrincipal') }}</dt><dd class="tabular-nums">{{ creditedAmountSymbol }}{{ entitlementPrincipal(selectedOrder).toFixed(2) }}</dd></div>
+          <div v-if="bonusAmount(selectedOrder) > 0"><dt>{{ t('payment.orders.bonusAmount') }}</dt><dd class="tabular-nums text-success-foreground">+{{ creditedAmountSymbol }}{{ bonusAmount(selectedOrder).toFixed(2) }}</dd></div>
+          <div><dt>{{ t('payment.orders.creditedAmount') }}</dt><dd class="tabular-nums">{{ creditedAmountSymbol }}{{ selectedOrder.amount.toFixed(2) }}</dd></div>
           <div><dt>{{ t('payment.orders.paymentMethod') }}</dt><dd>{{ t('payment.methods.' + selectedOrder.payment_type, selectedOrder.payment_type) }}</dd></div>
           <div><dt>{{ t('payment.admin.feeRate') }}</dt><dd>{{ selectedOrder.fee_rate }}%</dd></div>
           <div><dt>{{ t('payment.orders.createdAt') }}</dt><dd>{{ formatDateTime(selectedOrder.created_at) }}</dd></div>
@@ -253,6 +258,29 @@ const creditedAmountSymbol = currencySymbol('USD')
 
 function paymentAmountSymbol(order: PaymentOrder | null | undefined): string {
   return currencySymbol(order?.currency)
+}
+
+function paymentPrincipal(order: PaymentOrder): number {
+  if ((order.payment_principal_amount || 0) > 0) return order.payment_principal_amount || 0
+  const feeRate = Number(order.fee_rate) || 0
+  return feeRate > 0 ? order.pay_amount / (1 + feeRate / 100) : order.pay_amount
+}
+
+function surchargeAmount(order: PaymentOrder): number {
+  if ((order.payment_principal_amount || 0) > 0) return order.surcharge_amount || 0
+  return Math.max(0, order.pay_amount - paymentPrincipal(order))
+}
+
+function providerAmount(order: PaymentOrder): number {
+  return order.provider_amount || order.pay_amount
+}
+
+function entitlementPrincipal(order: PaymentOrder): number {
+  return order.entitlement_principal_amount || order.amount
+}
+
+function bonusAmount(order: PaymentOrder): number {
+  return Math.max(0, order.amount - entitlementPrincipal(order))
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null

@@ -84,3 +84,12 @@ func TestRechargeBonusAndCustomAmountValidation(t *testing.T) {
 	}, cfg)
 	require.NoError(t, err)
 }
+
+func TestPaymentAmountSnapshotsSeparateFeeBonusAndMultiplier(t *testing.T) {
+	t.Parallel()
+	require.Equal(t, 2.0, calculatePaymentSurcharge(50, 52))
+	require.Equal(t, 7.0, calculateCreditedBalance(50, 0.14))
+	require.Equal(t, 9.0, calculateCreditedBalanceWithBonus(50, 0.14, 2))
+	require.Equal(t, 25.0, paymentPrincipalRefundAmount(9, 50, 4.5))
+	require.Equal(t, 50.0, paymentPrincipalRefundAmount(9, 50, 9))
+}

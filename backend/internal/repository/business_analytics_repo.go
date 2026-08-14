@@ -115,9 +115,9 @@ func (r *businessAnalyticsRepository) aggregateBusinessRange(ctx context.Context
 	)
 	SELECT po.id,
 		UPPER(COALESCE(NULLIF(po.provider_snapshot->>'currency',''),'CNY')),
-		COALESCE(NULLIF(po.provider_amount,0),po.pay_amount,0),
+		COALESCE(NULLIF(po.payment_principal_amount,0),NULLIF(po.provider_amount,0),po.pay_amount,0),
 		CASE WHEN po.status IN ('PARTIALLY_REFUNDED','REFUNDED') AND po.amount>0
-			THEN COALESCE(NULLIF(po.provider_amount,0),po.pay_amount,0)*COALESCE(po.refund_amount,0)/po.amount ELSE 0 END,
+			THEN COALESCE(NULLIF(po.payment_principal_amount,0),NULLIF(po.provider_amount,0),po.pay_amount,0)*COALESCE(po.refund_amount,0)/po.amount ELSE 0 END,
 		business_effective_fx_rate_to_cny(UPPER(COALESCE(NULLIF(po.provider_snapshot->>'currency',''),'CNY'))),
 			business_effective_fx_rate_to_cny(UPPER(COALESCE(NULLIF(po.provider_snapshot->>'currency',''),'CNY'))) IS NULL
 				OR UPPER(COALESCE(NULLIF(po.provider_snapshot->>'currency',''),'CNY')) <> 'CNY',

@@ -48,7 +48,7 @@ function mountTable() {
     props: {
       orders: [
         order({ id: 1, status: 'COMPLETED' }),
-        order({ id: 2, status: 'PENDING', order_type: 'balance', payment_type: 'alipay' }),
+        order({ id: 2, status: 'PENDING', order_type: 'balance', payment_type: 'alipay', amount: 52, pay_amount: 52 }),
         order({ id: 3, status: 'FAILED', payment_type: 'wxpay' })
       ],
       loading: false,
@@ -95,5 +95,13 @@ describe('AdminOrderTable mobile cards', () => {
     expect(wrapper.emitted('refund')?.[0]?.[0]).toMatchObject({ id: 1 })
     expect(wrapper.emitted('cancel')?.[0]?.[0]).toMatchObject({ id: 2 })
     expect(wrapper.emitted('retry')?.[0]?.[0]).toMatchObject({ id: 3 })
+  })
+
+  it('shows credited balance even when its numeric value equals the CNY payment amount', () => {
+    const wrapper = mountTable()
+    const card = wrapper.get('[data-test="admin-order-mobile-card-2"]')
+
+    expect(card.text()).toContain('¥52.00')
+    expect(card.text()).toContain('payment.orders.creditedAmount: $52.00')
   })
 })
