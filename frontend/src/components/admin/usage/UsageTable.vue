@@ -110,23 +110,41 @@
         </template>
 
         <template #cell-model="{ row }">
-          <div v-if="row.model_mapping_chain && row.model_mapping_chain.includes('→')" class="space-y-0.5 text-xs">
-            <div v-for="(step, i) in row.model_mapping_chain.split('→')" :key="i"
-                 class="break-all"
-                 :class="i === 0 ? 'font-medium text-foreground' : 'text-foreground-subtle'"
-                 :style="i > 0 ? `padding-left: ${i * 0.75}rem` : ''">
-              <span v-if="i > 0" class="mr-0.5">↳</span>{{ step }}
+          <div class="space-y-0.5 text-xs">
+            <div v-if="row.model_mapping_chain && row.model_mapping_chain.includes('→')" class="space-y-0.5">
+              <div v-for="(step, i) in row.model_mapping_chain.split('→')" :key="i"
+                   class="break-all"
+                   :class="i === 0 ? 'font-medium text-foreground' : 'text-foreground-subtle'"
+                   :style="i > 0 ? `padding-left: ${i * 0.75}rem` : ''">
+                <span v-if="i > 0" class="mr-0.5">↳</span>{{ step }}
+              </div>
+            </div>
+            <div v-else-if="row.upstream_model && row.upstream_model !== row.model" class="space-y-0.5">
+              <div class="break-all font-medium text-foreground">
+                {{ row.model }}
+              </div>
+              <div class="break-all text-foreground-subtle">
+                <span class="mr-0.5">↳</span>{{ row.upstream_model }}
+              </div>
+            </div>
+            <span v-else class="font-medium text-foreground">{{ row.model }}</span>
+            <div
+              v-if="row.upstream_model_mismatch === true && row.upstream_response_model"
+              class="break-all pl-3 text-[11px]"
+              :class="isLikelyModelVariant(row) ? 'text-warning-foreground' : 'text-danger-foreground'"
+              :title="modelAuditTitle(row)"
+            >
+              <span class="mr-1">↳ {{ t('usage.upstreamResponseModel') }}:</span>{{ row.upstream_response_model }}
+              <span
+                class="ml-1 inline-flex rounded px-1 py-px text-[10px] font-medium ring-1 ring-inset"
+                :class="isLikelyModelVariant(row)
+                  ? 'bg-warning-subtle text-warning-foreground ring-warning/30'
+                  : 'bg-danger-subtle text-danger-foreground ring-danger/30'"
+              >
+                {{ isLikelyModelVariant(row) ? t('usage.modelVariant') : t('usage.modelMismatch') }}
+              </span>
             </div>
           </div>
-          <div v-else-if="row.upstream_model && row.upstream_model !== row.model" class="space-y-0.5 text-xs">
-            <div class="break-all font-medium text-foreground">
-              {{ row.model }}
-            </div>
-            <div class="break-all text-foreground-subtle">
-              <span class="mr-0.5">↳</span>{{ row.upstream_model }}
-            </div>
-          </div>
-          <span v-else class="font-medium text-foreground">{{ row.model }}</span>
         </template>
 
         <template #cell-reasoning_effort="{ row }">
@@ -275,6 +293,24 @@
 
         <template #cell-created_at="{ value }">
           <span class="text-sm text-foreground-subtle">{{ formatDateTime(value) }}</span>
+        </template>
+
+        <template #cell-request_id="{ row }">
+          <div v-if="row.request_id" class="flex max-w-[160px] items-center gap-1.5">
+            <span class="truncate font-mono text-xs text-foreground-subtle text-foreground-subtle" :title="row.request_id">
+              {{ row.request_id }}
+            </span>
+            <button
+              type="button"
+              class="shrink-0 rounded p-0.5 text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-foreground-muted hover:bg-surface-subtle hover:text-foreground-muted"
+              :class="copiedRequestId === row.request_id ? 'text-success-foreground hover:text-success-foreground' : ''"
+              :title="copiedRequestId === row.request_id ? t('keys.copied') : t('keys.copyToClipboard')"
+              @click="copyRequestId(row.request_id)"
+            >
+              <Icon :name="copiedRequestId === row.request_id ? 'check' : 'copy'" size="sm" class="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <span v-else class="text-sm text-foreground-subtle text-foreground-subtle">-</span>
         </template>
 
         <template #cell-user_agent="{ row }">
@@ -520,6 +556,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAppStore } from '@/stores/app'
 import { formatDateTime, formatReasoningEffort } from '@/utils/format'
 import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
 import { formatTokenPricePerMillion } from '@/utils/usagePricing'
@@ -602,6 +639,8 @@ const emit = defineEmits<{
   ipGeoBatchFailed: []
 }>()
 const { t } = useI18n()
+const appStore = useAppStore()
+const copiedRequestId = ref<string | null>(null)
 const showAccountBilling = props.showAccountBilling
 const showUpstreamEndpoint = props.showUpstreamEndpoint
 const ipGeoBatchLoading = ref(false)
@@ -634,6 +673,27 @@ const mobileRequestTypeLabel = (row: AdminUsageLog): string => {
 
 const showIpGeoToolbar = computed(() => props.columns.some((col) => col.key === 'ip_address'))
 
+const sentUpstreamModel = (row: AdminUsageLog): string => row.upstream_model?.trim() || row.model?.trim() || ''
+
+const normalizeModelVariant = (model: string): string => model
+  .trim()
+  .toLowerCase()
+  .replace(/-latest$/, '')
+  .replace(/-\d{4}-\d{2}-\d{2}$/, '')
+  .replace(/-\d{8}$/, '')
+
+const isLikelyModelVariant = (row: AdminUsageLog): boolean => {
+  const sent = sentUpstreamModel(row)
+  const response = row.upstream_response_model?.trim() || ''
+  return sent !== '' && response !== '' && normalizeModelVariant(sent) === normalizeModelVariant(response)
+}
+
+const modelAuditTitle = (row: AdminUsageLog): string => [
+  `${t('usage.requestedModel')}: ${row.model || '-'}`,
+  `${t('usage.sentUpstreamModel')}: ${sentUpstreamModel(row) || '-'}`,
+  `${t('usage.upstreamResponseModel')}: ${row.upstream_response_model || '-'}`,
+].join('\n')
+
 const currentPageIps = computed(() =>
   Array.from(new Set(props.data.map((row) => row.ip_address).filter((ip): ip is string => Boolean(ip))))
 )
@@ -653,6 +713,19 @@ const handleBatchFetchIpGeo = async () => {
     if (!ok) emit('ipGeoBatchFailed')
   } finally {
     ipGeoBatchLoading.value = false
+  }
+}
+
+const copyRequestId = async (requestId: string) => {
+  try {
+    await navigator.clipboard.writeText(requestId)
+    copiedRequestId.value = requestId
+    appStore.showSuccess(t('admin.usage.requestIdCopied'))
+    window.setTimeout(() => {
+      if (copiedRequestId.value === requestId) copiedRequestId.value = null
+    }, 2000)
+  } catch {
+    appStore.showError(t('common.copyFailed'))
   }
 }
 

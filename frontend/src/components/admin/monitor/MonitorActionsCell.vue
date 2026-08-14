@@ -13,7 +13,7 @@
       :title="duplicateTitle"
       :disabled="duplicating || Boolean(row.api_key_decrypt_failed)"
       @click="$emit('duplicate', row)"
-      class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-canvas dark:hover:text-brand"
+      class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-foreground-subtle transition-colors hover:bg-surface-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-50 hover:bg-canvas hover:text-brand"
     >
       <Icon name="copy" size="sm" />
       <span class="text-xs">

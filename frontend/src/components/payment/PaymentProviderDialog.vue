@@ -135,13 +135,13 @@
               </button>
             </template>
             <div class="space-y-3">
-              <p class="font-medium text-white">{{ paymentGuide.summary }}</p>
+              <p class="font-medium text-inverse-foreground">{{ paymentGuide.summary }}</p>
               <div
                 v-for="item in paymentGuide.items"
                 :key="item.title"
                 class="space-y-1.5 border-t border-white/10 pt-2 first:border-t-0 first:pt-0"
               >
-                <p class="font-medium text-white">{{ item.title }}</p>
+                <p class="font-medium text-inverse-foreground">{{ item.title }}</p>
                 <p><span class="text-foreground-subtle">{{ t('admin.settings.payment.guideOpenLabel') }}</span>{{ item.open }}</p>
                 <p><span class="text-foreground-subtle">{{ t('admin.settings.payment.guideCallLabel') }}</span>{{ item.call }}</p>
                 <p><span class="text-foreground-subtle">{{ t('admin.settings.payment.guideFallbackLabel') }}</span>{{ item.fallback }}</p>

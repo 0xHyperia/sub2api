@@ -2,6 +2,52 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.1.176 同步（已合并）
+
+- 集成分支：`codex/merge-upstream-v0.1.176`
+- 官方目标版本：v0.1.176
+- 官方 annotated tag：`14e6d7ee7bdb1e4cb6bc59129a7ee1dd1110c52a`
+- 官方目标提交：`e803e3851c0a7e222cfadeafad7b8636ab959d11`
+- 上一官方基线：v0.1.170（`c043c24774228ba891ddf90d783aa6dc7d0855b5`）
+- 集成前 USA0 提交：`3d60b4768b9cafadee7ba5af697e8165e6363971`
+- 集成提交：`065239909a2d363bad06c5a5148d4de7bf495748`
+- USA0 版本：保持 v1.0.16，未推断下一发布版本
+- 同步状态：已完成冲突解决、USA0 适配和自动化验证，集成分支已合入 `usa0/main`；未创建 tag，未发布
+- 记录日期：2026-08-15
+
+### 同步范围
+
+- 从官方 v0.1.170 同步至 v0.1.176，共纳入 330 个上游提交、682 个官方变更文件；官方版本链为 v0.1.171、v0.1.172、v0.1.173、v0.1.175、v0.1.176，不存在 v0.1.174。
+- 新增腾讯天御与阿里云验证码 2.0、OAuth/Passkey 动作验证、Codex 客户端身份与版本同步、Composite 推理策略，以及额度缓存、连接超时、WebSocket、Responses 和计费完整性修复。
+- 新增上游响应模型审计、模型错配筛选和按响应模型计费；新增 Channel Monitor V2 被动聚合、V1/V2 互斥模式、健康阈值、隐私默认值与固定时间桶。
+- 扩展 Grok SSO/refresh-token 重新授权、跨实例 OAuth、Free/付费档位识别、媒体与 Voice、Realtime、TTS/STT、`/v1/web_search`、Grok-only `/x_search`、Grok 4.6/200k 阶梯价及 Chat/Responses 搜索工具兼容。
+- 新增默认文本模型和跨客户端映射、团队/模型冷却和软门禁、分组视频/音频/搜索/逐模型定价、长上下文定价开关、Codex OAuth 指纹策略，以及大文件备份分卷上传和恢复。
+- 合入退款强制确认、Stripe 幂等退款、余额/订阅状态抢占、定时备份 leader 锁、Realtime 漏费、未知 Grok 模型零成本、渠道缓存失效、价格模型归一化和响应探测等修复。
+
+### 冲突与 USA0 适配
+
+- 初始 48 个文本冲突均按业务语义解决，没有采用整文件 ours/theirs。保留 USA0 首页、登录注册、语义设计令牌、移动布局、模型市场 `/model-marketplace`、ZeroAgent 授权、工单、支付、分销、经营分析和模型监控。
+- Model Monitor 与 Channel Monitor V2 保持服务、数据表、游标、路由及开关完全独立；`channel_monitor_mode` 只控制 Channel Monitor V1/V2，不能关闭或切换 `model_monitor_enabled`。V2 使用被动真实流量聚合，USA0 Model Monitor 继续按模型与分组执行主动探测、补录、多实例认领和公平补偿。
+- 退款入口采用上游 `require_force`、pending 状态抢占、可用余额与幂等最终化语义；实际财务事务保留 USA0 支付金额快照、affiliate/distribution 佣金冲正和经营事实更新，使订单、余额/订阅、返利、分销及审计在同一事务内完成。
+- OAuth pending 采用上游账号接管防护和动作验证码状态机，并将 USA0 `distribution_code` 贯穿 pending 创建、LinuxDo、OIDC、微信和 DingTalk 完成路径；继续与 `aff_code` 互斥，保留账户采用决策和 ZeroAgent 授权契约。
+- 分组定价统一由 resolver 按 Group → Channel → 内置基础价解析，再应用 USA0 用户/分组/峰值倍率和利润控制；模型市场、经营成本、响应模型计费、长上下文以及 Grok 视频/音频/搜索均读取相同结果。
+- 使用记录保留 requested、routed/upstream、response 三种模型维度；渠道开关决定最终计费模型，经营分析读取最终计费模型，模型监控目录仍使用请求/路由模型，避免上游降级结果污染监控目录。
+- `/x_search`、Voice、Realtime、TTS/STT、视频和 Web Search 已接入路由、feature guard、Prompt Audit、错误归属、使用日志和计费；Composite 路由到 Grok 时保留媒体能力与对应价格。
+- 管理设置同步合并 CAPTCHA、Codex 版本、Grok 映射、Channel Monitor 和 USA0 自有字段，覆盖 DTO、局部更新、审计键、公开脱敏响应、前端类型和严格 JSON fixture；secret 仅暴露 configured 状态。
+- 上游新增页面和组件已适配 USA0 semantic token；Channel Monitor V1/V2 使用独立 wrapper，Grok 用量同时展示 USA0 本地请求/token/账号成本/用户成本和上游 Free/Paid 窗口，二维码仍保留固定白底以确保暗色主题可扫描。
+- Ent 与 Wire 从合并后的 schema/provider 重新生成。USA0 已发布迁移 `212–215` 保持不变，上游迁移顺延为 `216–235`：`216` 响应模型、`217` V2 基表、`218` 非事务 mismatch 索引、`219–230` V2 配置/汇总/权限/隐私、`231–235` 视频/音频/搜索/清理/逐模型定价；每个编号唯一且连续。
+
+### 验证结果
+
+- `go generate ./ent` 与 `go generate ./cmd/server` 通过，生成前后无漂移；`go test ./...`、`go test -tags=unit ./...`、`go test -tags=integration ./...` 全部通过，`golangci-lint run ./... --timeout=30m` 为 0 issues。
+- 新增 PostgreSQL 集成回归测试，独立数据库先执行至迁移 `215`，再由正式 runner 执行 `216–235` 并复跑；20 个新迁移均只记录一次，响应模型字段、mismatch 索引和分组定价字段存在。全新数据库、并发 leader/advisory lock 与迁移幂等也由 integration suite 验证。
+- 前端 `pnpm run test:run` 共 326 个测试文件、2065 项测试通过；`pnpm run typecheck`、`pnpm run lint:check` 和生产构建通过。Lint 仅保留 1 条既有 warning，构建仅有动态导入与大 chunk 警告。
+- `git diff --check`、源码冲突标记扫描和迁移 `212–235` 唯一连续检查通过；本地前后端健康接口可访问，`backend/cmd/server/VERSION` 保持 `1.0.16`。
+- 最终提交 `052a4c842b7b311bcbdb5219b32987dc2f544cf9` 的 GitHub Actions CI [31829129083](https://github.com/0xHyperia/sub2api/actions/runs/31829129083) 和 Security Scan [31829129200](https://github.com/0xHyperia/sub2api/actions/runs/31829129200) 均通过；Go 已升级至 1.26.6，`nanoid` 已锁定至 3.3.18，并移除 lint action 对远程 JSON Schema 校验的运行时依赖。
+- 使用缓存的 Playwright 1.55/Chromium 对最新临时后端与前端执行登录态浏览器复核：Settings、Backup、Groups、Channel Monitor、Model Monitor、模型市场、Usage、Orders、经营分析和分销页面在 1440×900 与 390×844 下无横向溢出、页面异常、控制台或接口错误；Channel Monitor 另行在 V1/V2 两种模式下各复核两种视口，测试后设置恢复为 `enabled=false, mode=v1`。
+
+---
+
 ## USA0 v1.0.16（发布准备）
 
 - 发布版本：v1.0.16

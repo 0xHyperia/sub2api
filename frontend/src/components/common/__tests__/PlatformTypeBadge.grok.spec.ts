@@ -28,8 +28,8 @@ describe('PlatformTypeBadge Grok plans', () => {
     expect(wrapper.find('[data-testid="grok-free-plan-icon"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="grok-plan-icon"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('2027-01-01')
-    expect(wrapper.findAll('.bg-inverse')).toHaveLength(3)
-    expect(wrapper.findAll('.text-inverse-foreground')).toHaveLength(3)
+    expect(wrapper.findAll('.bg-inverse')).toHaveLength(2)
+    expect(wrapper.findAll('.text-inverse-foreground')).toHaveLength(2)
     expect(wrapper.find('.bg-foreground').exists()).toBe(false)
 
     await wrapper.setProps({ planType: 'FREE' })
@@ -49,11 +49,42 @@ describe('PlatformTypeBadge Grok plans', () => {
     expect(wrapper.text()).toContain('SuperGrok Heavy')
     expect(wrapper.find('[data-testid="grok-plan-icon"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="grok-free-plan-icon"]').exists()).toBe(false)
+    // Heavy uses the brand plan chip.
+    expect(wrapper.html()).toContain('bg-brand-subtle')
 
     await wrapper.setProps({ platform: 'openai', planType: 'free' })
     expect(wrapper.text()).toContain('Free')
     expect(wrapper.text()).not.toContain('Grok Free')
     expect(wrapper.find('[data-testid="grok-plan-icon"]').exists()).toBe(false)
+  })
+
+  it('uses neutral, info, and brand semantic colors for Grok tiers', async () => {
+    const free = mount(PlatformTypeBadge, {
+      props: { platform: 'grok', type: 'oauth', planType: 'free' },
+    })
+    expect(free.html()).toContain('bg-surface-subtle')
+    expect(free.html()).not.toContain('bg-brand-subtle')
+    expect(free.html()).not.toContain('bg-info-subtle')
+
+    const superGrok = mount(PlatformTypeBadge, {
+      props: { platform: 'grok', type: 'oauth', planType: 'supergrok' },
+    })
+    expect(superGrok.text()).toContain('SuperGrok')
+    expect(superGrok.html()).toContain('bg-info-subtle')
+    expect(superGrok.find('[data-testid="grok-plan-icon"]').exists()).toBe(true)
+
+    const heavy = mount(PlatformTypeBadge, {
+      props: { platform: 'grok', type: 'oauth', planType: 'Heavy' },
+    })
+    expect(heavy.text()).toContain('Heavy')
+    expect(heavy.html()).toContain('bg-brand-subtle')
+    expect(heavy.find('[data-testid="grok-plan-icon"]').exists()).toBe(true)
+
+    const lite = mount(PlatformTypeBadge, {
+      props: { platform: 'grok', type: 'oauth', planType: 'supergrok_lite' },
+    })
+    expect(lite.text()).toContain('SuperGrok Lite')
+    expect(lite.html()).toContain('bg-info-subtle')
   })
 
   it('uses a dedicated 12px currentColor Grok mark with a Free sparkle', () => {

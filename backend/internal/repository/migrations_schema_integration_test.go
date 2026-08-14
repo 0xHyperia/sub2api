@@ -5,10 +5,18 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"io/fs"
+	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
+	"testing/fstest"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/migrations"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
 
@@ -76,6 +84,24 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireColumn(t, tx, "usage_logs", "video_count", "integer", 0, false)
 	requireColumn(t, tx, "usage_logs", "video_resolution", "character varying", 10, true)
 	requireColumn(t, tx, "usage_logs", "video_duration_seconds", "integer", 0, true)
+	requireColumn(t, tx, "usage_logs", "upstream_response_model", "character varying", 200, true)
+	requireColumn(t, tx, "usage_logs", "upstream_model_mismatch", "boolean", 0, true)
+	requireIndex(t, tx, "usage_logs", usageLogsUpstreamModelMismatchIndex)
+
+	var mismatchIndexDef string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT pg_get_indexdef(i.indexrelid)
+FROM pg_class idx
+JOIN pg_index i ON i.indexrelid = idx.oid
+JOIN pg_class tbl ON tbl.oid = i.indrelid
+JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+WHERE ns.nspname = 'public'
+  AND tbl.relname = 'usage_logs'
+  AND idx.relname = $1
+`, usageLogsUpstreamModelMismatchIndex).Scan(&mismatchIndexDef))
+	require.Contains(t, mismatchIndexDef, "created_at DESC")
+	require.Contains(t, mismatchIndexDef, "id DESC")
+	require.Contains(t, mismatchIndexDef, "WHERE (upstream_model_mismatch IS TRUE)")
 	requireConstraintDefinitionContains(
 		t,
 		tx,
@@ -167,6 +193,97 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireColumn(t, tx, "ticket_messages", "content", "text", 0, false)
 	requireColumn(t, tx, "ticket_attachments", "object_key", "character varying", 1024, false)
 	requireIndex(t, tx, "tickets", "idx_tickets_admin_unread")
+}
+
+func TestMigrationsRunner_UpgradeFrom215To235(t *testing.T) {
+	dbName := fmt.Sprintf("sub2api_upgrade_215_%d", time.Now().UnixNano())
+	adminURL, err := url.Parse(integrationDSN)
+	require.NoError(t, err)
+	adminURL.Path = "/postgres"
+
+	adminDB, err := sql.Open("postgres", adminURL.String())
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = adminDB.Close() })
+	require.NoError(t, adminDB.PingContext(context.Background()))
+	require.NoError(t, execCreateDatabase(context.Background(), adminDB, dbName))
+
+	upgradeURL, err := url.Parse(integrationDSN)
+	require.NoError(t, err)
+	upgradeURL.Path = "/" + dbName
+	upgradeDB, err := sql.Open("postgres", upgradeURL.String())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = upgradeDB.Close()
+		_, _ = adminDB.ExecContext(context.Background(), `
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = $1 AND pid <> pg_backend_pid()
+`, dbName)
+		_, _ = adminDB.ExecContext(context.Background(), "DROP DATABASE IF EXISTS "+pq.QuoteIdentifier(dbName))
+	})
+	require.NoError(t, upgradeDB.PingContext(context.Background()))
+
+	require.NoError(t, applyMigrationsFS(context.Background(), upgradeDB, migrationsThrough(t, 215)))
+	requireMigrationPrefixCount(t, upgradeDB, 215, 1)
+	requireMigrationPrefixCount(t, upgradeDB, 216, 0)
+
+	require.NoError(t, ApplyMigrations(context.Background(), upgradeDB))
+	require.NoError(t, ApplyMigrations(context.Background(), upgradeDB), "235 schema must remain idempotent after restart")
+	for version := 216; version <= 235; version++ {
+		requireMigrationPrefixCount(t, upgradeDB, version, 1)
+	}
+
+	tx, err := upgradeDB.BeginTx(context.Background(), nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tx.Rollback() })
+	requireColumn(t, tx, "usage_logs", "upstream_response_model", "character varying", 200, true)
+	requireColumn(t, tx, "groups", "long_context_pricing_enabled", "boolean", 0, false)
+	requireColumn(t, tx, "groups", "model_pricing", "jsonb", 0, true)
+	requireIndex(t, tx, "usage_logs", usageLogsUpstreamModelMismatchIndex)
+}
+
+func execCreateDatabase(ctx context.Context, db *sql.DB, name string) error {
+	_, err := db.ExecContext(ctx, "CREATE DATABASE "+pq.QuoteIdentifier(name))
+	return err
+}
+
+func migrationsThrough(t *testing.T, maxVersion int) fs.FS {
+	t.Helper()
+	entries, err := fs.ReadDir(migrations.FS, ".")
+	require.NoError(t, err)
+
+	result := fstest.MapFS{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		prefixEnd := 0
+		for prefixEnd < len(entry.Name()) && entry.Name()[prefixEnd] >= '0' && entry.Name()[prefixEnd] <= '9' {
+			prefixEnd++
+		}
+		require.Positive(t, prefixEnd, "migration %q must start with a numeric version", entry.Name())
+		version, err := strconv.Atoi(entry.Name()[:prefixEnd])
+		require.NoError(t, err)
+		if version > maxVersion {
+			continue
+		}
+		data, err := fs.ReadFile(migrations.FS, entry.Name())
+		require.NoError(t, err)
+		result[entry.Name()] = &fstest.MapFile{Data: data}
+	}
+	return result
+}
+
+func requireMigrationPrefixCount(t *testing.T, db *sql.DB, version, expected int) {
+	t.Helper()
+	var count int
+	err := db.QueryRowContext(
+		context.Background(),
+		"SELECT COUNT(*) FROM schema_migrations WHERE filename LIKE $1",
+		fmt.Sprintf("%03d\\_%%", version),
+	).Scan(&count)
+	require.NoError(t, err)
+	require.Equal(t, expected, count, "migration prefix %03d", version)
 }
 
 func TestMigrationsRunner_AuthIdentityAndPaymentSchemaStayAligned(t *testing.T) {

@@ -137,8 +137,16 @@ const planLabel = computed(() => {
       return props.platform === 'grok' ? 'Grok Free' : 'Free'
     case 'supergrok':
       return 'SuperGrok'
+    case 'supergroklite':
+      return 'SuperGrok Lite'
+    case 'supergrokplus':
+      return 'SuperGrok Plus'
     case 'supergrokheavy':
       return 'SuperGrok Heavy'
+    case 'heavy':
+      return 'Heavy'
+    case 'xbasic':
+      return 'X Basic'
     case 'abnormal':
       return t('admin.accounts.subscriptionAbnormal')
     default:
@@ -148,14 +156,19 @@ const planLabel = computed(() => {
 
 const isGrokFreePlan = computed(() =>
   props.platform === 'grok' &&
-  (normalizedPlanType.value === 'free' || normalizedPlanType.value === 'basic')
+  (normalizedPlanType.value === 'free' ||
+    normalizedPlanType.value === 'basic' ||
+    normalizedPlanType.value === 'xbasic')
 )
 
 const planIconName = computed<'bolt' | null>(() => {
   if (props.platform !== 'grok') return null
+  // Paid Grok tiers (SuperGrok / Heavy) share the bolt mark; free uses GrokFreeIcon.
   if (
     normalizedPlanType.value === 'supergrok' ||
-    normalizedPlanType.value === 'supergrokheavy'
+    normalizedPlanType.value === 'supergrokheavy' ||
+    normalizedPlanType.value === 'heavy' ||
+    normalizedPlanType.value.includes('heavy')
   ) {
     return 'bolt'
   }
@@ -198,13 +211,47 @@ const planBadgeClass = computed(() => {
   if (normalizedPlanType.value === 'abnormal') {
     return 'bg-danger-subtle text-danger-foreground'
   }
+  // Free stays muted gray; paid Grok tiers get distinct colors.
+  if (
+    normalizedPlanType.value === 'free' ||
+    normalizedPlanType.value === 'basic' ||
+    normalizedPlanType.value === 'xbasic'
+  ) {
+    return 'bg-surface-subtle text-foreground-muted bg-surface-subtle text-foreground-muted'
+  }
+  if (props.platform === 'grok' && normalizedPlanType.value) {
+    // Heavy / SuperGrok Heavy → purple
+    if (normalizedPlanType.value.includes('heavy')) {
+      return 'bg-brand-subtle text-brand bg-brand-subtle/30 text-brand'
+    }
+    // SuperGrok → cyan
+    if (normalizedPlanType.value.includes('supergrok')) {
+      return 'bg-info-subtle text-info-foreground bg-info-subtle/30 text-info-foreground'
+    }
+    // Any other non-free Grok plan (future tiers) → amber so it still stands out
+    return 'bg-warning-subtle text-warning-foreground bg-warning-subtle/30 text-warning-foreground'
+  }
+  // OpenAI / other paid plan labels: keep readable distinction from free gray
+  if (normalizedPlanType.value === 'plus') {
+    return 'bg-info-subtle text-info-foreground bg-info-subtle/30 text-info-foreground'
+  }
+  if (normalizedPlanType.value === 'team') {
+    return 'bg-info-subtle text-info-foreground bg-info-subtle/30 text-info-foreground'
+  }
+  if (normalizedPlanType.value === 'pro' || normalizedPlanType.value === 'chatgptpro') {
+    return 'bg-brand-subtle text-brand bg-brand-subtle/30 text-brand'
+  }
   return typeClass.value
 })
 
 // Subscription expiration label (non-free only)
 const expiresLabel = computed(() => {
   if (!props.subscriptionExpiresAt || !props.planType) return ''
-  if (normalizedPlanType.value === 'free' || normalizedPlanType.value === 'basic') return ''
+  if (
+    normalizedPlanType.value === 'free' ||
+    normalizedPlanType.value === 'basic' ||
+    normalizedPlanType.value === 'xbasic'
+  ) return ''
   try {
     const d = new Date(props.subscriptionExpiresAt)
     if (isNaN(d.getTime())) return ''

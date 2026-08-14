@@ -15,7 +15,7 @@
           <div
             class="flex h-10 w-10 items-center justify-center rounded-control bg-brand text-brand-foreground"
           >
-            <Icon name="play" size="md" class="text-white" :stroke-width="2" />
+            <Icon name="play" size="md" class="text-inverse-foreground" :stroke-width="2" />
           </div>
           <div>
             <div class="font-semibold text-foreground">{{ account.name }}</div>
@@ -144,7 +144,7 @@
           >
             <img :src="image.url" :alt="`test-image-${index + 1}`" class="max-h-[360px] w-full object-contain" />
             <div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/img:bg-black/20">
-              <Icon name="eye" size="lg" class="text-white opacity-0 drop-shadow-floating transition-opacity group-hover/img:opacity-100" :stroke-width="2" />
+              <Icon name="eye" size="lg" class="text-inverse-foreground opacity-0 drop-shadow-floating transition-opacity group-hover/img:opacity-100" :stroke-width="2" />
             </div>
             <div class="border-t px-3 py-1.5 text-xs border-outline-strong text-foreground-muted">
               {{ image.mimeType || 'image/*' }}
@@ -162,7 +162,7 @@
             @click.self="previewImageUrl = ''"
           >
             <button
-              class="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+              class="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-inverse-foreground transition-colors hover:bg-black/70"
               @click="previewImageUrl = ''"
             >
               <Icon name="x" size="lg" :stroke-width="2" />

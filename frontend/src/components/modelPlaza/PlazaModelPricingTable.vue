@@ -59,13 +59,22 @@
       <tbody>
         <tr
           v-for="m in sortedModels"
-          :key="m.name"
+          :key="`${m.platform}:${m.name}`"
           class="border-b border-outline transition-colors last:border-b-0 hover:bg-surface-subtle"
         >
           <!-- 模型名 + 非 token 计费模式徽章 -->
           <td class="border-r border-outline py-2.5 pl-5 pr-4 align-middle">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="font-medium text-foreground">{{ m.name }}</span>
+              <span
+                v-if="platform && m.platform !== platform"
+                :class="[
+                  'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium',
+                  platformBadgeLightClass(m.platform)
+                ]"
+              >
+                {{ platformLabel(m.platform) }}
+              </span>
               <span
                 v-if="billingMode(m) !== BILLING_MODE_TOKEN"
                 class="rounded-md bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium text-foreground-muted"
@@ -134,13 +143,13 @@
                   class="inline-flex items-center gap-1 rounded-md bg-surface-subtle px-2 py-0.5 font-mono text-xs text-foreground-muted"
                 >
                   <span class="font-sans text-foreground-subtle">{{ tierLabel(iv) }}</span>
-                  {{ paidRequestPrice(iv.per_request_price)
+                  {{ paidRequestPrice(m, iv.per_request_price)
                   }}<span class="font-sans text-foreground-subtle">{{ perUnitSuffix(m) }}</span>
                 </span>
               </div>
               <template v-else-if="m.pricing?.per_request_price != null">
                 <span class="font-mono font-semibold text-foreground">
-                  {{ paidRequestPrice(m.pricing.per_request_price) }}
+                  {{ paidRequestPrice(m, m.pricing.per_request_price) }}
                 </span>
                 <span class="ml-1 text-xs text-foreground-subtle">{{ perUnitSuffix(m) }}</span>
               </template>
@@ -178,11 +187,15 @@
             <span v-else class="text-foreground-subtle">-</span>
           </td>
 
-          <!-- 折扣倍率(专属倍率划线展示原倍率) -->
+          <!-- 折扣倍率(生图独立倍率行展示独立倍率;专属倍率划线展示原倍率) -->
           <td
             class="border-l border-outline py-2.5 pl-3 pr-5 text-right align-middle font-mono text-xs"
           >
-            <template v-if="hasCustomRate">
+            <span
+              v-if="usesIndependentImageRate(m)"
+              class="font-bold text-foreground-muted"
+            >{{ requestRate(m) }}x</span>
+            <template v-else-if="hasCustomRate">
               <span class="mr-1 text-foreground-subtle line-through">{{ rateMultiplier }}x</span>
               <span class="font-bold text-brand">{{ effectiveRate }}x</span>
             </template>
@@ -198,7 +211,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatScaled } from '@/utils/pricing'
-import { platformAccentColor } from '@/utils/platformColors'
+import { platformAccentColor, platformBadgeLightClass, platformLabel } from '@/utils/platformColors'
 import {
   BILLING_MODE_TOKEN,
   BILLING_MODE_IMAGE,
@@ -215,6 +228,9 @@ const props = defineProps<{
   rateMultiplier: number
   /** 用户专属倍率;与默认不同,实付价按此计算并划线展示原倍率。 */
   userRateMultiplier?: number | null
+  /** 生图独立倍率:true 时图片计费模型的实付倍率取 imageRateMultiplier,不取分组/专属倍率。 */
+  imageRateIndependent?: boolean
+  imageRateMultiplier?: number | null
 }>()
 
 const { t } = useI18n()
@@ -268,10 +284,20 @@ function paidPerMillion(value: number | null | undefined): string {
   return formatScaled(value * effectiveRate.value, PER_MILLION, MIN_DECIMALS)
 }
 
-/** 按次 / 按图片单价(乘生效倍率,不换算 1M)。 */
-function paidRequestPrice(value: number | null | undefined): string {
+/** 图片计费模型且分组开启生图独立倍率:实付倍率取独立倍率,与计费口径一致。 */
+function usesIndependentImageRate(m: PlazaModel): boolean {
+  return billingMode(m) === BILLING_MODE_IMAGE && props.imageRateIndependent === true
+}
+
+/** 按次/按图片行的生效倍率。 */
+function requestRate(m: PlazaModel): number {
+  return usesIndependentImageRate(m) ? (props.imageRateMultiplier ?? 1) : effectiveRate.value
+}
+
+/** 按次 / 按图片单价(乘该行生效倍率,不换算 1M)。 */
+function paidRequestPrice(m: PlazaModel, value: number | null | undefined): string {
   if (value == null) return '-'
-  return formatScaled(value * effectiveRate.value, 1, MIN_DECIMALS)
+  return formatScaled(value * requestRate(m), 1, MIN_DECIMALS)
 }
 
 /** 官方参考价不乘倍率。 */

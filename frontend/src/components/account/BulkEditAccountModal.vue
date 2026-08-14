@@ -74,7 +74,7 @@
           >
             <span
               :class="[
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                 openaiPassthroughEnabled ? 'translate-x-5' : 'translate-x-0'
               ]"
             />
@@ -125,7 +125,7 @@
           >
             <span
               :class="[
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                 openaiFlattenNamespacesEnabled ? 'translate-x-5' : 'translate-x-0'
               ]"
             />
@@ -535,7 +535,7 @@
           >
             <span
               :class="[
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                 interceptWarmupRequests ? 'translate-x-5' : 'translate-x-0'
               ]"
             />
@@ -577,7 +577,7 @@
           >
             <span
               :class="[
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                 headerOverrideEnabled ? 'translate-x-5' : 'translate-x-0'
               ]"
             />
@@ -862,7 +862,7 @@
           >
             <span
               :class="[
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                 codexCLIOnlyEnabled ? 'translate-x-5' : 'translate-x-0'
               ]"
             />
@@ -906,11 +906,29 @@
           >
             <span
               :class="[
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                 codexCLIOnlyAppServerEnabled ? 'translate-x-5' : 'translate-x-0'
               ]"
             />
           </button>
+        </div>
+      </div>
+
+      <!-- Codex 指纹收敛模式（仅 OpenAI OAuth） -->
+      <div v-if="allOpenAIOAuth" class="border-t border-outline pt-4 border-outline">
+        <div class="mb-3 flex items-center justify-between">
+          <label class="input-label mb-0">{{ t('admin.accounts.openai.codexFingerprintMode') }}</label>
+          <input
+            v-model="enableCodexFingerprintMode"
+            type="checkbox"
+            class="rounded border-outline-strong text-brand focus:ring-brand"
+          />
+        </div>
+        <div :class="!enableCodexFingerprintMode && 'pointer-events-none opacity-50'">
+          <p class="mb-2 text-xs text-foreground-subtle text-foreground-subtle">
+            {{ t('admin.accounts.openai.codexFingerprintModeDesc') }}
+          </p>
+          <Select v-model="codexFingerprintMode" data-testid="bulk-codex-fingerprint-mode-select" :options="codexFingerprintModeOptions" />
         </div>
       </div>
 
@@ -1131,7 +1149,7 @@
             >
               <span
                 :class="[
-                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out',
                   rpmLimitEnabled ? 'translate-x-5' : 'translate-x-0'
                 ]"
               />
@@ -1532,6 +1550,15 @@ const openaiAPIKeyResponsesWebSocketV2Mode = ref<OpenAIWSMode>(OPENAI_WS_MODE_OF
 const upstreamBillingAutoProbeMode = ref<'enabled' | 'disabled'>('enabled')
 const codexCLIOnlyEnabled = ref(false)
 const codexCLIOnlyAppServerEnabled = ref(false)
+type CodexFingerprintMode = 'off' | 'device' | 'session' | 'full'
+const enableCodexFingerprintMode = ref(false)
+const codexFingerprintMode = ref<CodexFingerprintMode>('session')
+const codexFingerprintModeOptions = computed(() => [
+  { value: 'off' as CodexFingerprintMode, label: t('admin.accounts.openai.codexFingerprintOff') },
+  { value: 'device' as CodexFingerprintMode, label: t('admin.accounts.openai.codexFingerprintDevice') },
+  { value: 'session' as CodexFingerprintMode, label: t('admin.accounts.openai.codexFingerprintSession') },
+  { value: 'full' as CodexFingerprintMode, label: t('admin.accounts.openai.codexFingerprintFull') },
+])
 const openAICompactMode = ref<OpenAICompactMode>('auto')
 const openAICompactModelMappings = ref<ModelMapping[]>([])
 const rpmLimitEnabled = ref(false)
@@ -1813,6 +1840,15 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
     extra.codex_cli_only_allow_app_server = codexCLIOnlyAppServerEnabled.value
   }
 
+  if (enableCodexFingerprintMode.value) {
+    const extra = ensureExtra()
+    if (codexFingerprintMode.value !== 'session') {
+      extra.codex_fingerprint_mode = codexFingerprintMode.value
+    } else {
+      delete extra.codex_fingerprint_mode
+    }
+  }
+
   if (enableOpenAICompactMode.value) {
     const extra = ensureExtra()
     extra.openai_compact_mode = openAICompactMode.value
@@ -1924,6 +1960,7 @@ const handleSubmit = async () => {
     enableUpstreamBillingAutoProbe.value ||
     enableCodexCLIOnly.value ||
     enableCodexCLIOnlyAppServer.value ||
+    enableCodexFingerprintMode.value ||
     enableOpenAICompactMode.value ||
     enableOpenAICompactModelMapping.value ||
     enableRpmLimit.value ||
@@ -2058,6 +2095,8 @@ watch(
       enableUpstreamBillingAutoProbe.value = false
       enableCodexCLIOnly.value = false
       enableCodexCLIOnlyAppServer.value = false
+      enableCodexFingerprintMode.value = false
+      codexFingerprintMode.value = 'session'
       enableOpenAICompactMode.value = false
       enableOpenAICompactModelMapping.value = false
       enableRpmLimit.value = false

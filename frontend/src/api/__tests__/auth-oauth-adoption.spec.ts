@@ -13,6 +13,7 @@ describe('oauth adoption auth api', () => {
     post.mockReset()
     post.mockResolvedValue({ data: {} })
     localStorage.clear()
+    sessionStorage.clear()
     document.cookie = 'oauth_bind_access_token=; Max-Age=0; path=/'
   })
 
@@ -171,6 +172,30 @@ describe('oauth adoption auth api', () => {
       aff_code: 'WXAFF',
       adopt_display_name: false,
       adopt_avatar: true
+    })
+  })
+
+  it.each([
+    ['linuxdo', 'completeLinuxDoOAuthRegistration', '/auth/oauth/linuxdo/complete-registration'],
+    ['oidc', 'completeOIDCOAuthRegistration', '/auth/oauth/oidc/complete-registration'],
+    ['wechat', 'completeWeChatOAuthRegistration', '/auth/oauth/wechat/complete-registration']
+  ])('posts distribution attribution for %s invitation completion', async (_provider, exportName, path) => {
+    const { storeOAuthDistributionCode } = await import('@/utils/oauthAffiliate')
+    const auth = await import('@/api/auth')
+    storeOAuthDistributionCode(' agent-42 ')
+
+    const complete = auth[exportName as keyof typeof auth] as (
+      invitationCode: string,
+      decision: { adoptDisplayName: boolean; adoptAvatar: boolean },
+      affiliateCode?: string
+    ) => Promise<unknown>
+    await complete('invite-code', { adoptDisplayName: true, adoptAvatar: false }, 'AFF-IGNORED')
+
+    expect(post).toHaveBeenCalledWith(path, {
+      invitation_code: 'invite-code',
+      distribution_code: 'AGENT-42',
+      adopt_display_name: true,
+      adopt_avatar: false
     })
   })
 

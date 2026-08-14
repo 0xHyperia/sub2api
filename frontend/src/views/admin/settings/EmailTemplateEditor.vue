@@ -247,7 +247,7 @@
               </div>
               <div class="min-w-0 bg-canvas p-3">
                 <iframe
-                  class="h-[36rem] w-full min-w-0 max-w-full rounded-control border border-outline bg-white"
+                  class="h-[36rem] w-full min-w-0 max-w-full rounded-control border border-outline bg-surface"
                   sandbox=""
                   :srcdoc="previewHtml"
                   :title="t('admin.settings.emailTemplates.livePreview')"

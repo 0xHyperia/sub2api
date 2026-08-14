@@ -41,7 +41,7 @@
               ? 'border-brand bg-brand'
               : 'border-outline-strong'"
           >
-            <div v-if="selectedGroupId === group.id" class="h-2 w-2 rounded-full bg-white"></div>
+            <div v-if="selectedGroupId === group.id" class="h-2 w-2 rounded-full bg-surface"></div>
           </div>
           <div class="flex-1">
             <span class="font-medium text-foreground">{{ group.name }}</span>
