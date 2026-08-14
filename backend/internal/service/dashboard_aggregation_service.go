@@ -56,9 +56,18 @@ type DashboardAggregationService struct {
 	running              int32
 	lastRetentionCleanup atomic.Value // time.Time
 
-	lockCache  LeaderLockCache
-	db         *sql.DB
-	instanceID string
+	lockCache         LeaderLockCache
+	db                *sql.DB
+	instanceID        string
+	businessAnalytics BusinessAnalyticsAggregator
+}
+
+// SetBusinessAnalyticsAggregator attaches the optional business analytics
+// bucket writer to the existing single-leader aggregation loop.
+func (s *DashboardAggregationService) SetBusinessAnalyticsAggregator(aggregator BusinessAnalyticsAggregator) {
+	if s != nil {
+		s.businessAnalytics = aggregator
+	}
 }
 
 // NewDashboardAggregationService 创建聚合服务。
@@ -316,7 +325,18 @@ func (s *DashboardAggregationService) aggregateRange(ctx context.Context, start,
 	if err := s.repo.EnsureUsageLogsPartitions(ctx, end); err != nil {
 		logger.LegacyPrintf("service.dashboard_aggregation", "[DashboardAggregation] 分区检查失败: %v", err)
 	}
-	return s.repo.AggregateRange(ctx, start, end)
+	if err := s.repo.AggregateRange(ctx, start, end); err != nil {
+		return err
+	}
+	if s.businessAnalytics != nil {
+		if err := s.businessAnalytics.AggregateRange(ctx, start, end); err != nil {
+			// Business reporting is supplementary. Its failure must not prevent the
+			// established dashboard watermark from advancing and forcing the primary
+			// aggregation to repeat the same range indefinitely.
+			logger.LegacyPrintf("service.dashboard_aggregation", "[DashboardAggregation] 经营分析聚合失败: %v", err)
+		}
+	}
+	return nil
 }
 
 func (s *DashboardAggregationService) maybeCleanupRetention(ctx context.Context, now time.Time) {

@@ -144,7 +144,9 @@ func TestDistributionAdminManagementQueries(t *testing.T) {
 
 	t.Cleanup(func() {
 		cleanupCtx := context.Background()
-		_, err := integrationDB.ExecContext(cleanupCtx, `DELETE FROM distribution_binding_events WHERE customer_user_id=$1`, customerUserID)
+		_, err := integrationDB.ExecContext(cleanupCtx, `DELETE FROM payment_orders WHERE user_id=$1`, customerUserID)
+		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(cleanupCtx, `DELETE FROM distribution_binding_events WHERE customer_user_id=$1`, customerUserID)
 		require.NoError(t, err)
 		_, err = integrationDB.ExecContext(cleanupCtx, `DELETE FROM distribution_customer_bindings WHERE user_id=$1`, customerUserID)
 		require.NoError(t, err)
@@ -224,6 +226,30 @@ func TestDistributionAdminManagementQueries(t *testing.T) {
 	require.NotNil(t, agents[0].RateOverrideBPS)
 	require.Equal(t, overrideRate, *agents[0].RateOverrideBPS)
 	require.Equal(t, overrideRate, agents[0].EffectiveRateBPS)
+	for _, sortBy := range []string{"period_customer_paid", "period_commission", "period_customers", "period_paying_customers"} {
+		agents, totalAgents, err = svc.AdminListAgents(ctx, service.DistributionAdminListFilter{
+			Page: 1, PageSize: 20, Search: "management-agent", SortBy: sortBy, SortOrder: "desc",
+		})
+		require.NoError(t, err, "composite agent sort %q should be valid SQL", sortBy)
+		require.EqualValues(t, 1, totalAgents)
+		require.Len(t, agents, 1)
+	}
+	periodStart := time.Now().UTC().Add(-time.Hour)
+	periodEnd := time.Now().UTC().Add(time.Hour)
+	paidAt := time.Now().UTC()
+	orderID := createBusinessPaymentOrder(t, &service.User{ID: customerUserID, Email: fmt.Sprintf("distribution-management-customer-%d@example.com", suffix)}, "COMPLETED", &paidAt, "CNY", 100)
+	listFilter := service.DistributionAdminListFilter{
+		Page: 1, PageSize: 20, Search: "management-agent", DateFrom: &periodStart, DateTo: &periodEnd,
+	}
+	agents, _, err = svc.AdminListAgents(ctx, listFilter)
+	require.NoError(t, err)
+	require.EqualValues(t, 1, agents[0].PeriodAllPayingCustomers)
+	_, err = integrationDB.ExecContext(ctx, `UPDATE payment_orders SET status='REFUNDED',refund_amount=100,refund_at=NOW() WHERE id=$1`, orderID)
+	require.NoError(t, err)
+	agents, _, err = svc.AdminListAgents(ctx, listFilter)
+	require.NoError(t, err)
+	require.Zero(t, agents[0].PeriodAllPayingCustomers, "fully refunded payments must not count as paying customers")
+	require.Zero(t, agents[0].PeriodRepurchaseCustomers, "fully refunded payments must not create a repurchase baseline")
 	var rateEventCount int
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM distribution_agent_events WHERE agent_id=$1 AND event_type='rate_changed' AND reason='enterprise agreement'`, agent.ID).Scan(&rateEventCount))
 	require.Equal(t, 1, rateEventCount)

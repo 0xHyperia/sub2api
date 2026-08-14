@@ -451,7 +451,12 @@
             <span class="badge" :class="statusClass(managedAgent.status)">{{ statusText(managedAgent.status) }}</span>
           </div>
         </div>
-        <DistributionAnalyticsRange v-model="detailRange" @change="loadManagedAnalytics" />
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <DistributionAnalyticsRange v-model="detailRange" @change="loadManagedAnalytics" />
+          <button type="button" class="btn btn-secondary" @click="openBusinessAnalytics">
+            <Icon name="chart" size="sm" />{{ t('admin.distribution.agents.viewBusinessAnalytics') }}
+          </button>
+        </div>
         <div class="flex gap-1 overflow-x-auto border-b border-outline" role="tablist" :aria-label="t('admin.distribution.agents.detailTitle')">
           <button v-for="tab in manageTabs" :key="tab.key" type="button" role="tab" :aria-selected="manageTab === tab.key" class="shrink-0 border-b-2 px-3 py-2 text-sm transition-colors" :class="manageTab === tab.key ? 'border-brand font-semibold text-foreground' : 'border-transparent text-foreground-subtle hover:text-foreground'" @click="manageTab = tab.key">{{ tab.label }}</button>
         </div>
@@ -1253,6 +1258,21 @@ function closeManageDialog() {
   managedAgent.value = null;
   manageTab.value = 'overview';
   agentEvents.value = [];
+}
+
+function openBusinessAnalytics() {
+  if (!managedAgent.value) return
+  const agent = managedAgent.value
+  closeManageDialog()
+  void router.push({
+    path: '/admin/business-analytics/overview',
+    query: {
+      date_from: detailRange.value.date_from,
+      date_to: detailRange.value.date_to,
+      agent_id: String(agent.id),
+      agent_scope: agent.depth === 1 ? 'team' : 'direct',
+    },
+  })
 }
 
 function agentEventTitle(event: DistributionAgentEvent) {

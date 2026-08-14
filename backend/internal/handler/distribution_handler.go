@@ -14,7 +14,9 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type DistributionHandler struct{ service *service.DistributionService }
+type DistributionHandler struct {
+	service *service.DistributionService
+}
 
 const distributionVisitorCookie = "sub2api_distribution_visitor"
 

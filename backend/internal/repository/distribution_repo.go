@@ -1091,6 +1091,39 @@ func (r *distributionRepository) AdminListAgents(ctx context.Context, filter ser
 			OR parent_user.email ILIKE $2 OR parent_user.username ILIKE $2)
 		  AND ($3 = '' OR a.status = $3)
 		  AND ($4 = 0 OR l.depth = $4)`
+	const analyticsCTE = `WITH customer_scope AS (
+		SELECT binding.user_id,binding.bound_at,owner.agent_id
+		FROM distribution_customer_bindings binding
+		JOIN distribution_agents direct ON direct.id=binding.agent_id
+		CROSS JOIN LATERAL (VALUES (direct.id),(direct.parent_agent_id)) owner(agent_id)
+		WHERE owner.agent_id IS NOT NULL
+	), customer_metrics AS (
+		SELECT scope.agent_id,
+			COUNT(DISTINCT scope.user_id) FILTER(WHERE scope.bound_at>=$5 AND scope.bound_at<$6 AND fact.first_activated_at>=scope.bound_at AND fact.first_activated_at<$6) period_activated_customers,
+			COUNT(DISTINCT scope.user_id) FILTER(WHERE scope.bound_at>=$5 AND scope.bound_at<$6 AND fact.first_paid_at>=scope.bound_at AND fact.first_paid_at<$6) period_cohort_paid_customers,
+			COUNT(DISTINCT scope.user_id) total_customers
+		FROM customer_scope scope LEFT JOIN business_user_facts fact ON fact.user_id=scope.user_id GROUP BY scope.agent_id
+	), payment_metrics AS (
+		SELECT scope.agent_id,COUNT(DISTINCT po.user_id) period_all_paying_customers,
+			COUNT(DISTINCT po.user_id) FILTER(WHERE EXISTS(SELECT 1 FROM payment_orders old_po JOIN business_payment_facts old_fact ON old_fact.payment_order_id=old_po.id WHERE old_po.user_id=po.user_id AND old_fact.paid_at<$5 AND old_fact.gross_amount>old_fact.refunded_amount)) period_repurchase_customers
+		FROM customer_scope scope JOIN payment_orders po ON po.user_id=scope.user_id
+		JOIN business_payment_facts fact ON fact.payment_order_id=po.id
+		WHERE fact.paid_at>=$5 AND fact.paid_at<$6 AND fact.gross_amount>fact.refunded_amount GROUP BY scope.agent_id
+	), activity_metrics AS (
+		SELECT scope.agent_id,COUNT(DISTINCT usage.user_id) period_active_customers
+		FROM customer_scope scope JOIN business_usage_hourly_facts usage ON usage.user_id=scope.user_id
+		WHERE usage.first_used_at<$6 AND usage.last_used_at>=$5 GROUP BY scope.agent_id
+	), reward_metrics AS (
+		SELECT owner.agent_id,COALESCE(SUM(GREATEST(reward.original_amount_cny-reward.reversed_amount_cny,0)),0) period_reward_cny
+		FROM distribution_reward_grants reward JOIN distribution_agents beneficiary ON beneficiary.id=reward.beneficiary_agent_id
+		CROSS JOIN LATERAL (VALUES (beneficiary.id),(beneficiary.parent_agent_id)) owner(agent_id)
+		WHERE owner.agent_id IS NOT NULL AND reward.created_at>=$5 AND reward.created_at<$6 GROUP BY owner.agent_id
+	) `
+	const analyticsJoins = `
+		LEFT JOIN customer_metrics business_customers ON business_customers.agent_id=a.id
+		LEFT JOIN payment_metrics business_payments ON business_payments.agent_id=a.id
+		LEFT JOIN activity_metrics business_activity ON business_activity.agent_id=a.id
+		LEFT JOIN reward_metrics business_rewards ON business_rewards.agent_id=a.id`
 
 	var total int64
 	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*)`+from, filter.Search, like, filter.Status, filter.Depth).Scan(&total); err != nil {
@@ -1127,13 +1160,29 @@ func (r *distributionRepository) AdminListAgents(ctx context.Context, filter ser
 			WHERE child.parent_agent_id=a.id AND source.status<>'void' AND source.paid_at>=$5 AND source.paid_at<$6),0) AS team_customer_paid_cny,
 		COALESCE((SELECT SUM(GREATEST(entry.original_amount_cny-entry.reversed_amount_cny,0)) FROM distribution_commission_entries entry
 			WHERE entry.beneficiary_agent_id=a.id AND entry.entry_type='team' AND entry.created_at>=$5 AND entry.created_at<$6),0) AS team_commission_cny,
+		COALESCE(business_customers.period_activated_customers,0) AS period_activated_customers,
+		COALESCE(business_customers.period_cohort_paid_customers,0) AS period_cohort_paid_customers,
+		COALESCE(business_payments.period_all_paying_customers,0) AS period_all_paying_customers,
+		COALESCE(business_payments.period_repurchase_customers,0) AS period_repurchase_customers,
+		COALESCE(business_activity.period_active_customers,0) AS period_active_customers,
+		(SELECT COUNT(*) FROM distribution_customer_bindings binding JOIN distribution_agents direct ON direct.id=binding.agent_id WHERE direct.parent_agent_id=a.id) AS total_team_customers,
+		COALESCE(business_rewards.period_reward_cny,0) AS period_reward_cny,
 		COALESCE(w.total_converted_cny,0),
 		(SELECT MAX(e.created_at) FROM distribution_commission_entries e WHERE e.beneficiary_agent_id=a.id) AS last_commission_at,
 		a.created_at`
 	offset := (filter.Page - 1) * filter.PageSize
 	scope := newDistributionAnalyticsScope(service.DistributionAnalyticsFilter{Days: filter.Days, DateFrom: filter.DateFrom, DateTo: filter.DateTo})
 	sortExpr := distributionAgentSortExpression(filter.SortBy)
-	rows, err := r.db.QueryContext(ctx, selectColumns+from+` ORDER BY `+sortExpr+` `+filter.SortOrder+` NULLS LAST,a.id DESC LIMIT $7 OFFSET $8`, filter.Search, like, filter.Status, filter.Depth, scope.currentStart, scope.currentEnd, filter.PageSize, offset)
+	// Composite period metrics are SELECT-list aliases. PostgreSQL only permits
+	// aliases as a bare ORDER BY item, not inside an expression (for example
+	// `period_customer_paid_cny + team_customer_paid_cny`). Wrap the projection
+	// so the aliases become real columns before applying the composite sort.
+	dataFrom := strings.Replace(from, "\n\t\tWHERE", analyticsJoins+"\n\t\tWHERE", 1)
+	query := analyticsCTE + selectColumns + dataFrom + ` ORDER BY ` + sortExpr + ` ` + filter.SortOrder + ` NULLS LAST,a.id DESC LIMIT $7 OFFSET $8`
+	if filter.SortBy == "period_customer_paid" || filter.SortBy == "period_commission" || filter.SortBy == "period_customers" || filter.SortBy == "period_paying_customers" {
+		query = analyticsCTE + `SELECT * FROM (` + selectColumns + dataFrom + `) AS agent_rows ORDER BY ` + sortExpr + ` ` + filter.SortOrder + ` NULLS LAST,id DESC LIMIT $7 OFFSET $8`
+	}
+	rows, err := r.db.QueryContext(ctx, query, filter.Search, like, filter.Status, filter.Depth, scope.currentStart, scope.currentEnd, filter.PageSize, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1148,6 +1197,7 @@ func (r *distributionRepository) AdminListAgents(ctx context.Context, filter ser
 			&a.CustomerCount, &a.TeamCount, &a.PayingCustomerCount, &a.CustomerPaidCNY,
 			&a.ThisMonthCommissionCNY, &a.PeriodCustomerCount, &a.PeriodPayingCustomers, &a.PeriodCustomerPaidCNY, &a.PeriodCommissionCNY,
 			&a.TeamCustomerCount, &a.TeamPayingCustomers, &a.TeamCustomerPaidCNY, &a.TeamCommissionCNY,
+			&a.PeriodActivatedCustomers, &a.PeriodCohortPaidCustomers, &a.PeriodAllPayingCustomers, &a.PeriodRepurchaseCustomers, &a.PeriodActiveCustomers, &a.TotalTeamCustomers, &a.PeriodRewardCNY,
 			&a.TotalConvertedCNY, &a.LastCommissionAt, &a.CreatedAt); err != nil {
 			return nil, 0, err
 		}
@@ -1180,6 +1230,14 @@ func distributionAgentSortExpression(sortBy string) string {
 		return "last_commission_at"
 	case "status":
 		return "a.status"
+	case "period_customer_paid":
+		return "period_customer_paid_cny + team_customer_paid_cny"
+	case "period_commission":
+		return "period_commission_cny + team_commission_cny"
+	case "period_customers":
+		return "period_customer_count + team_customer_count"
+	case "period_paying_customers":
+		return "period_paying_customers + team_paying_customers"
 	default:
 		return "a.created_at"
 	}
@@ -1305,8 +1363,8 @@ func (r *distributionRepository) AdminLookupAgents(ctx context.Context, query st
 		JOIN users u ON u.id=a.user_id
 		JOIN distribution_agent_levels l ON l.id=a.level_id
 		WHERE ($3 OR (a.status='active' AND u.deleted_at IS NULL))
-		  AND (u.email ILIKE $1 OR u.username ILIKE $1 OR a.promotion_code ILIKE $1)
-		ORDER BY CASE WHEN LOWER(u.email)=LOWER($2) THEN 0 ELSE 1 END,u.email
+		  AND (a.id::text=$2 OR u.email ILIKE $1 OR u.username ILIKE $1 OR a.promotion_code ILIKE $1)
+		ORDER BY CASE WHEN a.id::text=$2 THEN 0 WHEN LOWER(u.email)=LOWER($2) THEN 1 ELSE 2 END,u.email
 		LIMIT 20`, like, query, includeInactive)
 	if err != nil {
 		return nil, err

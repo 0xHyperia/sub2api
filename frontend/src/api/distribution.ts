@@ -36,6 +36,13 @@ export interface DistributionAgent {
   team_paying_customers: number;
   team_customer_paid_cny: string;
   team_commission_cny: string;
+  period_activated_customers: number;
+  period_cohort_paid_customers: number;
+  period_all_paying_customers: number;
+  period_repurchase_customers: number;
+  period_active_customers: number;
+  total_team_customers: number;
+  period_reward_cny: string;
   last_commission_at?: string;
   created_at?: string;
 }

@@ -33,6 +33,7 @@ func RegisterAdminRoutes(
 
 		// 仪表盘
 		registerDashboardRoutes(admin, h)
+		registerBusinessAnalyticsRoutes(admin, h)
 
 		// 用户管理
 		registerUserManagementRoutes(admin, h)
@@ -124,6 +125,12 @@ func RegisterAdminRoutes(
 		// 操作审计日志
 		registerAuditLogRoutes(admin, h, stepUpAuth)
 	}
+}
+
+func registerBusinessAnalyticsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	analytics := admin.Group("/business-analytics")
+	analytics.GET("/balance", h.Admin.BusinessAnalytics.GetBalance)
+	analytics.GET("/:section", h.Admin.BusinessAnalytics.Get)
 }
 
 func registerSoftwareCatalogRoutes(admin *gin.RouterGroup, h *handler.Handlers) {

@@ -27,6 +27,7 @@ function mountView() {
         BaseDialog: { template: '<div><slot /></div>' },
         Icon: true,
         LoadingSpinner: true,
+        AdminDistributionNav: true,
         RemoteEntityCombobox: true,
         RouterLink: { template: '<a><slot /></a>' },
       },

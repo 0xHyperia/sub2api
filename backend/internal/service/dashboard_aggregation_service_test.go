@@ -26,6 +26,16 @@ type dashboardAggregationRepoTestStub struct {
 	ensurePartitionErr   error
 }
 
+type businessAnalyticsAggregatorTestStub struct {
+	calls int
+	err   error
+}
+
+func (s *businessAnalyticsAggregatorTestStub) AggregateRange(context.Context, time.Time, time.Time) error {
+	s.calls++
+	return s.err
+}
+
 func (s *dashboardAggregationRepoTestStub) AggregateRange(ctx context.Context, start, end time.Time) error {
 	s.aggregateCalls++
 	s.lastStart = start
@@ -148,6 +158,18 @@ func TestDashboardAggregationService_PartitionFailure_DoesNotAggregate(t *testin
 
 	require.Equal(t, 1, repo.ensurePartitionCalls)
 	require.Equal(t, 1, repo.aggregateCalls)
+}
+
+func TestDashboardAggregationService_BusinessAnalyticsFailureDoesNotFailPrimaryAggregation(t *testing.T) {
+	repo := &dashboardAggregationRepoTestStub{}
+	analytics := &businessAnalyticsAggregatorTestStub{err: errors.New("analytics unavailable")}
+	svc := &DashboardAggregationService{repo: repo, businessAnalytics: analytics}
+
+	err := svc.aggregateRange(context.Background(), time.Now().Add(-time.Hour), time.Now())
+
+	require.NoError(t, err)
+	require.Equal(t, 1, repo.aggregateCalls)
+	require.Equal(t, 1, analytics.calls)
 }
 
 func TestDashboardAggregationService_TriggerBackfill_TooLarge(t *testing.T) {

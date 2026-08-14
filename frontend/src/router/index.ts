@@ -543,6 +543,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/business-analytics',
+    redirect: '/admin/business-analytics/overview'
+  },
+  ...(['overview', 'growth', 'finance', 'retention', 'channels'] as const).map((section) => ({
+    path: `/admin/business-analytics/${section}`,
+    name: `AdminBusinessAnalytics-${section}`,
+    component: () => import('@/views/admin/business/BusinessAnalyticsView.vue'),
+    props: { section },
+    meta: { requiresAuth: true, requiresAdmin: true, titleKey: `admin.business.${section}Title` }
+  })),
+  {
     path: '/admin/ops',
     name: 'AdminOps',
     component: () => import('@/views/admin/ops/OpsDashboard.vue'),
@@ -794,6 +805,12 @@ const routes: RouteRecordRaw[] = [
 	  name: 'AdminDistributionOverview',
 	  component: () => import('@/views/admin/distribution/AdminDistributionOverviewView.vue'),
 	  meta: { requiresAuth: true, requiresAdmin: true, title: '分销总览' }
+	},
+	{
+	  path: '/admin/distribution/agent-analytics',
+	  name: 'AdminDistributionAgentAnalytics',
+	  component: () => import('@/views/admin/distribution/AdminDistributionAgentAnalyticsView.vue'),
+	  meta: { requiresAuth: true, requiresAdmin: true, titleKey: 'admin.distribution.agentAnalysis.title' }
 	},
 	{
 	  path: '/admin/distribution/anomalies',

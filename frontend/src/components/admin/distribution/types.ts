@@ -5,6 +5,8 @@ export interface DistributionPickerOption {
   meta?: string
   selectable?: boolean
   reason?: string
+  depth?: 1 | 2
+  status?: string
 }
 
 export type DistributionPickerSearch = (

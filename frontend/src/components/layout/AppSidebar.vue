@@ -464,6 +464,20 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
       label: localText('商业化', 'Commerce'),
       items: [
         {
+          path: '/admin/business-analytics',
+          label: localText('经营分析', 'Business analytics'),
+          icon: 'chart',
+          hideInSimpleMode: true,
+          expandOnly: true,
+          children: [
+            { path: '/admin/business-analytics/overview', label: localText('经营总览', 'Overview'), icon: 'chart' },
+            { path: '/admin/business-analytics/growth', label: localText('用户增长', 'User growth'), icon: 'users' },
+            { path: '/admin/business-analytics/finance', label: localText('收入与成本', 'Revenue and cost'), icon: 'dollar' },
+            { path: '/admin/business-analytics/retention', label: localText('留存与生命周期', 'Retention'), icon: 'trendingUp' },
+            { path: '/admin/business-analytics/channels', label: localText('渠道分析', 'Channels'), icon: 'grid' }
+          ]
+        },
+        {
           path: '/admin/subscriptions',
           label: t('nav.subscriptions'),
           icon: 'creditCard',
@@ -492,6 +506,7 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
 		  expandOnly: true,
 		  children: [
 		    { path: '/admin/distribution/overview', label: localText('分销总览', 'Overview'), icon: 'chart' },
+		    { path: '/admin/distribution/agent-analytics', label: localText('代理分析', 'Agent analytics'), icon: 'trendingUp' },
 		    { path: '/admin/distribution/promotion', label: localText('推广追踪', 'Promotion tracking'), icon: 'trendingUp' },
 		    { path: '/admin/distribution/anomalies', label: localText('异常对账', 'Reconciliation'), icon: 'shield' },
 		    { path: '/admin/distribution/agents', label: localText('代理管理', 'Agents'), icon: 'users' },
