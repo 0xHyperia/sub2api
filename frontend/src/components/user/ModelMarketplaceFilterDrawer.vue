@@ -61,7 +61,7 @@
                   @click="draftProvider = provider.value"
                 >
                   <span class="flex min-w-0 items-center gap-1.5">
-                    <PlatformIcon :platform="provider.value as GroupPlatform" size="sm" :class="platformIconClass(provider.value)" />
+                    <ModelIcon :vendor="provider.value" size="14px" />
                     <span class="truncate">{{ provider.label }}</span>
                   </span>
                   <span class="marketplace-sheet-count">{{ provider.count }}</span>
@@ -156,6 +156,10 @@
                 <span class="text-sm text-foreground-muted">{{ t('modelMarketplace.effectivePrice') }}</span>
                 <Toggle v-model="draftShowEffectivePrices" :aria-label="t('modelMarketplace.effectivePrice')" />
               </label>
+              <label class="flex min-h-11 items-center justify-between gap-4 border-b border-outline py-2">
+                <span class="text-sm text-foreground-muted">{{ t('modelMarketplace.rechargePrice') }}</span>
+                <Toggle v-model="draftShowRechargePrices" :aria-label="t('modelMarketplace.rechargePrice')" />
+              </label>
             </section>
           </div>
 
@@ -176,12 +180,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { GroupPlatform } from '@/types'
 import type { MarketplaceGroupOption } from '@/views/user/modelMarketplace'
 import Icon from '@/components/icons/Icon.vue'
-import PlatformIcon from '@/components/common/PlatformIcon.vue'
+import ModelIcon from '@/components/common/ModelIcon.vue'
 import Toggle from '@/components/common/Toggle.vue'
-import { platformIconClass } from '@/utils/platformColors'
 
 interface FilterOption {
   value: string
@@ -228,12 +230,13 @@ const props = defineProps<{
   selectedBilling: string
   selectedCapability: string
   showEffectivePrices: boolean
+  showRechargePrices: boolean
   resultCount: number
 }>()
 
 const emit = defineEmits<{
   close: []
-  apply: [filters: { provider: string; group: string; billing: string; capability: string; showEffectivePrices: boolean }]
+  apply: [filters: { provider: string; group: string; billing: string; capability: string; showEffectivePrices: boolean; showRechargePrices: boolean }]
   'draft-change': [filters: { provider: string; group: string; billing: string; capability: string }]
 }>()
 
@@ -245,6 +248,7 @@ const draftGroup = ref('all')
 const draftBilling = ref('all')
 const draftCapability = ref('all')
 const draftShowEffectivePrices = ref(true)
+const draftShowRechargePrices = ref(false)
 const titleId = `model-marketplace-filters-${Math.random().toString(36).slice(2)}`
 let previousFocus: HTMLElement | null = null
 let previousBodyOverflow = ''
@@ -259,6 +263,7 @@ function resetDraft() {
   draftBilling.value = 'all'
   draftCapability.value = 'all'
   draftShowEffectivePrices.value = true
+  draftShowRechargePrices.value = false
 }
 
 function applyDraft() {
@@ -268,6 +273,7 @@ function applyDraft() {
     billing: draftBilling.value,
     capability: draftCapability.value,
     showEffectivePrices: draftShowEffectivePrices.value,
+    showRechargePrices: draftShowRechargePrices.value,
   })
 }
 
@@ -304,6 +310,7 @@ watch(() => props.open, async (open) => {
     draftBilling.value = props.selectedBilling
     draftCapability.value = props.selectedCapability
     draftShowEffectivePrices.value = props.showEffectivePrices
+    draftShowRechargePrices.value = props.showRechargePrices
     previousFocus = document.activeElement as HTMLElement
     previousBodyOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'

@@ -6,7 +6,9 @@
     ]"
   >
     <!-- Platform logo -->
-    <PlatformIcon v-if="platform" :platform="platform" size="sm" />
+    <ModelIcon v-if="modelVendors.length === 1" :vendor="modelVendors[0]" size="14px" />
+    <PlatformIcon v-else-if="modelVendors.length > 1" platform="composite" size="sm" />
+    <PlatformIcon v-else-if="platform" :platform="platform" size="sm" />
     <!-- Group name -->
     <span class="truncate">{{ name }}</span>
     <!-- Right side label -->
@@ -33,6 +35,8 @@ import type { SubscriptionType, GroupPlatform } from '@/types'
 import { useAppStore } from '@/stores/app'
 import { formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'
 import PlatformIcon from './PlatformIcon.vue'
+import ModelIcon from './ModelIcon.vue'
+import { resolveModelVendors } from '@/utils/modelVendor'
 
 interface Props {
   name: string
@@ -52,6 +56,8 @@ interface Props {
    * 只关心费率、不关心有效期的场景）。
    */
   alwaysShowRate?: boolean
+  /** Optional model catalog used to derive a vendor-aware icon. */
+  modelNames?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -60,8 +66,11 @@ const props = withDefaults(defineProps<Props>(), {
   daysRemaining: null,
   userRateMultiplier: null,
   peakRateEnabled: false,
-  alwaysShowRate: false
+  alwaysShowRate: false,
+  modelNames: () => []
 })
+
+const modelVendors = computed(() => resolveModelVendors(props.modelNames))
 
 const { t } = useI18n()
 

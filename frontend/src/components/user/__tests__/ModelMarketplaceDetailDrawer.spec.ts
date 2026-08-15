@@ -29,6 +29,7 @@ describe('ModelMarketplaceDetailDrawer workspace', () => {
       attachTo: document.body,
       props: {
         entry: entry(), groups: [], activeGroup: null, showEffectivePrices: false,
+        showRechargePrices: false, balanceRechargeMultiplier: 1, officialUsdToCnyRate: 7.2,
         monitorResolution: 'hour', showDetailedPerformance: false,
       },
       global: {
@@ -55,6 +56,47 @@ describe('ModelMarketplaceDetailDrawer workspace', () => {
 
     wrapper.unmount()
   })
+
+  it('switches official detail pricing from USD to the currency-converted CNY price', async () => {
+    const pricedEntry: MarketplaceModelEntry = {
+      ...entry(),
+      pricing: {
+        billing_mode: 'token',
+        input_price: 0.000002,
+        output_price: null,
+        cache_write_price: null,
+        cache_read_price: null,
+        image_input_price: null,
+        image_output_price: null,
+        per_request_price: null,
+        intervals: [],
+      },
+    }
+    const wrapper = mount(ModelMarketplaceDetailDrawer, {
+      props: {
+        entry: pricedEntry, groups: [], activeGroup: null, showEffectivePrices: false,
+        showRechargePrices: false, balanceRechargeMultiplier: 0.2, officialUsdToCnyRate: 7.2,
+        monitorResolution: 'hour', showDetailedPerformance: false,
+      },
+      global: {
+        plugins: [createPinia(), createI18n({
+          legacy: false,
+          locale: 'en',
+          missingWarn: false,
+          fallbackWarn: false,
+          messages: { en: {} },
+        })],
+        stubs: { teleport: true, ModelIcon: true, Icon: true, SuccessRateTimeline: true, ModelMarketplacePerformanceCharts: true },
+      },
+    })
+
+    expect(wrapper.text()).toContain('$2.00')
+    await wrapper.setProps({ showRechargePrices: true })
+    expect(wrapper.text()).toContain('¥14.40')
+
+    wrapper.unmount()
+  })
+
   it('uses a responsive right drawer with a three-tab detail workspace', () => {
     expect(source).toContain('class="fixed inset-0 z-50 bg-black/25 backdrop-blur-[1px]"')
     expect(source).toContain('absolute inset-y-0 right-0')

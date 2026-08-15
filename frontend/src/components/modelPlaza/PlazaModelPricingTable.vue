@@ -65,6 +65,7 @@
           <!-- 模型名 + 非 token 计费模式徽章 -->
           <td class="border-r border-outline py-2.5 pl-5 pr-4 align-middle">
             <div class="flex flex-wrap items-center gap-1.5">
+              <ModelIcon v-if="resolveModelVendor(m.name)" :model="m.name" size="16px" aria-hidden="true" />
               <span class="font-medium text-foreground">{{ m.name }}</span>
               <span
                 v-if="platform && m.platform !== platform"
@@ -219,6 +220,8 @@ import {
 } from '@/constants/channel'
 import type { PlazaModel } from '@/api/modelPlaza'
 import type { UserPricingInterval } from '@/api/channels'
+import ModelIcon from '@/components/common/ModelIcon.vue'
+import { resolveModelVendor } from '@/utils/modelVendor'
 
 const props = defineProps<{
   models: PlazaModel[]

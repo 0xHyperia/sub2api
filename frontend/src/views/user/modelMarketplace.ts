@@ -106,7 +106,7 @@ export const MARKETPLACE_CARD_CAPABILITY_ORDER: MarketplaceModelCapability[] = [
   'service_tier',
 ]
 export const DEFAULT_USD_TO_CNY_RATE = 7.2
-const MARKETPLACE_PROVIDER_PRIORITY = ['openai', 'anthropic', 'gemini'] as const
+const MARKETPLACE_PROVIDER_PRIORITY = ['openai', 'anthropic', 'claude', 'gemini'] as const
 
 export function billingCategory(pricing: UserSupportedModelPricing | null): MarketplaceBillingCategory {
   if (!pricing) return 'unpriced'
@@ -311,6 +311,10 @@ export function realtimeRate(
   return groupRate / rechargeMultiplier / exchangeRate
 }
 
+export function officialDiscount(multiplier: number): number {
+  return multiplier * 10
+}
+
 export function primaryPrice(pricing: UserSupportedModelPricing | null): number | null {
   if (!pricing) return null
   if (pricing.billing_mode === 'token') return pricing.input_price
@@ -321,5 +325,32 @@ export function primaryPrice(pricing: UserSupportedModelPricing | null): number 
 export function scaledPrice(value: number | null, scale: number, rate: number): string {
   if (value == null) return '-'
   const amount = value * scale * rate
-  return `$${amount.toPrecision(10).replace(/\.?0+$/, '')}`
+  return `$${amount.toFixed(2)}`
+}
+
+export function scaledRechargePrice(
+  value: number | null,
+  scale: number,
+  rate: number,
+  balanceRechargeMultiplier: number,
+): string {
+  if (value == null) return '-'
+  const rechargeMultiplier = Number.isFinite(balanceRechargeMultiplier) && balanceRechargeMultiplier > 0
+    ? balanceRechargeMultiplier
+    : 1
+  const amount = value * scale * rate / rechargeMultiplier
+  return `¥${amount.toFixed(2)}`
+}
+
+export function scaledCurrencyPrice(
+  value: number | null,
+  scale: number,
+  usdToCnyRate: number,
+): string {
+  if (value == null) return '-'
+  const exchangeRate = Number.isFinite(usdToCnyRate) && usdToCnyRate > 0
+    ? usdToCnyRate
+    : DEFAULT_USD_TO_CNY_RATE
+  const amount = value * scale * exchangeRate
+  return `¥${amount.toFixed(2)}`
 }

@@ -11,8 +11,11 @@ import {
   imagePriceRows,
   inferMarketplaceModelCapabilities,
   modelAvailabilityBarClass,
+  officialDiscount,
   recentModelSuccessRates,
   realtimeRate,
+  scaledCurrencyPrice,
+  scaledRechargePrice,
   scaledPrice,
   sortedEntryGroups,
   visibleMarketplaceGroupCount,
@@ -110,6 +113,11 @@ describe('model marketplace data', () => {
       'azure',
       'vertex',
     ])
+    expect(['gemini', 'claude', 'openai'].sort(compareMarketplaceProviders)).toEqual([
+      'openai',
+      'claude',
+      'gemini',
+    ])
   })
 
   it('sorts each model family from newest generation to oldest', () => {
@@ -142,8 +150,21 @@ describe('model marketplace data', () => {
   })
 
   it('formats prices after applying the selected group rate', () => {
-    expect(scaledPrice(0.000002, 1_000_000, 1.1)).toBe('$2.2')
+    expect(scaledPrice(0.000002, 1_000_000, 1.1)).toBe('$2.20')
     expect(scaledPrice(null, 1_000_000, 1)).toBe('-')
+  })
+
+  it('formats top-up prices using the configured balance multiplier', () => {
+    expect(scaledRechargePrice(0.0000072, 1_000_000, 1, 1)).toBe('¥7.20')
+    expect(scaledRechargePrice(1, 1, 1, 0.2)).toBe('¥5.00')
+    expect(scaledRechargePrice(1, 1, 1, 0)).toBe('¥1.00')
+    expect(scaledRechargePrice(null, 1, 1, 0.2)).toBe('-')
+  })
+
+  it('formats official prices using the currency exchange rate', () => {
+    expect(scaledCurrencyPrice(0.000001, 1_000_000, 7.2)).toBe('¥7.20')
+    expect(scaledCurrencyPrice(1, 1, 0)).toBe('¥7.20')
+    expect(scaledCurrencyPrice(null, 1, 7.2)).toBe('-')
   })
 
   it('uses configured image tier prices with the user-specific group rate', () => {
@@ -204,6 +225,10 @@ describe('model marketplace data', () => {
     expect(realtimeRate(0.1, 1, 7.2)).toBeCloseTo(0.0138889)
     expect(realtimeRate(0.15, 1.5, 7.2)).toBeCloseTo(0.0138889)
     expect(realtimeRate(0.1, 0, 0)).toBeCloseTo(0.0138889)
+  })
+
+  it('converts an official-price multiplier to the Chinese discount scale', () => {
+    expect(officialDiscount(0.1483)).toBeCloseTo(1.483)
   })
 
   it('reserves room for the overflow control before deciding which group chips fit', () => {

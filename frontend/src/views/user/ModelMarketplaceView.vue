@@ -58,7 +58,7 @@
                 @click="selectedProvider = provider.value"
               >
                 <span class="flex min-w-0 items-center gap-2">
-                  <PlatformIcon :platform="provider.value as GroupPlatform" size="sm" :class="platformIconClass(provider.value)" />
+                  <ModelIcon :vendor="provider.value" size="14px" />
                   <span class="truncate">{{ provider.label }}</span>
                 </span>
                 <span class="marketplace-filter-count">{{ provider.count }}</span>
@@ -228,6 +228,10 @@
                   <Toggle v-model="showEffectivePrices" :aria-label="t('modelMarketplace.effectivePrice')" />
                   <span>{{ t('modelMarketplace.effectivePrice') }}</span>
                 </label>
+                <label class="flex min-h-10 items-center gap-2 whitespace-nowrap text-xs font-medium text-foreground-muted">
+                  <Toggle v-model="showRechargePrices" :aria-label="t('modelMarketplace.rechargePrice')" />
+                  <span>{{ t('modelMarketplace.rechargePrice') }}</span>
+                </label>
                 <label class="sr-only" for="marketplace-sort">{{ t('modelMarketplace.sort.label') }}</label>
                 <select id="marketplace-sort" v-model="sortMode" class="input h-10 w-44 flex-none text-sm">
                   <option value="name">{{ t('modelMarketplace.sort.name') }}</option>
@@ -276,7 +280,7 @@
             >
               <div class="grid grid-cols-[24px_minmax(0,1fr)_52px] items-center gap-2">
                 <span class="flex h-6 w-6 shrink-0 items-center justify-center text-foreground" aria-hidden="true">
-                  <PlatformIcon :platform="entry.platform as GroupPlatform" size="lg" :class="platformIconClass(entry.platform)" />
+                  <ModelIcon :model="entry.name" size="20px" />
                 </span>
                 <div class="min-w-0 flex-1">
                   <div class="flex min-w-0 items-center gap-1.5">
@@ -314,8 +318,8 @@
 
               <div class="mt-1.5 flex min-h-5 items-center justify-between gap-2">
                 <div class="flex min-w-0 items-center gap-2 text-foreground-subtle">
-                  <span class="max-w-20 truncate text-[9px] font-medium uppercase" :title="providerLabel(entry.platform)">
-                    {{ providerLabel(entry.platform) }}
+                  <span class="max-w-20 truncate text-[9px] font-medium uppercase" :title="providerLabel(marketplaceVendor(entry))">
+                    {{ providerLabel(marketplaceVendor(entry)) }}
                   </span>
                   <span class="shrink-0 text-[9px]">{{ billingModeLabel(entry.pricing?.billing_mode) }}</span>
                   <span class="h-3 w-px shrink-0 bg-outline" aria-hidden="true"></span>
@@ -425,7 +429,7 @@
                 <div
                   class="group/rate relative flex shrink-0 cursor-help items-center gap-1.5 outline-none"
                   tabindex="0"
-                  :aria-label="t('modelMarketplace.realtimeRateHint', { cny: formatExchangeRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)) })"
+                  :aria-label="t('modelMarketplace.realtimeRateHint', { cny: formatExchangeRate(officialUsdToCnyRate), usd: formatRate(balanceRechargeMultiplier), group: formatRate(effectiveRate(entry)), rate: formatRate(cardRealtimeRate(entry)), discount: formatRate(cardOfficialDiscount(entry)), percent: formatRate(cardRealtimeRate(entry) * 100) })"
                 >
                   <span class="text-[9px] font-medium text-warning-foreground">{{ t('modelMarketplace.realtimeRate') }}</span>
                   <span class="inline-flex items-center gap-1 font-mono text-xs font-semibold tabular-nums text-warning-foreground">
@@ -451,8 +455,13 @@
                           <dd class="font-mono tabular-nums text-foreground">{{ formatRate(effectiveRate(entry)) }}&times;</dd>
                         </div>
                       </dl>
-                      <div class="mt-2 border-t border-dashed border-outline pt-2 text-left font-mono text-[10px] tabular-nums text-foreground-muted">
-                        {{ formatRate(effectiveRate(entry)) }} / {{ formatRate(balanceRechargeMultiplier) }} / {{ formatExchangeRate(officialUsdToCnyRate) }} = {{ formatRate(cardRealtimeRate(entry)) }}&times;
+                      <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-dashed border-outline pt-2 text-[10px] tabular-nums">
+                        <span class="min-w-0 whitespace-nowrap font-mono text-foreground-muted">
+                          {{ formatRate(effectiveRate(entry)) }} / {{ formatRate(balanceRechargeMultiplier) }} / {{ formatExchangeRate(officialUsdToCnyRate) }} = {{ formatRate(cardRealtimeRate(entry)) }}&times;
+                        </span>
+                        <span class="ml-auto shrink-0 font-semibold text-warning-foreground">
+                          {{ t('modelMarketplace.officialDiscountPrice', { discount: formatRate(cardOfficialDiscount(entry)), percent: formatRate(cardRealtimeRate(entry) * 100) }) }}
+                        </span>
                       </div>
                   </div>
                 </div>
@@ -479,6 +488,7 @@
       :selected-billing="selectedBilling"
       :selected-capability="selectedCapability"
       :show-effective-prices="showEffectivePrices"
+      :show-recharge-prices="showRechargePrices"
       :result-count="mobileFilterResultCount"
       @close="mobileFilterOpen = false"
       @draft-change="updateMobileFilterDraft"
@@ -490,6 +500,9 @@
       :groups="detailEntry ? sortedEntryGroups(detailEntry, userGroupRates) : []"
       :active-group="detailEntry ? activeEntryGroup(detailEntry) : null"
       :show-effective-prices="showEffectivePrices"
+      :show-recharge-prices="showRechargePrices"
+      :balance-recharge-multiplier="balanceRechargeMultiplier"
+      :official-usd-to-cny-rate="officialUsdToCnyRate"
       :monitor-resolution="monitorResolution"
       :performance-loading="resolutionLoading"
       :show-detailed-performance="appStore.cachedPublicSettings?.model_marketplace_performance_visible !== false"
@@ -507,19 +520,18 @@ import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import SearchInput from '@/components/common/SearchInput.vue'
 import Toggle from '@/components/common/Toggle.vue'
-import PlatformIcon from '@/components/common/PlatformIcon.vue'
+import ModelIcon from '@/components/common/ModelIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import ModelMarketplaceCardGroups from '@/components/user/ModelMarketplaceCardGroups.vue'
 import ModelMarketplaceDetailDrawer from '@/components/user/ModelMarketplaceDetailDrawer.vue'
 import ModelMarketplaceFilterDrawer from '@/components/user/ModelMarketplaceFilterDrawer.vue'
 import userChannelsAPI from '@/api/channels'
 import userGroupsAPI from '@/api/groups'
-import type { GroupPlatform } from '@/types'
 import { useAppStore } from '@/stores/app'
 import { usePaymentStore } from '@/stores/payment'
 import { useClipboard } from '@/composables/useClipboard'
 import { extractApiErrorMessage } from '@/utils/apiError'
-import { platformIconClass } from '@/utils/platformColors'
+import { resolveModelVendor } from '@/utils/modelVendor'
 import {
   billingCategory,
   buildMarketplaceEntries,
@@ -534,9 +546,12 @@ import {
   MARKETPLACE_CARD_CAPABILITY_ORDER,
   MARKETPLACE_MODEL_CAPABILITIES,
   modelAvailabilityBarClass,
+  officialDiscount,
   primaryPrice,
   recentModelSuccessRates,
   realtimeRate,
+  scaledCurrencyPrice,
+  scaledRechargePrice,
   scaledPrice,
   sortedEntryGroups,
   type MarketplaceModelEntry,
@@ -585,6 +600,7 @@ const selectedBilling = ref('all')
 const selectedCapability = ref('all')
 const sortMode = ref<'name' | 'price'>('name')
 const showEffectivePrices = ref(true)
+const showRechargePrices = ref(false)
 const visibleCount = ref(BATCH_SIZE)
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 const selectedEntryGroups = ref<Record<string, number>>({})
@@ -605,7 +621,10 @@ const groups = computed(() => buildMarketplaceGroups(entries.value, userGroupRat
 
 const providers = computed(() => {
   const counts = new Map<string, number>()
-  for (const entry of entries.value) counts.set(entry.platform, (counts.get(entry.platform) ?? 0) + 1)
+  for (const entry of entries.value) {
+    const vendor = marketplaceVendor(entry)
+    counts.set(vendor, (counts.get(vendor) ?? 0) + 1)
+  }
   return [...counts.entries()]
     .map(([value, count]) => ({ value, count, label: providerLabel(value) }))
     .sort((a, b) => compareMarketplaceProviders(a.value, b.value) || a.label.localeCompare(b.label))
@@ -665,7 +684,7 @@ const mobileFilterResultCount = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   const groupId = draftGroup.value === 'all' ? null : Number(draftGroup.value)
   return entries.value.filter((entry) => {
-    if (draftProvider.value !== 'all' && entry.platform !== draftProvider.value) return false
+    if (draftProvider.value !== 'all' && marketplaceVendor(entry) !== draftProvider.value) return false
     if (groupId != null && !entry.groups.some(group => group.id === groupId)) return false
     if (draftBilling.value !== 'all' && billingCategory(entry.pricing) !== draftBilling.value) return false
     if (draftCapability.value !== 'all' && !inferMarketplaceModelCapabilities(entry).includes(draftCapability.value as MarketplaceModelCapability)) return false
@@ -678,7 +697,7 @@ const mobileFilterResultCount = computed(() => {
 const filteredEntries = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   const result = entries.value.filter((entry) => {
-    if (selectedProvider.value !== 'all' && entry.platform !== selectedProvider.value) return false
+    if (selectedProvider.value !== 'all' && marketplaceVendor(entry) !== selectedProvider.value) return false
     if (selectedGroupId.value != null && !entry.groups.some((group) => group.id === selectedGroupId.value)) return false
     const mode = billingCategory(entry.pricing)
     if (selectedBilling.value !== 'all' && mode !== selectedBilling.value) return false
@@ -689,7 +708,7 @@ const filteredEntries = computed(() => {
   })
 
   return result.sort((a, b) => {
-    const byProvider = compareMarketplaceProviders(a.platform, b.platform)
+    const byProvider = compareMarketplaceProviders(marketplaceVendor(a), marketplaceVendor(b))
     if (byProvider !== 0) return byProvider
     const byRecency = compareMarketplaceModelRecency(a.name, b.name)
     if (byRecency !== 0) return byRecency
@@ -727,6 +746,10 @@ function providerLabel(platform: string): string {
   return known === `modelMarketplace.providers.${platform}` ? platform.toUpperCase() : known
 }
 
+function marketplaceVendor(entry: MarketplaceModelEntry): string {
+  return resolveModelVendor(entry.name) ?? 'other'
+}
+
 function billingModeLabel(mode?: string): string {
   if (!mode) return t('modelMarketplace.billing.unpriced')
   const known = t(`modelMarketplace.billing.${mode}`)
@@ -741,13 +764,31 @@ function cardRealtimeRate(entry: MarketplaceModelEntry): number {
   return realtimeRate(effectiveRate(entry), balanceRechargeMultiplier.value, officialUsdToCnyRate.value)
 }
 
+function cardOfficialDiscount(entry: MarketplaceModelEntry): number {
+  return officialDiscount(cardRealtimeRate(entry))
+}
+
 function formatRate(rate: number): string {
   return Number(rate.toFixed(4)).toString()
 }
 
 function displayPrice(value: number | null, scale: number, entry: MarketplaceModelEntry): string {
   const rate = showEffectivePrices.value ? effectiveRate(entry) : 1
-  return scaledPrice(value, scale, rate)
+  return showEffectivePrices.value
+    ? formatEffectivePrice(value, scale, rate)
+    : formatOfficialPrice(value, scale)
+}
+
+function formatEffectivePrice(value: number | null, scale: number, rate: number): string {
+  return showRechargePrices.value
+    ? scaledRechargePrice(value, scale, rate, balanceRechargeMultiplier.value)
+    : scaledPrice(value, scale, rate)
+}
+
+function formatOfficialPrice(value: number | null, scale: number): string {
+  return showRechargePrices.value
+    ? scaledCurrencyPrice(value, scale, officialUsdToCnyRate.value)
+    : scaledPrice(value, scale, 1)
 }
 
 function cardBillingCategory(entry: MarketplaceModelEntry) {
@@ -794,10 +835,10 @@ function cardGroups(entry: MarketplaceModelEntry) {
 
 function cardPrice(value: number | null, scale: number, entry: MarketplaceModelEntry) {
   const display = displayPrice(value, scale, entry)
-  const rate = effectiveRate(entry)
+  const original = formatOfficialPrice(value, scale)
   return {
     value: display,
-    baseValue: showEffectivePrices.value && rate !== 1 ? scaledPrice(value, scale, 1) : '',
+    baseValue: showEffectivePrices.value && display !== original ? original : '',
   }
 }
 
@@ -812,13 +853,17 @@ function cardPrimaryPriceRows(entry: MarketplaceModelEntry) {
 
 function cardImagePriceRows(entry: MarketplaceModelEntry) {
   const group = activeEntryGroup(entry)
-  return imagePriceRows(entry.pricing, group).map(row => ({
-    ...row,
-    value: scaledPrice(showEffectivePrices.value ? row.effectiveValue : row.rawValue, 1, 1),
-    baseValue: showEffectivePrices.value && group && group.effectiveRate !== 1
-      ? scaledPrice(row.rawValue, 1, 1)
-      : '',
-  }))
+  return imagePriceRows(entry.pricing, group).map((row) => {
+    const value = showEffectivePrices.value
+      ? formatEffectivePrice(row.effectiveValue, 1, 1)
+      : formatOfficialPrice(row.rawValue, 1)
+    const original = formatOfficialPrice(row.rawValue, 1)
+    return {
+      ...row,
+      value,
+      baseValue: showEffectivePrices.value && value !== original ? original : '',
+    }
+  })
 }
 
 function entrySortPrice(entry: MarketplaceModelEntry): number {
@@ -880,12 +925,13 @@ function updateMobileFilterDraft(filters: { provider: string; group: string; bil
   draftCapability.value = filters.capability
 }
 
-function applyMobileFilters(filters: { provider: string; group: string; billing: string; capability: string; showEffectivePrices: boolean }) {
+function applyMobileFilters(filters: { provider: string; group: string; billing: string; capability: string; showEffectivePrices: boolean; showRechargePrices: boolean }) {
   selectedProvider.value = filters.provider
   selectedGroup.value = filters.group
   selectedBilling.value = filters.billing
   selectedCapability.value = filters.capability
   showEffectivePrices.value = filters.showEffectivePrices
+  showRechargePrices.value = filters.showRechargePrices
   mobileFilterOpen.value = false
 }
 

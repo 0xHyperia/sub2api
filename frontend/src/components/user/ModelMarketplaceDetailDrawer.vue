@@ -17,7 +17,7 @@
           <header class="z-20 shrink-0 border-b border-outline bg-surface-raised">
             <div class="flex min-h-[76px] w-full items-center gap-3 px-4 py-3 sm:px-6">
               <span class="flex h-8 w-8 shrink-0 items-center justify-center text-foreground" aria-hidden="true">
-                <PlatformIcon :platform="entry.platform as GroupPlatform" size="lg" :class="platformIconClass(entry.platform)" />
+                <ModelIcon :model="entry.name" size="24px" />
               </span>
               <div class="min-w-0 flex-1">
                 <div class="flex min-w-0 items-center gap-2">
@@ -444,15 +444,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { GroupPlatform } from '@/types'
 import Icon from '@/components/icons/Icon.vue'
-import PlatformIcon from '@/components/common/PlatformIcon.vue'
+import ModelIcon from '@/components/common/ModelIcon.vue'
 import SuccessRateTimeline from '@/components/common/SuccessRateTimeline.vue'
 import ModelMarketplacePerformanceCharts from '@/components/user/ModelMarketplacePerformanceCharts.vue'
-import { platformIconClass } from '@/utils/platformColors'
 import { useAppStore } from '@/stores/app'
 import { useClipboard } from '@/composables/useClipboard'
-import { billingCategory, imagePriceRows, scaledPrice, type MarketplaceGroupOption, type MarketplaceModelEntry } from '@/views/user/modelMarketplace'
+import { billingCategory, imagePriceRows, scaledCurrencyPrice, scaledPrice, scaledRechargePrice, type MarketplaceGroupOption, type MarketplaceModelEntry } from '@/views/user/modelMarketplace'
 
 type DetailTab = 'overview' | 'performance' | 'api'
 type ApiProtocol = 'anthropic' | 'openai' | 'gemini'
@@ -463,6 +461,9 @@ const props = withDefaults(defineProps<{
   groups: MarketplaceGroupOption[]
   activeGroup: MarketplaceGroupOption | null
   showEffectivePrices: boolean
+  showRechargePrices: boolean
+  balanceRechargeMultiplier: number
+  officialUsdToCnyRate: number
   monitorResolution: 'minute' | 'hour'
   performanceLoading?: boolean
   showDetailedPerformance?: boolean
@@ -533,14 +534,14 @@ const pricingRows = computed(() => {
   ]
   return rows.filter(([, , value]) => value != null).map(([key, label, value, scale]) => ({ key, label, rawValue: value, scale }))
 })
-const basePricingRows = computed(() => pricingRows.value.map(row => ({ ...row, value: scaledPrice(row.rawValue, row.scale, 1) })))
+const basePricingRows = computed(() => pricingRows.value.map(row => ({ ...row, value: officialPrice(row.rawValue, row.scale) })))
 const primaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'input' || row.key === 'output' || row.key === 'request' || row.key.startsWith('image-')))
 const secondaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'cache-read' || row.key === 'cache-write' || row.key === 'image-input'))
 const groupPricingRows = computed(() => props.groups.map(group => ({
   ...group,
   prices: props.entry?.pricing?.billing_mode === 'image'
-    ? imagePriceRows(props.entry.pricing, group).map(row => ({ key: row.key, label: row.tier, value: scaledPrice(row.effectiveValue, 1, 1) }))
-    : pricingRows.value.map(row => ({ key: row.key, label: row.label, value: scaledPrice(row.rawValue, row.scale, group.effectiveRate) })),
+    ? imagePriceRows(props.entry.pricing, group).map(row => ({ key: row.key, label: row.tier, value: effectivePrice(row.effectiveValue, 1, 1) }))
+    : pricingRows.value.map(row => ({ key: row.key, label: row.label, value: effectivePrice(row.rawValue, row.scale, group.effectiveRate) })),
 })))
 
 const groupPerformanceRows = computed(() => props.groups.map(group => {
@@ -657,7 +658,21 @@ function labelOrFallback(key: string, fallback: string) { const value = t(key); 
 function formatRate(value: number) { return Number(value.toFixed(4)).toString() }
 function formatLatency(value: number) { return value >= 1000 ? `${(value / 1000).toFixed(2)} s` : `${Math.round(value)} ms` }
 function intervalLabel(min: number, max: number | null) { return max == null ? `${min.toLocaleString()}+` : `${min.toLocaleString()}–${max.toLocaleString()}` }
-function intervalPrice(value: number | null) { return scaledPrice(value, 1_000_000, props.showEffectivePrices ? props.activeGroup?.effectiveRate ?? 1 : 1) }
+function effectivePrice(value: number | null, scale: number, rate: number) {
+  return props.showRechargePrices
+    ? scaledRechargePrice(value, scale, rate, props.balanceRechargeMultiplier)
+    : scaledPrice(value, scale, rate)
+}
+function officialPrice(value: number | null, scale: number) {
+  return props.showRechargePrices
+    ? scaledCurrencyPrice(value, scale, props.officialUsdToCnyRate)
+    : scaledPrice(value, scale, 1)
+}
+function intervalPrice(value: number | null) {
+  return props.showEffectivePrices
+    ? effectivePrice(value, 1_000_000, props.activeGroup?.effectiveRate ?? 1)
+    : officialPrice(value, 1_000_000)
+}
 function formatObject(value: Record<string, string>, indent: number) {
   const padding = ' '.repeat(indent)
   return JSON.stringify(value, null, 2).split('\n').map((line, index) => index === 0 ? line : `${padding}${line}`).join('\n')

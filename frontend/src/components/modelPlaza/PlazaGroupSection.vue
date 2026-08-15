@@ -16,6 +16,7 @@
           :peak-start="group.peak_start"
           :peak-end="group.peak_end"
           :peak-rate-multiplier="group.peak_rate_multiplier"
+          :model-names="group.models.map((model) => model.name)"
           always-show-rate
         />
         <span
