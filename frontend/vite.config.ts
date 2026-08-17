@@ -157,6 +157,9 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: devPort,
+      // Sub2API's Vite proxy serves ZeroCanvas during local development.
+      // The Go backend still enforces the explicit production CORS allowlist.
+      cors: { origin: 'http://172.16.0.121:3000', credentials: true },
       proxy: {
         '/api': {
           target: backendUrl,
