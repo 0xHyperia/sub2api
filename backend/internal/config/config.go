@@ -1812,6 +1812,12 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 		})
 	}
 	cfg.AppAuth.WebRedirectURIs = normalizeStringSlice(cfg.AppAuth.WebRedirectURIs)
+	if raw := strings.TrimSpace(os.Getenv("CORS_ALLOWED_ORIGINS")); raw != "" {
+		cfg.CORS.AllowedOrigins = strings.FieldsFunc(raw, func(r rune) bool {
+			return r == ',' || r == ';' || r == '\n' || r == '\r'
+		})
+	}
+	cfg.CORS.AllowedOrigins = normalizeStringSlice(cfg.CORS.AllowedOrigins)
 	cfg.LinuxDo.ClientID = strings.TrimSpace(cfg.LinuxDo.ClientID)
 	cfg.LinuxDo.ClientSecret = strings.TrimSpace(cfg.LinuxDo.ClientSecret)
 	cfg.LinuxDo.AuthorizeURL = strings.TrimSpace(cfg.LinuxDo.AuthorizeURL)

@@ -92,6 +92,10 @@ var appOAuthClients = map[string]AppOAuthClient{
 		ID: "zeroagent-web", Platform: "web", Name: "ZeroAgent Web", Confidential: true,
 		AllowedScopes: appAllowedScopes, ValidateRedirect: validateZeroAgentWebRedirect,
 	},
+	"zero-canvas-web": {
+		ID: "zero-canvas-web", Platform: "web", Name: "ZeroCanvas Web",
+		AllowedScopes: appAllowedScopes, ValidateRedirect: validateZeroCanvasWebRedirect,
+	},
 	"zeroagent-android": {
 		ID: "zeroagent-android", Platform: "android", Name: "ZeroAgent Android",
 		AllowedScopes: appAllowedScopes, ValidateRedirect: exactRedirect("top.usa0.zeroagent:/oauth/callback"),
@@ -675,7 +679,24 @@ func exactRedirect(registered string) func(string) bool {
 func validConfiguredWebRedirect(raw string) bool {
 	parsed, err := url.Parse(raw)
 	return err == nil && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil &&
-		parsed.Path == "/api/auth/oauth/callback" && parsed.RawQuery == "" && parsed.Fragment == ""
+		(parsed.Path == "/api/auth/oauth/callback" || parsed.Path == "/oauth/callback") && parsed.RawQuery == "" && parsed.Fragment == ""
+}
+
+func validateZeroCanvasWebRedirect(raw string) bool {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.Path != "/oauth/callback" {
+		return false
+	}
+	if parsed.Scheme == "http" && (isLoopbackHost(parsed.Hostname()) || isPrivateIPHost(parsed.Hostname())) && parsed.Port() != "" {
+		return true
+	}
+	if parsed.Scheme != "https" || parsed.Host == "" {
+		return false
+	}
+	appWebRedirects.RLock()
+	_, ok := appWebRedirects.values[raw]
+	appWebRedirects.RUnlock()
+	return ok
 }
 
 func validateZeroAgentWebRedirect(raw string) bool {
