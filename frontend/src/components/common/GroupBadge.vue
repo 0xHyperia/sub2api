@@ -171,6 +171,15 @@ const labelClass = computed(() => {
   if (props.platform === 'grok') {
     return `${base} bg-inverse text-inverse-foreground`
   }
+  if (props.platform === 'kimi') {
+    return `${base} bg-brand-subtle/60 text-brand `
+  }
+  if (props.platform === 'zhipu') {
+    return `${base} bg-brand-subtle/60 text-brand `
+  }
+  if (props.platform === 'deepseek') {
+    return `${base} bg-brand-subtle/60 text-brand `
+  }
   if (props.platform === 'composite') {
     return `${base} bg-info-subtle text-info-foreground`
   }
@@ -206,6 +215,21 @@ const badgeClass = computed(() => {
   }
   if (props.platform === 'grok') {
     return 'bg-inverse text-inverse-foreground'
+  }
+  if (props.platform === 'kimi') {
+    return isSubscription.value
+      ? 'bg-brand-subtle text-brand'
+      : 'bg-brand-subtle text-brand'
+  }
+  if (props.platform === 'zhipu') {
+    return isSubscription.value
+      ? 'bg-brand-subtle text-brand'
+      : 'bg-brand-subtle text-brand'
+  }
+  if (props.platform === 'deepseek') {
+    return isSubscription.value
+      ? 'bg-brand-subtle text-brand'
+      : 'bg-brand-subtle text-brand'
   }
   if (props.platform === 'composite') {
     return 'bg-info-subtle text-info-foreground'

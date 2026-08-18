@@ -1,6 +1,8 @@
 <template>
   <header class="admin-header">
-    <div class="flex h-[var(--app-header-height)] min-w-0 items-center justify-between gap-3 px-3 sm:px-4 md:px-6">
+    <div
+      class="flex h-[var(--app-header-height)] min-w-0 items-center justify-between gap-3 px-3 sm:px-4 md:px-6"
+    >
       <div class="flex min-w-0 items-center gap-2.5">
         <button
           type="button"
@@ -18,7 +20,8 @@
             <span
               v-if="authStore.isAdmin && isAdminContext"
               class="admin-mode-badge hidden sm:inline-flex"
-            >Admin</span>
+              >Admin</span
+            >
             <h1 class="truncate text-base font-semibold text-foreground lg:text-lg">
               {{ pageTitle }}
             </h1>
@@ -57,7 +60,7 @@
           class="hidden items-center gap-1.5 rounded-control px-2.5 py-1.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground sm:flex"
         >
           <Icon name="grid" size="sm" />
-          <span class="hidden sm:inline">{{ t('nav.modelPlaza') }}</span>
+          <span class="hidden sm:inline">{{ t("nav.modelPlaza") }}</span>
         </router-link>
 
         <button
@@ -97,7 +100,12 @@
             ref="userMenuButtonRef"
             type="button"
             class="user-menu-trigger"
-            :aria-label="localText(`${displayName}的用户菜单`, `User menu for ${displayName}`)"
+            :aria-label="
+              localText(
+                `${displayName}的用户菜单`,
+                `User menu for ${displayName}`,
+              )
+            "
             :aria-expanded="dropdownOpen"
             :aria-controls="dropdownOpen ? userMenuId : undefined"
             aria-haspopup="menu"
@@ -110,18 +118,24 @@
                 :src="avatarUrl"
                 :alt="displayName"
                 class="h-full w-full object-cover"
-              >
+              />
               <span v-else>{{ userInitials }}</span>
             </div>
             <div class="hidden min-w-0 text-left xl:block">
-              <div class="max-w-28 truncate text-sm font-medium text-foreground">
+              <div
+                class="max-w-28 truncate text-sm font-medium text-foreground"
+              >
                 {{ displayName }}
               </div>
               <div class="text-[11px] capitalize text-foreground-muted">
-                {{ user.role }}
+                {{ t("admin.users.roles." + user.role) }}
               </div>
             </div>
-            <Icon name="chevronDown" size="xs" class="hidden text-foreground-subtle xl:block" />
+            <Icon
+              name="chevronDown"
+              size="xs"
+              class="hidden text-foreground-subtle xl:block"
+            />
           </button>
 
           <Transition name="dropdown">
@@ -134,15 +148,22 @@
               class="user-dropdown"
               @keydown="handleMenuKeydown"
             >
-              <div role="presentation" class="border-b border-outline px-3.5 py-3">
+              <div
+                role="presentation"
+                class="border-b border-outline px-3.5 py-3"
+              >
                 <div class="flex items-center gap-2">
                   <div class="min-w-0 flex-1">
                     <div class="truncate text-sm font-semibold text-foreground">
                       {{ displayName }}
                     </div>
-                    <div class="truncate text-xs text-foreground-muted">{{ user.email }}</div>
+                    <div class="truncate text-xs text-foreground-muted">
+                      {{ user.email }}
+                    </div>
                   </div>
-                  <span v-if="authStore.isAdmin" class="admin-role-badge">Admin</span>
+                  <span v-if="authStore.isAdmin" class="admin-role-badge"
+                    >Admin</span
+                  >
                 </div>
               </div>
 
@@ -151,7 +172,9 @@
                 role="presentation"
                 class="border-b border-outline px-3.5 py-2 lg:hidden"
               >
-                <div class="text-[11px] text-foreground-muted">{{ balanceAvailableText }}</div>
+                <div class="text-[11px] text-foreground-muted">
+                  {{ balanceAvailableText }}
+                </div>
                 <div class="text-sm font-semibold tabular-nums text-foreground">
                   {{ formatHeaderMoney(availableBalance) }}
                 </div>
@@ -167,7 +190,11 @@
                   @click="closeDropdown"
                 >
                   <Icon name="swap" size="sm" />
-                  {{ isAdminContext ? t('nav.myAccount') : t('admin.dashboard.title') }}
+                  {{
+                    isAdminContext
+                      ? t("nav.myAccount")
+                      : t("admin.dashboard.title")
+                  }}
                 </router-link>
 
                 <router-link
@@ -178,7 +205,7 @@
                   @click="closeDropdown"
                 >
                   <Icon name="user" size="sm" />
-                  {{ t('nav.profile') }}
+                  {{ t("nav.profile") }}
                 </router-link>
 
                 <router-link
@@ -189,9 +216,8 @@
                   @click="closeDropdown"
                 >
                   <Icon name="key" size="sm" />
-                  {{ t('nav.apiKeys') }}
+                  {{ t("nav.apiKeys") }}
                 </router-link>
-
               </div>
 
               <div
@@ -199,11 +225,18 @@
                 role="presentation"
                 class="border-t border-outline px-3.5 py-2.5 text-xs text-foreground-muted"
               >
-                <span>{{ t('common.contactSupport') }}:</span>
-                <span class="ml-1 break-all font-medium text-foreground-muted">{{ contactInfo }}</span>
+                <span>{{ t("common.contactSupport") }}:</span>
+                <span
+                  class="ml-1 break-all font-medium text-foreground-muted"
+                  >{{ contactInfo }}</span
+                >
               </div>
 
-              <div v-if="showOnboardingButton" role="group" class="border-t border-outline py-1">
+              <div
+                v-if="showOnboardingButton"
+                role="group"
+                class="border-t border-outline py-1"
+              >
                 <button
                   type="button"
                   role="menuitem"
@@ -212,7 +245,7 @@
                   @click="handleReplayGuide"
                 >
                   <Icon name="lightbulb" size="sm" />
-                  {{ t('onboarding.restartTour') }}
+                  {{ t("onboarding.restartTour") }}
                 </button>
               </div>
 
@@ -225,7 +258,7 @@
                   @click="handleLogout"
                 >
                   <Icon name="login" size="sm" class="rotate-180" />
-                  {{ t('nav.logout') }}
+                  {{ t("nav.logout") }}
                 </button>
               </div>
             </div>
@@ -237,31 +270,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
-import { useAdminSettingsStore } from '@/stores/adminSettings'
-import { useTheme } from '@/composables/useTheme'
-import { useDropdownMenu } from '@/composables/useDropdownMenu'
-import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
-import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
-import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
-import Icon from '@/components/icons/Icon.vue'
-import { sanitizeUrl } from '@/utils/url'
-import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { useAppStore, useAuthStore, useOnboardingStore } from "@/stores";
+import { useAdminSettingsStore } from "@/stores/adminSettings";
+import { useTheme } from '@/composables/useTheme';
+import { useDropdownMenu } from "@/composables/useDropdownMenu";
+import LocaleSwitcher from "@/components/common/LocaleSwitcher.vue";
+import SubscriptionProgressMini from "@/components/common/SubscriptionProgressMini.vue";
+import AnnouncementBell from "@/components/common/AnnouncementBell.vue";
+import Icon from "@/components/icons/Icon.vue";
+import { sanitizeUrl } from '@/utils/url';
+import { FeatureFlags, isFeatureFlagEnabled } from "@/utils/featureFlags";
 
-const router = useRouter()
-const route = useRoute()
-const { t, locale } = useI18n()
-const appStore = useAppStore()
-const authStore = useAuthStore()
-const adminSettingsStore = useAdminSettingsStore()
-const onboardingStore = useOnboardingStore()
-const { isDark, toggleTheme } = useTheme()
+const router = useRouter();
+const route = useRoute();
+const { t, locale } = useI18n();
+const appStore = useAppStore();
+const authStore = useAuthStore();
+const adminSettingsStore = useAdminSettingsStore();
+const onboardingStore = useOnboardingStore();
+const { isDark, toggleTheme } = useTheme();
 
-const user = computed(() => authStore.user)
-const dropdownRef = ref<HTMLElement | null>(null)
+const user = computed(() => authStore.user);
+const dropdownRef = ref<HTMLElement | null>(null);
 const {
   open: dropdownOpen,
   triggerRef: userMenuButtonRef,
@@ -271,130 +304,135 @@ const {
   closeMenu,
   toggleMenu,
   handleTriggerKeydown,
-  handleMenuKeydown
-} = useDropdownMenu('header-user-menu')
-const contactInfo = computed(() => appStore.contactInfo)
-const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
-const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
-const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
-const availableBalance = computed(() => Number(user.value?.balance || 0))
-const frozenBalance = computed(() => Number(user.value?.frozen_balance || 0))
+  handleMenuKeydown,
+} = useDropdownMenu('header-user-menu');
+const contactInfo = computed(() => appStore.contactInfo);
+const docUrl = computed(() => sanitizeUrl(appStore.docUrl));
+const modelPlazaEnabled = computed(() =>
+  isFeatureFlagEnabled(FeatureFlags.modelPlaza),
+);
+const avatarUrl = computed(() => user.value?.avatar_url?.trim() || "");
+const availableBalance = computed(() => Number(user.value?.balance || 0));
+const frozenBalance = computed(() => Number(user.value?.frozen_balance || 0));
 
 const isAdminCustomPage = computed(() => {
-  if (route.name !== 'CustomPage') return false
-  const id = String(route.params.id || '')
-  return adminSettingsStore.customMenuItems.some((item) => item.id === id && item.visibility === 'admin')
-})
+  if (route.name !== "CustomPage") return false;
+  const id = String(route.params.id || "");
+  return adminSettingsStore.customMenuItems.some(
+    (item) => item.id === id && item.visibility === "admin",
+  );
+});
 const isAdminContext = computed(
-  () => authStore.isAdmin && (route.path.startsWith('/admin') || isAdminCustomPage.value)
-)
+  () =>
+    authStore.isAdmin &&
+    (route.path.startsWith("/admin") || isAdminCustomPage.value),
+);
 
 function localText(zh: string, en: string): string {
-  return locale.value.startsWith('zh') ? zh : en
+  return locale.value.startsWith("zh") ? zh : en;
 }
 
 const balanceAvailableText = computed(() =>
-  t('common.availableBalance') === 'common.availableBalance'
-    ? localText('可用余额', 'Available balance')
-    : t('common.availableBalance')
-)
+  t("common.availableBalance") === "common.availableBalance"
+    ? localText("可用余额", "Available balance")
+    : t("common.availableBalance"),
+);
 const balanceFrozenText = computed(() =>
-  t('common.frozenBalance') === 'common.frozenBalance'
-    ? localText('冻结', 'Frozen')
-    : t('common.frozenBalance')
-)
+  t("common.frozenBalance") === "common.frozenBalance"
+    ? localText("冻结", "Frozen")
+    : t("common.frozenBalance"),
+);
 
 const showOnboardingButton = computed(
-  () => !authStore.isSimpleMode && user.value?.role === 'admin'
-)
+  () => !authStore.isSimpleMode && user.value?.role === "admin",
+);
 
 const userInitials = computed(() => {
-  if (!user.value) return ''
-  const source = user.value.username || user.value.email?.split('@')[0] || ''
-  return source.substring(0, 2).toUpperCase()
-})
+  if (!user.value) return "";
+  const source = user.value.username || user.value.email?.split("@")[0] || "";
+  return source.substring(0, 2).toUpperCase();
+});
 
-const displayName = computed(() =>
-  user.value?.username || user.value?.email?.split('@')[0] || ''
-)
+const displayName = computed(
+  () => user.value?.username || user.value?.email?.split("@")[0] || "",
+);
 
 const pageTitle = computed(() => {
-  if (route.name === 'CustomPage') {
-    const id = route.params.id as string
-    const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
-    const menuItem = publicItems.find((item) => item.id === id)
-      ?? (authStore.isAdmin
+  if (route.name === "CustomPage") {
+    const id = route.params.id as string;
+    const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? [];
+    const menuItem =
+      publicItems.find((item) => item.id === id) ??
+      (authStore.isAdmin
         ? adminSettingsStore.customMenuItems.find((item) => item.id === id)
-        : undefined)
-    if (menuItem?.label) return menuItem.label
+        : undefined);
+    if (menuItem?.label) return menuItem.label;
   }
-  const titleKey = route.meta.titleKey as string
-  if (titleKey) return t(titleKey)
-  return (route.meta.title as string) || appStore.siteName
-})
+  const titleKey = route.meta.titleKey as string;
+  if (titleKey) return t(titleKey);
+  return (route.meta.title as string) || appStore.siteName;
+});
 
 const pageDescription = computed(() => {
-  const descriptionKey = route.meta.descriptionKey as string
-  if (descriptionKey) return t(descriptionKey)
-  return (route.meta.description as string) || ''
-})
+  const descriptionKey = route.meta.descriptionKey as string;
+  if (descriptionKey) return t(descriptionKey);
+  return (route.meta.description as string) || "";
+});
 
 function toggleMobileSidebar(): void {
-  appStore.toggleMobileSidebar()
+  appStore.toggleMobileSidebar();
 }
 
 function toggleDropdown(): void {
-  toggleMenu()
+  toggleMenu();
 }
 
 function closeDropdown(): void {
-  void closeMenu()
+  void closeMenu();
 }
 
 async function handleLogout(): Promise<void> {
-  closeDropdown()
+  closeDropdown();
   try {
-    await authStore.logout()
+    await authStore.logout();
   } catch (error) {
-    console.error('Logout error:', error)
+    console.error("Logout error:", error);
   }
-  await router.push('/login')
+  await router.push("/login");
 }
 
 function handleReplayGuide(): void {
-  closeDropdown()
-  onboardingStore.replay()
+  closeDropdown();
+  onboardingStore.replay();
 }
 
 function formatHeaderMoney(value: number): string {
-  return Number.isFinite(value) ? `$${value.toFixed(2)}` : '$0.00'
+  return Number.isFinite(value) ? `$${value.toFixed(2)}` : "$0.00";
 }
 
 function handleClickOutside(event: MouseEvent): void {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) closeDropdown()
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node))
+    closeDropdown();
 }
 
 function handleKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && dropdownOpen.value) {
-    event.preventDefault()
-    void closeMenu(true)
+  if (event.key === "Escape" && dropdownOpen.value) {
+    event.preventDefault();
+    void closeMenu(true);
   }
 }
 
-watch(
-  () => route.fullPath,
-  closeDropdown
-)
+watch(() => route.fullPath, closeDropdown);
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-  document.addEventListener('keydown', handleKeydown)
-})
+  document.addEventListener("click", handleClickOutside);
+  document.addEventListener("keydown", handleKeydown);
+});
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
-  document.removeEventListener('keydown', handleKeydown)
-})
+  document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener("keydown", handleKeydown);
+});
 </script>
 
 <style scoped>
@@ -430,7 +468,9 @@ onBeforeUnmount(() => {
 
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 
 .dropdown-enter-from,

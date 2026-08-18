@@ -12,11 +12,16 @@
   html {
     @apply scroll-smooth bg-canvas antialiased;
     text-rendering: optimizeLegibility;
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
   }
 
   body {
     @apply min-h-screen bg-canvas font-sans text-foreground;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   button,
@@ -27,7 +32,7 @@
   }
 
   button,
-  [role='button'],
+  [role="button"],
   a,
   input,
   select,
@@ -35,7 +40,7 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  :where(button, [role='button'], a, input, select, textarea):focus-visible {
+  :where(button, [role="button"], a, input, select, textarea):focus-visible {
     outline: 2px solid rgb(var(--color-focus));
     outline-offset: 2px;
   }
@@ -170,11 +175,11 @@
       background-color var(--duration-fast) var(--ease-standard);
   }
 
-  .dark .input[type='date'],
-  .dark .input[type='time'],
-  .dark .input[type='datetime-local'],
-  .dark .input[type='month'],
-  .dark .input[type='week'] {
+  .dark .input[type="date"],
+  .dark .input[type="time"],
+  .dark .input[type="datetime-local"],
+  .dark .input[type="month"],
+  .dark .input[type="week"] {
     color-scheme: dark;
   }
 
@@ -194,13 +199,13 @@
     @apply mt-1.5 text-xs leading-5 text-danger-foreground;
   }
 
-  input[type='number']::-webkit-inner-spin-button,
-  input[type='number']::-webkit-outer-spin-button {
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
 
-  input[type='number'] {
+  input[type="number"] {
     -moz-appearance: textfield;
   }
 

@@ -9,9 +9,43 @@ import (
 	"testing"
 	"time"
 
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 )
+
+func TestDistributionBindingClaimParticipatesInRegistrationTransaction(t *testing.T) {
+	ctx := context.Background()
+	user, err := integrationEntClient.User.Create().
+		SetEmail(fmt.Sprintf("distribution-claim-tx-%d@example.com", time.Now().UnixNano())).
+		SetPasswordHash("hash").
+		Save(ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM distribution_binding_claims WHERE user_id=$1`, user.ID)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM users WHERE id=$1`, user.ID)
+	})
+
+	tx, err := integrationEntClient.Tx(ctx)
+	require.NoError(t, err)
+	txCtx := dbent.NewTxContext(ctx, tx)
+	repo := &distributionRepository{db: integrationDB}
+	require.NoError(t, repo.QueueDistributionBindingClaim(txCtx, user.ID, "TXCLAIM", "email"))
+
+	result, err := tx.Client().ExecContext(txCtx,
+		`UPDATE distribution_binding_claims SET updated_at=updated_at WHERE user_id=$1`, user.ID)
+	require.NoError(t, err)
+	inTransaction, err := result.RowsAffected()
+	require.NoError(t, err)
+	require.EqualValues(t, 1, inTransaction)
+	require.NoError(t, tx.Rollback())
+
+	var afterRollback int
+	require.NoError(t, integrationDB.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM distribution_binding_claims WHERE user_id=$1`, user.ID,
+	).Scan(&afterRollback))
+	require.Zero(t, afterRollback)
+}
 
 func TestDistributionAndAffiliateOwnershipAreConcurrentExclusive(t *testing.T) {
 	ctx := context.Background()

@@ -2,6 +2,50 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.1.178 同步（本地集成完成）
+
+- 集成分支：`codex/merge-upstream-v0.1.178`
+- 官方目标版本：v0.1.178
+- 官方 annotated tag：`15290e66c66801a7ce435a6d24b178ee9486f284`
+- 官方目标提交：`e0c48a19ed794a565e3858662520afe0a1f9f0ba`
+- 上一官方基线：v0.1.176（`e803e3851c0a7e222cfadeafad7b8636ab959d11`）
+- 集成前 USA0 提交：`3331cbd6b879d61b196a5d17a5d61640eb0f7f47`
+- USA0 版本：保持 v1.0.16，未推断下一发布版本
+- 同步状态：已完成本地合并、冲突解决、USA0 适配、代码审计和自动化验证；尚未推送、合入 `usa0/main`、创建 tag 或发布
+- 记录日期：2026-08-18
+
+### 同步范围
+
+- 从官方 v0.1.176 同步至 v0.1.178，共纳入 124 个上游提交、347 个官方变更文件，包含 v0.1.177 与 v0.1.178。
+- v0.1.177 新增分组用量日汇总和自动汇聚；Codex 接入 remote compaction v2、会话 beta 头和 `x-codex-turn-state` 回传，并隔离跨账号回显、原生 v2 与旧压缩路由。
+- v0.1.177 修复 Grok 长上下文及带版本媒体模型计费、账号自动刷新偏好；Codex OAuth 指纹收敛改为显式选择、默认关闭，并覆盖透传路径。
+- v0.1.178 新增 Kimi、智谱、DeepSeek 一等供应商支持，覆盖多协议接入、分组、渠道定价、配额/余额、调度、限流、模型发现和计费；新增 Channel Monitor quota 模式及 8 平台配额快照。
+- v0.1.178 新增渠道模型分时倍率、OpenAI Team 联动熔断和账号批量设置，并补充 Grok 本站 24h/7d/30d 用量、Ollama 用量查询及 Ops 自定义时间区间。
+- 同步 OpenAI WS/HTTP 自定义工具、二进制帧策略链、Codex 身份与探针、Gemini 工具配置与 4xx、Anthropic SSE 过载、认证快照分组定价、SMTP 到期提醒、Ops 批量落库等修复。
+
+### 冲突与 USA0 适配
+
+- 初始 25 个文本冲突均按业务语义解决，没有采用整文件 ours/theirs；保留 USA0 首页、登录注册、语义设计令牌、移动布局、ZeroAgent 授权、支付、分销、affiliate、经营分析和模型监控。
+- Kimi、智谱、DeepSeek 作为新的账号与渠道平台接入多协议网关、调度、计费、余额/配额和管理页面；它们解决的是供应商接入能力，不能替代用户发现与模型维度展示，因此继续保留 `/model-marketplace`、模型级 `ModelIcon`、`modelVendor.ts` 以及模型感知的 `GroupBadge`。
+- 官方 `/model-plaza` 与 USA0 `/model-marketplace` 保持独立，标准 `/models` 仍作为网关模型接口；混合渠道与 Composite 场景继续使用模型图标和供应商识别，分组平台图标只表达渠道归属。
+- Channel Monitor quota 与 V1/V2、USA0 Model Monitor 的服务、表、路由和开关保持独立；`channel_monitor_show_quota` 默认关闭并在用户公开响应中 fail-closed，不受 `model_monitor_enabled` 控制。
+- 分时倍率只应用于 Channel 的 token 定价，并按 turn 开始时刻取值；Group → Channel → 内置基础价优先级及 USA0 用户/分组/峰值倍率和利润控制保持不变。
+- 上游邀请码消费与用户创建原子化后，USA0 进一步将邮箱注册/OAuth 首次建号、邀请码占用和 durable distribution claim 放入同一 Ent 事务；失败时保留 pending retry，`distribution_code` 与 `aff_code` 继续互斥。
+- 管理设置完整接入 `channel_monitor_mode`、`channel_monitor_hide_throughput` 和 `channel_monitor_show_quota` 的 DTO、PATCH、公开脱敏响应、前端类型、严格 fixture 与审计键；新增设置和 CN 供应商页面已迁入 USA0 semantic token 与无障碍契约。
+- Release workflow 保留 USA0 构建与发布流程，并接入上游 QEMU 初始化；本次仅准备本地集成提交，不触发构建或发布。
+- 保持已发布迁移 `176–235` 不变；上游新增迁移顺延为 `236–241`：分组用量日汇总、汇总时区、CN 平台配额、Codex 指纹种子回填、渠道模型分时定价和 Channel Monitor quota 模式。`176–241` 前缀唯一连续。
+- Ent 与 Wire 已从合并后的 schema/provider 重新生成，生成结果同时保留 CN provider、Channel Monitor quota、Model Monitor、ZeroAgent、汇率、分销、affiliate 与经营分析依赖。
+
+### 验证结果
+
+- `go generate ./ent ./cmd/server` 通过且再生成无漂移；`go test ./...`、`go test -tags=unit ./...`、`go test -tags=integration ./... -timeout=30m` 全部通过，CI 固定版 `golangci-lint v2.9 run ./... --timeout=30m` 为 0 issues。
+- 新增 PostgreSQL 集成回归覆盖注册事务中的 distribution claim；设置审计测试覆盖 Channel Monitor 三个契约字段；CN provider、quota 模式、分时定价、日汇总、Codex 指纹回填及迁移测试均通过。
+- 前端全量 Vitest 共 335 个测试文件、2160 项测试通过；`vue-tsc --noEmit` 和生产构建通过；ESLint 为 0 errors、1 条既有未使用测试常量 warning。
+- `git diff --check`、暂存差异检查、源码冲突标记和未解决索引扫描通过；官方 tag、目标提交、124 个提交、347 个文件及迁移 `176–241` 唯一连续均已复核，`backend/cmd/server/VERSION` 保持 `1.0.16`。
+- 本地后端健康接口返回 `{"status":"ok"}`。Playwright 在 1440×900 与 390×844 下验证登录页无横向溢出和控制台错误；现有浏览器会话无登录态，受保护的 Settings、Groups、Accounts、Channel Monitor、Model Monitor 和模型市场仅验证了正确跳转，未声明登录态页面视觉通过。`/model-plaza` 因当前功能门控回到自定义首页，首页无溢出但有一项既有资源 404。
+
+---
+
 ## 官方 v0.1.176 同步（已合并）
 
 - 集成分支：`codex/merge-upstream-v0.1.176`

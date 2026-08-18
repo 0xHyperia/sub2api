@@ -20,10 +20,12 @@
         data-testid="settings-load-error"
       >
         <Icon name="exclamationTriangle" size="lg" aria-hidden="true" />
-        <p class="text-sm font-medium">{{ t('admin.settings.failedToLoad') }}</p>
+        <p class="text-sm font-medium">
+          {{ t("admin.settings.failedToLoad") }}
+        </p>
         <button type="button" class="btn btn-secondary" @click="loadSettings">
           <Icon name="refresh" size="sm" />
-          {{ t('common.retry') }}
+          {{ t("common.retry") }}
         </button>
       </div>
 
@@ -67,9 +69,7 @@
         <div v-show="activeTab === 'security'" class="space-y-6">
           <!-- Admin API Key Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.adminApiKey.title") }}
               </h2>
@@ -191,9 +191,7 @@
                   v-if="newAdminApiKey"
                   class="space-y-3 rounded-panel border p-4 border-success/30 bg-success-subtle"
                 >
-                  <p
-                    class="text-sm font-medium text-success-foreground"
-                  >
+                  <p class="text-sm font-medium text-success-foreground">
                     {{ t("admin.settings.adminApiKey.keyWarning") }}
                   </p>
                   <div class="flex items-center gap-2">
@@ -224,9 +222,7 @@
         <div v-show="activeTab === 'gateway'" class="space-y-6">
           <!-- Overload Cooldown (529) Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.overloadCooldown.title") }}
               </h2>
@@ -286,9 +282,7 @@
                   </div>
                 </div>
 
-                <div
-                  class="flex justify-end border-t border-outline pt-4"
-                >
+                <div class="flex justify-end border-t border-outline pt-4">
                   <button
                     type="button"
                     @click="saveOverloadCooldownSettings"
@@ -328,9 +322,7 @@
 
           <!-- Rate Limit Cooldown (429) Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.rateLimit429Cooldown.title") }}
               </h2>
@@ -361,7 +353,9 @@
                   </div>
                   <Toggle
                     v-model="rateLimit429CooldownForm.enabled"
-                    :aria-label="t('admin.settings.rateLimit429Cooldown.enabled')"
+                    :aria-label="
+                      t('admin.settings.rateLimit429Cooldown.enabled')
+                    "
                   />
                 </div>
 
@@ -374,9 +368,7 @@
                       class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
                       {{
-                        t(
-                          "admin.settings.rateLimit429Cooldown.cooldownSeconds",
-                        )
+                        t("admin.settings.rateLimit429Cooldown.cooldownSeconds")
                       }}
                     </label>
                     <input
@@ -396,9 +388,7 @@
                   </div>
                 </div>
 
-                <div
-                  class="flex justify-end border-t border-outline pt-4"
-                >
+                <div class="flex justify-end border-t border-outline pt-4">
                   <button
                     type="button"
                     @click="saveRateLimit429CooldownSettings"
@@ -438,9 +428,7 @@
 
           <!-- Stream Timeout Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.streamTimeout.title") }}
               </h2>
@@ -579,9 +567,7 @@
                 </div>
 
                 <!-- Save Button -->
-                <div
-                  class="flex justify-end border-t border-outline pt-4"
-                >
+                <div class="flex justify-end border-t border-outline pt-4">
                   <button
                     type="button"
                     @click="saveStreamTimeoutSettings"
@@ -621,9 +607,7 @@
 
           <!-- Request Rectifier Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.rectifier.title") }}
               </h2>
@@ -682,7 +666,9 @@
                     </div>
                     <Toggle
                       v-model="rectifierForm.thinking_signature_enabled"
-                      :aria-label="t('admin.settings.rectifier.thinkingSignature')"
+                      :aria-label="
+                        t('admin.settings.rectifier.thinkingSignature')
+                      "
                     />
                   </div>
 
@@ -720,7 +706,9 @@
                     </div>
                     <Toggle
                       v-model="rectifierForm.apikey_signature_enabled"
-                      :aria-label="t('admin.settings.rectifier.apikeySignature')"
+                      :aria-label="
+                        t('admin.settings.rectifier.apikeySignature')
+                      "
                     />
                   </div>
 
@@ -793,9 +781,7 @@
                 </div>
 
                 <!-- Save Button -->
-                <div
-                  class="flex justify-end border-t border-outline pt-4"
-                >
+                <div class="flex justify-end border-t border-outline pt-4">
                   <button
                     type="button"
                     @click="saveRectifierSettings"
@@ -832,9 +818,7 @@
           </div>
           <!-- Beta Policy Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.betaPolicy.title") }}
               </h2>
@@ -862,9 +846,7 @@
                   class="rounded-panel border border-outline bg-surface-subtle p-4"
                 >
                   <div class="mb-3 flex items-center gap-2">
-                    <span
-                      class="text-sm font-medium text-foreground"
-                    >
+                    <span class="text-sm font-medium text-foreground">
                       {{ getBetaDisplayName(rule.beta_token) }}
                     </span>
                     <span
@@ -1074,9 +1056,7 @@
                 </div>
 
                 <!-- Save Button -->
-                <div
-                  class="flex justify-end border-t border-outline pt-4"
-                >
+                <div class="flex justify-end border-t border-outline pt-4">
                   <button
                     type="button"
                     @click="saveBetaPolicySettings"
@@ -1113,9 +1093,7 @@
           </div>
           <!-- OpenAI Fast/Flex Policy Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.openaiFastPolicy.title") }}
               </h2>
@@ -1139,9 +1117,7 @@
                 class="rounded-panel border border-outline bg-surface-subtle p-4"
               >
                 <div class="mb-3 flex items-center justify-between">
-                  <span
-                    class="text-sm font-medium text-foreground"
-                  >
+                  <span class="text-sm font-medium text-foreground">
                     {{
                       t("admin.settings.openaiFastPolicy.ruleHeader", {
                         index: ruleIndex + 1,
@@ -1170,6 +1146,45 @@
                   </button>
                 </div>
 
+                <div
+                  class="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground-muted"
+                  :data-testid="`openai-fast-policy-summary-${ruleIndex}`"
+                >
+                  <span class="font-medium text-foreground">
+                    {{
+                      t(
+                        hasOpenAIFastPolicyTargetModels(rule)
+                          ? "admin.settings.openaiFastPolicy.summaryTargetModels"
+                          : "admin.settings.openaiFastPolicy.summaryAllModels",
+                      )
+                    }}
+                  </span>
+                  <span aria-hidden="true">→</span>
+                  <span
+                    class="inline-flex items-center rounded bg-brand-subtle px-2 py-0.5 font-medium text-brand"
+                  >
+                    {{ openaiFastPolicyActionSummary(rule.action) }}
+                  </span>
+                  <template v-if="hasOpenAIFastPolicyTargetModels(rule)">
+                    <span aria-hidden="true">·</span>
+                    <span class="font-medium text-foreground">
+                      {{
+                        t("admin.settings.openaiFastPolicy.summaryOtherModels")
+                      }}
+                    </span>
+                    <span aria-hidden="true">→</span>
+                    <span
+                      class="inline-flex items-center rounded bg-surface-subtle px-2 py-0.5 font-medium text-foreground"
+                    >
+                      {{
+                        openaiFastPolicyActionSummary(
+                          rule.fallback_action || "pass",
+                        )
+                      }}
+                    </span>
+                  </template>
+                </div>
+
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <!-- Service Tier -->
                   <div>
@@ -1182,9 +1197,7 @@
                       :modelValue="rule.service_tier"
                       @update:modelValue="
                         rule.service_tier = $event as
-                          | 'all'
-                          | 'priority'
-                          | 'flex'
+                          'all' | 'priority' | 'flex'
                       "
                       :options="openaiFastPolicyTierOptions"
                     />
@@ -1201,10 +1214,7 @@
                       :modelValue="rule.action"
                       @update:modelValue="
                         rule.action = $event as
-                          | 'pass'
-                          | 'filter'
-                          | 'block'
-                          | 'force_priority'
+                          'pass' | 'filter' | 'block' | 'force_priority'
                       "
                       :options="openaiFastPolicyActionOptions"
                     />
@@ -1221,10 +1231,7 @@
                       :modelValue="rule.scope"
                       @update:modelValue="
                         rule.scope = $event as
-                          | 'all'
-                          | 'oauth'
-                          | 'apikey'
-                          | 'bedrock'
+                          'all' | 'oauth' | 'apikey' | 'bedrock'
                       "
                       :options="openaiFastPolicyScopeOptions"
                     />
@@ -1269,14 +1276,23 @@
                   </p>
                 </div>
 
-                <!-- Model Whitelist -->
-                <div class="mt-3">
+                <!-- Target Models -->
+                <div
+                  class="mt-3"
+                  role="group"
+                  :aria-labelledby="`openai-fast-policy-models-label-${ruleIndex}`"
+                  :aria-describedby="`openai-fast-policy-models-hint-${ruleIndex}`"
+                >
                   <label
+                    :id="`openai-fast-policy-models-label-${ruleIndex}`"
                     class="mb-1 block text-xs font-medium text-foreground-subtle"
                   >
                     {{ t("admin.settings.openaiFastPolicy.modelWhitelist") }}
                   </label>
-                  <p class="mb-2 text-xs text-foreground-subtle">
+                  <p
+                    :id="`openai-fast-policy-models-hint-${ruleIndex}`"
+                    class="mb-2 text-xs text-foreground-subtle"
+                  >
                     {{
                       t("admin.settings.openaiFastPolicy.modelWhitelistHint")
                     }}
@@ -1340,13 +1356,8 @@
                   </button>
                 </div>
 
-                <!-- Fallback Action (only when model_whitelist is non-empty) -->
-                <div
-                  v-if="
-                    rule.model_whitelist && rule.model_whitelist.length > 0
-                  "
-                  class="mt-3"
-                >
+                <!-- Other Models Action (only when target models are non-empty) -->
+                <div v-if="hasOpenAIFastPolicyTargetModels(rule)" class="mt-3">
                   <label
                     class="mb-1 block text-xs font-medium text-foreground-subtle"
                   >
@@ -1356,10 +1367,7 @@
                     :modelValue="rule.fallback_action || 'pass'"
                     @update:modelValue="
                       rule.fallback_action = $event as
-                        | 'pass'
-                        | 'filter'
-                        | 'block'
-                        | 'force_priority'
+                        'pass' | 'filter' | 'block' | 'force_priority'
                     "
                     :options="openaiFastPolicyActionOptions"
                   />
@@ -1418,9 +1426,7 @@
         <div v-show="activeTab === 'security'" class="space-y-6">
           <!-- Registration Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.registration.title") }}
               </h2>
@@ -1443,7 +1449,9 @@
                 </div>
                 <Toggle
                   v-model="form.registration_enabled"
-                  :aria-label="t('admin.settings.registration.enableRegistration')"
+                  :aria-label="
+                    t('admin.settings.registration.enableRegistration')
+                  "
                 />
               </div>
 
@@ -1461,7 +1469,9 @@
                 </div>
                 <Toggle
                   v-model="form.email_verify_enabled"
-                  :aria-label="t('admin.settings.registration.emailVerification')"
+                  :aria-label="
+                    t('admin.settings.registration.emailVerification')
+                  "
                 />
               </div>
 
@@ -1542,13 +1552,17 @@
                   <label class="font-medium text-foreground text-foreground">{{
                     t("admin.settings.registration.emailDomainQuota")
                   }}</label>
-                  <p class="text-sm text-foreground-subtle text-foreground-muted">
+                  <p
+                    class="text-sm text-foreground-subtle text-foreground-muted"
+                  >
                     {{ t("admin.settings.registration.emailDomainQuotaHint") }}
                   </p>
                 </div>
                 <Toggle
                   v-model="form.registration_email_domain_quota_enabled"
-                  :aria-label="t('admin.settings.registration.emailDomainQuota')"
+                  :aria-label="
+                    t('admin.settings.registration.emailDomainQuota')
+                  "
                 />
               </div>
 
@@ -1703,9 +1717,7 @@
                     {{
                       form.passkey_rp_origins.length > 0
                         ? form.passkey_rp_origins.join(", ")
-                        : t(
-                            "admin.settings.security.passkeyValueNotConfigured",
-                          )
+                        : t("admin.settings.security.passkeyValueNotConfigured")
                     }}
                   </p>
                   <p v-if="!form.passkey_configured" class="mt-2">
@@ -1716,13 +1728,13 @@
 
               <!-- 敏感操作 step-up 2FA -->
               <div
-                class="flex items-center justify-between border-t border-outline pt-4 "
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
-                  <label class="font-medium text-foreground ">{{
+                  <label class="font-medium text-foreground">{{
                     t("admin.settings.security.stepUp")
                   }}</label>
-                  <p class="text-sm text-foreground-subtle ">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.security.stepUpHint") }}
                   </p>
                 </div>
@@ -1734,13 +1746,13 @@
 
               <!-- 会话 IP/UA 绑定 -->
               <div
-                class="flex items-center justify-between border-t border-outline pt-4 "
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
                   <label class="font-medium text-foreground">{{
                     t("admin.settings.security.sessionBinding")
                   }}</label>
-                  <p class="text-sm text-foreground-subtle ">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.security.sessionBindingHint") }}
                   </p>
                 </div>
@@ -1752,13 +1764,13 @@
 
               <!-- 审计日志保留天数 -->
               <div
-                class="flex items-center justify-between border-t border-outline pt-4 "
+                class="flex items-center justify-between border-t border-outline pt-4"
               >
                 <div>
                   <label class="font-medium text-foreground">{{
                     t("admin.settings.security.auditRetention")
                   }}</label>
-                  <p class="text-sm text-foreground-subtle ">
+                  <p class="text-sm text-foreground-subtle">
                     {{ t("admin.settings.security.auditRetentionHint") }}
                   </p>
                 </div>
@@ -1774,9 +1786,7 @@
 
           <!-- API Key IP ACL Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.apiKeyAcl.title") }}
               </h2>
@@ -1811,7 +1821,9 @@
                   {{ t("admin.settings.apiKeyAcl.forwardedClientIpHeaders") }}
                 </label>
                 <p class="mt-1 text-sm text-foreground-subtle">
-                  {{ t("admin.settings.apiKeyAcl.forwardedClientIpHeadersHint") }}
+                  {{
+                    t("admin.settings.apiKeyAcl.forwardedClientIpHeadersHint")
+                  }}
                 </p>
                 <div
                   class="mt-3 rounded-control border border-outline-strong bg-surface p-2"
@@ -1827,7 +1839,12 @@
                       <button
                         type="button"
                         class="rounded-control text-foreground-subtle hover:bg-surface-raised hover:text-foreground"
-                        :aria-label="t('admin.settings.apiKeyAcl.removeForwardedClientIpHeader', { header })"
+                        :aria-label="
+                          t(
+                            'admin.settings.apiKeyAcl.removeForwardedClientIpHeader',
+                            { header },
+                          )
+                        "
                         @click="removeForwardedClientIpHeader(header)"
                       >
                         <Icon
@@ -1847,7 +1864,11 @@
                         data-testid="forwarded-client-ip-headers-input"
                         type="text"
                         class="w-full min-w-0 bg-transparent text-sm font-mono text-foreground outline-none placeholder:text-foreground-subtle"
-                        :placeholder="t('admin.settings.apiKeyAcl.forwardedClientIpHeadersPlaceholder')"
+                        :placeholder="
+                          t(
+                            'admin.settings.apiKeyAcl.forwardedClientIpHeadersPlaceholder',
+                          )
+                        "
                         @keydown="handleForwardedClientIpHeaderKeydown"
                         @blur="commitForwardedClientIpHeaderDraft"
                         @paste="handleForwardedClientIpHeaderPaste"
@@ -1856,7 +1877,11 @@
                   </div>
                 </div>
                 <p class="mt-2 text-xs text-foreground-subtle">
-                  {{ t("admin.settings.apiKeyAcl.forwardedClientIpHeadersRiskHint") }}
+                  {{
+                    t(
+                      "admin.settings.apiKeyAcl.forwardedClientIpHeadersRiskHint",
+                    )
+                  }}
                 </p>
               </div>
             </div>
@@ -1864,15 +1889,9 @@
 
           <!-- Panel API Rate Limit Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <div class="flex items-center gap-2">
-                <Icon
-                  name="shield"
-                  size="md"
-                  class="text-info"
-                />
+                <Icon name="shield" size="md" class="text-info" />
                 <h2 class="text-lg font-semibold text-foreground">
                   {{ t("admin.settings.panelRateLimit.title") }}
                 </h2>
@@ -2013,14 +2032,14 @@
                     </div>
                     <Toggle
                       v-model="panelRateLimitForm.exempt_admin"
-                      :aria-label="t('admin.settings.panelRateLimit.exemptAdmin')"
+                      :aria-label="
+                        t('admin.settings.panelRateLimit.exemptAdmin')
+                      "
                     />
                   </div>
                 </div>
 
-                <div
-                  class="flex justify-end border-t border-outline pt-4"
-                >
+                <div class="flex justify-end border-t border-outline pt-4">
                   <button
                     type="button"
                     data-testid="panel-rate-limit-save"
@@ -2061,9 +2080,7 @@
 
           <!-- 人机验证 Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.captcha.title") }}
               </h2>
@@ -2202,10 +2219,14 @@
                 <!-- Tencent Captcha fields -->
                 <div v-else-if="captchaProviderSelection === 'tencent'">
                   <div class="mb-6 max-w-sm">
-                    <label class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted">
+                    <label
+                      class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted"
+                    >
                       {{ t("admin.settings.tencentCaptcha.region") }}
                     </label>
-                    <div class="grid grid-cols-2 gap-2 rounded-lg bg-surface-subtle p-1">
+                    <div
+                      class="grid grid-cols-2 gap-2 rounded-lg bg-surface-subtle p-1"
+                    >
                       <button
                         type="button"
                         data-testid="tencent-captcha-region-cn"
@@ -2233,21 +2254,33 @@
                         {{ t("admin.settings.tencentCaptcha.regionIntl") }}
                       </button>
                     </div>
-                    <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
+                    <p
+                      class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                    >
                       {{ t("admin.settings.tencentCaptcha.regionHint") }}
                     </p>
                   </div>
                   <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div class="md:col-span-2">
-                      <h3 class="text-sm font-semibold text-foreground text-foreground">
-                        {{ t("admin.settings.tencentCaptcha.appCredentialsTitle") }}
+                      <h3
+                        class="text-sm font-semibold text-foreground text-foreground"
+                      >
+                        {{
+                          t("admin.settings.tencentCaptcha.appCredentialsTitle")
+                        }}
                       </h3>
-                      <p class="mt-1 text-xs text-foreground-subtle text-foreground-muted">
-                        {{ t("admin.settings.tencentCaptcha.appCredentialsHint") }}
+                      <p
+                        class="mt-1 text-xs text-foreground-subtle text-foreground-muted"
+                      >
+                        {{
+                          t("admin.settings.tencentCaptcha.appCredentialsHint")
+                        }}
                       </p>
                     </div>
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted">
+                      <label
+                        class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted"
+                      >
                         {{ t("admin.settings.tencentCaptcha.appId") }}
                       </label>
                       <input
@@ -2259,7 +2292,9 @@
                       />
                     </div>
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted">
+                      <label
+                        class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted"
+                      >
                         {{ t("admin.settings.tencentCaptcha.appSecretKey") }}
                       </label>
                       <input
@@ -2267,22 +2302,46 @@
                         type="password"
                         autocomplete="new-password"
                         class="input font-mono text-sm"
-                        :placeholder="t('admin.settings.tencentCaptcha.keepExisting')"
+                        :placeholder="
+                          t('admin.settings.tencentCaptcha.keepExisting')
+                        "
                       />
-                      <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
-                        {{ form.tencent_captcha_app_secret_key_configured ? t("admin.settings.tencentCaptcha.configured") : t("admin.settings.tencentCaptcha.required") }}
+                      <p
+                        class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                      >
+                        {{
+                          form.tencent_captcha_app_secret_key_configured
+                            ? t("admin.settings.tencentCaptcha.configured")
+                            : t("admin.settings.tencentCaptcha.required")
+                        }}
                       </p>
                     </div>
-                    <div class="border-t border-outline pt-5 md:col-span-2 border-outline">
-                      <h3 class="text-sm font-semibold text-foreground text-foreground">
-                        {{ t("admin.settings.tencentCaptcha.cloudCredentialsTitle") }}
+                    <div
+                      class="border-t border-outline pt-5 md:col-span-2 border-outline"
+                    >
+                      <h3
+                        class="text-sm font-semibold text-foreground text-foreground"
+                      >
+                        {{
+                          t(
+                            "admin.settings.tencentCaptcha.cloudCredentialsTitle",
+                          )
+                        }}
                       </h3>
-                      <p class="mt-1 text-xs text-foreground-subtle text-foreground-muted">
-                        {{ t("admin.settings.tencentCaptcha.cloudCredentialsHint") }}
+                      <p
+                        class="mt-1 text-xs text-foreground-subtle text-foreground-muted"
+                      >
+                        {{
+                          t(
+                            "admin.settings.tencentCaptcha.cloudCredentialsHint",
+                          )
+                        }}
                       </p>
                     </div>
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted">
+                      <label
+                        class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted"
+                      >
                         {{ t("admin.settings.tencentCaptcha.cloudSecretId") }}
                       </label>
                       <input
@@ -2290,14 +2349,24 @@
                         type="password"
                         autocomplete="new-password"
                         class="input font-mono text-sm"
-                        :placeholder="t('admin.settings.tencentCaptcha.keepExisting')"
+                        :placeholder="
+                          t('admin.settings.tencentCaptcha.keepExisting')
+                        "
                       />
-                      <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
-                        {{ form.tencent_captcha_cloud_secret_id_configured ? t("admin.settings.tencentCaptcha.configured") : t("admin.settings.tencentCaptcha.required") }}
+                      <p
+                        class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                      >
+                        {{
+                          form.tencent_captcha_cloud_secret_id_configured
+                            ? t("admin.settings.tencentCaptcha.configured")
+                            : t("admin.settings.tencentCaptcha.required")
+                        }}
                       </p>
                     </div>
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted">
+                      <label
+                        class="mb-2 block text-sm font-medium text-foreground-muted text-foreground-muted"
+                      >
                         {{ t("admin.settings.tencentCaptcha.cloudSecretKey") }}
                       </label>
                       <input
@@ -2305,17 +2374,29 @@
                         type="password"
                         autocomplete="new-password"
                         class="input font-mono text-sm"
-                        :placeholder="t('admin.settings.tencentCaptcha.keepExisting')"
+                        :placeholder="
+                          t('admin.settings.tencentCaptcha.keepExisting')
+                        "
                       />
-                      <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
-                        {{ form.tencent_captcha_cloud_secret_key_configured ? t("admin.settings.tencentCaptcha.configured") : t("admin.settings.tencentCaptcha.required") }}
+                      <p
+                        class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                      >
+                        {{
+                          form.tencent_captcha_cloud_secret_key_configured
+                            ? t("admin.settings.tencentCaptcha.configured")
+                            : t("admin.settings.tencentCaptcha.required")
+                        }}
                       </p>
                     </div>
                   </div>
-                  <p class="mt-5 text-xs text-foreground-subtle text-foreground-muted">
+                  <p
+                    class="mt-5 text-xs text-foreground-subtle text-foreground-muted"
+                  >
                     {{ t("admin.settings.tencentCaptcha.camPermissionHint") }}
                   </p>
-                  <p class="mt-2 text-xs text-foreground-subtle text-foreground-muted">
+                  <p
+                    class="mt-2 text-xs text-foreground-subtle text-foreground-muted"
+                  >
                     {{ t("admin.settings.tencentCaptcha.aidEncryptedHint") }}
                   </p>
                   <div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
@@ -2325,7 +2406,9 @@
                       rel="noopener noreferrer"
                       class="text-brand hover:text-brand"
                     >
-                      {{ t("admin.settings.tencentCaptcha.openCaptchaConsole") }}
+                      {{
+                        t("admin.settings.tencentCaptcha.openCaptchaConsole")
+                      }}
                     </a>
                     <a
                       :href="tencentCaptchaLinks.cloudKeys"
@@ -2383,7 +2466,9 @@
                           {{ t("admin.settings.aliyunCaptcha.regionSgp") }}
                         </button>
                       </div>
-                      <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
+                      <p
+                        class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                      >
                         {{ t("admin.settings.aliyunCaptcha.regionHint") }}
                       </p>
                     </div>
@@ -2399,7 +2484,9 @@
                         class="input font-mono text-sm"
                         placeholder="14xxxxx"
                       />
-                      <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
+                      <p
+                        class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                      >
                         {{ t("admin.settings.aliyunCaptcha.prefixHint") }}
                       </p>
                     </div>
@@ -2416,7 +2503,9 @@
                       class="input font-mono text-sm"
                       placeholder="1cxxxxxx"
                     />
-                    <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
+                    <p
+                      class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                    >
                       {{ t("admin.settings.aliyunCaptcha.sceneIdHint") }}
                     </p>
                   </div>
@@ -2432,7 +2521,9 @@
                       class="input font-mono text-sm"
                       placeholder="LTAI..."
                     />
-                    <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
+                    <p
+                      class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                    >
                       {{ t("admin.settings.aliyunCaptcha.accessKeyIdHint") }}
                     </p>
                   </div>
@@ -2449,13 +2540,17 @@
                       class="input font-mono text-sm"
                       placeholder="••••••••"
                     />
-                    <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
+                    <p
+                      class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                    >
                       {{
                         form.aliyun_captcha_access_key_secret_configured
                           ? t(
                               "admin.settings.aliyunCaptcha.accessKeySecretConfiguredHint",
                             )
-                          : t("admin.settings.aliyunCaptcha.accessKeySecretHint")
+                          : t(
+                              "admin.settings.aliyunCaptcha.accessKeySecretHint",
+                            )
                       }}
                     </p>
                   </div>
@@ -2466,9 +2561,7 @@
 
           <!-- LinuxDo Connect OAuth 登录 -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.linuxdo.title") }}
               </h2>
@@ -2587,9 +2680,7 @@
 
           <!-- GitHub / Google 邮箱快捷登录 -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ localText("邮箱快捷登录", "Email OAuth Sign-in") }}
               </h2>
@@ -2607,9 +2698,7 @@
                 <div class="rounded-panel border border-outline p-4">
                   <div class="flex items-start justify-between gap-4">
                     <div>
-                      <h3 class="font-medium text-foreground">
-                        GitHub
-                      </h3>
+                      <h3 class="font-medium text-foreground">GitHub</h3>
                       <p class="mt-1 text-sm text-foreground-subtle">
                         {{
                           localText(
@@ -2621,12 +2710,16 @@
                     </div>
                     <Toggle
                       v-model="form.github_oauth_enabled"
-                      :aria-label="localText('启用 GitHub OAuth', 'Enable GitHub OAuth')"
+                      :aria-label="
+                        localText('启用 GitHub OAuth', 'Enable GitHub OAuth')
+                      "
                     />
                   </div>
 
                   <div v-if="form.github_oauth_enabled" class="mt-4 space-y-4">
-                    <div class="rounded-panel px-3 py-2 text-xs text-foreground-muted bg-surface">
+                    <div
+                      class="rounded-panel px-3 py-2 text-xs text-foreground-muted bg-surface"
+                    >
                       <template v-if="isZhLocale">
                         开通引导：GitHub Settings → Developer settings →
                         <a
@@ -2635,8 +2728,10 @@
                           target="_blank"
                           rel="noopener noreferrer"
                           class="font-medium text-brand hover:underline"
-                        >OAuth Apps</a>
-                        → New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址。
+                          >OAuth Apps</a
+                        >
+                        → New OAuth App；Homepage URL 填站点域名，Authorization
+                        callback URL 填下面的后端回调地址。
                       </template>
                       <template v-else>
                         Setup guide: GitHub Settings → Developer settings →
@@ -2646,14 +2741,20 @@
                           target="_blank"
                           rel="noopener noreferrer"
                           class="font-medium text-brand hover:underline"
-                        >OAuth Apps</a>
-                        → New OAuth App. Use your site origin as Homepage URL and the backend callback URL below as Authorization callback URL.
+                          >OAuth Apps</a
+                        >
+                        → New OAuth App. Use your site origin as Homepage URL
+                        and the backend callback URL below as Authorization
+                        callback URL.
                       </template>
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-foreground-muted">Client ID</label>
+                        <label
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
+                          >Client ID</label
+                        >
                         <input
                           v-model="form.github_oauth_client_id"
                           type="text"
@@ -2662,14 +2763,20 @@
                         />
                       </div>
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-foreground-muted">Client Secret</label>
+                        <label
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
+                          >Client Secret</label
+                        >
                         <input
                           v-model="form.github_oauth_client_secret"
                           type="password"
                           class="input font-mono text-sm"
                           :placeholder="
                             form.github_oauth_client_secret_configured
-                              ? localText('密钥已配置，留空以保留当前值。', 'Secret configured. Leave empty to keep the current value.')
+                              ? localText(
+                                  '密钥已配置，留空以保留当前值。',
+                                  'Secret configured. Leave empty to keep the current value.',
+                                )
                               : 'GitHub OAuth Client Secret'
                           "
                         />
@@ -2677,7 +2784,9 @@
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-foreground-muted">
+                      <label
+                        class="mb-2 block text-sm font-medium text-foreground-muted"
+                      >
                         {{ localText("后端回调地址", "Backend Callback URL") }}
                       </label>
                       <input
@@ -2686,7 +2795,9 @@
                         class="input font-mono text-sm"
                         placeholder="https://your-domain.com/api/v1/auth/oauth/github/callback"
                       />
-                      <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                      <div
+                        class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
+                      >
                         <button
                           type="button"
                           class="btn btn-secondary btn-sm w-fit"
@@ -2704,7 +2815,9 @@
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-foreground-muted">
+                      <label
+                        class="mb-2 block text-sm font-medium text-foreground-muted"
+                      >
                         {{ localText("前端回跳地址", "Frontend Callback URL") }}
                       </label>
                       <input
@@ -2720,9 +2833,7 @@
                 <div class="rounded-panel border border-outline p-4">
                   <div class="flex items-start justify-between gap-4">
                     <div>
-                      <h3 class="font-medium text-foreground">
-                        Google
-                      </h3>
+                      <h3 class="font-medium text-foreground">Google</h3>
                       <p class="mt-1 text-sm text-foreground-subtle">
                         {{
                           localText(
@@ -2734,12 +2845,16 @@
                     </div>
                     <Toggle
                       v-model="form.google_oauth_enabled"
-                      :aria-label="localText('启用 Google OAuth', 'Enable Google OAuth')"
+                      :aria-label="
+                        localText('启用 Google OAuth', 'Enable Google OAuth')
+                      "
                     />
                   </div>
 
                   <div v-if="form.google_oauth_enabled" class="mt-4 space-y-4">
-                    <div class="rounded-panel px-3 py-2 text-xs text-foreground-muted bg-surface">
+                    <div
+                      class="rounded-panel px-3 py-2 text-xs text-foreground-muted bg-surface"
+                    >
                       {{
                         localText(
                           "开通引导：Google Cloud Console → APIs & Services → OAuth consent screen 完成同意屏幕；Credentials → Create Credentials → OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs。",
@@ -2750,7 +2865,10 @@
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-foreground-muted">Client ID</label>
+                        <label
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
+                          >Client ID</label
+                        >
                         <input
                           v-model="form.google_oauth_client_id"
                           type="text"
@@ -2759,14 +2877,20 @@
                         />
                       </div>
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-foreground-muted">Client Secret</label>
+                        <label
+                          class="mb-2 block text-sm font-medium text-foreground-muted"
+                          >Client Secret</label
+                        >
                         <input
                           v-model="form.google_oauth_client_secret"
                           type="password"
                           class="input font-mono text-sm"
                           :placeholder="
                             form.google_oauth_client_secret_configured
-                              ? localText('密钥已配置，留空以保留当前值。', 'Secret configured. Leave empty to keep the current value.')
+                              ? localText(
+                                  '密钥已配置，留空以保留当前值。',
+                                  'Secret configured. Leave empty to keep the current value.',
+                                )
                               : 'Google OAuth Client Secret'
                           "
                         />
@@ -2774,7 +2898,9 @@
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-foreground-muted">
+                      <label
+                        class="mb-2 block text-sm font-medium text-foreground-muted"
+                      >
                         {{ localText("后端回调地址", "Backend Callback URL") }}
                       </label>
                       <input
@@ -2783,7 +2909,9 @@
                         class="input font-mono text-sm"
                         placeholder="https://your-domain.com/api/v1/auth/oauth/google/callback"
                       />
-                      <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                      <div
+                        class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
+                      >
                         <button
                           type="button"
                           class="btn btn-secondary btn-sm w-fit"
@@ -2801,7 +2929,9 @@
                     </div>
 
                     <div>
-                      <label class="mb-2 block text-sm font-medium text-foreground-muted">
+                      <label
+                        class="mb-2 block text-sm font-medium text-foreground-muted"
+                      >
                         {{ localText("前端回跳地址", "Frontend Callback URL") }}
                       </label>
                       <input
@@ -2819,9 +2949,7 @@
 
           <!-- WeChat Connect OAuth 登录 -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.wechatConnect.title") }}
               </h2>
@@ -2851,9 +2979,7 @@
                 class="space-y-6 border-t border-outline pt-4"
               >
                 <div class="space-y-4">
-                  <div
-                    class="rounded-panel border border-outline p-4"
-                  >
+                  <div class="rounded-panel border border-outline p-4">
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <h3 class="font-medium text-foreground">
@@ -2870,7 +2996,9 @@
                       </div>
                       <Toggle
                         :model-value="form.wechat_connect_open_enabled"
-                        :aria-label="localText('启用 PC 应用登录', 'Enable PC App sign-in')"
+                        :aria-label="
+                          localText('启用 PC 应用登录', 'Enable PC App sign-in')
+                        "
                         data-testid="wechat-connect-open-enabled"
                         @update:model-value="handleWeChatOpenEnabledChange"
                       />
@@ -2925,9 +3053,7 @@
                     </div>
                   </div>
 
-                  <div
-                    class="rounded-panel border border-outline p-4"
-                  >
+                  <div class="rounded-panel border border-outline p-4">
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <h3 class="font-medium text-foreground">
@@ -2944,7 +3070,12 @@
                       </div>
                       <Toggle
                         :model-value="form.wechat_connect_mp_enabled"
-                        :aria-label="localText('启用公众号登录', 'Enable Official Account sign-in')"
+                        :aria-label="
+                          localText(
+                            '启用公众号登录',
+                            'Enable Official Account sign-in',
+                          )
+                        "
                         data-testid="wechat-connect-mp-enabled"
                         @update:model-value="handleWeChatMPEnabledChange"
                       />
@@ -2957,7 +3088,9 @@
                         <label
                           class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
-                          {{ localText("公众号 AppID", "Official Account App ID") }}
+                          {{
+                            localText("公众号 AppID", "Official Account App ID")
+                          }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mp_app_id"
@@ -2965,10 +3098,7 @@
                           type="text"
                           class="input font-mono text-sm"
                           :placeholder="
-                            localText(
-                              '公众号 AppID',
-                              'Official Account App ID',
-                            )
+                            localText('公众号 AppID', 'Official Account App ID')
                           "
                         />
                       </div>
@@ -3004,9 +3134,7 @@
                     </div>
                   </div>
 
-                  <div
-                    class="rounded-panel border border-outline p-4"
-                  >
+                  <div class="rounded-panel border border-outline p-4">
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <h3 class="font-medium text-foreground">
@@ -3023,7 +3151,12 @@
                       </div>
                       <Toggle
                         :model-value="form.wechat_connect_mobile_enabled"
-                        :aria-label="localText('启用移动应用登录', 'Enable Mobile App sign-in')"
+                        :aria-label="
+                          localText(
+                            '启用移动应用登录',
+                            'Enable Mobile App sign-in',
+                          )
+                        "
                         data-testid="wechat-connect-mobile-enabled"
                         @update:model-value="handleWeChatMobileEnabledChange"
                       />
@@ -3044,10 +3177,7 @@
                           type="text"
                           class="input font-mono text-sm"
                           :placeholder="
-                            localText(
-                              '移动应用 AppID',
-                              'Mobile App ID',
-                            )
+                            localText('移动应用 AppID', 'Mobile App ID')
                           "
                         />
                       </div>
@@ -3055,7 +3185,9 @@
                         <label
                           class="mb-2 block text-sm font-medium text-foreground-muted"
                         >
-                          {{ localText("移动应用 AppSecret", "Mobile App Secret") }}
+                          {{
+                            localText("移动应用 AppSecret", "Mobile App Secret")
+                          }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mobile_app_secret"
@@ -3100,19 +3232,16 @@
                     <label
                       class="mb-2 block text-sm font-medium text-foreground-muted"
                     >
-                      {{
-                        localText(
-                          "浏览器回调地址",
-                          "Browser Redirect URL",
-                        )
-                      }}
+                      {{ localText("浏览器回调地址", "Browser Redirect URL") }}
                     </label>
                     <input
                       data-testid="wechat-connect-redirect-url"
                       v-model="form.wechat_connect_redirect_url"
                       type="url"
                       class="input font-mono text-sm"
-                      :placeholder="t('admin.settings.wechatConnect.redirectUrlPlaceholder')"
+                      :placeholder="
+                        t('admin.settings.wechatConnect.redirectUrlPlaceholder')
+                      "
                     />
                     <p class="mt-1.5 text-xs text-foreground-subtle">
                       {{
@@ -3146,17 +3275,25 @@
                   <label
                     class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
-                    {{ t("admin.settings.wechatConnect.frontendRedirectUrlLabel") }}
+                    {{
+                      t("admin.settings.wechatConnect.frontendRedirectUrlLabel")
+                    }}
                   </label>
                   <input
                     data-testid="wechat-connect-frontend-redirect-url"
                     v-model="form.wechat_connect_frontend_redirect_url"
                     type="text"
                     class="input font-mono text-sm"
-                    :placeholder="t('admin.settings.wechatConnect.frontendRedirectUrlPlaceholder')"
+                    :placeholder="
+                      t(
+                        'admin.settings.wechatConnect.frontendRedirectUrlPlaceholder',
+                      )
+                    "
                   />
                   <p class="mt-1.5 text-xs text-foreground-subtle">
-                    {{ t("admin.settings.wechatConnect.frontendRedirectUrlHint") }}
+                    {{
+                      t("admin.settings.wechatConnect.frontendRedirectUrlHint")
+                    }}
                   </p>
                 </div>
               </div>
@@ -3165,9 +3302,7 @@
 
           <!-- DingTalk Connect OAuth 登录 -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.dingtalk.title") }}
               </h2>
@@ -3265,7 +3400,9 @@
 
                   <!-- Corp Restriction Policy -->
                   <div class="border-t border-outline pt-4">
-                    <label class="mb-2 block text-sm font-medium text-foreground-muted">
+                    <label
+                      class="mb-2 block text-sm font-medium text-foreground-muted"
+                    >
                       {{ t("admin.settings.dingtalk.corpPolicy.label") }}
                     </label>
                     <p class="mb-3 text-xs text-foreground-subtle">
@@ -3274,7 +3411,9 @@
                     <div class="space-y-2">
                       <label class="flex cursor-pointer items-center gap-3">
                         <input
-                          v-model="form.dingtalk_connect_corp_restriction_policy"
+                          v-model="
+                            form.dingtalk_connect_corp_restriction_policy
+                          "
                           type="radio"
                           value="none"
                           class="h-4 w-4 text-brand"
@@ -3285,13 +3424,17 @@
                       </label>
                       <label class="flex cursor-pointer items-center gap-3">
                         <input
-                          v-model="form.dingtalk_connect_corp_restriction_policy"
+                          v-model="
+                            form.dingtalk_connect_corp_restriction_policy
+                          "
                           type="radio"
                           value="internal_only"
                           class="h-4 w-4 text-brand"
                         />
                         <span class="text-sm text-foreground-muted">
-                          {{ t("admin.settings.dingtalk.corpPolicy.internalOnly") }}
+                          {{
+                            t("admin.settings.dingtalk.corpPolicy.internalOnly")
+                          }}
                         </span>
                       </label>
                     </div>
@@ -3299,7 +3442,10 @@
 
                   <!-- bypass_registration toggle（仅 internal_only 模式下可见可用） -->
                   <div
-                    v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
+                    v-if="
+                      form.dingtalk_connect_corp_restriction_policy ===
+                      'internal_only'
+                    "
                     class="flex items-center justify-between pt-4 border-t border-outline"
                   >
                     <div>
@@ -3307,18 +3453,25 @@
                         t("admin.settings.dingtalk.bypassRegistration")
                       }}</label>
                       <p class="text-sm text-foreground-subtle">
-                        {{ t("admin.settings.dingtalk.bypassRegistrationHint") }}
+                        {{
+                          t("admin.settings.dingtalk.bypassRegistrationHint")
+                        }}
                       </p>
                     </div>
                     <Toggle
                       v-model="form.dingtalk_connect_bypass_registration"
-                      :aria-label="t('admin.settings.dingtalk.bypassRegistration')"
+                      :aria-label="
+                        t('admin.settings.dingtalk.bypassRegistration')
+                      "
                     />
                   </div>
 
                   <!-- 身份同步开关（仅 internal_only 模式下可见） -->
                   <div
-                    v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
+                    v-if="
+                      form.dingtalk_connect_corp_restriction_policy ===
+                      'internal_only'
+                    "
                     class="pt-4 border-t border-outline space-y-2"
                   >
                     <div class="flex items-center justify-between">
@@ -3332,39 +3485,62 @@
                       </div>
                       <Toggle
                         v-model="form.dingtalk_connect_sync_display_name"
-                        :aria-label="t('admin.settings.dingtalk.syncDisplayName')"
+                        :aria-label="
+                          t('admin.settings.dingtalk.syncDisplayName')
+                        "
                       />
                     </div>
-                    <div v-if="form.dingtalk_connect_sync_display_name" class="space-y-2">
+                    <div
+                      v-if="form.dingtalk_connect_sync_display_name"
+                      class="space-y-2"
+                    >
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
-                          {{ t("admin.settings.dingtalk.syncDisplayNameTarget") }}
+                        <label
+                          class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]"
+                        >
+                          {{
+                            t("admin.settings.dingtalk.syncDisplayNameTarget")
+                          }}
                         </label>
                         <input
-                          v-model="form.dingtalk_connect_sync_display_name_attr_key"
+                          v-model="
+                            form.dingtalk_connect_sync_display_name_attr_key
+                          "
                           type="text"
                           placeholder="dingtalk_name"
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
+                        <label
+                          class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]"
+                        >
                           {{ t("admin.settings.dingtalk.syncAttrDisplayName") }}
                         </label>
                         <input
-                          v-model="form.dingtalk_connect_sync_display_name_attr_name"
+                          v-model="
+                            form.dingtalk_connect_sync_display_name_attr_name
+                          "
                           type="text"
                           :placeholder="localText('钉钉姓名', 'DingTalk Name')"
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
                     </div>
-                    <p v-if="form.dingtalk_connect_sync_display_name" class="text-xs text-foreground-subtle">
-                      {{ t("admin.settings.dingtalk.syncDisplayNameTargetHint") }}
+                    <p
+                      v-if="form.dingtalk_connect_sync_display_name"
+                      class="text-xs text-foreground-subtle"
+                    >
+                      {{
+                        t("admin.settings.dingtalk.syncDisplayNameTargetHint")
+                      }}
                     </p>
                   </div>
                   <div
-                    v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
+                    v-if="
+                      form.dingtalk_connect_corp_restriction_policy ===
+                      'internal_only'
+                    "
                     class="pt-4 border-t border-outline space-y-2"
                   >
                     <div class="flex items-center justify-between">
@@ -3376,7 +3552,11 @@
                           {{ t("admin.settings.dingtalk.syncCorpEmailHint") }}
                         </p>
                         <p class="text-xs text-warning-foreground mt-1">
-                          {{ t("admin.settings.dingtalk.syncCorpEmailPermissionHint") }}
+                          {{
+                            t(
+                              "admin.settings.dingtalk.syncCorpEmailPermissionHint",
+                            )
+                          }}
                         </p>
                       </div>
                       <Toggle
@@ -3384,36 +3564,58 @@
                         :aria-label="t('admin.settings.dingtalk.syncCorpEmail')"
                       />
                     </div>
-                    <div v-if="form.dingtalk_connect_sync_corp_email" class="space-y-2">
+                    <div
+                      v-if="form.dingtalk_connect_sync_corp_email"
+                      class="space-y-2"
+                    >
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
+                        <label
+                          class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]"
+                        >
                           {{ t("admin.settings.dingtalk.syncCorpEmailTarget") }}
                         </label>
                         <input
-                          v-model="form.dingtalk_connect_sync_corp_email_attr_key"
+                          v-model="
+                            form.dingtalk_connect_sync_corp_email_attr_key
+                          "
                           type="text"
                           placeholder="dingtalk_email"
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
+                        <label
+                          class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]"
+                        >
                           {{ t("admin.settings.dingtalk.syncAttrDisplayName") }}
                         </label>
                         <input
-                          v-model="form.dingtalk_connect_sync_corp_email_attr_name"
+                          v-model="
+                            form.dingtalk_connect_sync_corp_email_attr_name
+                          "
                           type="text"
-                          :placeholder="localText('钉钉企业邮箱', 'DingTalk Corporate Email')"
+                          :placeholder="
+                            localText(
+                              '钉钉企业邮箱',
+                              'DingTalk Corporate Email',
+                            )
+                          "
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
                     </div>
-                    <p v-if="form.dingtalk_connect_sync_corp_email" class="text-xs text-foreground-subtle">
+                    <p
+                      v-if="form.dingtalk_connect_sync_corp_email"
+                      class="text-xs text-foreground-subtle"
+                    >
                       {{ t("admin.settings.dingtalk.syncCorpEmailTargetHint") }}
                     </p>
                   </div>
                   <div
-                    v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
+                    v-if="
+                      form.dingtalk_connect_corp_restriction_policy ===
+                      'internal_only'
+                    "
                     class="pt-4 border-t border-outline space-y-2"
                   >
                     <div class="flex items-center justify-between">
@@ -3425,7 +3627,9 @@
                           {{ t("admin.settings.dingtalk.syncDeptHint") }}
                         </p>
                         <p class="text-xs text-warning-foreground mt-1">
-                          {{ t("admin.settings.dingtalk.syncDeptPermissionHint") }}
+                          {{
+                            t("admin.settings.dingtalk.syncDeptPermissionHint")
+                          }}
                         </p>
                       </div>
                       <Toggle
@@ -3433,9 +3637,14 @@
                         :aria-label="t('admin.settings.dingtalk.syncDept')"
                       />
                     </div>
-                    <div v-if="form.dingtalk_connect_sync_dept" class="space-y-2">
+                    <div
+                      v-if="form.dingtalk_connect_sync_dept"
+                      class="space-y-2"
+                    >
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
+                        <label
+                          class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]"
+                        >
                           {{ t("admin.settings.dingtalk.syncDeptTarget") }}
                         </label>
                         <input
@@ -3446,18 +3655,25 @@
                         />
                       </div>
                       <div class="flex items-center gap-2">
-                        <label class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]">
+                        <label
+                          class="text-sm text-foreground-subtle whitespace-nowrap min-w-[5rem]"
+                        >
                           {{ t("admin.settings.dingtalk.syncAttrDisplayName") }}
                         </label>
                         <input
                           v-model="form.dingtalk_connect_sync_dept_attr_name"
                           type="text"
-                          :placeholder="localText('钉钉部门', 'DingTalk Department')"
+                          :placeholder="
+                            localText('钉钉部门', 'DingTalk Department')
+                          "
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
                     </div>
-                    <p v-if="form.dingtalk_connect_sync_dept" class="text-xs text-foreground-subtle">
+                    <p
+                      v-if="form.dingtalk_connect_sync_dept"
+                      class="text-xs text-foreground-subtle"
+                    >
                       {{ t("admin.settings.dingtalk.syncDeptTargetHint") }}
                     </p>
                   </div>
@@ -3468,9 +3684,7 @@
 
           <!-- Generic OIDC OAuth 登录 -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.oidc.title") }}
               </h2>
@@ -3823,7 +4037,9 @@
                     </div>
                     <Toggle
                       v-model="form.oidc_connect_require_email_verified"
-                      :aria-label="t('admin.settings.oidc.requireEmailVerified')"
+                      :aria-label="
+                        t('admin.settings.oidc.requireEmailVerified')
+                      "
                     />
                   </div>
                 </div>
@@ -3887,9 +4103,7 @@
         <div v-show="activeTab === 'users'" class="space-y-6">
           <!-- Default Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.defaults.title") }}
               </h2>
@@ -3955,7 +4169,9 @@
               </div>
 
               <div class="border-t border-outline pt-4">
-                <div class="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                  class="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div class="min-w-0">
                     <label class="font-medium text-foreground">
                       {{ t("admin.settings.defaults.defaultSubscriptions") }}
@@ -4109,45 +4325,78 @@
                   <table class="min-w-full text-sm">
                     <thead>
                       <tr class="text-left text-xs text-foreground-subtle">
-                        <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.platform") }}</th>
-                        <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.daily") }}</th>
-                        <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.weekly") }}</th>
-                        <th class="pb-2 font-medium">{{ t("admin.settings.platformQuota.monthly") }}</th>
+                        <th class="pb-2 pr-4 font-medium">
+                          {{ t("admin.settings.platformQuota.platform") }}
+                        </th>
+                        <th class="pb-2 pr-4 font-medium">
+                          {{ t("admin.settings.platformQuota.daily") }}
+                        </th>
+                        <th class="pb-2 pr-4 font-medium">
+                          {{ t("admin.settings.platformQuota.weekly") }}
+                        </th>
+                        <th class="pb-2 font-medium">
+                          {{ t("admin.settings.platformQuota.monthly") }}
+                        </th>
                       </tr>
                     </thead>
                     <tbody class="space-y-2">
-                      <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity', 'grok'] as const)" :key="p" class="align-top">
+                      <tr
+                        v-for="p in [
+                          'anthropic',
+                          'openai',
+                          'gemini',
+                          'antigravity',
+                          'grok',
+                        ] as const"
+                        :key="p"
+                        class="align-top"
+                      >
                         <td class="pr-4 py-1">
-                          <span class="font-mono text-xs text-foreground-muted">{{ p }}</span>
+                          <span
+                            class="font-mono text-xs text-foreground-muted"
+                            >{{ p }}</span
+                          >
                         </td>
                         <td class="pr-4 py-1">
                           <input
-                            v-model.number="form.default_platform_quotas[p]!.daily"
+                            v-model.number="
+                              form.default_platform_quotas[p]!.daily
+                            "
                             type="number"
                             step="0.01"
                             min="0"
                             class="input h-8 w-28 text-sm"
-                            :placeholder="t('admin.settings.platformQuota.placeholder')"
+                            :placeholder="
+                              t('admin.settings.platformQuota.placeholder')
+                            "
                           />
                         </td>
                         <td class="pr-4 py-1">
                           <input
-                            v-model.number="form.default_platform_quotas[p]!.weekly"
+                            v-model.number="
+                              form.default_platform_quotas[p]!.weekly
+                            "
                             type="number"
                             step="0.01"
                             min="0"
                             class="input h-8 w-28 text-sm"
-                            :placeholder="t('admin.settings.platformQuota.placeholder')"
+                            :placeholder="
+                              t('admin.settings.platformQuota.placeholder')
+                            "
                           />
                         </td>
                         <td class="py-1">
                           <input
-                            v-model.number="form.default_platform_quotas[p]!.monthly"
+                            v-model.number="
+                              form.default_platform_quotas[p]!.monthly
+                            "
                             type="number"
                             step="0.01"
                             min="0"
                             class="input h-8 w-28 text-sm"
-                            :placeholder="t('admin.settings.platformQuota.placeholder')"
+                            :placeholder="
+                              t('admin.settings.platformQuota.placeholder')
+                            "
                           />
                         </td>
                       </tr>
@@ -4160,9 +4409,7 @@
           </div>
 
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.authSourceDefaults.title") }}
               </h2>
@@ -4176,15 +4423,21 @@
               >
                 <div>
                   <label class="font-medium text-foreground">
-                    {{ t("admin.settings.authSourceDefaults.requireEmailLabel") }}
+                    {{
+                      t("admin.settings.authSourceDefaults.requireEmailLabel")
+                    }}
                   </label>
                   <p class="text-sm text-foreground-subtle">
-                    {{ t("admin.settings.authSourceDefaults.requireEmailHint") }}
+                    {{
+                      t("admin.settings.authSourceDefaults.requireEmailHint")
+                    }}
                   </p>
                 </div>
                 <Toggle
                   v-model="form.force_email_on_third_party_signup"
-                  :aria-label="t('admin.settings.authSourceDefaults.requireEmailLabel')"
+                  :aria-label="
+                    t('admin.settings.authSourceDefaults.requireEmailLabel')
+                  "
                 />
               </div>
 
@@ -4261,15 +4514,19 @@
                       class="flex items-center justify-between rounded border border-outline px-4 py-3"
                     >
                       <div>
-                        <label
-                          class="font-medium text-foreground"
-                        >
-                          {{ t("admin.settings.authSourceDefaults.grantOnFirstBindLabel") }}
+                        <label class="font-medium text-foreground">
+                          {{
+                            t(
+                              "admin.settings.authSourceDefaults.grantOnFirstBindLabel",
+                            )
+                          }}
                         </label>
-                        <p
-                          class="mt-0.5 text-xs text-foreground-subtle"
-                        >
-                          {{ t("admin.settings.authSourceDefaults.grantOnFirstBindHint") }}
+                        <p class="mt-0.5 text-xs text-foreground-subtle">
+                          {{
+                            t(
+                              "admin.settings.authSourceDefaults.grantOnFirstBindHint",
+                            )
+                          }}
                         </p>
                       </div>
                       <Toggle
@@ -4283,13 +4540,19 @@
 
                     <div class="mb-3 flex items-center justify-between">
                       <div>
-                        <label
-                          class="font-medium text-foreground"
-                        >
-                          {{ t("admin.settings.authSourceDefaults.defaultSubscriptionsLabel") }}
+                        <label class="font-medium text-foreground">
+                          {{
+                            t(
+                              "admin.settings.authSourceDefaults.defaultSubscriptionsLabel",
+                            )
+                          }}
                         </label>
                         <p class="text-sm text-foreground-subtle">
-                          {{ t("admin.settings.authSourceDefaults.defaultSubscriptionsHint") }}
+                          {{
+                            t(
+                              "admin.settings.authSourceDefaults.defaultSubscriptionsHint",
+                            )
+                          }}
                         </p>
                       </div>
                       <button
@@ -4313,7 +4576,11 @@
                       "
                       class="rounded border border-dashed border-outline-strong px-4 py-3 text-sm text-foreground-subtle"
                     >
-                      {{ t("admin.settings.authSourceDefaults.noSourceSubscriptions") }}
+                      {{
+                        t(
+                          "admin.settings.authSourceDefaults.noSourceSubscriptions",
+                        )
+                      }}
                     </div>
 
                     <div v-else class="space-y-3">
@@ -4439,55 +4706,107 @@
                     <div class="border-t border-outline pt-4">
                       <div class="mb-3">
                         <label class="font-medium text-foreground">
-                          {{ t("admin.settings.authSourceDefaults.platformQuotasOverride") }}
+                          {{
+                            t(
+                              "admin.settings.authSourceDefaults.platformQuotasOverride",
+                            )
+                          }}
                         </label>
                         <p class="mt-0.5 text-xs text-foreground-subtle">
-                          {{ t("admin.settings.authSourceDefaults.platformQuotasOverrideHint") }}
+                          {{
+                            t(
+                              "admin.settings.authSourceDefaults.platformQuotasOverrideHint",
+                            )
+                          }}
                         </p>
                       </div>
                       <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
                           <thead>
-                            <tr class="text-left text-xs text-foreground-subtle">
-                              <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.platform") }}</th>
-                              <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.daily") }}</th>
-                              <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.weekly") }}</th>
-                              <th class="pb-2 font-medium">{{ t("admin.settings.platformQuota.monthly") }}</th>
+                            <tr
+                              class="text-left text-xs text-foreground-subtle"
+                            >
+                              <th class="pb-2 pr-4 font-medium">
+                                {{ t("admin.settings.platformQuota.platform") }}
+                              </th>
+                              <th class="pb-2 pr-4 font-medium">
+                                {{ t("admin.settings.platformQuota.daily") }}
+                              </th>
+                              <th class="pb-2 pr-4 font-medium">
+                                {{ t("admin.settings.platformQuota.weekly") }}
+                              </th>
+                              <th class="pb-2 font-medium">
+                                {{ t("admin.settings.platformQuota.monthly") }}
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
-                            <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity', 'grok'] as const)" :key="`${authSource.source}-pq-${p}`" class="align-top">
+                            <tr
+                              v-for="p in [
+                                'anthropic',
+                                'openai',
+                                'gemini',
+                                'antigravity',
+                                'grok',
+                              ] as const"
+                              :key="`${authSource.source}-pq-${p}`"
+                              class="align-top"
+                            >
                               <td class="pr-4 py-1">
-                                <span class="font-mono text-xs text-foreground-muted">{{ p }}</span>
+                                <span
+                                  class="font-mono text-xs text-foreground-muted"
+                                  >{{ p }}</span
+                                >
                               </td>
                               <td class="pr-4 py-1">
                                 <input
-                                  v-model.number="authSourceDefaults[authSource.source].platform_quotas[p]!.daily"
+                                  v-model.number="
+                                    authSourceDefaults[authSource.source]
+                                      .platform_quotas[p]!.daily
+                                  "
                                   type="number"
                                   step="0.01"
                                   min="0"
                                   class="input h-8 w-28 text-sm"
-                                  :placeholder="t('admin.settings.platformQuota.placeholder')"
+                                  :placeholder="
+                                    t(
+                                      'admin.settings.platformQuota.placeholder',
+                                    )
+                                  "
                                 />
                               </td>
                               <td class="pr-4 py-1">
                                 <input
-                                  v-model.number="authSourceDefaults[authSource.source].platform_quotas[p]!.weekly"
+                                  v-model.number="
+                                    authSourceDefaults[authSource.source]
+                                      .platform_quotas[p]!.weekly
+                                  "
                                   type="number"
                                   step="0.01"
                                   min="0"
                                   class="input h-8 w-28 text-sm"
-                                  :placeholder="t('admin.settings.platformQuota.placeholder')"
+                                  :placeholder="
+                                    t(
+                                      'admin.settings.platformQuota.placeholder',
+                                    )
+                                  "
                                 />
                               </td>
                               <td class="py-1">
                                 <input
-                                  v-model.number="authSourceDefaults[authSource.source].platform_quotas[p]!.monthly"
+                                  v-model.number="
+                                    authSourceDefaults[authSource.source]
+                                      .platform_quotas[p]!.monthly
+                                  "
                                   type="number"
                                   step="0.01"
                                   min="0"
                                   class="input h-8 w-28 text-sm"
-                                  :placeholder="t('admin.settings.platformQuota.placeholder')"
+                                  :placeholder="
+                                    t(
+                                      'admin.settings.platformQuota.placeholder',
+                                    )
+                                  "
                                 />
                               </td>
                             </tr>
@@ -4508,9 +4827,7 @@
         <div v-show="activeTab === 'gateway'" class="space-y-6">
           <!-- Claude Code Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.claudeCode.title") }}
               </h2>
@@ -4560,262 +4877,300 @@
 
           <!-- Codex Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.gatewayForwarding.codexHardeningTitle") }}
               </h2>
             </div>
             <div class="p-6 space-y-4">
-                <div>
-                  <h3 class="text-base font-semibold text-foreground">
-                    {{ t("admin.settings.gatewayForwarding.codexClientRestrictionTitle") }}
-                  </h3>
-                  <p class="mt-1 text-sm text-foreground-subtle">
-                    {{ t("admin.settings.gatewayForwarding.codexHardeningDesc") }}
-                  </p>
-                </div>
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label
-                      class="mb-2 block text-sm font-medium text-foreground-muted"
-                    >
-                      {{ t("admin.settings.gatewayForwarding.minCodexVersion") }}
-                    </label>
-                    <input
-                      v-model="form.min_codex_version"
-                      type="text"
-                      class="input w-full font-mono text-sm"
-                      :placeholder="
-                        t(
-                          'admin.settings.gatewayForwarding.minCodexVersionPlaceholder',
-                        )
-                      "
-                    />
-                  </div>
-                  <div>
-                    <label
-                      class="mb-2 block text-sm font-medium text-foreground-muted"
-                    >
-                      {{ t("admin.settings.gatewayForwarding.maxCodexVersion") }}
-                    </label>
-                    <input
-                      v-model="form.max_codex_version"
-                      type="text"
-                      class="input w-full font-mono text-sm"
-                      :placeholder="
-                        t(
-                          'admin.settings.gatewayForwarding.maxCodexVersionPlaceholder',
-                        )
-                      "
-                    />
-                  </div>
-                </div>
-                <p class="text-xs text-foreground-subtle">
-                  {{ t("admin.settings.gatewayForwarding.codexVersionHint") }}
+              <div>
+                <h3 class="text-base font-semibold text-foreground">
+                  {{
+                    t(
+                      "admin.settings.gatewayForwarding.codexClientRestrictionTitle",
+                    )
+                  }}
+                </h3>
+                <p class="mt-1 text-sm text-foreground-subtle">
+                  {{ t("admin.settings.gatewayForwarding.codexHardeningDesc") }}
                 </p>
-
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label class="block text-sm font-medium text-foreground-muted">
-                    {{ t("admin.settings.gatewayForwarding.codexFingerprintSignals") }}
+                  <label
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.minCodexVersion") }}
                   </label>
-                  <p class="mb-2 mt-1 text-xs text-foreground-subtle">
-                    {{ t("admin.settings.gatewayForwarding.codexFingerprintSignalsDesc") }}
-                  </p>
-                  <div
-                    v-for="(row, i) in codexFingerprintRows"
-                    :key="`codex-fp-${i}`"
-                    class="mb-2 flex items-center gap-2"
-                  >
-                    <select v-model="row.type" class="input w-32 text-sm">
-                      <option value="header_exact">{{ t("admin.settings.gatewayForwarding.codexFpTypeHeaderExact") }}</option>
-                      <option value="header_prefix">{{ t("admin.settings.gatewayForwarding.codexFpTypeHeaderPrefix") }}</option>
-                      <option value="body_path">{{ t("admin.settings.gatewayForwarding.codexFpTypeBodyPath") }}</option>
-                    </select>
-                    <input
-                      v-model="row.match"
-                      type="text"
-                      class="input flex-1 font-mono text-sm"
-                      :placeholder="t('admin.settings.gatewayForwarding.codexFpMatchPlaceholder')"
-                    />
-                    <label class="flex shrink-0 items-center gap-1 text-xs text-foreground-subtle">
-                      <input v-model="row.required" type="checkbox" />
-                      {{ t("admin.settings.gatewayForwarding.codexFpRequired") }}
-                    </label>
-                    <button
-                      type="button"
-                      class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
-                      @click="removeCodexFingerprintRow(i)"
-                    >
-                      {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
-                    </button>
-                  </div>
-                  <button type="button" class="btn btn-secondary btn-sm" @click="addCodexFingerprintRow">
-                    {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
-                  </button>
-                  <p
-                    v-if="codexFingerprintNoRequired"
-                    class="mt-2 text-xs text-warning-foreground"
-                  >
-                    {{ t("admin.settings.gatewayForwarding.codexFingerprintNoRequiredWarn") }}
-                  </p>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <div class="pr-4">
-                    <label
-                      class="block text-sm font-medium text-foreground-muted"
-                    >
-                      {{
-                        t("admin.settings.gatewayForwarding.codexAllowAppServer")
-                      }}
-                    </label>
-                    <p class="mt-1 text-xs text-foreground-subtle">
-                      {{
-                        t(
-                          "admin.settings.gatewayForwarding.codexAllowAppServerDesc",
-                        )
-                      }}
-                    </p>
-                  </div>
-                  <Toggle
-                    v-model="form.codex_cli_only_allow_app_server_clients"
-                    :aria-label="t('admin.settings.gatewayForwarding.codexAllowAppServer')"
+                  <input
+                    v-model="form.min_codex_version"
+                    type="text"
+                    class="input w-full font-mono text-sm"
+                    :placeholder="
+                      t(
+                        'admin.settings.gatewayForwarding.minCodexVersionPlaceholder',
+                      )
+                    "
                   />
                 </div>
-
                 <div>
                   <label
-                    class="block text-sm font-medium text-foreground-muted"
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
                   >
-                    {{ t("admin.settings.gatewayForwarding.codexBlacklist") }}
+                    {{ t("admin.settings.gatewayForwarding.maxCodexVersion") }}
                   </label>
-                  <p class="mb-2 mt-1 text-xs text-foreground-subtle">
-                    {{ t("admin.settings.gatewayForwarding.codexBlacklistDesc") }}
-                  </p>
-                  <div
-                    v-for="(row, i) in codexBlacklistRows"
-                    :key="`codex-bl-${i}`"
-                    class="mb-2 flex gap-2"
-                  >
-                    <input
-                      v-model="row.originator"
-                      type="text"
-                      class="input w-1/3 font-mono text-sm"
-                      :placeholder="
-                        t(
-                          'admin.settings.gatewayForwarding.codexOriginatorPlaceholder',
-                        )
-                      "
-                    />
-                    <input
-                      v-model="row.uaContains"
-                      type="text"
-                      class="input flex-1 font-mono text-sm"
-                      :placeholder="
-                        t(
-                          'admin.settings.gatewayForwarding.codexUaContainsPlaceholder',
-                        )
-                      "
-                    />
-                    <button
-                      type="button"
-                      class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
-                      @click="removeCodexBlacklistRow(i)"
-                    >
-                      {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-sm"
-                    @click="addCodexBlacklistRow"
-                  >
-                    {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
-                  </button>
+                  <input
+                    v-model="form.max_codex_version"
+                    type="text"
+                    class="input w-full font-mono text-sm"
+                    :placeholder="
+                      t(
+                        'admin.settings.gatewayForwarding.maxCodexVersionPlaceholder',
+                      )
+                    "
+                  />
                 </div>
+              </div>
+              <p class="text-xs text-foreground-subtle">
+                {{ t("admin.settings.gatewayForwarding.codexVersionHint") }}
+              </p>
 
-                <div>
-                  <label
-                    class="block text-sm font-medium text-foreground-muted"
-                  >
-                    {{ t("admin.settings.gatewayForwarding.codexWhitelist") }}
-                  </label>
-                  <p class="mb-2 mt-1 text-xs text-foreground-subtle">
-                    {{ t("admin.settings.gatewayForwarding.codexWhitelistDesc") }}
-                  </p>
-                  <div
-                    v-for="(row, i) in codexWhitelistRows"
-                    :key="`codex-wl-${i}`"
-                    class="mb-2 flex gap-2"
-                  >
-                    <input
-                      v-model="row.originator"
-                      type="text"
-                      class="input w-1/3 font-mono text-sm"
-                      :placeholder="
-                        t(
-                          'admin.settings.gatewayForwarding.codexOriginatorPlaceholder',
-                        )
-                      "
-                    />
-                    <input
-                      v-model="row.uaContains"
-                      type="text"
-                      class="input flex-1 font-mono text-sm"
-                      :placeholder="
-                        t(
-                          'admin.settings.gatewayForwarding.codexUaContainsPlaceholder',
-                        )
-                      "
-                    />
-                    <label
-                      class="flex shrink-0 items-center gap-1 text-xs text-foreground-subtle"
-                      :title="
-                        t(
-                          'admin.settings.gatewayForwarding.codexWhitelistSkipFingerprintTooltip',
-                        )
-                      "
-                    >
-                      <input
-                        v-model="row.skipEngineFingerprint"
-                        type="checkbox"
-                      />
+              <div>
+                <label class="block text-sm font-medium text-foreground-muted">
+                  {{
+                    t(
+                      "admin.settings.gatewayForwarding.codexFingerprintSignals",
+                    )
+                  }}
+                </label>
+                <p class="mb-2 mt-1 text-xs text-foreground-subtle">
+                  {{
+                    t(
+                      "admin.settings.gatewayForwarding.codexFingerprintSignalsDesc",
+                    )
+                  }}
+                </p>
+                <div
+                  v-for="(row, i) in codexFingerprintRows"
+                  :key="`codex-fp-${i}`"
+                  class="mb-2 flex items-center gap-2"
+                >
+                  <select v-model="row.type" class="input w-32 text-sm">
+                    <option value="header_exact">
                       {{
                         t(
-                          'admin.settings.gatewayForwarding.codexWhitelistSkipFingerprint',
+                          "admin.settings.gatewayForwarding.codexFpTypeHeaderExact",
                         )
                       }}
-                    </label>
-                    <button
-                      type="button"
-                      class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
-                      @click="removeCodexWhitelistRow(i)"
-                    >
-                      {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
-                    </button>
-                  </div>
+                    </option>
+                    <option value="header_prefix">
+                      {{
+                        t(
+                          "admin.settings.gatewayForwarding.codexFpTypeHeaderPrefix",
+                        )
+                      }}
+                    </option>
+                    <option value="body_path">
+                      {{
+                        t(
+                          "admin.settings.gatewayForwarding.codexFpTypeBodyPath",
+                        )
+                      }}
+                    </option>
+                  </select>
+                  <input
+                    v-model="row.match"
+                    type="text"
+                    class="input flex-1 font-mono text-sm"
+                    :placeholder="
+                      t(
+                        'admin.settings.gatewayForwarding.codexFpMatchPlaceholder',
+                      )
+                    "
+                  />
+                  <label
+                    class="flex shrink-0 items-center gap-1 text-xs text-foreground-subtle"
+                  >
+                    <input v-model="row.required" type="checkbox" />
+                    {{ t("admin.settings.gatewayForwarding.codexFpRequired") }}
+                  </label>
                   <button
                     type="button"
-                    class="btn btn-secondary btn-sm"
-                    @click="addCodexWhitelistRow"
+                    class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
+                    @click="removeCodexFingerprintRow(i)"
                   >
-                    {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
+                    {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
                   </button>
                 </div>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  @click="addCodexFingerprintRow"
+                >
+                  {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
+                </button>
+                <p
+                  v-if="codexFingerprintNoRequired"
+                  class="mt-2 text-xs text-warning-foreground"
+                >
+                  {{
+                    t(
+                      "admin.settings.gatewayForwarding.codexFingerprintNoRequiredWarn",
+                    )
+                  }}
+                </p>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div class="pr-4">
+                  <label
+                    class="block text-sm font-medium text-foreground-muted"
+                  >
+                    {{
+                      t("admin.settings.gatewayForwarding.codexAllowAppServer")
+                    }}
+                  </label>
+                  <p class="mt-1 text-xs text-foreground-subtle">
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.codexAllowAppServerDesc",
+                      )
+                    }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.codex_cli_only_allow_app_server_clients"
+                  :aria-label="
+                    t('admin.settings.gatewayForwarding.codexAllowAppServer')
+                  "
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-foreground-muted">
+                  {{ t("admin.settings.gatewayForwarding.codexBlacklist") }}
+                </label>
+                <p class="mb-2 mt-1 text-xs text-foreground-subtle">
+                  {{ t("admin.settings.gatewayForwarding.codexBlacklistDesc") }}
+                </p>
+                <div
+                  v-for="(row, i) in codexBlacklistRows"
+                  :key="`codex-bl-${i}`"
+                  class="mb-2 flex gap-2"
+                >
+                  <input
+                    v-model="row.originator"
+                    type="text"
+                    class="input w-1/3 font-mono text-sm"
+                    :placeholder="
+                      t(
+                        'admin.settings.gatewayForwarding.codexOriginatorPlaceholder',
+                      )
+                    "
+                  />
+                  <input
+                    v-model="row.uaContains"
+                    type="text"
+                    class="input flex-1 font-mono text-sm"
+                    :placeholder="
+                      t(
+                        'admin.settings.gatewayForwarding.codexUaContainsPlaceholder',
+                      )
+                    "
+                  />
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
+                    @click="removeCodexBlacklistRow(i)"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  @click="addCodexBlacklistRow"
+                >
+                  {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-foreground-muted">
+                  {{ t("admin.settings.gatewayForwarding.codexWhitelist") }}
+                </label>
+                <p class="mb-2 mt-1 text-xs text-foreground-subtle">
+                  {{ t("admin.settings.gatewayForwarding.codexWhitelistDesc") }}
+                </p>
+                <div
+                  v-for="(row, i) in codexWhitelistRows"
+                  :key="`codex-wl-${i}`"
+                  class="mb-2 flex gap-2"
+                >
+                  <input
+                    v-model="row.originator"
+                    type="text"
+                    class="input w-1/3 font-mono text-sm"
+                    :placeholder="
+                      t(
+                        'admin.settings.gatewayForwarding.codexOriginatorPlaceholder',
+                      )
+                    "
+                  />
+                  <input
+                    v-model="row.uaContains"
+                    type="text"
+                    class="input flex-1 font-mono text-sm"
+                    :placeholder="
+                      t(
+                        'admin.settings.gatewayForwarding.codexUaContainsPlaceholder',
+                      )
+                    "
+                  />
+                  <label
+                    class="flex shrink-0 items-center gap-1 text-xs text-foreground-subtle"
+                    :title="
+                      t(
+                        'admin.settings.gatewayForwarding.codexWhitelistSkipFingerprintTooltip',
+                      )
+                    "
+                  >
+                    <input
+                      v-model="row.skipEngineFingerprint"
+                      type="checkbox"
+                    />
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.codexWhitelistSkipFingerprint",
+                      )
+                    }}
+                  </label>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm shrink-0 text-danger-foreground hover:text-danger-foreground"
+                    @click="removeCodexWhitelistRow(i)"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  @click="addCodexWhitelistRow"
+                >
+                  {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- Upstream Billing Probe Settings -->
           <div class="card" data-testid="upstream-billing-probe-settings">
-            <div
-              class="border-b border-outline px-6 py-4 "
-            >
-              <h2 class="text-lg font-semibold text-foreground ">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.upstreamBillingProbe.title") }}
               </h2>
-              <p class="mt-1 text-sm text-foreground-subtle ">
+              <p class="mt-1 text-sm text-foreground-subtle">
                 {{ t("admin.settings.upstreamBillingProbe.description") }}
               </p>
             </div>
@@ -4833,29 +5188,33 @@
               <template v-else>
                 <div class="flex items-center justify-between gap-4">
                   <div>
-                    <label class="font-medium text-foreground ">
+                    <label class="font-medium text-foreground">
                       {{ t("admin.settings.upstreamBillingProbe.enabled") }}
                     </label>
-                    <p class="text-sm text-foreground-subtle ">
+                    <p class="text-sm text-foreground-subtle">
                       {{ t("admin.settings.upstreamBillingProbe.enabledHint") }}
                     </p>
                   </div>
                   <Toggle
                     v-model="upstreamBillingProbeForm.enabled"
-                    :aria-label="t('admin.settings.upstreamBillingProbe.enabled')"
+                    :aria-label="
+                      t('admin.settings.upstreamBillingProbe.enabled')
+                    "
                     data-testid="upstream-billing-probe-enabled"
                   />
                 </div>
 
                 <div
                   v-if="upstreamBillingProbeForm.enabled"
-                  class="border-t border-outline pt-4 "
+                  class="border-t border-outline pt-4"
                 >
                   <label
-                    class="mb-2 block text-sm font-medium text-foreground "
+                    class="mb-2 block text-sm font-medium text-foreground"
                     for="upstream-billing-probe-interval"
                   >
-                    {{ t("admin.settings.upstreamBillingProbe.intervalMinutes") }}
+                    {{
+                      t("admin.settings.upstreamBillingProbe.intervalMinutes")
+                    }}
                   </label>
                   <input
                     id="upstream-billing-probe-interval"
@@ -4867,14 +5226,12 @@
                     data-testid="upstream-billing-probe-interval"
                     @keydown.enter.prevent="saveUpstreamBillingProbeSettings"
                   />
-                  <p class="mt-1.5 text-xs text-foreground-subtle ">
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{ t("admin.settings.upstreamBillingProbe.intervalHint") }}
                   </p>
                 </div>
 
-                <div
-                  class="flex justify-end border-t border-outline pt-4 "
-                >
+                <div class="flex justify-end border-t border-outline pt-4">
                   <button
                     type="button"
                     class="btn btn-primary btn-sm"
@@ -4904,8 +5261,13 @@
               </p>
             </div>
             <div class="space-y-5 p-6">
-              <div v-if="ollamaCloudUsageLoading" class="flex items-center gap-2 text-foreground-muted">
-                <div class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"></div>
+              <div
+                v-if="ollamaCloudUsageLoading"
+                class="flex items-center gap-2 text-foreground-muted"
+              >
+                <div
+                  class="h-4 w-4 animate-spin rounded-full border-b-2 border-brand"
+                ></div>
                 {{ t("common.loading") }}
               </div>
               <template v-else>
@@ -4924,9 +5286,15 @@
                     data-testid="ollama-cloud-usage-global-enabled"
                   />
                 </div>
-                <div v-if="ollamaCloudUsageForm.enabled" class="space-y-4 border-t border-outline pt-4">
+                <div
+                  v-if="ollamaCloudUsageForm.enabled"
+                  class="space-y-4 border-t border-outline pt-4"
+                >
                   <div>
-                    <label class="mb-2 block text-sm font-medium text-foreground" for="ollama-cloud-usage-debounce">
+                    <label
+                      class="mb-2 block text-sm font-medium text-foreground"
+                      for="ollama-cloud-usage-debounce"
+                    >
                       {{ t("admin.settings.ollamaCloudUsage.debounceMinutes") }}
                     </label>
                     <input
@@ -4944,7 +5312,10 @@
                     </p>
                   </div>
                   <div>
-                    <label class="mb-2 block text-sm font-medium text-foreground" for="ollama-cloud-usage-interval">
+                    <label
+                      class="mb-2 block text-sm font-medium text-foreground"
+                      for="ollama-cloud-usage-interval"
+                    >
                       {{ t("admin.settings.ollamaCloudUsage.intervalMinutes") }}
                     </label>
                     <input
@@ -4970,7 +5341,11 @@
                     data-testid="ollama-cloud-usage-global-save"
                     @click="saveOllamaCloudUsageSettings"
                   >
-                    {{ ollamaCloudUsageSaving ? t("common.saving") : t("common.save") }}
+                    {{
+                      ollamaCloudUsageSaving
+                        ? t("common.saving")
+                        : t("common.save")
+                    }}
                   </button>
                 </div>
               </template>
@@ -4979,9 +5354,7 @@
 
           <!-- Gateway Scheduling Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.scheduling.title") }}
               </h2>
@@ -4992,9 +5365,7 @@
             <div class="space-y-5 p-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{ t("admin.settings.scheduling.allowUngroupedKey") }}
                   </label>
                   <p class="mt-0.5 text-xs text-foreground-subtle">
@@ -5016,14 +5387,18 @@
                       )
                     }}
                   </label>
-                  <p class="mt-1 text-sm text-foreground-subtle text-foreground-muted">
+                  <p
+                    class="mt-1 text-sm text-foreground-subtle text-foreground-muted"
+                  >
                     {{
                       t(
                         "admin.settings.scheduling.accountSchedulingThresholdsDescription",
                       )
                     }}
                   </p>
-                  <p class="mt-0.5 text-xs text-foreground-subtle text-foreground-muted">
+                  <p
+                    class="mt-0.5 text-xs text-foreground-subtle text-foreground-muted"
+                  >
                     {{
                       t(
                         "admin.settings.scheduling.accountSchedulingThresholdsGlobalHint",
@@ -5038,7 +5413,9 @@
                     }}
                   </p>
                 </div>
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div
+                  class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                >
                   <div
                     v-for="platform in schedulingThresholdPlatforms"
                     :key="platform"
@@ -5051,7 +5428,9 @@
                         >
                           {{ platform }}
                         </label>
-                        <p class="mt-0.5 text-xs text-foreground-subtle text-foreground-muted">
+                        <p
+                          class="mt-0.5 text-xs text-foreground-subtle text-foreground-muted"
+                        >
                           {{
                             t(
                               "admin.settings.scheduling.accountSchedulingThresholdsRangeHint",
@@ -5066,7 +5445,9 @@
                       </span>
                     </div>
                     <input
-                      v-model.number="form.account_scheduling_thresholds[platform]"
+                      v-model.number="
+                        form.account_scheduling_thresholds[platform]
+                      "
                       type="number"
                       min="1"
                       max="100"
@@ -5081,46 +5462,67 @@
 
               <div
                 v-if="!form.openai_advanced_scheduler_enabled"
-                class="flex items-center justify-between border-t border-outline pt-5 "
+                class="flex items-center justify-between border-t border-outline pt-5"
               >
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted "
-                  >
-                    {{ t("admin.settings.openaiExperimentalScheduler.lowRatePriorityTitle") }}
-                  </label>
-                  <p class="mt-0.5 text-xs text-foreground-subtle ">
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{
-                      t("admin.settings.openaiExperimentalScheduler.lowRatePriorityDescription")
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.lowRatePriorityTitle",
+                      )
+                    }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.lowRatePriorityDescription",
+                      )
                     }}
                   </p>
                 </div>
                 <Toggle
                   v-model="form.openai_low_upstream_rate_priority_enabled"
-                  :aria-label="t('admin.settings.openaiExperimentalScheduler.lowRatePriorityTitle')"
+                  :aria-label="
+                    t(
+                      'admin.settings.openaiExperimentalScheduler.lowRatePriorityTitle',
+                    )
+                  "
                   data-testid="openai-low-rate-priority-toggle"
                 />
               </div>
 
               <div
-                v-if="!form.openai_advanced_scheduler_enabled && form.openai_low_upstream_rate_priority_enabled"
-                class="flex flex-col items-stretch gap-3 border-t border-outline pt-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6 "
+                v-if="
+                  !form.openai_advanced_scheduler_enabled &&
+                  form.openai_low_upstream_rate_priority_enabled
+                "
+                class="flex flex-col items-stretch gap-3 border-t border-outline pt-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
               >
                 <div class="min-w-0">
                   <label
-                    class="text-sm font-medium text-foreground-muted "
+                    class="text-sm font-medium text-foreground-muted"
                     for="openai-oauth-scheduling-rate-multiplier"
                   >
-                    {{ t("admin.settings.openaiExperimentalScheduler.oauthRateTitle") }}
+                    {{
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.oauthRateTitle",
+                      )
+                    }}
                   </label>
-                  <p class="mt-0.5 text-xs text-foreground-subtle ">
-                    {{ t("admin.settings.openaiExperimentalScheduler.oauthRatePriorityDescription") }}
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.oauthRatePriorityDescription",
+                      )
+                    }}
                   </p>
                 </div>
                 <div class="relative w-full shrink-0 sm:w-32">
                   <input
                     id="openai-oauth-scheduling-rate-multiplier"
-                    v-model.number="form.openai_oauth_scheduling_rate_multiplier"
+                    v-model.number="
+                      form.openai_oauth_scheduling_rate_multiplier
+                    "
                     class="input pr-8"
                     data-testid="openai-oauth-scheduling-rate-multiplier"
                     min="0"
@@ -5130,26 +5532,31 @@
                   />
                   <span
                     class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-foreground-subtle"
-                  >x</span>
+                    >x</span
+                  >
                 </div>
               </div>
 
-              <div class="flex items-center justify-between border-t border-outline pt-5 ">
+              <div
+                class="flex items-center justify-between border-t border-outline pt-5"
+              >
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{ t("admin.settings.openaiExperimentalScheduler.title") }}
                   </label>
                   <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
-                      t("admin.settings.openaiExperimentalScheduler.description")
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.description",
+                      )
                     }}
                   </p>
                 </div>
                 <Toggle
                   v-model="form.openai_advanced_scheduler_enabled"
-                  :aria-label="t('admin.settings.openaiExperimentalScheduler.title')"
+                  :aria-label="
+                    t('admin.settings.openaiExperimentalScheduler.title')
+                  "
                   data-testid="openai-advanced-scheduler-toggle"
                 />
               </div>
@@ -5159,20 +5566,30 @@
                 class="flex items-center justify-between border-t border-outline pt-5"
               >
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
-                    {{ t("admin.settings.openaiExperimentalScheduler.stickyWeightedTitle") }}
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.stickyWeightedTitle",
+                      )
+                    }}
                   </label>
                   <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
-                      t("admin.settings.openaiExperimentalScheduler.stickyWeightedDescription")
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.stickyWeightedDescription",
+                      )
                     }}
                   </p>
                 </div>
                 <Toggle
-                  v-model="form.openai_advanced_scheduler_sticky_weighted_enabled"
-                  :aria-label="t('admin.settings.openaiExperimentalScheduler.stickyWeightedTitle')"
+                  v-model="
+                    form.openai_advanced_scheduler_sticky_weighted_enabled
+                  "
+                  :aria-label="
+                    t(
+                      'admin.settings.openaiExperimentalScheduler.stickyWeightedTitle',
+                    )
+                  "
                 />
               </div>
 
@@ -5181,42 +5598,62 @@
                 class="flex items-center justify-between border-t border-outline pt-5"
               >
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
-                    {{ t("admin.settings.openaiExperimentalScheduler.subscriptionPriorityTitle") }}
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.subscriptionPriorityTitle",
+                      )
+                    }}
                   </label>
                   <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
-                      t("admin.settings.openaiExperimentalScheduler.subscriptionPriorityDescription")
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.subscriptionPriorityDescription",
+                      )
                     }}
                   </p>
                 </div>
                 <Toggle
-                  v-model="form.openai_advanced_scheduler_subscription_priority_enabled"
-                  :aria-label="t('admin.settings.openaiExperimentalScheduler.subscriptionPriorityTitle')"
+                  v-model="
+                    form.openai_advanced_scheduler_subscription_priority_enabled
+                  "
+                  :aria-label="
+                    t(
+                      'admin.settings.openaiExperimentalScheduler.subscriptionPriorityTitle',
+                    )
+                  "
                 />
               </div>
 
               <div
                 v-if="form.openai_advanced_scheduler_enabled"
-                class="flex flex-col items-stretch gap-3 border-t border-outline pt-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6 "
+                class="flex flex-col items-stretch gap-3 border-t border-outline pt-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
               >
                 <div class="min-w-0">
                   <label
-                    class="text-sm font-medium text-foreground-muted "
+                    class="text-sm font-medium text-foreground-muted"
                     for="openai-oauth-scheduling-rate-multiplier"
                   >
-                    {{ t("admin.settings.openaiExperimentalScheduler.oauthRateTitle") }}
+                    {{
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.oauthRateTitle",
+                      )
+                    }}
                   </label>
-                  <p class="mt-0.5 text-xs text-foreground-subtle ">
-                    {{ t("admin.settings.openaiExperimentalScheduler.oauthRateWeightedDescription") }}
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.oauthRateWeightedDescription",
+                      )
+                    }}
                   </p>
                 </div>
                 <div class="relative w-full shrink-0 sm:w-32">
                   <input
                     id="openai-oauth-scheduling-rate-multiplier"
-                    v-model.number="form.openai_oauth_scheduling_rate_multiplier"
+                    v-model.number="
+                      form.openai_oauth_scheduling_rate_multiplier
+                    "
                     class="input pr-8"
                     data-testid="openai-oauth-scheduling-rate-multiplier"
                     min="0"
@@ -5226,28 +5663,35 @@
                   />
                   <span
                     class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-foreground-subtle"
-                  >x</span>
+                    >x</span
+                  >
                 </div>
               </div>
 
               <div
                 v-if="form.openai_advanced_scheduler_enabled"
-                class="border-t border-outline pt-5 "
+                class="border-t border-outline pt-5"
               >
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
-                    {{ t("admin.settings.openaiExperimentalScheduler.weightsTitle") }}
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.weightsTitle",
+                      )
+                    }}
                   </label>
                   <p class="mt-0.5 text-xs text-foreground-subtle">
                     {{
-                      t("admin.settings.openaiExperimentalScheduler.weightsDescription")
+                      t(
+                        "admin.settings.openaiExperimentalScheduler.weightsDescription",
+                      )
                     }}
                   </p>
                 </div>
 
-                <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <div
+                  class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5"
+                >
                   <label
                     v-for="field in openAIAdvancedSchedulerWeightFields"
                     :key="field.key"
@@ -5271,9 +5715,7 @@
 
           <!-- Gateway Forwarding Behavior -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.gatewayForwarding.title") }}
               </h2>
@@ -5282,13 +5724,17 @@
               </p>
             </div>
             <div class="space-y-5 p-6">
-              <div class="grid gap-5 border-b border-outline pb-5 border-outline md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+              <div
+                class="grid gap-5 border-b border-outline pb-5 border-outline md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
+              >
                 <div>
                   <label
                     for="grok-default-text-model"
                     class="text-sm font-medium text-foreground-muted text-foreground-muted"
                   >
-                    {{ t("admin.settings.gatewayForwarding.grokDefaultTextModel") }}
+                    {{
+                      t("admin.settings.gatewayForwarding.grokDefaultTextModel")
+                    }}
                   </label>
                   <input
                     id="grok-default-text-model"
@@ -5304,56 +5750,108 @@
                     <option value="grok-4.1-fast" />
                     <option value="grok-4" />
                   </datalist>
-                  <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
-                    {{ t("admin.settings.gatewayForwarding.grokDefaultTextModelHint") }}
+                  <p
+                    class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                  >
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.grokDefaultTextModelHint",
+                      )
+                    }}
                   </p>
                 </div>
-                <div class="flex items-center justify-between gap-5 md:min-w-72">
+                <div
+                  class="flex items-center justify-between gap-5 md:min-w-72"
+                >
                   <div>
-                    <label class="text-sm font-medium text-foreground-muted text-foreground-muted">
-                      {{ t("admin.settings.gatewayForwarding.grokCrossClientMap") }}
+                    <label
+                      class="text-sm font-medium text-foreground-muted text-foreground-muted"
+                    >
+                      {{
+                        t("admin.settings.gatewayForwarding.grokCrossClientMap")
+                      }}
                     </label>
-                    <p class="mt-0.5 max-w-sm text-xs text-foreground-subtle text-foreground-muted">
-                      {{ t("admin.settings.gatewayForwarding.grokCrossClientMapHint") }}
+                    <p
+                      class="mt-0.5 max-w-sm text-xs text-foreground-subtle text-foreground-muted"
+                    >
+                      {{
+                        t(
+                          "admin.settings.gatewayForwarding.grokCrossClientMapHint",
+                        )
+                      }}
                     </p>
                   </div>
                   <Toggle
                     v-model="form.grok_cross_client_model_map_enabled"
                     data-testid="grok-cross-client-model-map-toggle"
-                    :aria-label="t('admin.settings.gatewayForwarding.grokCrossClientMap')"
+                    :aria-label="
+                      t('admin.settings.gatewayForwarding.grokCrossClientMap')
+                    "
                   />
                 </div>
-                </div>
-                <div class="md:col-span-2">
-                  <label
-                    for="grok-default-base-url-mode"
-                    class="text-sm font-medium text-foreground-muted text-foreground-muted"
-                  >
-                    {{ t("admin.settings.gatewayForwarding.grokDefaultBaseURLMode") }}
-                  </label>
-                  <select
-                    id="grok-default-base-url-mode"
-                    v-model="form.grok_default_base_url_mode"
-                    class="input mt-2 w-full"
-                    data-testid="grok-default-base-url-mode"
-                  >
-                    <option value="cli">{{ t("admin.settings.gatewayForwarding.grokBaseURLModeCLI") }}</option>
-                    <option value="api">{{ t("admin.settings.gatewayForwarding.grokBaseURLModeAPI") }}</option>
-                    <option value="us-east-1">{{ t("admin.settings.gatewayForwarding.grokBaseURLModeUSEast1") }}</option>
-                    <option value="us-west-2">{{ t("admin.settings.gatewayForwarding.grokBaseURLModeUSWest2") }}</option>
-                    <option value="eu-west-1">{{ t("admin.settings.gatewayForwarding.grokBaseURLModeEUWest1") }}</option>
-                  </select>
-                  <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
-                    {{ t("admin.settings.gatewayForwarding.grokDefaultBaseURLModeHint") }}
-                  </p>
-                </div>
+              </div>
+              <div class="md:col-span-2">
+                <label
+                  for="grok-default-base-url-mode"
+                  class="text-sm font-medium text-foreground-muted text-foreground-muted"
+                >
+                  {{
+                    t("admin.settings.gatewayForwarding.grokDefaultBaseURLMode")
+                  }}
+                </label>
+                <select
+                  id="grok-default-base-url-mode"
+                  v-model="form.grok_default_base_url_mode"
+                  class="input mt-2 w-full"
+                  data-testid="grok-default-base-url-mode"
+                >
+                  <option value="cli">
+                    {{
+                      t("admin.settings.gatewayForwarding.grokBaseURLModeCLI")
+                    }}
+                  </option>
+                  <option value="api">
+                    {{
+                      t("admin.settings.gatewayForwarding.grokBaseURLModeAPI")
+                    }}
+                  </option>
+                  <option value="us-east-1">
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.grokBaseURLModeUSEast1",
+                      )
+                    }}
+                  </option>
+                  <option value="us-west-2">
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.grokBaseURLModeUSWest2",
+                      )
+                    }}
+                  </option>
+                  <option value="eu-west-1">
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.grokBaseURLModeEUWest1",
+                      )
+                    }}
+                  </option>
+                </select>
+                <p
+                  class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                >
+                  {{
+                    t(
+                      "admin.settings.gatewayForwarding.grokDefaultBaseURLModeHint",
+                    )
+                  }}
+                </p>
+              </div>
 
               <!-- Fingerprint Unification -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.fingerprintUnification",
@@ -5370,16 +5868,16 @@
                 </div>
                 <Toggle
                   v-model="form.enable_fingerprint_unification"
-                  :aria-label="t('admin.settings.gatewayForwarding.fingerprintUnification')"
+                  :aria-label="
+                    t('admin.settings.gatewayForwarding.fingerprintUnification')
+                  "
                 />
               </div>
 
               <!-- Metadata Passthrough -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{
                       t("admin.settings.gatewayForwarding.metadataPassthrough")
                     }}
@@ -5394,16 +5892,16 @@
                 </div>
                 <Toggle
                   v-model="form.enable_metadata_passthrough"
-                  :aria-label="t('admin.settings.gatewayForwarding.metadataPassthrough')"
+                  :aria-label="
+                    t('admin.settings.gatewayForwarding.metadataPassthrough')
+                  "
                 />
               </div>
 
               <!-- CCH Signing -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{ t("admin.settings.gatewayForwarding.cchSigning") }}
                   </label>
                   <p class="mt-0.5 text-xs text-foreground-subtle">
@@ -5419,9 +5917,7 @@
               <!-- Claude OAuth System Prompt Injection -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.claudeOAuthSystemPromptInjection",
@@ -5438,7 +5934,11 @@
                 </div>
                 <Toggle
                   v-model="form.enable_claude_oauth_system_prompt_injection"
-                  :aria-label="t('admin.settings.gatewayForwarding.claudeOAuthSystemPromptInjection')"
+                  :aria-label="
+                    t(
+                      'admin.settings.gatewayForwarding.claudeOAuthSystemPromptInjection',
+                    )
+                  "
                 />
               </div>
 
@@ -5465,9 +5965,7 @@
                       ]"
                     >
                       <div class="min-w-0">
-                        <div
-                          class="text-sm font-medium text-foreground"
-                        >
+                        <div class="text-sm font-medium text-foreground">
                           {{
                             t(
                               "admin.settings.gatewayForwarding.systemBlockTitle",
@@ -5475,9 +5973,7 @@
                             )
                           }}
                         </div>
-                        <div
-                          class="mt-0.5 text-xs text-foreground-subtle"
-                        >
+                        <div class="mt-0.5 text-xs text-foreground-subtle">
                           {{ getClaudeOAuthPresetLabel(block.preset) }}
                         </div>
                       </div>
@@ -5530,7 +6026,12 @@
                         </button>
                         <Toggle
                           v-model="block.enabled"
-                          :aria-label="t('admin.settings.gatewayForwarding.systemBlockTitle', { index: index + 1 })"
+                          :aria-label="
+                            t(
+                              'admin.settings.gatewayForwarding.systemBlockTitle',
+                              { index: index + 1 },
+                            )
+                          "
                         />
                         <button
                           type="button"
@@ -5584,7 +6085,11 @@
                         <label
                           class="mb-1 block text-xs font-medium text-foreground-muted"
                         >
-                          {{ t("admin.settings.gatewayForwarding.systemBlockText") }}
+                          {{
+                            t(
+                              "admin.settings.gatewayForwarding.systemBlockText",
+                            )
+                          }}
                         </label>
                         <textarea
                           v-model="block.text"
@@ -5657,9 +6162,7 @@
               <!-- Anthropic Cache TTL 1h Injection -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.anthropicCacheTTL1hInjection",
@@ -5676,16 +6179,18 @@
                 </div>
                 <Toggle
                   v-model="form.enable_anthropic_cache_ttl_1h_injection"
-                  :aria-label="t('admin.settings.gatewayForwarding.anthropicCacheTTL1hInjection')"
+                  :aria-label="
+                    t(
+                      'admin.settings.gatewayForwarding.anthropicCacheTTL1hInjection',
+                    )
+                  "
                 />
               </div>
 
               <!-- messages cache_control 改写 -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.rewriteMessageCacheControl",
@@ -5702,16 +6207,18 @@
                 </div>
                 <Toggle
                   v-model="form.rewrite_message_cache_control"
-                  :aria-label="t('admin.settings.gatewayForwarding.rewriteMessageCacheControl')"
+                  :aria-label="
+                    t(
+                      'admin.settings.gatewayForwarding.rewriteMessageCacheControl',
+                    )
+                  "
                 />
               </div>
 
               <!-- 客户端 dateline 归一化（仅 Anthropic OAuth/SetupToken） -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{
                       t(
                         "admin.settings.gatewayForwarding.clientDatelineNormalization",
@@ -5728,7 +6235,11 @@
                 </div>
                 <Toggle
                   v-model="form.enable_client_dateline_normalization"
-                  :aria-label="t('admin.settings.gatewayForwarding.clientDatelineNormalization')"
+                  :aria-label="
+                    t(
+                      'admin.settings.gatewayForwarding.clientDatelineNormalization',
+                    )
+                  "
                 />
               </div>
 
@@ -5768,9 +6279,7 @@
                   class="mb-2 block text-sm font-medium text-foreground-muted"
                 >
                   {{
-                    t(
-                      "admin.settings.gatewayForwarding.openaiCodexUserAgent",
-                    )
+                    t("admin.settings.gatewayForwarding.openaiCodexUserAgent")
                   }}
                 </label>
                 <input
@@ -5813,7 +6322,9 @@
                     )
                   "
                 />
-                <p class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted">
+                <p
+                  class="mt-1.5 text-xs text-foreground-subtle text-foreground-muted"
+                >
                   {{
                     t(
                       "admin.settings.gatewayForwarding.openaiCodexClientVersionHint",
@@ -5834,7 +6345,9 @@
                       )
                     }}
                   </label>
-                  <p class="mt-0.5 text-xs text-foreground-subtle text-foreground-muted">
+                  <p
+                    class="mt-0.5 text-xs text-foreground-subtle text-foreground-muted"
+                  >
                     {{
                       t(
                         "admin.settings.gatewayForwarding.openaiCodexVersionAutoSyncHint",
@@ -5850,18 +6363,19 @@
                 </div>
                 <Toggle
                   v-model="form.openai_codex_version_auto_sync_enabled"
-                  :aria-label="t('admin.settings.gatewayForwarding.openaiCodexVersionAutoSync')"
+                  :aria-label="
+                    t(
+                      'admin.settings.gatewayForwarding.openaiCodexVersionAutoSync',
+                    )
+                  "
                 />
               </div>
-
             </div>
           </div>
 
           <!-- Web Search Emulation -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.webSearchEmulation.title") }}
               </h2>
@@ -5873,9 +6387,7 @@
               <!-- Global Toggle -->
               <div class="flex items-center justify-between">
                 <div>
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{ t("admin.settings.webSearchEmulation.enabled") }}
                   </label>
                   <p class="mt-0.5 text-xs text-foreground-subtle">
@@ -5891,9 +6403,7 @@
               <!-- Providers -->
               <div v-if="webSearchConfig.enabled" class="space-y-4">
                 <div class="flex items-center justify-between">
-                  <label
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <label class="text-sm font-medium text-foreground-muted">
                     {{ t("admin.settings.webSearchEmulation.providers") }}
                   </label>
                   <button
@@ -6249,9 +6759,7 @@
                 v-if="wsTestResult"
                 class="mt-4 max-h-80 overflow-y-auto rounded-panel border border-outline bg-surface-subtle p-4"
               >
-                <p
-                  class="mb-2 text-sm font-medium text-foreground-muted"
-                >
+                <p class="mb-2 text-sm font-medium text-foreground-muted">
                   {{
                     t("admin.settings.webSearchEmulation.testResultProvider")
                   }}: {{ wsTestResult.provider }}
@@ -6292,34 +6800,34 @@
             </template>
           </BaseDialog>
 
-        <!-- Usage Records Settings -->
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">
-              {{ t('admin.settings.usageRecords.title') }}
-            </h2>
-            <p class="mt-1 text-sm text-foreground-subtle">
-              {{ t('admin.settings.usageRecords.description') }}
-            </p>
-          </div>
-          <div class="space-y-4 p-6">
-            <!-- User error requests visibility -->
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.user_error_view.label') }}
-                </label>
-                <p class="text-xs text-foreground-subtle">
-                  {{ t('admin.settings.user_error_view.description') }}
-                </p>
+          <!-- Usage Records Settings -->
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
+                {{ t("admin.settings.usageRecords.title") }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{ t("admin.settings.usageRecords.description") }}
+              </p>
+            </div>
+            <div class="space-y-4 p-6">
+              <!-- User error requests visibility -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t("admin.settings.user_error_view.label") }}
+                  </label>
+                  <p class="text-xs text-foreground-subtle">
+                    {{ t("admin.settings.user_error_view.description") }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.allow_user_view_error_requests"
+                  :aria-label="t('admin.settings.user_error_view.label')"
+                />
               </div>
-              <Toggle
-                v-model="form.allow_user_view_error_requests"
-                :aria-label="t('admin.settings.user_error_view.label')"
-              />
             </div>
           </div>
-        </div>
         </div>
         <!-- /Tab: Gateway — Claude Code, Scheduling -->
 
@@ -6327,9 +6835,7 @@
         <div v-show="activeTab === 'general'" class="space-y-6">
           <!-- Site Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.site.title") }}
               </h2>
@@ -6349,14 +6855,14 @@
                   <p class="mt-1 text-xs text-foreground-subtle">
                     {{ t("admin.settings.site.backendModeDescription") }}
                   </p>
-	                </div>
-	                <Toggle
-	                  v-model="form.backend_mode_enabled"
-	                  :aria-label="t('admin.settings.site.backendMode')"
-	                />
-	              </div>
+                </div>
+                <Toggle
+                  v-model="form.backend_mode_enabled"
+                  :aria-label="t('admin.settings.site.backendMode')"
+                />
+              </div>
 
-	              <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
                   <label
                     class="mb-2 block text-sm font-medium text-foreground-muted"
@@ -6477,9 +6983,7 @@
                     class="rounded-panel border border-outline bg-surface-subtle p-4"
                   >
                     <div class="mb-3 flex items-center justify-between">
-                      <span
-                        class="text-sm font-medium text-foreground-muted"
-                      >
+                      <span class="text-sm font-medium text-foreground-muted">
                         {{
                           t("admin.settings.site.customEndpoints.itemLabel", {
                             n: index + 1,
@@ -6666,7 +7170,9 @@
               </div>
 
               <!-- Compact Home Page -->
-              <div class="flex items-center justify-between border-t border-outline pt-4">
+              <div
+                class="flex items-center justify-between border-t border-outline pt-4"
+              >
                 <div>
                   <label class="font-medium text-foreground">{{
                     t("admin.settings.site.compactHome")
@@ -6711,55 +7217,176 @@
                     {{ localText("货币与汇率", "Currency & exchange rate") }}
                   </h2>
                   <p class="mt-1 text-sm text-foreground-subtle">
-                    {{ localText("提供可供模型广场及后续功能复用的 USD/CNY 市场基准，不影响支付结算汇率。", "A reusable USD/CNY market benchmark. Payment settlement rates remain independent.") }}
+                    {{
+                      localText(
+                        "提供可供模型广场及后续功能复用的 USD/CNY 市场基准，不影响支付结算汇率。",
+                        "A reusable USD/CNY market benchmark. Payment settlement rates remain independent.",
+                      )
+                    }}
                   </p>
                 </div>
-                <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="exchangeRateStatusClass">
+                <span
+                  class="rounded-full px-2.5 py-1 text-xs font-medium"
+                  :class="exchangeRateStatusClass"
+                >
                   {{ exchangeRateStatusText }}
                 </span>
               </div>
             </div>
             <div class="space-y-5 p-6">
               <div class="grid gap-3 sm:grid-cols-3">
-                <div class="rounded-panel border border-outline bg-surface-subtle p-4">
-                  <p class="text-xs text-foreground-subtle">{{ localText("当前有效汇率", "Effective rate") }}</p>
-                  <p class="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground">1 USD = {{ formatExchangeRate(form.currency_usd_to_cny_effective_rate) }} CNY</p>
+                <div
+                  class="rounded-panel border border-outline bg-surface-subtle p-4"
+                >
+                  <p class="text-xs text-foreground-subtle">
+                    {{ localText("当前有效汇率", "Effective rate") }}
+                  </p>
+                  <p
+                    class="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground"
+                  >
+                    1 USD =
+                    {{
+                      formatExchangeRate(
+                        form.currency_usd_to_cny_effective_rate,
+                      )
+                    }}
+                    CNY
+                  </p>
                 </div>
-                <div class="rounded-panel border border-outline bg-surface-subtle p-4">
-                  <p class="text-xs text-foreground-subtle">{{ localText("反向换算", "Inverse rate") }}</p>
-                  <p class="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground">1 CNY = {{ inverseExchangeRate }} USD</p>
+                <div
+                  class="rounded-panel border border-outline bg-surface-subtle p-4"
+                >
+                  <p class="text-xs text-foreground-subtle">
+                    {{ localText("反向换算", "Inverse rate") }}
+                  </p>
+                  <p
+                    class="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground"
+                  >
+                    1 CNY = {{ inverseExchangeRate }} USD
+                  </p>
                 </div>
-                <div class="rounded-panel border border-outline bg-surface-subtle p-4">
-                  <p class="text-xs text-foreground-subtle">{{ localText("数据来源", "Source") }}</p>
-                  <p class="mt-1 text-sm font-medium text-foreground">{{ form.currency_exchange_rate_source === "auto" ? form.currency_exchange_rate_provider : localText("手动配置", "Manual") }}</p>
-                  <p v-if="form.currency_exchange_rate_provider_as_of" class="mt-1 text-xs text-foreground-subtle">{{ localText("数据日期", "As of") }} {{ form.currency_exchange_rate_provider_as_of }}</p>
+                <div
+                  class="rounded-panel border border-outline bg-surface-subtle p-4"
+                >
+                  <p class="text-xs text-foreground-subtle">
+                    {{ localText("数据来源", "Source") }}
+                  </p>
+                  <p class="mt-1 text-sm font-medium text-foreground">
+                    {{
+                      form.currency_exchange_rate_source === "auto"
+                        ? form.currency_exchange_rate_provider
+                        : localText("手动配置", "Manual")
+                    }}
+                  </p>
+                  <p
+                    v-if="form.currency_exchange_rate_provider_as_of"
+                    class="mt-1 text-xs text-foreground-subtle"
+                  >
+                    {{ localText("数据日期", "As of") }}
+                    {{ form.currency_exchange_rate_provider_as_of }}
+                  </p>
                 </div>
               </div>
-              <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+              <div
+                class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]"
+              >
                 <div>
-                  <label class="mb-2 block text-sm font-medium text-foreground-muted">{{ localText("手动 / 备用汇率", "Manual / fallback rate") }}</label>
+                  <label
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
+                    >{{
+                      localText("手动 / 备用汇率", "Manual / fallback rate")
+                    }}</label
+                  >
                   <div class="relative max-w-sm">
-                    <input v-model.number="form.currency_usd_to_cny_manual_rate" type="number" min="0.01" max="99.99" step="0.01" class="input pr-14 font-mono tabular-nums" />
-                    <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle">CNY</span>
+                    <input
+                      v-model.number="form.currency_usd_to_cny_manual_rate"
+                      type="number"
+                      min="0.01"
+                      max="99.99"
+                      step="0.01"
+                      class="input pr-14 font-mono tabular-nums"
+                    />
+                    <span
+                      class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle"
+                      >CNY</span
+                    >
                   </div>
-                  <p class="mt-1.5 text-xs text-foreground-subtle">{{ localText("自动同步关闭或暂时不可用时使用此值。", "Used when automatic sync is disabled or temporarily unavailable.") }}</p>
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
+                    {{
+                      localText(
+                        "自动同步关闭或暂时不可用时使用此值。",
+                        "Used when automatic sync is disabled or temporarily unavailable.",
+                      )
+                    }}
+                  </p>
                 </div>
                 <div class="rounded-panel border border-outline p-4">
                   <div class="flex items-center justify-between gap-4">
                     <div>
-                      <p class="text-sm font-medium text-foreground">{{ localText("自动同步最新汇率", "Automatically sync latest rate") }}</p>
-                      <p class="mt-1 text-xs text-foreground-subtle">{{ localText("服务端每 6 小时从 Frankfurter / ECB 同步；异常时保留上次成功值。", "The server syncs from Frankfurter / ECB every 6 hours and keeps the last successful value on failure.") }}</p>
+                      <p class="text-sm font-medium text-foreground">
+                        {{
+                          localText(
+                            "自动同步最新汇率",
+                            "Automatically sync latest rate",
+                          )
+                        }}
+                      </p>
+                      <p class="mt-1 text-xs text-foreground-subtle">
+                        {{
+                          localText(
+                            "服务端每 6 小时从 Frankfurter / ECB 同步；异常时保留上次成功值。",
+                            "The server syncs from Frankfurter / ECB every 6 hours and keeps the last successful value on failure.",
+                          )
+                        }}
+                      </p>
                     </div>
-                    <Toggle v-model="form.currency_exchange_rate_auto_sync_enabled" :aria-label="localText('自动同步最新汇率', 'Automatically sync latest rate')" />
+                    <Toggle
+                      v-model="form.currency_exchange_rate_auto_sync_enabled"
+                      :aria-label="
+                        localText(
+                          '自动同步最新汇率',
+                          'Automatically sync latest rate',
+                        )
+                      "
+                    />
                   </div>
-                  <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-outline pt-4">
-                    <p class="text-xs text-foreground-subtle">{{ form.currency_exchange_rate_last_synced_at ? `${localText("上次同步", "Last synced")} ${formatExchangeRateTime(form.currency_exchange_rate_last_synced_at)}` : localText("尚未同步", "Not synced yet") }}</p>
-                    <button type="button" class="btn btn-secondary inline-flex items-center gap-2" :disabled="!form.currency_exchange_rate_auto_sync_enabled || exchangeRateSyncing" @click="syncExchangeRateNow">
-                      <Icon name="refresh" class="h-4 w-4" :class="{ 'animate-spin': exchangeRateSyncing }" />
-                      {{ exchangeRateSyncing ? localText("同步中", "Syncing") : localText("立即同步", "Sync now") }}
+                  <div
+                    class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-outline pt-4"
+                  >
+                    <p class="text-xs text-foreground-subtle">
+                      {{
+                        form.currency_exchange_rate_last_synced_at
+                          ? `${localText("上次同步", "Last synced")} ${formatExchangeRateTime(form.currency_exchange_rate_last_synced_at)}`
+                          : localText("尚未同步", "Not synced yet")
+                      }}
+                    </p>
+                    <button
+                      type="button"
+                      class="btn btn-secondary inline-flex items-center gap-2"
+                      :disabled="
+                        !form.currency_exchange_rate_auto_sync_enabled ||
+                        exchangeRateSyncing
+                      "
+                      @click="syncExchangeRateNow"
+                    >
+                      <Icon
+                        name="refresh"
+                        class="h-4 w-4"
+                        :class="{ 'animate-spin': exchangeRateSyncing }"
+                      />
+                      {{
+                        exchangeRateSyncing
+                          ? localText("同步中", "Syncing")
+                          : localText("立即同步", "Sync now")
+                      }}
                     </button>
                   </div>
-                  <p v-if="form.currency_exchange_rate_last_error" class="mt-3 rounded-panel bg-danger-subtle px-3 py-2 text-xs text-danger-foreground">{{ form.currency_exchange_rate_last_error }}</p>
+                  <p
+                    v-if="form.currency_exchange_rate_last_error"
+                    class="mt-3 rounded-panel bg-danger-subtle px-3 py-2 text-xs text-danger-foreground"
+                  >
+                    {{ form.currency_exchange_rate_last_error }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -6767,9 +7394,7 @@
 
           <!-- Custom Menu Items -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.customMenu.title") }}
               </h2>
@@ -6785,9 +7410,7 @@
                 class="rounded-panel border border-outline bg-surface-subtle p-4"
               >
                 <div class="mb-3 flex items-center justify-between">
-                  <span
-                    class="text-sm font-medium text-foreground-muted"
-                  >
+                  <span class="text-sm font-medium text-foreground-muted">
                     {{
                       t("admin.settings.customMenu.itemLabel", { n: index + 1 })
                     }}
@@ -6955,45 +7578,57 @@
               </button>
             </div>
           </div>
-	        </div>
-	        <!-- /Tab: General -->
+        </div>
+        <!-- /Tab: General -->
 
-	        <!-- Tab: Login Agreement -->
-	        <div v-show="activeTab === 'agreement'" class="space-y-6">
-	          <div class="card">
-	            <div class="border-b border-outline px-6 py-4">
-	              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-	                <div>
-	                  <h2 class="text-lg font-semibold text-foreground">
-	                    {{ localText("登录条款确认", "Login agreement") }}
-	                  </h2>
-	                  <p class="mt-1 text-sm text-foreground-subtle">
-	                    {{
-	                      localText(
-	                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档。",
-	                        "Control whether the login page requires users to accept Markdown policy documents first.",
-	                      )
-	                    }}
-	                  </p>
-	                </div>
-	                <div class="flex items-center gap-3">
-	                  <span class="text-sm text-foreground-muted">
-	                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
-	                  </span>
-	                  <Toggle
-	                    v-model="form.login_agreement_enabled"
-	                    :aria-label="localText('启用登录条款确认', 'Enable login agreement')"
-	                  />
-	                </div>
-	              </div>
-	            </div>
+        <!-- Tab: Login Agreement -->
+        <div v-show="activeTab === 'agreement'" class="space-y-6">
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <div
+                class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+              >
+                <div>
+                  <h2 class="text-lg font-semibold text-foreground">
+                    {{ localText("登录条款确认", "Login agreement") }}
+                  </h2>
+                  <p class="mt-1 text-sm text-foreground-subtle">
+                    {{
+                      localText(
+                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档。",
+                        "Control whether the login page requires users to accept Markdown policy documents first.",
+                      )
+                    }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-sm text-foreground-muted">
+                    {{
+                      form.login_agreement_enabled
+                        ? localText("已启用", "Enabled")
+                        : localText("未启用", "Disabled")
+                    }}
+                  </span>
+                  <Toggle
+                    v-model="form.login_agreement_enabled"
+                    :aria-label="
+                      localText('启用登录条款确认', 'Enable login agreement')
+                    "
+                  />
+                </div>
+              </div>
+            </div>
 
-	            <div class="space-y-6 p-6">
-	              <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
-	                <div>
-	                  <label class="mb-2 block text-sm font-medium text-foreground-muted">
-	                    {{ localText("展示形式", "Display mode") }}
-	                  </label>
+            <div class="space-y-6 p-6">
+              <div
+                class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_220px]"
+              >
+                <div>
+                  <label
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
+                  >
+                    {{ localText("展示形式", "Display mode") }}
+                  </label>
                   <div
                     class="grid grid-cols-2 gap-1 rounded-panel border border-outline bg-surface-subtle p-1"
                     role="group"
@@ -7031,14 +7666,22 @@
                   <p class="mt-1.5 text-xs text-foreground-subtle">
                     {{
                       form.login_agreement_mode === "checkbox"
-                        ? localText("复选框会显示在登录按钮下方，未勾选前所有登录入口禁用。", "The checkbox appears below the login button and gates all login actions.")
-                        : localText("弹窗会在登录页打开，用户拒绝后所有登录入口保持禁用。", "The modal opens on the login page and gates all login actions until accepted.")
+                        ? localText(
+                            "复选框会显示在登录按钮下方，未勾选前所有登录入口禁用。",
+                            "The checkbox appears below the login button and gates all login actions.",
+                          )
+                        : localText(
+                            "弹窗会在登录页打开，用户拒绝后所有登录入口保持禁用。",
+                            "The modal opens on the login page and gates all login actions until accepted.",
+                          )
                     }}
                   </p>
                 </div>
 
                 <div>
-                  <label class="mb-2 block text-sm font-medium text-foreground-muted">
+                  <label
+                    class="mb-2 block text-sm font-medium text-foreground-muted"
+                  >
                     {{ localText("条款更新日期", "Updated date") }}
                   </label>
                   <input
@@ -7047,13 +7690,20 @@
                     class="input"
                   />
                   <p class="mt-1.5 text-xs text-foreground-subtle">
-                    {{ localText("日期或文档内容变化后，用户需要重新同意。", "Changing the date or content requires fresh consent.") }}
+                    {{
+                      localText(
+                        "日期或文档内容变化后，用户需要重新同意。",
+                        "Changing the date or content requires fresh consent.",
+                      )
+                    }}
                   </p>
                 </div>
               </div>
 
               <div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                  class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div>
                     <h3 class="text-sm font-medium text-foreground">
                       {{ localText("协议文档", "Agreement documents") }}
@@ -7085,7 +7735,9 @@
                   >
                     <div class="mb-3 flex items-center justify-between gap-3">
                       <div class="flex min-w-0 items-center gap-3">
-                        <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control bg-surface-subtle text-foreground-muted">
+                        <span
+                          class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control bg-surface-subtle text-foreground-muted"
+                        >
                           <Icon
                             :name="
                               index === 1
@@ -7100,8 +7752,13 @@
                           />
                         </span>
                         <div class="min-w-0">
-                          <p class="truncate text-sm font-semibold text-foreground">
-                            {{ doc.title || localText("未命名文档", "Untitled document") }}
+                          <p
+                            class="truncate text-sm font-semibold text-foreground"
+                          >
+                            {{
+                              doc.title ||
+                              localText("未命名文档", "Untitled document")
+                            }}
                           </p>
                           <p class="truncate text-xs text-foreground-subtle">
                             {{ loginAgreementRoutePath(doc, index) }}
@@ -7123,22 +7780,35 @@
 
                     <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
                       <div>
-                        <label class="mb-1 block text-xs font-medium text-foreground-subtle">
+                        <label
+                          class="mb-1 block text-xs font-medium text-foreground-subtle"
+                        >
                           {{ localText("文档名称", "Document title") }}
                         </label>
                         <input
                           v-model="doc.title"
                           type="text"
                           class="input text-sm"
-                          :placeholder="localText('例如：服务条款', 'Example: Terms of Service')"
+                          :placeholder="
+                            localText(
+                              '例如：服务条款',
+                              'Example: Terms of Service',
+                            )
+                          "
                         />
                       </div>
                       <div>
-                        <label class="mb-1 block text-xs font-medium text-foreground-subtle">
+                        <label
+                          class="mb-1 block text-xs font-medium text-foreground-subtle"
+                        >
                           {{ localText("路由标识", "Route slug") }}
                         </label>
-                        <div class="flex overflow-hidden rounded-panel border border-outline-strong focus-within:border-brand focus-within:ring-1 focus-within:ring-focus bg-canvas">
-                          <span class="inline-flex flex-shrink-0 items-center border-r border-outline px-3 text-sm bg-surface text-foreground-muted">
+                        <div
+                          class="flex overflow-hidden rounded-panel border border-outline-strong focus-within:border-brand focus-within:ring-1 focus-within:ring-focus bg-canvas"
+                        >
+                          <span
+                            class="inline-flex flex-shrink-0 items-center border-r border-outline px-3 text-sm bg-surface text-foreground-muted"
+                          >
                             /legal/
                           </span>
                           <input
@@ -7151,15 +7821,22 @@
                       </div>
                     </div>
                     <div class="mt-3">
-                      <label class="mb-1 block text-xs font-medium text-foreground-subtle">
+                      <label
+                        class="mb-1 block text-xs font-medium text-foreground-subtle"
+                      >
                         {{ localText("Markdown 内容", "Markdown content") }}
                       </label>
-                        <textarea
-                          v-model="doc.content_md"
-                          rows="8"
-                          class="input font-mono text-sm"
-                          :placeholder="localText('在这里填写正式 Markdown 内容。', 'Write the final Markdown content here.')"
-                        ></textarea>
+                      <textarea
+                        v-model="doc.content_md"
+                        rows="8"
+                        class="input font-mono text-sm"
+                        :placeholder="
+                          localText(
+                            '在这里填写正式 Markdown 内容。',
+                            'Write the final Markdown content here.',
+                          )
+                        "
+                      ></textarea>
                     </div>
                   </div>
                 </div>
@@ -7169,784 +7846,1234 @@
         </div>
         <!-- /Tab: Login Agreement -->
 
-	        <!-- Tab: Features (功能开关) -->
+        <!-- Tab: Features (功能开关) -->
         <div v-show="activeTab === 'features'" class="space-y-6">
-
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">{{ localText('联系我们', 'Contact us') }}</h2>
-            <p class="mt-1 text-sm text-foreground-subtle">
-              {{ localText('为登录用户提供社群和工单入口。', 'Offer community and support links to signed-in users.') }}
-            </p>
-          </div>
-          <div class="space-y-5 p-6">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">{{ localText('启用联系我们', 'Enable contact us') }}</label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">{{ localText('开启后在侧栏底部显示入口。', 'Shows an entry in the sidebar footer.') }}</p>
-              </div>
-              <Toggle v-model="form.contact_us_enabled" :aria-label="localText('启用联系我们', 'Enable contact us')" />
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
+                {{ localText("联系我们", "Contact us") }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{
+                  localText(
+                    "为登录用户提供社群和工单入口。",
+                    "Offer community and support links to signed-in users.",
+                  )
+                }}
+              </p>
             </div>
-
-            <div v-if="form.contact_us_enabled" class="space-y-4 border-t border-outline pt-5">
-              <div class="rounded-control border border-outline p-4">
-                <div class="flex items-center justify-between gap-4">
-                  <div>
-                    <label class="text-sm font-medium text-foreground">{{ localText('QQ 群', 'QQ group') }}</label>
-                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ localText('使用 HTTPS 加群链接。', 'Use an HTTPS group invitation URL.') }}</p>
-                  </div>
-                  <Toggle v-model="form.contact_qq_enabled" :aria-label="localText('启用 QQ 群入口', 'Enable QQ group entry')" />
-                </div>
-                <div v-if="form.contact_qq_enabled" class="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label class="input-label">{{ localText('显示名称', 'Display name') }}</label>
-                    <input v-model.trim="form.contact_qq_name" class="input" type="text" :placeholder="localText('加入 QQ 群', 'Join QQ group')" />
-                  </div>
-                  <div>
-                    <label class="input-label">{{ localText('加群链接', 'Invitation URL') }}</label>
-                    <input v-model.trim="form.contact_qq_url" class="input" type="url" placeholder="https://qm.qq.com/..." />
-                  </div>
-                </div>
-              </div>
-
-              <div class="rounded-control border border-outline p-4">
-                <div class="flex items-center justify-between gap-4">
-                  <div>
-                    <label class="text-sm font-medium text-foreground">Telegram</label>
-                    <p class="mt-0.5 text-xs text-foreground-subtle">{{ localText('配置群组或频道邀请链接。', 'Configure a group or channel invitation URL.') }}</p>
-                  </div>
-                  <Toggle v-model="form.contact_telegram_enabled" aria-label="Enable Telegram entry" />
-                </div>
-                <div v-if="form.contact_telegram_enabled" class="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label class="input-label">{{ localText('显示名称', 'Display name') }}</label>
-                    <input v-model.trim="form.contact_telegram_name" class="input" type="text" :placeholder="localText('加入 TG 群', 'Join Telegram group')" />
-                  </div>
-                  <div>
-                    <label class="input-label">{{ localText('邀请链接', 'Invitation URL') }}</label>
-                    <input v-model.trim="form.contact_telegram_url" class="input" type="url" placeholder="https://t.me/..." />
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between gap-4 rounded-control border border-outline p-4">
+            <div class="space-y-5 p-6">
+              <div class="flex items-center justify-between gap-4">
                 <div>
-                  <label class="text-sm font-medium text-foreground">{{ localText('提交问题 / 建议', 'Submit an issue or suggestion') }}</label>
-                  <p class="mt-0.5 text-xs text-foreground-subtle">{{ localText('跳转到现有工单支持页面。', 'Opens the existing support ticket page.') }}</p>
+                  <label class="text-sm font-medium text-foreground-muted">{{
+                    localText("启用联系我们", "Enable contact us")
+                  }}</label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      localText(
+                        "开启后在侧栏底部显示入口。",
+                        "Shows an entry in the sidebar footer.",
+                      )
+                    }}
+                  </p>
                 </div>
-                <Toggle v-model="form.contact_ticket_enabled" :aria-label="localText('启用工单入口', 'Enable ticket entry')" />
+                <Toggle
+                  v-model="form.contact_us_enabled"
+                  :aria-label="localText('启用联系我们', 'Enable contact us')"
+                />
               </div>
-            </div>
-          </div>
-        </div>
 
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">
-              {{ t('admin.settings.features.channelMonitor.title') }}
-            </h2>
-            <p class="mt-1 text-sm text-foreground-subtle">
-              {{ t('admin.settings.features.channelMonitor.description') }}
-            </p>
-            <p class="mt-1.5 text-xs">
-              <router-link
-                to="/admin/channels/monitor"
-                class="inline-flex items-center gap-1 text-brand hover:underline"
+              <div
+                v-if="form.contact_us_enabled"
+                class="space-y-4 border-t border-outline pt-5"
               >
-                {{ t('admin.settings.features.channelMonitor.configureLink') }}
-                <span aria-hidden="true">→</span>
-              </router-link>
-            </p>
-          </div>
-          <div class="space-y-5 p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.channelMonitor.enabled') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.channelMonitor.enabledHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.channel_monitor_enabled"
-                :aria-label="t('admin.settings.features.channelMonitor.enabled')"
-              />
-            </div>
-
-            <div v-if="form.channel_monitor_enabled" class="space-y-5">
-              <div>
-                <label class="input-label">
-                  {{ t('admin.settings.features.channelMonitor.mode') }}
-                </label>
-                <div class="mt-1.5 inline-flex w-full max-w-md rounded-control border border-outline bg-surface-subtle p-1">
-                  <button
-                    type="button"
-                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition"
-                    :class="
-                      form.channel_monitor_mode === 'v2'
-                        ? 'bg-surface text-brand shadow-sm'
-                        : 'text-foreground-muted hover:text-foreground'
-                    "
-                    @click="form.channel_monitor_mode = 'v2'"
+                <div class="rounded-control border border-outline p-4">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <label class="text-sm font-medium text-foreground">{{
+                        localText("QQ 群", "QQ group")
+                      }}</label>
+                      <p class="mt-0.5 text-xs text-foreground-subtle">
+                        {{
+                          localText(
+                            "使用 HTTPS 加群链接。",
+                            "Use an HTTPS group invitation URL.",
+                          )
+                        }}
+                      </p>
+                    </div>
+                    <Toggle
+                      v-model="form.contact_qq_enabled"
+                      :aria-label="
+                        localText('启用 QQ 群入口', 'Enable QQ group entry')
+                      "
+                    />
+                  </div>
+                  <div
+                    v-if="form.contact_qq_enabled"
+                    class="mt-4 grid gap-3 sm:grid-cols-2"
                   >
-                    {{ t('admin.settings.features.channelMonitor.modeV2') }}
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition"
-                    :class="
-                      form.channel_monitor_mode === 'v1'
-                        ? 'bg-surface text-brand shadow-sm'
-                        : 'text-foreground-muted hover:text-foreground'
-                    "
-                    @click="form.channel_monitor_mode = 'v1'"
-                  >
-                    {{ t('admin.settings.features.channelMonitor.modeV1') }}
-                  </button>
+                    <div>
+                      <label class="input-label">{{
+                        localText("显示名称", "Display name")
+                      }}</label>
+                      <input
+                        v-model.trim="form.contact_qq_name"
+                        class="input"
+                        type="text"
+                        :placeholder="localText('加入 QQ 群', 'Join QQ group')"
+                      />
+                    </div>
+                    <div>
+                      <label class="input-label">{{
+                        localText("加群链接", "Invitation URL")
+                      }}</label>
+                      <input
+                        v-model.trim="form.contact_qq_url"
+                        class="input"
+                        type="url"
+                        placeholder="https://qm.qq.com/..."
+                      />
+                    </div>
+                  </div>
                 </div>
-                <p class="mt-1.5 text-xs text-foreground-subtle">
+
+                <div class="rounded-control border border-outline p-4">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <label class="text-sm font-medium text-foreground"
+                        >Telegram</label
+                      >
+                      <p class="mt-0.5 text-xs text-foreground-subtle">
+                        {{
+                          localText(
+                            "配置群组或频道邀请链接。",
+                            "Configure a group or channel invitation URL.",
+                          )
+                        }}
+                      </p>
+                    </div>
+                    <Toggle
+                      v-model="form.contact_telegram_enabled"
+                      aria-label="Enable Telegram entry"
+                    />
+                  </div>
+                  <div
+                    v-if="form.contact_telegram_enabled"
+                    class="mt-4 grid gap-3 sm:grid-cols-2"
+                  >
+                    <div>
+                      <label class="input-label">{{
+                        localText("显示名称", "Display name")
+                      }}</label>
+                      <input
+                        v-model.trim="form.contact_telegram_name"
+                        class="input"
+                        type="text"
+                        :placeholder="
+                          localText('加入 TG 群', 'Join Telegram group')
+                        "
+                      />
+                    </div>
+                    <div>
+                      <label class="input-label">{{
+                        localText("邀请链接", "Invitation URL")
+                      }}</label>
+                      <input
+                        v-model.trim="form.contact_telegram_url"
+                        class="input"
+                        type="url"
+                        placeholder="https://t.me/..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="flex items-center justify-between gap-4 rounded-control border border-outline p-4"
+                >
+                  <div>
+                    <label class="text-sm font-medium text-foreground">{{
+                      localText(
+                        "提交问题 / 建议",
+                        "Submit an issue or suggestion",
+                      )
+                    }}</label>
+                    <p class="mt-0.5 text-xs text-foreground-subtle">
+                      {{
+                        localText(
+                          "跳转到现有工单支持页面。",
+                          "Opens the existing support ticket page.",
+                        )
+                      }}
+                    </p>
+                  </div>
+                  <Toggle
+                    v-model="form.contact_ticket_enabled"
+                    :aria-label="
+                      localText('启用工单入口', 'Enable ticket entry')
+                    "
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
+                {{ t("admin.settings.features.channelMonitor.title") }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{ t("admin.settings.features.channelMonitor.description") }}
+              </p>
+              <p class="mt-1.5 text-xs">
+                <router-link
+                  to="/admin/channels/monitor"
+                  class="inline-flex items-center gap-1 text-brand hover:underline"
+                >
                   {{
-                    form.channel_monitor_mode === 'v1'
-                      ? t('admin.settings.features.channelMonitor.modeV1Hint')
-                      : t('admin.settings.features.channelMonitor.modeV2Hint')
+                    t("admin.settings.features.channelMonitor.configureLink")
+                  }}
+                  <span aria-hidden="true">→</span>
+                </router-link>
+              </p>
+            </div>
+            <div class="space-y-5 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t("admin.settings.features.channelMonitor.enabled") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t("admin.settings.features.channelMonitor.enabledHint")
+                    }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.channel_monitor_enabled"
+                  :aria-label="
+                    t('admin.settings.features.channelMonitor.enabled')
+                  "
+                />
+              </div>
+
+              <div v-if="form.channel_monitor_enabled" class="space-y-5">
+                <div>
+                  <label class="input-label">
+                    {{ t("admin.settings.features.channelMonitor.mode") }}
+                  </label>
+                  <div
+                    class="mt-1.5 inline-flex w-full max-w-md rounded-control border border-outline bg-surface-subtle p-1"
+                  >
+                    <button
+                      type="button"
+                      class="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition"
+                      :class="
+                        form.channel_monitor_mode === 'v2'
+                          ? 'bg-surface text-brand shadow-sm'
+                          : 'text-foreground-muted hover:text-foreground'
+                      "
+                      @click="form.channel_monitor_mode = 'v2'"
+                    >
+                      {{ t("admin.settings.features.channelMonitor.modeV2") }}
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition"
+                      :class="
+                        form.channel_monitor_mode === 'v1'
+                          ? 'bg-surface text-brand shadow-sm'
+                          : 'text-foreground-muted hover:text-foreground'
+                      "
+                      @click="form.channel_monitor_mode = 'v1'"
+                    >
+                      {{ t("admin.settings.features.channelMonitor.modeV1") }}
+                    </button>
+                  </div>
+                  <p class="mt-1.5 text-xs text-foreground-subtle">
+                    {{
+                      form.channel_monitor_mode === "v1"
+                        ? t("admin.settings.features.channelMonitor.modeV1Hint")
+                        : t("admin.settings.features.channelMonitor.modeV2Hint")
+                    }}
+                  </p>
+                  <p class="mt-1 text-xs text-foreground-subtle">
+                    {{ t("admin.settings.features.channelMonitor.modeHint") }}
+                  </p>
+                </div>
+
+                <div v-if="form.channel_monitor_mode === 'v1'">
+                  <label class="input-label">
+                    {{
+                      t(
+                        "admin.settings.features.channelMonitor.defaultInterval",
+                      )
+                    }}
+                    <span class="text-danger-foreground">*</span>
+                  </label>
+                  <input
+                    v-model.number="
+                      form.channel_monitor_default_interval_seconds
+                    "
+                    type="number"
+                    min="15"
+                    max="3600"
+                    class="input"
+                  />
+                  <p class="mt-1 text-xs text-foreground-subtle">
+                    {{
+                      t(
+                        "admin.settings.features.channelMonitor.defaultIntervalHint",
+                      )
+                    }}
+                  </p>
+                </div>
+
+                <div
+                  v-if="form.channel_monitor_mode === 'v2'"
+                  class="flex items-start justify-between gap-4"
+                >
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-foreground">
+                      {{
+                        t(
+                          "admin.settings.features.channelMonitor.hideThroughput",
+                        )
+                      }}
+                    </p>
+                    <p class="mt-1 text-xs text-foreground-subtle">
+                      {{
+                        t(
+                          "admin.settings.features.channelMonitor.hideThroughputHint",
+                        )
+                      }}
+                    </p>
+                  </div>
+                  <Toggle
+                    v-model="form.channel_monitor_hide_throughput"
+                    :aria-label="
+                      t('admin.settings.features.channelMonitor.hideThroughput')
+                    "
+                  />
+                </div>
+
+                <div
+                  v-if="form.channel_monitor_mode === 'v1'"
+                  class="flex items-start justify-between gap-4"
+                >
+                  <div class="min-w-0">
+                    <p
+                      class="text-sm font-medium text-foreground"
+                    >
+                      {{
+                        t("admin.settings.features.channelMonitor.showQuota")
+                      }}
+                    </p>
+                    <p class="mt-1 text-xs text-foreground-muted">
+                      {{
+                        t(
+                          "admin.settings.features.channelMonitor.showQuotaHint",
+                        )
+                      }}
+                    </p>
+                  </div>
+                  <Toggle
+                    v-model="form.channel_monitor_show_quota"
+                    :aria-label="
+                      t('admin.settings.features.channelMonitor.showQuota')
+"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">软件中心</h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                控制公开软件下载页和首页入口，软件内容可单独维护。
+              </p>
+              <div class="mt-2 flex flex-wrap gap-4 text-xs">
+                <router-link
+                  to="/admin/software-center"
+                  class="inline-flex items-center gap-1 text-brand hover:underline"
+                  >管理软件 <span aria-hidden="true">→</span></router-link
+                >
+                <a
+                  href="/download"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 text-brand hover:underline"
+                  >查看公开页面 <span aria-hidden="true">→</span></a
+                >
+              </div>
+            </div>
+            <div class="p-6">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted"
+                    >启用软件中心</label
+                  >
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    关闭后隐藏公开入口和下载目录。
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.software_center_enabled"
+                  aria-label="启用软件中心"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
+                {{ t("admin.settings.features.availableChannels.title") }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{ t("admin.settings.features.availableChannels.description") }}
+              </p>
+              <p class="mt-1.5 text-xs">
+                <router-link
+                  to="/admin/channels/pricing"
+                  class="inline-flex items-center gap-1 text-brand hover:underline"
+                >
+                  {{
+                    t("admin.settings.features.availableChannels.configureLink")
+                  }}
+                  <span aria-hidden="true">→</span>
+                </router-link>
+              </p>
+            </div>
+            <div class="space-y-5 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t("admin.settings.features.availableChannels.enabled") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t("admin.settings.features.availableChannels.enabledHint")
+                    }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.available_channels_enabled"
+                  :aria-label="
+                    t('admin.settings.features.availableChannels.enabled')
+                  "
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
+                {{ t("admin.settings.features.modelMarketplace.title") }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{ t("admin.settings.features.modelMarketplace.description") }}
+              </p>
+              <p class="mt-1.5 text-xs">
+                <router-link
+                  to="/admin/groups"
+                  class="inline-flex items-center gap-1 text-brand hover:underline"
+                >
+                  {{
+                    t("admin.settings.features.modelMarketplace.configureLink")
+                  }}
+                  <span aria-hidden="true">→</span>
+                </router-link>
+              </p>
+            </div>
+            <div class="space-y-5 p-6">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t("admin.settings.features.modelMarketplace.enabled") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t("admin.settings.features.modelMarketplace.enabledHint")
+                    }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.model_marketplace_enabled"
+                  :aria-label="
+                    t('admin.settings.features.modelMarketplace.enabled')
+                  "
+                />
+              </div>
+              <div
+                class="flex items-center justify-between gap-4 border-t border-outline pt-5"
+              >
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{
+                      t(
+                        "admin.settings.features.modelMarketplace.monitorEnabled",
+                      )
+                    }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t(
+                        "admin.settings.features.modelMarketplace.monitorEnabledHint",
+                      )
+                    }}
+                  </p>
+                  <router-link
+                    to="/admin/channels/model-monitor"
+                    class="mt-1.5 inline-flex items-center gap-1 text-xs text-brand hover:underline"
+                  >
+                    {{
+                      t(
+                        "admin.settings.features.modelMarketplace.monitorConfigureLink",
+                      )
+                    }}
+                    <span aria-hidden="true">→</span>
+                  </router-link>
+                </div>
+                <Toggle
+                  v-model="form.model_monitor_enabled"
+                  :disabled="!form.model_marketplace_enabled"
+                  :aria-label="
+                    t('admin.settings.features.modelMarketplace.monitorEnabled')
+                  "
+                />
+              </div>
+              <div
+                class="flex items-center justify-between gap-4 border-t border-outline pt-5"
+              >
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{
+                      t(
+                        "admin.settings.features.modelMarketplace.performanceVisible",
+                      )
+                    }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t(
+                        "admin.settings.features.modelMarketplace.performanceVisibleHint",
+                      )
+                    }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.model_marketplace_performance_visible"
+                  :disabled="!form.model_marketplace_enabled"
+                  :aria-label="
+                    t(
+                      'admin.settings.features.modelMarketplace.performanceVisible',
+                    )
+                  "
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
+                {{ t("admin.settings.features.modelPlaza.title") }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{ t("admin.settings.features.modelPlaza.description") }}
+              </p>
+            </div>
+            <div class="space-y-5 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t("admin.settings.features.modelPlaza.enabled") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{ t("admin.settings.features.modelPlaza.enabledHint") }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.model_plaza_enabled"
+                  :aria-label="t('admin.settings.features.modelPlaza.enabled')"
+                />
+              </div>
+
+              <div
+                v-if="form.model_plaza_enabled"
+                class="flex items-center justify-between"
+              >
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t("admin.settings.features.modelPlaza.requireAuth") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t("admin.settings.features.modelPlaza.requireAuthHint")
+                    }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.model_plaza_require_auth"
+                  :aria-label="
+                    t('admin.settings.features.modelPlaza.requireAuth')
+                  "
+                />
+              </div>
+
+              <div v-if="form.model_plaza_enabled">
+                <label class="text-sm font-medium text-foreground-muted">
+                  {{ t("admin.settings.features.modelPlaza.priceDescription") }}
+                </label>
+                <p class="mb-2 mt-0.5 text-xs text-foreground-subtle">
+                  {{
+                    t("admin.settings.features.modelPlaza.priceDescriptionHint")
                   }}
                 </p>
-                <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.channelMonitor.modeHint') }}
-                </p>
+                <textarea
+                  v-model="form.model_plaza_description"
+                  rows="6"
+                  class="input font-mono text-sm"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
+                {{ t("admin.settings.features.riskControl.title") }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{ t("admin.settings.features.riskControl.description") }}
+              </p>
+              <p class="mt-1.5 text-xs">
+                <router-link
+                  to="/admin/risk-control"
+                  class="inline-flex items-center gap-1 text-brand hover:underline"
+                >
+                  {{ t("admin.settings.features.riskControl.configureLink") }}
+                  <span aria-hidden="true">→</span>
+                </router-link>
+              </p>
+            </div>
+            <div class="space-y-5 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t("admin.settings.features.riskControl.enabled") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{ t("admin.settings.features.riskControl.enabledHint") }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.risk_control_enabled"
+                  :aria-label="t('admin.settings.features.riskControl.enabled')"
+                />
               </div>
 
-              <div v-if="form.channel_monitor_mode === 'v1'">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{
+                      t("admin.settings.features.riskControl.cyberSessionBlock")
+                    }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{
+                      t(
+                        "admin.settings.features.riskControl.cyberSessionBlockHint",
+                      )
+                    }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.cyber_session_block_enabled"
+                  :aria-label="
+                    t('admin.settings.features.riskControl.cyberSessionBlock')
+                  "
+                />
+              </div>
+
+              <div v-if="form.cyber_session_block_enabled">
                 <label class="input-label">
-                  {{ t('admin.settings.features.channelMonitor.defaultInterval') }}
+                  {{
+                    t(
+                      "admin.settings.features.riskControl.cyberSessionBlockTTL",
+                    )
+                  }}
                   <span class="text-danger-foreground">*</span>
                 </label>
                 <input
-                  v-model.number="form.channel_monitor_default_interval_seconds"
+                  v-model.number="form.cyber_session_block_ttl_seconds"
                   type="number"
-                  min="15"
-                  max="3600"
+                  min="1"
                   class="input"
                 />
-                <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.channelMonitor.defaultIntervalHint') }}
-                </p>
               </div>
+            </div>
+          </div>
 
-              <div v-if="form.channel_monitor_mode === 'v2'" class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                  <p class="text-sm font-medium text-foreground">
-                    {{ t('admin.settings.features.channelMonitor.hideThroughput') }}
-                  </p>
-                  <p class="mt-1 text-xs text-foreground-subtle">
-                    {{ t('admin.settings.features.channelMonitor.hideThroughputHint') }}
-                  </p>
-                </div>
-                <Toggle
-                  v-model="form.channel_monitor_hide_throughput"
-                  :aria-label="t('admin.settings.features.channelMonitor.hideThroughput')"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+          <DistributionSettingsCard
+            @success="appStore.showSuccess"
+            @error="appStore.showError"
+          />
 
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">软件中心</h2>
-            <p class="mt-1 text-sm text-foreground-subtle">控制公开软件下载页和首页入口，软件内容可单独维护。</p>
-            <div class="mt-2 flex flex-wrap gap-4 text-xs">
-              <router-link to="/admin/software-center" class="inline-flex items-center gap-1 text-brand hover:underline">管理软件 <span aria-hidden="true">→</span></router-link>
-              <a href="/download" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-brand hover:underline">查看公开页面 <span aria-hidden="true">→</span></a>
-            </div>
-          </div>
-          <div class="p-6">
-            <div class="flex items-center justify-between gap-4">
-              <div><label class="text-sm font-medium text-foreground-muted">启用软件中心</label><p class="mt-0.5 text-xs text-foreground-subtle">关闭后隐藏公开入口和下载目录。</p></div>
-              <Toggle v-model="form.software_center_enabled" aria-label="启用软件中心" />
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">
-              {{ t('admin.settings.features.availableChannels.title') }}
-            </h2>
-            <p class="mt-1 text-sm text-foreground-subtle">
-              {{ t('admin.settings.features.availableChannels.description') }}
-            </p>
-            <p class="mt-1.5 text-xs">
-              <router-link
-                to="/admin/channels/pricing"
-                class="inline-flex items-center gap-1 text-brand hover:underline"
-              >
-                {{ t('admin.settings.features.availableChannels.configureLink') }}
-                <span aria-hidden="true">→</span>
-              </router-link>
-            </p>
-          </div>
-          <div class="space-y-5 p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.availableChannels.enabled') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.availableChannels.enabledHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.available_channels_enabled"
-                :aria-label="t('admin.settings.features.availableChannels.enabled')"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">
-              {{ t('admin.settings.features.modelMarketplace.title') }}
-            </h2>
-            <p class="mt-1 text-sm text-foreground-subtle">
-              {{ t('admin.settings.features.modelMarketplace.description') }}
-            </p>
-            <p class="mt-1.5 text-xs">
-              <router-link
-                to="/admin/groups"
-                class="inline-flex items-center gap-1 text-brand hover:underline"
-              >
-                {{ t('admin.settings.features.modelMarketplace.configureLink') }}
-                <span aria-hidden="true">→</span>
-              </router-link>
-            </p>
-          </div>
-          <div class="space-y-5 p-6">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.modelMarketplace.enabled') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.modelMarketplace.enabledHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.model_marketplace_enabled"
-                :aria-label="t('admin.settings.features.modelMarketplace.enabled')"
-              />
-            </div>
-            <div class="flex items-center justify-between gap-4 border-t border-outline pt-5">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.modelMarketplace.monitorEnabled') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.modelMarketplace.monitorEnabledHint') }}
-                </p>
-                <router-link
-                  to="/admin/channels/model-monitor"
-                  class="mt-1.5 inline-flex items-center gap-1 text-xs text-brand hover:underline"
-                >
-                  {{ t('admin.settings.features.modelMarketplace.monitorConfigureLink') }}
-                  <span aria-hidden="true">→</span>
-                </router-link>
-              </div>
-              <Toggle
-                v-model="form.model_monitor_enabled"
-                :disabled="!form.model_marketplace_enabled"
-                :aria-label="t('admin.settings.features.modelMarketplace.monitorEnabled')"
-              />
-            </div>
-            <div class="flex items-center justify-between gap-4 border-t border-outline pt-5">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.modelMarketplace.performanceVisible') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.modelMarketplace.performanceVisibleHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.model_marketplace_performance_visible"
-                :disabled="!form.model_marketplace_enabled"
-                :aria-label="t('admin.settings.features.modelMarketplace.performanceVisible')"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">
-              {{ t('admin.settings.features.modelPlaza.title') }}
-            </h2>
-            <p class="mt-1 text-sm text-foreground-subtle">
-              {{ t('admin.settings.features.modelPlaza.description') }}
-            </p>
-          </div>
-          <div class="space-y-5 p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.modelPlaza.enabled') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.modelPlaza.enabledHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.model_plaza_enabled"
-                :aria-label="t('admin.settings.features.modelPlaza.enabled')"
-              />
-            </div>
-
-            <div v-if="form.model_plaza_enabled" class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.modelPlaza.requireAuth') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.modelPlaza.requireAuthHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.model_plaza_require_auth"
-                :aria-label="t('admin.settings.features.modelPlaza.requireAuth')"
-              />
-            </div>
-
-            <div v-if="form.model_plaza_enabled">
-              <label class="text-sm font-medium text-foreground-muted">
-                {{ t('admin.settings.features.modelPlaza.priceDescription') }}
-              </label>
-              <p class="mb-2 mt-0.5 text-xs text-foreground-subtle">
-                {{ t('admin.settings.features.modelPlaza.priceDescriptionHint') }}
+          <!-- Affiliate (邀请返利) feature card -->
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
+                {{ t("admin.settings.features.affiliate.title") }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{ t("admin.settings.features.affiliate.description") }}
               </p>
-              <textarea
-                v-model="form.model_plaza_description"
-                rows="6"
-                class="input font-mono text-sm"
-              ></textarea>
             </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">
-              {{ t('admin.settings.features.riskControl.title') }}
-            </h2>
-            <p class="mt-1 text-sm text-foreground-subtle">
-              {{ t('admin.settings.features.riskControl.description') }}
-            </p>
-            <p class="mt-1.5 text-xs">
-              <router-link
-                to="/admin/risk-control"
-                class="inline-flex items-center gap-1 text-brand hover:underline"
-              >
-                {{ t('admin.settings.features.riskControl.configureLink') }}
-                <span aria-hidden="true">→</span>
-              </router-link>
-            </p>
-          </div>
-          <div class="space-y-5 p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.riskControl.enabled') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.riskControl.enabledHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.risk_control_enabled"
-                :aria-label="t('admin.settings.features.riskControl.enabled')"
-              />
-            </div>
-
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.riskControl.cyberSessionBlock') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.riskControl.cyberSessionBlockHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.cyber_session_block_enabled"
-                :aria-label="t('admin.settings.features.riskControl.cyberSessionBlock')"
-              />
-            </div>
-
-            <div v-if="form.cyber_session_block_enabled">
-              <label class="input-label">
-                {{ t('admin.settings.features.riskControl.cyberSessionBlockTTL') }}
-                <span class="text-danger-foreground">*</span>
-              </label>
-              <input
-                v-model.number="form.cyber_session_block_ttl_seconds"
-                type="number"
-                min="1"
-                class="input"
-              />
-            </div>
-          </div>
-        </div>
-
-        <DistributionSettingsCard @success="appStore.showSuccess" @error="appStore.showError" />
-
-        <!-- Affiliate (邀请返利) feature card -->
-        <div class="card">
-          <div class="border-b border-outline px-6 py-4">
-            <h2 class="text-lg font-semibold text-foreground">
-              {{ t('admin.settings.features.affiliate.title') }}
-            </h2>
-            <p class="mt-1 text-sm text-foreground-subtle">
-              {{ t('admin.settings.features.affiliate.description') }}
-            </p>
-          </div>
-          <div class="space-y-5 p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-foreground-muted">
-                  {{ t('admin.settings.features.affiliate.enabled') }}
-                </label>
-                <p class="mt-0.5 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.affiliate.enabledHint') }}
-                </p>
-              </div>
-              <Toggle
-                v-model="form.affiliate_enabled"
-                :aria-label="t('admin.settings.features.affiliate.enabled')"
-              />
-            </div>
-
-            <div v-if="form.affiliate_enabled" class="space-y-6">
+            <div class="space-y-5 p-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <label class="text-sm font-medium text-foreground-muted ">
-                    {{ t('admin.settings.features.affiliate.adminRechargeRebate') }}
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t("admin.settings.features.affiliate.enabled") }}
                   </label>
-                  <p class="mt-0.5 text-xs text-foreground-subtle ">
-                    {{ t('admin.settings.features.affiliate.adminRechargeRebateHint') }}
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{ t("admin.settings.features.affiliate.enabledHint") }}
                   </p>
                 </div>
                 <Toggle
-                  v-model="form.affiliate_admin_recharge_enabled"
-                  :aria-label="t('admin.settings.features.affiliate.adminRechargeRebate')"
+                  v-model="form.affiliate_enabled"
+                  :aria-label="t('admin.settings.features.affiliate.enabled')"
                 />
               </div>
 
-              <div>
-                <label class="input-label">
-                  {{ t('admin.settings.features.affiliate.rebateRate') }}
-                </label>
-                <div class="relative">
+              <div v-if="form.affiliate_enabled" class="space-y-6">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <label class="text-sm font-medium text-foreground-muted">
+                      {{
+                        t(
+                          "admin.settings.features.affiliate.adminRechargeRebate",
+                        )
+                      }}
+                    </label>
+                    <p class="mt-0.5 text-xs text-foreground-subtle">
+                      {{
+                        t(
+                          "admin.settings.features.affiliate.adminRechargeRebateHint",
+                        )
+                      }}
+                    </p>
+                  </div>
+                  <Toggle
+                    v-model="form.affiliate_admin_recharge_enabled"
+                    :aria-label="
+                      t('admin.settings.features.affiliate.adminRechargeRebate')
+                    "
+                  />
+                </div>
+
+                <div>
+                  <label class="input-label">
+                    {{ t("admin.settings.features.affiliate.rebateRate") }}
+                  </label>
+                  <div class="relative">
+                    <input
+                      v-model.number="form.affiliate_rebate_rate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      class="input pr-8"
+                      placeholder="20"
+                    />
+                    <span
+                      class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
+                      >%</span
+                    >
+                  </div>
+                  <p class="mt-1 text-xs text-foreground-subtle">
+                    {{ t("admin.settings.features.affiliate.rebateRateHint") }}
+                  </p>
+                </div>
+
+                <div>
+                  <label class="input-label">
+                    {{ t("admin.settings.features.affiliate.freezeHours") }}
+                  </label>
                   <input
-                    v-model.number="form.affiliate_rebate_rate"
+                    v-model.number="form.affiliate_rebate_freeze_hours"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="720"
+                    class="input"
+                  />
+                  <p class="mt-1 text-xs text-foreground-subtle">
+                    {{ t("admin.settings.features.affiliate.freezeHoursDesc") }}
+                  </p>
+                </div>
+
+                <div>
+                  <label class="input-label">
+                    {{ t("admin.settings.features.affiliate.durationDays") }}
+                  </label>
+                  <input
+                    v-model.number="form.affiliate_rebate_duration_days"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="3650"
+                    class="input"
+                  />
+                  <p class="mt-1 text-xs text-foreground-subtle">
+                    {{
+                      t("admin.settings.features.affiliate.durationDaysDesc")
+                    }}
+                  </p>
+                </div>
+
+                <div>
+                  <label class="input-label">
+                    {{ t("admin.settings.features.affiliate.perInviteeCap") }}
+                  </label>
+                  <input
+                    v-model.number="form.affiliate_rebate_per_invitee_cap"
                     type="number"
                     step="0.01"
                     min="0"
-                    max="100"
-                    class="input pr-8"
-                    placeholder="20"
+                    class="input"
                   />
-                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle">%</span>
-                </div>
-                <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.affiliate.rebateRateHint') }}
-                </p>
-              </div>
-
-              <div>
-                <label class="input-label">
-                  {{ t('admin.settings.features.affiliate.freezeHours') }}
-                </label>
-                <input
-                  v-model.number="form.affiliate_rebate_freeze_hours"
-                  type="number"
-                  step="1"
-                  min="0"
-                  max="720"
-                  class="input"
-                />
-                <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.affiliate.freezeHoursDesc') }}
-                </p>
-              </div>
-
-              <div>
-                <label class="input-label">
-                  {{ t('admin.settings.features.affiliate.durationDays') }}
-                </label>
-                <input
-                  v-model.number="form.affiliate_rebate_duration_days"
-                  type="number"
-                  step="1"
-                  min="0"
-                  max="3650"
-                  class="input"
-                />
-                <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.affiliate.durationDaysDesc') }}
-                </p>
-              </div>
-
-              <div>
-                <label class="input-label">
-                  {{ t('admin.settings.features.affiliate.perInviteeCap') }}
-                </label>
-                <input
-                  v-model.number="form.affiliate_rebate_per_invitee_cap"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  class="input"
-                />
-                <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.affiliate.perInviteeCapDesc') }}
-                </p>
-              </div>
-
-              <!-- 专属用户管理 -->
-              <div class="border-t border-outline pt-6">
-                <div class="mb-3 flex items-center justify-between">
-                  <div>
-                    <h3 class="text-sm font-semibold text-foreground">
-                      {{ t('admin.settings.features.affiliate.customUsers.title') }}
-                    </h3>
-                    <p class="mt-0.5 text-xs text-foreground-subtle">
-                      {{ t('admin.settings.features.affiliate.customUsers.description') }}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm w-full sm:w-auto"
-                    @click="openAffiliateModal(null)"
-                  >
-                    + {{ t('admin.settings.features.affiliate.customUsers.addButton') }}
-                  </button>
+                  <p class="mt-1 text-xs text-foreground-subtle">
+                    {{
+                      t("admin.settings.features.affiliate.perInviteeCapDesc")
+                    }}
+                  </p>
                 </div>
 
-                <div class="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-                  <input
-                    v-model="affiliateState.search"
-                    type="text"
-                    class="input flex-1"
-                    :aria-label="t('admin.settings.features.affiliate.customUsers.searchPlaceholder')"
-                    :placeholder="t('admin.settings.features.affiliate.customUsers.searchPlaceholder')"
-                    @input="onAffiliateSearchInput"
-                  />
-                  <button
-                    v-if="affiliateState.selected.length > 0"
-                    type="button"
-                    class="btn btn-secondary btn-sm w-full sm:w-auto"
-                    @click="openAffiliateBatchModal"
-                  >
-                    {{ t('admin.settings.features.affiliate.customUsers.batchButton', { count: affiliateState.selected.length }) }}
-                  </button>
-                </div>
-
-                <div class="hidden overflow-x-auto rounded-panel border border-outline md:block">
-                  <table class="min-w-full divide-y divide-outline">
-                    <thead class="bg-surface">
-                      <tr>
-                        <th class="px-3 py-2 text-left">
-                          <input
-                            type="checkbox"
-                            :aria-label="t('common.selectAll')"
-                            :checked="affiliateState.entries.length > 0 && affiliateState.selected.length === affiliateState.entries.length"
-                            @change="toggleAffiliateSelectAll"
-                          />
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.email') }}</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.username') }}</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.code') }}</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.rate') }}</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.col.actions') }}</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-outline bg-canvas">
-                      <tr v-if="affiliateState.loading">
-                        <td colspan="6" class="px-3 py-6 text-center text-sm text-foreground-subtle">
-                          {{ t('common.loading') }}
-                        </td>
-                      </tr>
-                      <tr v-else-if="affiliateState.entries.length === 0">
-                        <td colspan="6" class="px-3 py-6 text-center text-sm text-foreground-subtle">
-                          {{ t('admin.settings.features.affiliate.customUsers.empty') }}
-                        </td>
-                      </tr>
-                      <tr v-for="entry in affiliateState.entries" :key="entry.user_id">
-                        <td class="px-3 py-2">
-                          <input
-                            type="checkbox"
-                            :aria-label="`${t('common.select')} ${entry.email || entry.username || entry.user_id}`"
-                            :checked="affiliateState.selected.includes(entry.user_id)"
-                            @change="toggleAffiliateSelect(entry.user_id)"
-                          />
-                        </td>
-                        <td class="px-3 py-2 text-sm text-foreground">{{ entry.email }}</td>
-                        <td class="px-3 py-2 text-sm text-foreground-muted">{{ entry.username }}</td>
-                        <td class="px-3 py-2 text-sm font-mono">
-                          {{ entry.aff_code }}
-                          <span
-                            v-if="entry.aff_code_custom"
-                            class="ml-1 inline-block rounded bg-brand-subtle px-1.5 py-0.5 text-[10px] font-medium text-brand"
-                          >{{ t('admin.settings.features.affiliate.customUsers.customBadge') }}</span>
-                        </td>
-                        <td class="px-3 py-2 text-sm">
-                          <span v-if="entry.aff_rebate_rate_percent != null">{{ entry.aff_rebate_rate_percent }}%</span>
-                          <span v-else class="text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.useGlobal') }}</span>
-                        </td>
-                        <td class="px-3 py-2 text-sm">
-                          <div class="flex items-center gap-2">
-                            <button type="button" class="text-brand hover:underline" @click="openAffiliateModal(entry)">
-                              {{ t('common.edit') }}
-                            </button>
-                            <button
-                              type="button"
-                              class="text-danger-foreground hover:underline"
-                              @click="askResetAffiliateUser(entry)"
-                            >
-                              {{ t('common.delete') }}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div class="border-y border-outline md:hidden">
-                  <div
-                    v-if="affiliateState.loading"
-                    class="px-3 py-8 text-center text-sm text-foreground-subtle"
-                    role="status"
-                  >
-                    {{ t('common.loading') }}
-                  </div>
-                  <div
-                    v-else-if="affiliateState.entries.length === 0"
-                    class="px-3 py-8 text-center text-sm text-foreground-subtle"
-                  >
-                    {{ t('admin.settings.features.affiliate.customUsers.empty') }}
-                  </div>
-                  <div v-else class="divide-y divide-outline">
-                    <article
-                      v-for="entry in affiliateState.entries"
-                      :key="`mobile-${entry.user_id}`"
-                      class="space-y-3 py-4"
+                <!-- 专属用户管理 -->
+                <div class="border-t border-outline pt-6">
+                  <div class="mb-3 flex items-center justify-between">
+                    <div>
+                      <h3 class="text-sm font-semibold text-foreground">
+                        {{
+                          t(
+                            "admin.settings.features.affiliate.customUsers.title",
+                          )
+                        }}
+                      </h3>
+                      <p class="mt-0.5 text-xs text-foreground-subtle">
+                        {{
+                          t(
+                            "admin.settings.features.affiliate.customUsers.description",
+                          )
+                        }}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm w-full sm:w-auto"
+                      @click="openAffiliateModal(null)"
                     >
-                      <div class="flex min-w-0 items-start gap-3">
-                        <input
-                          type="checkbox"
-                          class="mt-1"
-                          :aria-label="`${t('common.select')} ${entry.email || entry.username || entry.user_id}`"
-                          :checked="affiliateState.selected.includes(entry.user_id)"
-                          @change="toggleAffiliateSelect(entry.user_id)"
-                        />
-                        <div class="min-w-0 flex-1">
-                          <p class="break-all text-sm font-medium text-foreground">
+                      +
+                      {{
+                        t(
+                          "admin.settings.features.affiliate.customUsers.addButton",
+                        )
+                      }}
+                    </button>
+                  </div>
+
+                  <div
+                    class="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center"
+                  >
+                    <input
+                      v-model="affiliateState.search"
+                      type="text"
+                      class="input flex-1"
+                      :aria-label="
+                        t(
+                          'admin.settings.features.affiliate.customUsers.searchPlaceholder',
+                        )
+                      "
+                      :placeholder="
+                        t(
+                          'admin.settings.features.affiliate.customUsers.searchPlaceholder',
+                        )
+                      "
+                      @input="onAffiliateSearchInput"
+                    />
+                    <button
+                      v-if="affiliateState.selected.length > 0"
+                      type="button"
+                      class="btn btn-secondary btn-sm w-full sm:w-auto"
+                      @click="openAffiliateBatchModal"
+                    >
+                      {{
+                        t(
+                          "admin.settings.features.affiliate.customUsers.batchButton",
+                          { count: affiliateState.selected.length },
+                        )
+                      }}
+                    </button>
+                  </div>
+
+                  <div
+                    class="hidden overflow-x-auto rounded-panel border border-outline md:block"
+                  >
+                    <table class="min-w-full divide-y divide-outline">
+                      <thead class="bg-surface">
+                        <tr>
+                          <th class="px-3 py-2 text-left">
+                            <input
+                              type="checkbox"
+                              :aria-label="t('common.selectAll')"
+                              :checked="
+                                affiliateState.entries.length > 0 &&
+                                affiliateState.selected.length ===
+                                  affiliateState.entries.length
+                              "
+                              @change="toggleAffiliateSelectAll"
+                            />
+                          </th>
+                          <th
+                            class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle"
+                          >
+                            {{
+                              t(
+                                "admin.settings.features.affiliate.customUsers.col.email",
+                              )
+                            }}
+                          </th>
+                          <th
+                            class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle"
+                          >
+                            {{
+                              t(
+                                "admin.settings.features.affiliate.customUsers.col.username",
+                              )
+                            }}
+                          </th>
+                          <th
+                            class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle"
+                          >
+                            {{
+                              t(
+                                "admin.settings.features.affiliate.customUsers.col.code",
+                              )
+                            }}
+                          </th>
+                          <th
+                            class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle"
+                          >
+                            {{
+                              t(
+                                "admin.settings.features.affiliate.customUsers.col.rate",
+                              )
+                            }}
+                          </th>
+                          <th
+                            class="px-3 py-2 text-left text-xs font-medium uppercase text-foreground-subtle"
+                          >
+                            {{
+                              t(
+                                "admin.settings.features.affiliate.customUsers.col.actions",
+                              )
+                            }}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-outline bg-canvas">
+                        <tr v-if="affiliateState.loading">
+                          <td
+                            colspan="6"
+                            class="px-3 py-6 text-center text-sm text-foreground-subtle"
+                          >
+                            {{ t("common.loading") }}
+                          </td>
+                        </tr>
+                        <tr v-else-if="affiliateState.entries.length === 0">
+                          <td
+                            colspan="6"
+                            class="px-3 py-6 text-center text-sm text-foreground-subtle"
+                          >
+                            {{
+                              t(
+                                "admin.settings.features.affiliate.customUsers.empty",
+                              )
+                            }}
+                          </td>
+                        </tr>
+                        <tr
+                          v-for="entry in affiliateState.entries"
+                          :key="entry.user_id"
+                        >
+                          <td class="px-3 py-2">
+                            <input
+                              type="checkbox"
+                              :aria-label="`${t('common.select')} ${entry.email || entry.username || entry.user_id}`"
+                              :checked="
+                                affiliateState.selected.includes(entry.user_id)
+                              "
+                              @change="toggleAffiliateSelect(entry.user_id)"
+                            />
+                          </td>
+                          <td class="px-3 py-2 text-sm text-foreground">
                             {{ entry.email }}
-                          </p>
-                          <p class="mt-0.5 break-all text-xs text-foreground-subtle">
+                          </td>
+                          <td class="px-3 py-2 text-sm text-foreground-muted">
                             {{ entry.username }}
-                          </p>
-                        </div>
-                      </div>
-                      <dl class="grid grid-cols-1 gap-x-3 gap-y-2 pl-7 text-sm min-[420px]:grid-cols-2">
-                        <div class="min-w-0">
-                          <dt class="text-xs text-foreground-subtle">
-                            {{ t('admin.settings.features.affiliate.customUsers.col.code') }}
-                          </dt>
-                          <dd class="mt-0.5 break-all font-mono text-foreground">
+                          </td>
+                          <td class="px-3 py-2 text-sm font-mono">
                             {{ entry.aff_code }}
                             <span
                               v-if="entry.aff_code_custom"
-                              class="mt-1 inline-block rounded bg-brand-subtle px-1.5 py-0.5 text-[10px] font-medium text-brand"
-                            >{{ t('admin.settings.features.affiliate.customUsers.customBadge') }}</span>
-                          </dd>
-                        </div>
-                        <div class="min-w-0">
-                          <dt class="text-xs text-foreground-subtle">
-                            {{ t('admin.settings.features.affiliate.customUsers.col.rate') }}
-                          </dt>
-                          <dd class="mt-0.5 text-foreground">
-                            <span v-if="entry.aff_rebate_rate_percent != null">{{ entry.aff_rebate_rate_percent }}%</span>
-                            <span v-else class="text-foreground-subtle">{{ t('admin.settings.features.affiliate.customUsers.useGlobal') }}</span>
-                          </dd>
-                        </div>
-                      </dl>
-                      <div class="flex items-center justify-end gap-3 pl-7 text-sm">
-                        <button type="button" class="text-brand hover:underline" @click="openAffiliateModal(entry)">
-                          {{ t('common.edit') }}
-                        </button>
-                        <button type="button" class="text-danger-foreground hover:underline" @click="askResetAffiliateUser(entry)">
-                          {{ t('common.delete') }}
-                        </button>
-                      </div>
-                    </article>
+                              class="ml-1 inline-block rounded bg-brand-subtle px-1.5 py-0.5 text-[10px] font-medium text-brand"
+                              >{{
+                                t(
+                                  "admin.settings.features.affiliate.customUsers.customBadge",
+                                )
+                              }}</span
+                            >
+                          </td>
+                          <td class="px-3 py-2 text-sm">
+                            <span v-if="entry.aff_rebate_rate_percent != null"
+                              >{{ entry.aff_rebate_rate_percent }}%</span
+                            >
+                            <span v-else class="text-foreground-subtle">{{
+                              t(
+                                "admin.settings.features.affiliate.customUsers.useGlobal",
+                              )
+                            }}</span>
+                          </td>
+                          <td class="px-3 py-2 text-sm">
+                            <div class="flex items-center gap-2">
+                              <button
+                                type="button"
+                                class="text-brand hover:underline"
+                                @click="openAffiliateModal(entry)"
+                              >
+                                {{ t("common.edit") }}
+                              </button>
+                              <button
+                                type="button"
+                                class="text-danger-foreground hover:underline"
+                                @click="askResetAffiliateUser(entry)"
+                              >
+                                {{ t("common.delete") }}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                </div>
 
-                <div v-if="affiliateState.total > affiliateState.pageSize" class="mt-3 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                  <span class="text-foreground-subtle">
-                    {{ t('admin.settings.features.affiliate.customUsers.totalLabel', { total: affiliateState.total }) }}
-                  </span>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      class="btn btn-secondary btn-sm"
-                      :disabled="affiliateState.page <= 1"
-                      @click="changeAffiliatePage(affiliateState.page - 1)"
+                  <div class="border-y border-outline md:hidden">
+                    <div
+                      v-if="affiliateState.loading"
+                      class="px-3 py-8 text-center text-sm text-foreground-subtle"
+                      role="status"
                     >
-                      {{ t('pagination.previous') }}
-                    </button>
-                    <span class="text-foreground-subtle">{{ affiliateState.page }} / {{ Math.max(1, Math.ceil(affiliateState.total / affiliateState.pageSize)) }}</span>
-                    <button
-                      type="button"
-                      class="btn btn-secondary btn-sm"
-                      :disabled="affiliateState.page >= Math.ceil(affiliateState.total / affiliateState.pageSize)"
-                      @click="changeAffiliatePage(affiliateState.page + 1)"
+                      {{ t("common.loading") }}
+                    </div>
+                    <div
+                      v-else-if="affiliateState.entries.length === 0"
+                      class="px-3 py-8 text-center text-sm text-foreground-subtle"
                     >
-                      {{ t('pagination.next') }}
-                    </button>
+                      {{
+                        t("admin.settings.features.affiliate.customUsers.empty")
+                      }}
+                    </div>
+                    <div v-else class="divide-y divide-outline">
+                      <article
+                        v-for="entry in affiliateState.entries"
+                        :key="`mobile-${entry.user_id}`"
+                        class="space-y-3 py-4"
+                      >
+                        <div class="flex min-w-0 items-start gap-3">
+                          <input
+                            type="checkbox"
+                            class="mt-1"
+                            :aria-label="`${t('common.select')} ${entry.email || entry.username || entry.user_id}`"
+                            :checked="
+                              affiliateState.selected.includes(entry.user_id)
+                            "
+                            @change="toggleAffiliateSelect(entry.user_id)"
+                          />
+                          <div class="min-w-0 flex-1">
+                            <p
+                              class="break-all text-sm font-medium text-foreground"
+                            >
+                              {{ entry.email }}
+                            </p>
+                            <p
+                              class="mt-0.5 break-all text-xs text-foreground-subtle"
+                            >
+                              {{ entry.username }}
+                            </p>
+                          </div>
+                        </div>
+                        <dl
+                          class="grid grid-cols-1 gap-x-3 gap-y-2 pl-7 text-sm min-[420px]:grid-cols-2"
+                        >
+                          <div class="min-w-0">
+                            <dt class="text-xs text-foreground-subtle">
+                              {{
+                                t(
+                                  "admin.settings.features.affiliate.customUsers.col.code",
+                                )
+                              }}
+                            </dt>
+                            <dd
+                              class="mt-0.5 break-all font-mono text-foreground"
+                            >
+                              {{ entry.aff_code }}
+                              <span
+                                v-if="entry.aff_code_custom"
+                                class="mt-1 inline-block rounded bg-brand-subtle px-1.5 py-0.5 text-[10px] font-medium text-brand"
+                                >{{
+                                  t(
+                                    "admin.settings.features.affiliate.customUsers.customBadge",
+                                  )
+                                }}</span
+                              >
+                            </dd>
+                          </div>
+                          <div class="min-w-0">
+                            <dt class="text-xs text-foreground-subtle">
+                              {{
+                                t(
+                                  "admin.settings.features.affiliate.customUsers.col.rate",
+                                )
+                              }}
+                            </dt>
+                            <dd class="mt-0.5 text-foreground">
+                              <span v-if="entry.aff_rebate_rate_percent != null"
+                                >{{ entry.aff_rebate_rate_percent }}%</span
+                              >
+                              <span v-else class="text-foreground-subtle">{{
+                                t(
+                                  "admin.settings.features.affiliate.customUsers.useGlobal",
+                                )
+                              }}</span>
+                            </dd>
+                          </div>
+                        </dl>
+                        <div
+                          class="flex items-center justify-end gap-3 pl-7 text-sm"
+                        >
+                          <button
+                            type="button"
+                            class="text-brand hover:underline"
+                            @click="openAffiliateModal(entry)"
+                          >
+                            {{ t("common.edit") }}
+                          </button>
+                          <button
+                            type="button"
+                            class="text-danger-foreground hover:underline"
+                            @click="askResetAffiliateUser(entry)"
+                          >
+                            {{ t("common.delete") }}
+                          </button>
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="affiliateState.total > affiliateState.pageSize"
+                    class="mt-3 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <span class="text-foreground-subtle">
+                      {{
+                        t(
+                          "admin.settings.features.affiliate.customUsers.totalLabel",
+                          { total: affiliateState.total },
+                        )
+                      }}
+                    </span>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        class="btn btn-secondary btn-sm"
+                        :disabled="affiliateState.page <= 1"
+                        @click="changeAffiliatePage(affiliateState.page - 1)"
+                      >
+                        {{ t("pagination.previous") }}
+                      </button>
+                      <span class="text-foreground-subtle"
+                        >{{ affiliateState.page }} /
+                        {{
+                          Math.max(
+                            1,
+                            Math.ceil(
+                              affiliateState.total / affiliateState.pageSize,
+                            ),
+                          )
+                        }}</span
+                      >
+                      <button
+                        type="button"
+                        class="btn btn-secondary btn-sm"
+                        :disabled="
+                          affiliateState.page >=
+                          Math.ceil(
+                            affiliateState.total / affiliateState.pageSize,
+                          )
+                        "
+                        @click="changeAffiliatePage(affiliateState.page + 1)"
+                      >
+                        {{ t("pagination.next") }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Affiliate add/edit modal -->
-        <BaseDialog
-          :show="affiliateModal.open"
-          :title="affiliateModal.mode === 'add' ? t('admin.settings.features.affiliate.modal.addTitle') : t('admin.settings.features.affiliate.modal.editTitle')"
-          width="narrow"
-          @close="closeAffiliateModal"
-        >
-          <div class="space-y-4">
+          <!-- Affiliate add/edit modal -->
+          <BaseDialog
+            :show="affiliateModal.open"
+            :title="
+              affiliateModal.mode === 'add'
+                ? t('admin.settings.features.affiliate.modal.addTitle')
+                : t('admin.settings.features.affiliate.modal.editTitle')
+            "
+            width="narrow"
+            @close="closeAffiliateModal"
+          >
+            <div class="space-y-4">
               <div v-if="affiliateModal.mode === 'add'">
-                <label class="input-label">{{ t('admin.settings.features.affiliate.modal.userLabel') }}</label>
+                <label class="input-label">{{
+                  t("admin.settings.features.affiliate.modal.userLabel")
+                }}</label>
                 <!-- Chip showing the picked user; clicking it re-opens the search -->
                 <div
                   v-if="affiliateModal.selectedUser"
                   class="flex items-center justify-between rounded-control border bg-brand-subtle px-3 py-2 border-brand/50"
                 >
                   <div class="text-sm">
-                    <span class="font-medium text-foreground">{{ affiliateModal.selectedUser.email }}</span>
-                    <span class="ml-1 text-xs text-foreground-subtle">({{ affiliateModal.selectedUser.username }})</span>
+                    <span class="font-medium text-foreground">{{
+                      affiliateModal.selectedUser.email
+                    }}</span>
+                    <span class="ml-1 text-xs text-foreground-subtle"
+                      >({{ affiliateModal.selectedUser.username }})</span
+                    >
                   </div>
                   <button
                     type="button"
                     class="text-lg leading-none text-foreground-subtle hover:text-danger-foreground"
-                    :title="t('admin.settings.features.affiliate.modal.changeUser')"
+                    :title="
+                      t('admin.settings.features.affiliate.modal.changeUser')
+                    "
                     @click="clearSelectedAffiliateUser"
                   >
                     ×
@@ -7958,7 +9085,11 @@
                     v-model="affiliateModal.userQuery"
                     type="text"
                     class="input"
-                    :placeholder="t('admin.settings.features.affiliate.modal.userPlaceholder')"
+                    :placeholder="
+                      t(
+                        'admin.settings.features.affiliate.modal.userPlaceholder',
+                      )
+                    "
                     @input="onAffiliateUserSearchInput"
                   />
                   <div
@@ -7972,37 +9103,52 @@
                       class="w-full px-3 py-1.5 text-left text-sm hover:bg-surface-subtle"
                       @click="selectAffiliateUser(u)"
                     >
-                      {{ u.email }} <span class="text-xs text-foreground-subtle">({{ u.username }})</span>
+                      {{ u.email }}
+                      <span class="text-xs text-foreground-subtle"
+                        >({{ u.username }})</span
+                      >
                     </button>
                   </div>
                 </template>
               </div>
               <div v-else>
-                <label class="input-label">{{ t('admin.settings.features.affiliate.modal.userLabel') }}</label>
+                <label class="input-label">{{
+                  t("admin.settings.features.affiliate.modal.userLabel")
+                }}</label>
                 <input
                   type="text"
                   class="input"
-                  :value="affiliateModal.editingEntry ? affiliateModal.editingEntry.email : ''"
+                  :value="
+                    affiliateModal.editingEntry
+                      ? affiliateModal.editingEntry.email
+                      : ''
+                  "
                   disabled
                 />
               </div>
 
               <div>
-                <label class="input-label">{{ t('admin.settings.features.affiliate.modal.codeLabel') }}</label>
+                <label class="input-label">{{
+                  t("admin.settings.features.affiliate.modal.codeLabel")
+                }}</label>
                 <input
                   v-model="affiliateModal.code"
                   type="text"
                   class="input font-mono"
-                  :placeholder="t('admin.settings.features.affiliate.modal.codePlaceholder')"
+                  :placeholder="
+                    t('admin.settings.features.affiliate.modal.codePlaceholder')
+                  "
                   maxlength="32"
                 />
                 <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.affiliate.modal.codeHint') }}
+                  {{ t("admin.settings.features.affiliate.modal.codeHint") }}
                 </p>
               </div>
 
               <div>
-                <label class="input-label">{{ t('admin.settings.features.affiliate.modal.rateLabel') }}</label>
+                <label class="input-label">{{
+                  t("admin.settings.features.affiliate.modal.rateLabel")
+                }}</label>
                 <div class="relative">
                   <input
                     v-model="affiliateModal.rate"
@@ -8011,96 +9157,132 @@
                     min="0"
                     max="100"
                     class="input pr-8"
-                    :placeholder="t('admin.settings.features.affiliate.modal.ratePlaceholder')"
+                    :placeholder="
+                      t(
+                        'admin.settings.features.affiliate.modal.ratePlaceholder',
+                      )
+                    "
                   />
-                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle">%</span>
+                  <span
+                    class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
+                    >%</span
+                  >
                 </div>
                 <p class="mt-1 text-xs text-foreground-subtle">
-                  {{ t('admin.settings.features.affiliate.modal.rateHint') }}
+                  {{ t("admin.settings.features.affiliate.modal.rateHint") }}
                 </p>
               </div>
-          </div>
+            </div>
 
-          <template #footer>
-            <div class="flex w-full items-center justify-between gap-3">
-              <p
-                v-if="!affiliateModalCanSubmit"
-                class="text-xs text-foreground-subtle"
-              >
-                {{ t('admin.settings.features.affiliate.modal.errorEmpty') }}
+            <template #footer>
+              <div class="flex w-full items-center justify-between gap-3">
+                <p
+                  v-if="!affiliateModalCanSubmit"
+                  class="text-xs text-foreground-subtle"
+                >
+                  {{ t("admin.settings.features.affiliate.modal.errorEmpty") }}
+                </p>
+                <span v-else></span>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    @click="closeAffiliateModal"
+                  >
+                    {{ t("common.cancel") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    :disabled="
+                      affiliateModal.saving || !affiliateModalCanSubmit
+                    "
+                    @click="submitAffiliateModal"
+                  >
+                    {{
+                      affiliateModal.saving
+                        ? t("common.saving")
+                        : t("common.save")
+                    }}
+                  </button>
+                </div>
+              </div>
+            </template>
+          </BaseDialog>
+
+          <!-- Affiliate batch rate modal -->
+          <BaseDialog
+            :show="affiliateBatchModal.open"
+            :title="
+              t('admin.settings.features.affiliate.batchModal.title', {
+                count: affiliateState.selected.length,
+              })
+            "
+            width="narrow"
+            @close="affiliateBatchModal.open = false"
+          >
+            <div>
+              <p class="mb-4 text-sm text-foreground-subtle">
+                {{ t("admin.settings.features.affiliate.batchModal.hint") }}
               </p>
-              <span v-else></span>
-              <div class="flex gap-2">
-                <button type="button" class="btn btn-secondary" @click="closeAffiliateModal">
-                  {{ t('common.cancel') }}
+              <div class="relative">
+                <input
+                  v-model="affiliateBatchModal.rate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  class="input pr-8"
+                  :placeholder="
+                    t(
+                      'admin.settings.features.affiliate.batchModal.placeholder',
+                    )
+                  "
+                />
+                <span
+                  class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
+                  >%</span
+                >
+              </div>
+              <p class="mt-2 text-xs text-foreground-subtle">
+                {{
+                  t("admin.settings.features.affiliate.batchModal.clearHint")
+                }}
+              </p>
+            </div>
+            <template #footer>
+              <div class="flex justify-end gap-2">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  @click="affiliateBatchModal.open = false"
+                >
+                  {{ t("common.cancel") }}
                 </button>
                 <button
                   type="button"
                   class="btn btn-primary"
-                  :disabled="affiliateModal.saving || !affiliateModalCanSubmit"
-                  @click="submitAffiliateModal"
+                  :disabled="affiliateBatchModal.saving"
+                  @click="submitAffiliateBatchModal"
                 >
-                  {{ affiliateModal.saving ? t('common.saving') : t('common.save') }}
+                  {{
+                    affiliateBatchModal.saving
+                      ? t("common.saving")
+                      : t("common.save")
+                  }}
                 </button>
               </div>
-            </div>
-          </template>
-        </BaseDialog>
-
-        <!-- Affiliate batch rate modal -->
-        <BaseDialog
-          :show="affiliateBatchModal.open"
-          :title="t('admin.settings.features.affiliate.batchModal.title', { count: affiliateState.selected.length })"
-          width="narrow"
-          @close="affiliateBatchModal.open = false"
-        >
-          <div>
-            <p class="mb-4 text-sm text-foreground-subtle">
-              {{ t('admin.settings.features.affiliate.batchModal.hint') }}
-            </p>
-            <div class="relative">
-              <input
-                v-model="affiliateBatchModal.rate"
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                class="input pr-8"
-                :placeholder="t('admin.settings.features.affiliate.batchModal.placeholder')"
-              />
-              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle">%</span>
-            </div>
-            <p class="mt-2 text-xs text-foreground-subtle">
-              {{ t('admin.settings.features.affiliate.batchModal.clearHint') }}
-            </p>
-          </div>
-          <template #footer>
-            <div class="flex justify-end gap-2">
-              <button type="button" class="btn btn-secondary" @click="affiliateBatchModal.open = false">
-                {{ t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="btn btn-primary"
-                :disabled="affiliateBatchModal.saving"
-                @click="submitAffiliateBatchModal"
-              >
-                {{ affiliateBatchModal.saving ? t('common.saving') : t('common.save') }}
-              </button>
-            </div>
-          </template>
-        </BaseDialog>
-
-        </div><!-- /Tab: Features -->
+            </template>
+          </BaseDialog>
+        </div>
+        <!-- /Tab: Features -->
 
         <!-- Tab: Email -->
         <!-- Tab: Payment -->
         <div v-show="activeTab === 'payment'" class="space-y-6">
           <!-- Payment System Settings -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.payment.title") }}
               </h2>
@@ -8146,21 +9328,35 @@
                 />
               </div>
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div class="flex items-center justify-between gap-4 rounded-panel border border-outline p-3">
+                <div
+                  class="flex items-center justify-between gap-4 rounded-panel border border-outline p-3"
+                >
                   <div>
-                    <label class="font-medium text-foreground">{{ t("admin.settings.payment.rechargePageVisible") }}</label>
-                    <p class="text-sm text-foreground-subtle">{{ t("admin.settings.payment.rechargePageVisibleHint") }}</p>
+                    <label class="font-medium text-foreground">{{
+                      t("admin.settings.payment.rechargePageVisible")
+                    }}</label>
+                    <p class="text-sm text-foreground-subtle">
+                      {{ t("admin.settings.payment.rechargePageVisibleHint") }}
+                    </p>
                   </div>
                   <Toggle
                     v-model="form.payment_recharge_page_visible"
                     data-testid="payment-recharge-page-visible"
-                    :aria-label="t('admin.settings.payment.rechargePageVisible')"
+                    :aria-label="
+                      t('admin.settings.payment.rechargePageVisible')
+                    "
                   />
                 </div>
-                <div class="flex items-center justify-between gap-4 rounded-panel border border-outline p-3">
+                <div
+                  class="flex items-center justify-between gap-4 rounded-panel border border-outline p-3"
+                >
                   <div>
-                    <label class="font-medium text-foreground">{{ t("admin.settings.payment.ordersPageVisible") }}</label>
-                    <p class="text-sm text-foreground-subtle">{{ t("admin.settings.payment.ordersPageVisibleHint") }}</p>
+                    <label class="font-medium text-foreground">{{
+                      t("admin.settings.payment.ordersPageVisible")
+                    }}</label>
+                    <p class="text-sm text-foreground-subtle">
+                      {{ t("admin.settings.payment.ordersPageVisibleHint") }}
+                    </p>
                   </div>
                   <Toggle
                     v-model="form.payment_orders_page_visible"
@@ -8171,30 +9367,46 @@
               </div>
               <template v-if="form.payment_enabled">
                 <div>
-                  <label class="input-label">{{ t("admin.settings.payment.feeMode") }}</label>
+                  <label class="input-label">{{
+                    t("admin.settings.payment.feeMode")
+                  }}</label>
                   <div
                     role="radiogroup"
                     :aria-label="t('admin.settings.payment.feeMode')"
                     class="grid grid-cols-1 gap-2 rounded-panel border border-outline bg-surface-subtle p-1 sm:grid-cols-3"
                   >
                     <button
-                      v-for="mode in (['platform', 'provider', 'merchant'] as const)"
+                      v-for="mode in [
+                        'platform',
+                        'provider',
+                        'merchant',
+                      ] as const"
                       :key="mode"
                       :data-testid="`payment-fee-mode-${mode}`"
                       type="button"
                       role="radio"
                       :aria-checked="form.payment_fee_mode === mode"
                       class="min-h-10 rounded-control px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-                      :class="form.payment_fee_mode === mode
-                        ? 'bg-surface text-foreground shadow-sm'
-                        : 'text-foreground-muted hover:bg-surface hover:text-foreground'"
+                      :class="
+                        form.payment_fee_mode === mode
+                          ? 'bg-surface text-foreground shadow-sm'
+                          : 'text-foreground-muted hover:bg-surface hover:text-foreground'
+                      "
                       @click="form.payment_fee_mode = mode"
                     >
-                      {{ t(`admin.settings.payment.feeMode${mode.charAt(0).toUpperCase()}${mode.slice(1)}`) }}
+                      {{
+                        t(
+                          `admin.settings.payment.feeMode${mode.charAt(0).toUpperCase()}${mode.slice(1)}`,
+                        )
+                      }}
                     </button>
                   </div>
                   <p class="mt-2 text-sm text-foreground-subtle">
-                    {{ t(`admin.settings.payment.feeMode${form.payment_fee_mode.charAt(0).toUpperCase()}${form.payment_fee_mode.slice(1)}Hint`) }}
+                    {{
+                      t(
+                        `admin.settings.payment.feeMode${form.payment_fee_mode.charAt(0).toUpperCase()}${form.payment_fee_mode.slice(1)}Hint`,
+                      )
+                    }}
                   </p>
                   <p
                     v-if="form.payment_fee_mode === 'provider'"
@@ -8203,7 +9415,9 @@
                     {{ t("admin.settings.payment.feeModeProviderWarning") }}
                   </p>
                   <p class="mt-2 text-sm text-foreground-subtle">
-                    {{ t("admin.settings.payment.feeRatesConfiguredPerProvider") }}
+                    {{
+                      t("admin.settings.payment.feeRatesConfiguredPerProvider")
+                    }}
                   </p>
                 </div>
                 <!-- Row 1: Product name -->
@@ -8246,7 +9460,9 @@
                   </div>
                 </div>
                 <!-- Row 2: Balance toggle + amounts -->
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div
+                  class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                >
                   <div>
                     <label class="input-label">{{
                       t("admin.settings.payment.minAmount")
@@ -8328,9 +9544,7 @@
                         )
                       }}
                     </p>
-                    <p
-                      class="mt-1 text-xs font-medium text-brand"
-                    >
+                    <p class="mt-1 text-xs font-medium text-brand">
                       {{
                         t("admin.settings.payment.balanceRechargePreview", {
                           usd: (
@@ -8385,62 +9599,124 @@
                     </p>
                   </div>
                 </div>
-                <section class="space-y-3 border-t border-outline pt-4" aria-labelledby="quick-recharge-heading">
-                  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <section
+                  class="space-y-3 border-t border-outline pt-4"
+                  aria-labelledby="quick-recharge-heading"
+                >
+                  <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                  >
                     <div>
-                      <h3 id="quick-recharge-heading" class="text-sm font-semibold text-foreground">
+                      <h3
+                        id="quick-recharge-heading"
+                        class="text-sm font-semibold text-foreground"
+                      >
                         {{ t("admin.settings.payment.quickRechargeAmounts") }}
                       </h3>
                       <p class="mt-1 text-xs leading-5 text-foreground-subtle">
-                        {{ t("admin.settings.payment.quickRechargeAmountsHint") }}
+                        {{
+                          t("admin.settings.payment.quickRechargeAmountsHint")
+                        }}
                       </p>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
-                      <span class="text-sm text-foreground-muted">{{ t("admin.settings.payment.customRechargeAmount") }}</span>
+                      <span class="text-sm text-foreground-muted">{{
+                        t("admin.settings.payment.customRechargeAmount")
+                      }}</span>
                       <Toggle
                         v-model="form.payment_custom_recharge_amount_enabled"
-                        :aria-label="t('admin.settings.payment.customRechargeAmount')"
+                        :aria-label="
+                          t('admin.settings.payment.customRechargeAmount')
+                        "
                       />
                     </div>
                   </div>
 
-                  <div v-if="form.payment_quick_recharge_amounts.length" class="overflow-hidden rounded-panel border border-outline">
-                    <div class="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_40px] gap-3 bg-surface-subtle px-3 py-2 text-xs font-medium text-foreground-subtle sm:grid">
-                      <span>{{ t("admin.settings.payment.quickRechargePayAmount") }}</span>
-                      <span>{{ t("admin.settings.payment.quickRechargeBonus") }}</span>
+                  <div
+                    v-if="form.payment_quick_recharge_amounts.length"
+                    class="overflow-hidden rounded-panel border border-outline"
+                  >
+                    <div
+                      class="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_40px] gap-3 bg-surface-subtle px-3 py-2 text-xs font-medium text-foreground-subtle sm:grid"
+                    >
+                      <span>{{
+                        t("admin.settings.payment.quickRechargePayAmount")
+                      }}</span>
+                      <span>{{
+                        t("admin.settings.payment.quickRechargeBonus")
+                      }}</span>
                       <span class="sr-only">{{ t("common.actions") }}</span>
                     </div>
                     <div
-                      v-for="(item, index) in form.payment_quick_recharge_amounts"
+                      v-for="(
+                        item, index
+                      ) in form.payment_quick_recharge_amounts"
                       :key="index"
                       class="grid grid-cols-[minmax(0,1fr)_40px] gap-3 border-t border-outline p-3 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_40px]"
                     >
                       <label class="col-span-2 min-w-0 sm:col-span-1">
-                        <span class="mb-1 block text-xs text-foreground-subtle sm:hidden">{{ t("admin.settings.payment.quickRechargePayAmount") }}</span>
+                        <span
+                          class="mb-1 block text-xs text-foreground-subtle sm:hidden"
+                          >{{
+                            t("admin.settings.payment.quickRechargePayAmount")
+                          }}</span
+                        >
                         <div class="relative">
-                          <input v-model.number="item.amount" type="number" min="0.01" step="0.01" class="input pr-14" required />
-                          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle">USD</span>
+                          <input
+                            v-model.number="item.amount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            class="input pr-14"
+                            required
+                          />
+                          <span
+                            class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle"
+                            >USD</span
+                          >
                         </div>
                       </label>
                       <label class="min-w-0">
-                        <span class="mb-1 block text-xs text-foreground-subtle sm:hidden">{{ t("admin.settings.payment.quickRechargeBonus") }}</span>
+                        <span
+                          class="mb-1 block text-xs text-foreground-subtle sm:hidden"
+                          >{{
+                            t("admin.settings.payment.quickRechargeBonus")
+                          }}</span
+                        >
                         <div class="relative">
-                          <input v-model.number="item.bonus" type="number" min="0" step="0.01" class="input pr-14" required />
-                          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle">USD</span>
+                          <input
+                            v-model.number="item.bonus"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="input pr-14"
+                            required
+                          />
+                          <span
+                            class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-foreground-subtle"
+                            >USD</span
+                          >
                         </div>
                       </label>
                       <button
                         type="button"
                         class="btn btn-ghost btn-icon self-end text-danger-foreground sm:self-center"
-                        :aria-label="t('admin.settings.payment.removeQuickRechargeAmount')"
-                        :title="t('admin.settings.payment.removeQuickRechargeAmount')"
+                        :aria-label="
+                          t('admin.settings.payment.removeQuickRechargeAmount')
+                        "
+                        :title="
+                          t('admin.settings.payment.removeQuickRechargeAmount')
+                        "
                         @click="removeQuickRechargeAmount(index)"
                       >
                         <Icon name="trash" size="sm" />
                       </button>
                     </div>
                   </div>
-                  <p v-else class="rounded-control border border-dashed border-outline px-3 py-4 text-center text-sm text-foreground-subtle">
+                  <p
+                    v-else
+                    class="rounded-control border border-dashed border-outline px-3 py-4 text-center text-sm text-foreground-subtle"
+                  >
                     {{ t("admin.settings.payment.noQuickRechargeAmounts") }}
                   </p>
                   <button
@@ -8484,7 +9760,9 @@
                       <button
                         type="button"
                         role="switch"
-                        :aria-label="t('admin.settings.payment.cancelRateLimit')"
+                        :aria-label="
+                          t('admin.settings.payment.cancelRateLimit')
+                        "
                         :aria-checked="form.payment_cancel_rate_limit_enabled"
                         :class="[
                           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2',
@@ -8577,7 +9855,9 @@
                       <button
                         type="button"
                         role="switch"
-                        :aria-label="t('admin.settings.payment.alipayForceQRCode')"
+                        :aria-label="
+                          t('admin.settings.payment.alipayForceQRCode')
+                        "
                         :aria-checked="form.payment_alipay_force_qrcode"
                         :class="[
                           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2',
@@ -8610,12 +9890,24 @@
                     }}</label>
                     <div class="flex items-center gap-2">
                       <Toggle
-                        :model-value="form.payment_alipay_mobile_precreate_deep_link ?? false"
-                        :aria-label="t('admin.settings.payment.alipayMobilePrecreateDeepLink')"
-                        @update:model-value="form.payment_alipay_mobile_precreate_deep_link = $event"
+                        :model-value="
+                          form.payment_alipay_mobile_precreate_deep_link ??
+                          false
+                        "
+                        :aria-label="
+                          t(
+                            'admin.settings.payment.alipayMobilePrecreateDeepLink',
+                          )
+                        "
+                        @update:model-value="
+                          form.payment_alipay_mobile_precreate_deep_link =
+                            $event
+                        "
                       />
                       <span class="text-sm text-foreground-subtle">{{
-                        t("admin.settings.payment.alipayMobilePrecreateDeepLinkHint")
+                        t(
+                          "admin.settings.payment.alipayMobilePrecreateDeepLinkHint",
+                        )
                       }}</span>
                     </div>
                   </div>
@@ -8908,9 +10200,7 @@
 
           <!-- Send Test Email - Only show when email verification is enabled -->
           <div v-if="form.email_verify_enabled" class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.testEmail.title") }}
               </h2>
@@ -8975,9 +10265,7 @@
 
           <!-- 订阅到期提醒 -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h3 class="text-base font-medium text-foreground">
                 {{ t("admin.settings.subscriptionExpiryNotify.title") }}
               </h3>
@@ -8994,12 +10282,16 @@
                     {{ t("admin.settings.subscriptionExpiryNotify.enabled") }}
                   </label>
                   <p class="mt-1 text-xs text-foreground-subtle">
-                    {{ t("admin.settings.subscriptionExpiryNotify.enabledHint") }}
+                    {{
+                      t("admin.settings.subscriptionExpiryNotify.enabledHint")
+                    }}
                   </p>
                 </div>
                 <Toggle
                   v-model="form.subscription_expiry_notify_enabled"
-                  :aria-label="t('admin.settings.subscriptionExpiryNotify.enabled')"
+                  :aria-label="
+                    t('admin.settings.subscriptionExpiryNotify.enabled')
+                  "
                 />
               </div>
             </div>
@@ -9009,9 +10301,7 @@
 
           <!-- Balance Low Notification -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h3 class="text-base font-medium text-foreground">
                 {{ t("admin.settings.balanceNotify.title") }}
               </h3>
@@ -9072,9 +10362,7 @@
 
           <!-- Account Quota Notification -->
           <div class="card">
-            <div
-              class="border-b border-outline px-6 py-4"
-            >
+            <div class="border-b border-outline px-6 py-4">
               <h3 class="text-base font-medium text-foreground">
                 {{ t("admin.settings.quotaNotify.title") }}
               </h3>
@@ -9301,8 +10589,15 @@ import {
   stepUpBlockReason,
 } from "@/composables/useStepUp";
 import TotpStepUpDialog from "@/components/auth/TotpStepUpDialog.vue";
-import { affiliatesAPI, type AffiliateAdminEntry, type SimpleUser as AffiliateSimpleUser } from "@/api/admin/affiliates";
-import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiError";
+import {
+  affiliatesAPI,
+  type AffiliateAdminEntry,
+  type SimpleUser as AffiliateSimpleUser,
+} from "@/api/admin/affiliates";
+import {
+  extractApiErrorMessage,
+  extractI18nErrorMessage,
+} from "@/utils/apiError";
 import { useAppStore } from "@/stores";
 import { useAdminSettingsStore } from "@/stores/adminSettings";
 import { normalizeVisibleMethod } from "@/components/payment/paymentFlow";
@@ -9374,7 +10669,9 @@ const initialSettingsTab = isSettingsTab(route.query.section)
   ? route.query.section
   : "general";
 const activeTab = ref<SettingsTab>(initialSettingsTab);
-const emailTemplateEditorRef = ref<InstanceType<typeof EmailTemplateEditor> | null>(null);
+const emailTemplateEditorRef = ref<InstanceType<
+  typeof EmailTemplateEditor
+> | null>(null);
 const settingsTabs = [
   { key: "general" as SettingsTab, icon: "home" as const },
   { key: "agreement" as SettingsTab, icon: "document" as const },
@@ -9625,15 +10922,13 @@ function loginAgreementRoutePath(
   index: number,
 ): string {
   const id =
-    normalizeLoginAgreementDocumentId(doc.id || doc.title) || `doc-${index + 1}`;
+    normalizeLoginAgreementDocumentId(doc.id || doc.title) ||
+    `doc-${index + 1}`;
   return `/legal/${id}`;
 }
 
 type ClaudeOAuthSystemPromptPreset =
-  | "billing"
-  | "system"
-  | "expansion"
-  | "custom";
+  "billing" | "system" | "expansion" | "custom";
 
 interface ClaudeOAuthSystemPromptBlock {
   id: string;
@@ -9994,12 +11289,10 @@ function markClaudeOAuthSystemPromptBlockCustom(
 }
 
 function resetClaudeOAuthSystemPromptBlocks(): void {
-  claudeOAuthSystemPromptBlocks.value = createDefaultClaudeOAuthSystemPromptBlocks(
-    form.claude_oauth_system_prompt,
-  );
+  claudeOAuthSystemPromptBlocks.value =
+    createDefaultClaudeOAuthSystemPromptBlocks(form.claude_oauth_system_prompt);
   syncClaudeOAuthSystemPromptBlocksFormField();
 }
-
 
 interface DefaultSubscriptionGroupOption {
   value: number;
@@ -10019,6 +11312,7 @@ type SettingsForm = Omit<
 > & {
   /** Form always binds a concrete boolean (SystemSettings marks this optional). */
   channel_monitor_hide_throughput: boolean;
+  channel_monitor_show_quota: boolean;
   smtp_password: string;
   turnstile_secret_key: string;
   tencent_captcha_app_secret_key: string;
@@ -10056,7 +11350,9 @@ type SettingsForm = Omit<
   openai_advanced_scheduler_weight_session_sticky: string;
   // 系统全局平台限额 map；form 内始终归一化为全 4 平台对象（模板非空绑定依赖此不变量）
   default_platform_quotas: DefaultPlatformQuotasMap;
-  account_scheduling_thresholds: ReturnType<typeof normalizeAccountSchedulingThresholdsMap>;
+  account_scheduling_thresholds: ReturnType<
+    typeof normalizeAccountSchedulingThresholdsMap
+  >;
 };
 
 const schedulingThresholdPlatforms = SCHEDULING_THRESHOLD_PLATFORMS;
@@ -10093,7 +11389,8 @@ const form = reactive<SettingsForm>({
   login_agreement_updated_at: "2026-03-31",
   login_agreement_documents: defaultLoginAgreementDocuments(),
   default_balance: 0,
-  default_platform_quotas: normalizePlatformQuotasMap() as DefaultPlatformQuotasMap,
+  default_platform_quotas:
+    normalizePlatformQuotasMap() as DefaultPlatformQuotasMap,
   account_scheduling_thresholds: normalizeAccountSchedulingThresholdsMap(),
   affiliate_rebate_rate: 20,
   affiliate_rebate_freeze_hours: 0,
@@ -10225,9 +11522,18 @@ const form = reactive<SettingsForm>({
   dingtalk_connect_sync_corp_email_attr_key: "dingtalk_email",
   dingtalk_connect_sync_display_name_attr_key: "dingtalk_name",
   dingtalk_connect_sync_dept_attr_key: "dingtalk_department",
-  dingtalk_connect_sync_corp_email_attr_name: localText("钉钉企业邮箱", "DingTalk Corporate Email"),
-  dingtalk_connect_sync_display_name_attr_name: localText("钉钉姓名", "DingTalk Name"),
-  dingtalk_connect_sync_dept_attr_name: localText("钉钉部门", "DingTalk Department"),
+  dingtalk_connect_sync_corp_email_attr_name: localText(
+    "钉钉企业邮箱",
+    "DingTalk Corporate Email",
+  ),
+  dingtalk_connect_sync_display_name_attr_name: localText(
+    "钉钉姓名",
+    "DingTalk Name",
+  ),
+  dingtalk_connect_sync_dept_attr_name: localText(
+    "钉钉部门",
+    "DingTalk Department",
+  ),
   wechat_connect_enabled: false,
   wechat_connect_app_id: "",
   wechat_connect_app_secret: "",
@@ -10355,12 +11661,13 @@ const form = reactive<SettingsForm>({
   account_quota_notify_emails: [] as NotifyEmailEntry[],
   // Channel Monitor feature switch
   channel_monitor_enabled: true,
-  channel_monitor_mode: 'v1' as 'v1' | 'v2',
+  channel_monitor_mode: "v1" as "v1" | "v2",
   channel_monitor_default_interval_seconds: 60,
   channel_monitor_hide_throughput: false,
+  channel_monitor_show_quota: false,
   // Available Channels feature switch
   available_channels_enabled: false,
-	software_center_enabled: true,
+  software_center_enabled: true,
   // Model Marketplace feature switch
   model_marketplace_enabled: false,
   model_monitor_enabled: false,
@@ -10376,7 +11683,7 @@ const form = reactive<SettingsForm>({
   // Model Plaza feature switches + description
   model_plaza_enabled: false,
   model_plaza_require_auth: false,
-  model_plaza_description: '',
+  model_plaza_description: "",
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
   // Allow user view error requests
@@ -10404,7 +11711,10 @@ const exchangeRateStatusClass = computed(() => {
   if (!form.currency_exchange_rate_auto_sync_enabled) {
     return "bg-surface-subtle text-foreground-muted";
   }
-  if (form.currency_exchange_rate_source !== "auto" || form.currency_exchange_rate_stale) {
+  if (
+    form.currency_exchange_rate_source !== "auto" ||
+    form.currency_exchange_rate_stale
+  ) {
     return "bg-warning-subtle text-warning-foreground";
   }
   return "bg-success-subtle text-success-foreground";
@@ -10416,13 +11726,21 @@ function formatExchangeRateTime(value: string): string {
 }
 
 async function syncExchangeRateNow(): Promise<void> {
-  if (exchangeRateSyncing.value || !form.currency_exchange_rate_auto_sync_enabled) return;
+  if (
+    exchangeRateSyncing.value ||
+    !form.currency_exchange_rate_auto_sync_enabled
+  )
+    return;
   exchangeRateSyncing.value = true;
   const autoSyncEnabled = form.currency_exchange_rate_auto_sync_enabled;
   try {
     const updated = await adminAPI.settings.syncExchangeRate();
     for (const [key, value] of Object.entries(updated)) {
-      if (key.startsWith("currency_") && value !== null && value !== undefined) {
+      if (
+        key.startsWith("currency_") &&
+        value !== null &&
+        value !== undefined
+      ) {
         (form as Record<string, unknown>)[key] = value;
       }
     }
@@ -10430,17 +11748,27 @@ async function syncExchangeRateNow(): Promise<void> {
     await appStore.fetchPublicSettings(true);
     appStore.showSuccess(localText("汇率同步成功", "Exchange rate synced"));
   } catch (error: unknown) {
-    appStore.showError(extractApiErrorMessage(error, localText("汇率同步失败", "Exchange rate sync failed")));
+    appStore.showError(
+      extractApiErrorMessage(
+        error,
+        localText("汇率同步失败", "Exchange rate sync failed"),
+      ),
+    );
     const latest = await adminAPI.settings.getSettings().catch(() => null);
-    if (latest) form.currency_exchange_rate_last_error = latest.currency_exchange_rate_last_error;
+    if (latest)
+      form.currency_exchange_rate_last_error =
+        latest.currency_exchange_rate_last_error;
   } finally {
     exchangeRateSyncing.value = false;
   }
 }
 
-watch(() => form.model_marketplace_enabled, (enabled) => {
-  if (!enabled) form.model_monitor_enabled = false;
-});
+watch(
+  () => form.model_marketplace_enabled,
+  (enabled) => {
+    if (!enabled) form.model_monitor_enabled = false;
+  },
+);
 
 // 人机验证 UI 状态：单卡片「总开关 + 服务商单选」，落库仍是三个独立
 // enabled 键（与上游一致），由下面的映射保证同一时间至多一家启用。
@@ -10448,7 +11776,9 @@ type CaptchaProviderSelection = "turnstile" | "tencent" | "aliyun";
 
 const captchaProviderSelection = ref<CaptchaProviderSelection>("turnstile");
 
-function applyCaptchaSelection(provider: CaptchaProviderSelection | null): void {
+function applyCaptchaSelection(
+  provider: CaptchaProviderSelection | null,
+): void {
   form.turnstile_enabled = provider === "turnstile";
   form.tencent_captcha_enabled = provider === "tencent";
   form.aliyun_captcha_enabled = provider === "aliyun";
@@ -10543,57 +11873,96 @@ const openAIAdvancedSchedulerWeightFields = computed<
     {
       key: "openai_advanced_scheduler_lb_top_k",
       label: t("admin.settings.openaiExperimentalScheduler.topKLabel"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_lb_top_k", "7"),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_lb_top_k",
+        "7",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_priority",
       label: t("admin.settings.openaiExperimentalScheduler.priorityWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_priority", "1"),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_priority",
+        "1",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_load",
       label: t("admin.settings.openaiExperimentalScheduler.loadWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_load", "1"),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_load",
+        "1",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_queue",
       label: t("admin.settings.openaiExperimentalScheduler.queueWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_queue", "0.7"),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_queue",
+        "0.7",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_error_rate",
       label: t("admin.settings.openaiExperimentalScheduler.errorRateWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_error_rate", "0.8"),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_error_rate",
+        "0.8",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_ttft",
       label: t("admin.settings.openaiExperimentalScheduler.ttftWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_ttft", "0.5"),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_ttft",
+        "0.5",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_reset",
       label: t("admin.settings.openaiExperimentalScheduler.resetWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_reset", "0"),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_reset",
+        "0",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_quota_headroom",
-      label: t("admin.settings.openaiExperimentalScheduler.quotaHeadroomWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_quota_headroom", "0"),
+      label: t(
+        "admin.settings.openaiExperimentalScheduler.quotaHeadroomWeight",
+      ),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_quota_headroom",
+        "0",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_upstream_cost",
       label: t("admin.settings.openaiExperimentalScheduler.upstreamCostWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_upstream_cost", "0"),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_upstream_cost",
+        "0",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_previous_response",
-      label: t("admin.settings.openaiExperimentalScheduler.previousResponseWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_previous_response", "5"),
+      label: t(
+        "admin.settings.openaiExperimentalScheduler.previousResponseWeight",
+      ),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_previous_response",
+        "5",
+      ),
     },
     {
       key: "openai_advanced_scheduler_weight_session_sticky",
-      label: t("admin.settings.openaiExperimentalScheduler.sessionStickyWeight"),
-      placeholder: placeholder("openai_advanced_scheduler_effective_weight_session_sticky", "3"),
+      label: t(
+        "admin.settings.openaiExperimentalScheduler.sessionStickyWeight",
+      ),
+      placeholder: placeholder(
+        "openai_advanced_scheduler_effective_weight_session_sticky",
+        "3",
+      ),
     },
   ];
 });
@@ -10606,22 +11975,30 @@ const authSourceDefaultsMeta = computed(() => [
   {
     source: "email" as AuthSourceType,
     title: t("admin.settings.authSourceDefaults.sources.email.title"),
-    description: t("admin.settings.authSourceDefaults.sources.email.description"),
+    description: t(
+      "admin.settings.authSourceDefaults.sources.email.description",
+    ),
   },
   {
     source: "linuxdo" as AuthSourceType,
     title: t("admin.settings.authSourceDefaults.sources.linuxdo.title"),
-    description: t("admin.settings.authSourceDefaults.sources.linuxdo.description"),
+    description: t(
+      "admin.settings.authSourceDefaults.sources.linuxdo.description",
+    ),
   },
   {
     source: "oidc" as AuthSourceType,
     title: t("admin.settings.authSourceDefaults.sources.oidc.title"),
-    description: t("admin.settings.authSourceDefaults.sources.oidc.description"),
+    description: t(
+      "admin.settings.authSourceDefaults.sources.oidc.description",
+    ),
   },
   {
     source: "wechat" as AuthSourceType,
     title: t("admin.settings.authSourceDefaults.sources.wechat.title"),
-    description: t("admin.settings.authSourceDefaults.sources.wechat.description"),
+    description: t(
+      "admin.settings.authSourceDefaults.sources.wechat.description",
+    ),
   },
   {
     source: "github" as AuthSourceType,
@@ -10888,7 +12265,7 @@ const defaultSubscriptionGroupOptions = computed<
 );
 
 const registrationEmailSuffixWhitelistSeparatorKeys = new Set([
-  " ",
+  "",
   ",",
   "，",
   "Enter",
@@ -10968,7 +12345,7 @@ function handleRegistrationEmailSuffixWhitelistPaste(event: ClipboardEvent) {
 }
 
 const forwardedClientIpHeaderSeparatorKeys = new Set([
-  " ",
+  "",
   ",",
   "，",
   "Enter",
@@ -11005,7 +12382,11 @@ function normalizeForwardedClientIpHeaders(value: unknown): string[] {
     }
     const header = normalizeForwardedClientIpHeader(raw);
     const key = header.toLowerCase();
-    if (!header || seen.has(key) || headers.length >= maxForwardedClientIpHeaders) {
+    if (
+      !header ||
+      seen.has(key) ||
+      headers.length >= maxForwardedClientIpHeaders
+    ) {
       continue;
     }
     seen.add(key);
@@ -11020,7 +12401,9 @@ function removeForwardedClientIpHeader(header: string) {
   );
 }
 
-function addForwardedClientIpHeader(raw: string): ForwardedClientIpHeaderResult {
+function addForwardedClientIpHeader(
+  raw: string,
+): ForwardedClientIpHeaderResult {
   const header = normalizeForwardedClientIpHeader(raw);
   if (!header) {
     return "invalid";
@@ -11042,9 +12425,13 @@ function addForwardedClientIpHeader(raw: string): ForwardedClientIpHeaderResult 
   return "added";
 }
 
-function showForwardedClientIpHeaderError(result: ForwardedClientIpHeaderResult) {
+function showForwardedClientIpHeaderError(
+  result: ForwardedClientIpHeaderResult,
+) {
   if (result === "invalid") {
-    appStore.showError(t("admin.settings.apiKeyAcl.forwardedClientIpHeaderInvalid"));
+    appStore.showError(
+      t("admin.settings.apiKeyAcl.forwardedClientIpHeaderInvalid"),
+    );
   } else if (result === "full") {
     appStore.showError(
       t("admin.settings.apiKeyAcl.forwardedClientIpHeadersLimit", {
@@ -11369,7 +12756,11 @@ const codexFingerprintNoRequired = computed(
   () => !codexFingerprintRows.value.some((r) => r.required),
 );
 function addCodexFingerprintRow(): void {
-  codexFingerprintRows.value.push({ type: "header_exact", match: "", required: false });
+  codexFingerprintRows.value.push({
+    type: "header_exact",
+    match: "",
+    required: false,
+  });
 }
 function removeCodexFingerprintRow(i: number): void {
   codexFingerprintRows.value.splice(i, 1);
@@ -11383,9 +12774,7 @@ function parseCodexEntriesToRows(raw: string): CodexClientRow[] {
     return arr.map((e) => ({
       originator: typeof e?.originator === "string" ? e.originator : "",
       uaContains: Array.isArray(e?.ua_contains)
-        ? e.ua_contains
-            .filter((x: unknown) => typeof x === "string")
-            .join(", ")
+        ? e.ua_contains.filter((x: unknown) => typeof x === "string").join(",")
         : "",
       skipEngineFingerprint: e?.skip_engine_fingerprint === true,
     }));
@@ -11479,14 +12868,19 @@ async function loadSettings() {
       form.codex_cli_only_whitelist,
     );
     codexFingerprintRows.value = form.codex_cli_only_engine_fingerprint_signals
-      ? parseFingerprintSignalsToRows(form.codex_cli_only_engine_fingerprint_signals)
+      ? parseFingerprintSignalsToRows(
+          form.codex_cli_only_engine_fingerprint_signals,
+        )
       : defaultFingerprintSignalRows();
     form.login_agreement_mode =
       settings.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
     form.channel_monitor_mode =
       settings.channel_monitor_mode === "v2" ? "v2" : "v1";
     form.channel_monitor_hide_throughput = Boolean(
-      settings.channel_monitor_hide_throughput
+      settings.channel_monitor_hide_throughput,
+    );
+    form.channel_monitor_show_quota = Boolean(
+      settings.channel_monitor_show_quota,
     );
     form.login_agreement_updated_at =
       settings.login_agreement_updated_at || "2026-03-31";
@@ -11500,10 +12894,13 @@ async function loadSettings() {
           }))
         : defaultLoginAgreementDocuments();
     Object.assign(authSourceDefaults, buildAuthSourceDefaultsState(settings));
-    form.default_platform_quotas = normalizePlatformQuotasMap(settings.default_platform_quotas);
-    form.account_scheduling_thresholds = normalizeAccountSchedulingThresholdsMap(
-      settings.account_scheduling_thresholds,
+    form.default_platform_quotas = normalizePlatformQuotasMap(
+      settings.default_platform_quotas,
     );
+    form.account_scheduling_thresholds =
+      normalizeAccountSchedulingThresholdsMap(
+        settings.account_scheduling_thresholds,
+      );
     form.backend_mode_enabled = settings.backend_mode_enabled;
     form.default_subscriptions = normalizeDefaultSubscriptionSettings(
       settings.default_subscriptions,
@@ -11552,7 +12949,9 @@ async function loadSettings() {
       wechatCapabilities.mobileEnabled,
       settings.wechat_connect_mode,
     );
-    const legacyWeChatAppID = String(settings.wechat_connect_app_id || "").trim();
+    const legacyWeChatAppID = String(
+      settings.wechat_connect_app_id || "",
+    ).trim();
     const legacyWeChatSecretConfigured = Boolean(
       settings.wechat_connect_app_secret_configured,
     );
@@ -11562,7 +12961,10 @@ async function loadSettings() {
     if (!form.wechat_connect_mp_app_id && wechatCapabilities.mpEnabled) {
       form.wechat_connect_mp_app_id = legacyWeChatAppID;
     }
-    if (!form.wechat_connect_mobile_app_id && wechatCapabilities.mobileEnabled) {
+    if (
+      !form.wechat_connect_mobile_app_id &&
+      wechatCapabilities.mobileEnabled
+    ) {
       form.wechat_connect_mobile_app_id = legacyWeChatAppID;
     }
     if (
@@ -11576,7 +12978,8 @@ async function loadSettings() {
       !form.wechat_connect_mp_app_secret_configured &&
       wechatCapabilities.mpEnabled
     ) {
-      form.wechat_connect_mp_app_secret_configured = legacyWeChatSecretConfigured;
+      form.wechat_connect_mp_app_secret_configured =
+        legacyWeChatSecretConfigured;
     }
     if (
       !form.wechat_connect_mobile_app_secret_configured &&
@@ -11726,7 +13129,10 @@ async function saveSettings() {
 
     const normalizedLoginAgreementDocuments =
       normalizeLoginAgreementDocumentsForSave();
-    if (form.login_agreement_enabled && normalizedLoginAgreementDocuments.length === 0) {
+    if (
+      form.login_agreement_enabled &&
+      normalizedLoginAgreementDocuments.length === 0
+    ) {
       appStore.showError(
         localText(
           "启用登录条款确认时，至少需要保留一份文档。",
@@ -11834,8 +13240,7 @@ async function saveSettings() {
       serializeClaudeOAuthSystemPromptBlocksToJSON(
         claudeOAuthSystemPromptBlocks.value,
       );
-    form.claude_oauth_system_prompt_blocks =
-      claudeOAuthSystemPromptBlocksJSON;
+    form.claude_oauth_system_prompt_blocks = claudeOAuthSystemPromptBlocksJSON;
     const currencyManualRate = roundHalfUp(
       Number(form.currency_usd_to_cny_manual_rate),
       2,
@@ -11856,7 +13261,8 @@ async function saveSettings() {
 
     const payload: UpdateSettingsRequest = {
       currency_usd_to_cny_manual_rate: currencyManualRate,
-      currency_exchange_rate_auto_sync_enabled: form.currency_exchange_rate_auto_sync_enabled,
+      currency_exchange_rate_auto_sync_enabled:
+        form.currency_exchange_rate_auto_sync_enabled,
       registration_enabled: form.registration_enabled,
       email_verify_enabled: form.email_verify_enabled,
       registration_email_suffix_whitelist:
@@ -11886,9 +13292,21 @@ async function saveSettings() {
         100,
         Math.max(0, Number(form.affiliate_rebate_rate) || 0),
       ),
-      affiliate_rebate_freeze_hours: Math.max(0, Math.min(720, Number(form.affiliate_rebate_freeze_hours) || 0)),
-      affiliate_rebate_duration_days: Math.max(0, Math.min(3650, Math.floor(Number(form.affiliate_rebate_duration_days) || 0))),
-      affiliate_rebate_per_invitee_cap: Math.max(0, Number(form.affiliate_rebate_per_invitee_cap) || 0),
+      affiliate_rebate_freeze_hours: Math.max(
+        0,
+        Math.min(720, Number(form.affiliate_rebate_freeze_hours) || 0),
+      ),
+      affiliate_rebate_duration_days: Math.max(
+        0,
+        Math.min(
+          3650,
+          Math.floor(Number(form.affiliate_rebate_duration_days) || 0),
+        ),
+      ),
+      affiliate_rebate_per_invitee_cap: Math.max(
+        0,
+        Number(form.affiliate_rebate_per_invitee_cap) || 0,
+      ),
       affiliate_admin_recharge_enabled: form.affiliate_admin_recharge_enabled,
       default_concurrency: form.default_concurrency,
       default_subscriptions: normalizedDefaultSubscriptions,
@@ -11950,16 +13368,24 @@ async function saveSettings() {
       dingtalk_connect_corp_restriction_policy:
         form.dingtalk_connect_corp_restriction_policy,
       dingtalk_connect_internal_corp_id: form.dingtalk_connect_internal_corp_id,
-      dingtalk_connect_bypass_registration: form.dingtalk_connect_bypass_registration,
+      dingtalk_connect_bypass_registration:
+        form.dingtalk_connect_bypass_registration,
       dingtalk_connect_sync_corp_email: form.dingtalk_connect_sync_corp_email,
-      dingtalk_connect_sync_display_name: form.dingtalk_connect_sync_display_name,
+      dingtalk_connect_sync_display_name:
+        form.dingtalk_connect_sync_display_name,
       dingtalk_connect_sync_dept: form.dingtalk_connect_sync_dept,
-      dingtalk_connect_sync_corp_email_attr_key: form.dingtalk_connect_sync_corp_email_attr_key,
-      dingtalk_connect_sync_display_name_attr_key: form.dingtalk_connect_sync_display_name_attr_key,
-      dingtalk_connect_sync_dept_attr_key: form.dingtalk_connect_sync_dept_attr_key,
-      dingtalk_connect_sync_corp_email_attr_name: form.dingtalk_connect_sync_corp_email_attr_name,
-      dingtalk_connect_sync_display_name_attr_name: form.dingtalk_connect_sync_display_name_attr_name,
-      dingtalk_connect_sync_dept_attr_name: form.dingtalk_connect_sync_dept_attr_name,
+      dingtalk_connect_sync_corp_email_attr_key:
+        form.dingtalk_connect_sync_corp_email_attr_key,
+      dingtalk_connect_sync_display_name_attr_key:
+        form.dingtalk_connect_sync_display_name_attr_key,
+      dingtalk_connect_sync_dept_attr_key:
+        form.dingtalk_connect_sync_dept_attr_key,
+      dingtalk_connect_sync_corp_email_attr_name:
+        form.dingtalk_connect_sync_corp_email_attr_name,
+      dingtalk_connect_sync_display_name_attr_name:
+        form.dingtalk_connect_sync_display_name_attr_name,
+      dingtalk_connect_sync_dept_attr_name:
+        form.dingtalk_connect_sync_dept_attr_name,
       wechat_connect_enabled: form.wechat_connect_enabled,
       wechat_connect_app_id:
         form.wechat_connect_open_app_id ||
@@ -12012,15 +13438,13 @@ async function saveSettings() {
         form.oidc_connect_userinfo_username_path,
       github_oauth_enabled: form.github_oauth_enabled,
       github_oauth_client_id: form.github_oauth_client_id,
-      github_oauth_client_secret:
-        form.github_oauth_client_secret || undefined,
+      github_oauth_client_secret: form.github_oauth_client_secret || undefined,
       github_oauth_redirect_url: form.github_oauth_redirect_url,
       github_oauth_frontend_redirect_url:
         form.github_oauth_frontend_redirect_url,
       google_oauth_enabled: form.google_oauth_enabled,
       google_oauth_client_id: form.google_oauth_client_id,
-      google_oauth_client_secret:
-        form.google_oauth_client_secret || undefined,
+      google_oauth_client_secret: form.google_oauth_client_secret || undefined,
       google_oauth_redirect_url: form.google_oauth_redirect_url,
       google_oauth_frontend_redirect_url:
         form.google_oauth_frontend_redirect_url,
@@ -12055,8 +13479,7 @@ async function saveSettings() {
         form.enable_client_dateline_normalization,
       antigravity_user_agent_version:
         form.antigravity_user_agent_version?.trim() || "",
-      openai_codex_user_agent:
-        form.openai_codex_user_agent?.trim() || "",
+      openai_codex_user_agent: form.openai_codex_user_agent?.trim() || "",
       openai_codex_client_version:
         form.openai_codex_client_version?.trim() || "",
       openai_codex_version_auto_sync_enabled:
@@ -12164,17 +13587,23 @@ async function saveSettings() {
       ).filter((e) => e.email.trim() !== ""),
       // Channel Monitor feature switch
       channel_monitor_enabled: form.channel_monitor_enabled,
-      channel_monitor_mode: form.channel_monitor_mode === 'v1' ? 'v1' : 'v2',
+      channel_monitor_mode: form.channel_monitor_mode === "v1" ? "v1" : "v2",
       channel_monitor_default_interval_seconds:
         Number(form.channel_monitor_default_interval_seconds) || 60,
-      channel_monitor_hide_throughput: Boolean(form.channel_monitor_hide_throughput),
+      channel_monitor_hide_throughput: Boolean(
+        form.channel_monitor_hide_throughput,
+      ),
+      channel_monitor_show_quota: Boolean(form.channel_monitor_show_quota),
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
-		software_center_enabled: form.software_center_enabled,
+      software_center_enabled: form.software_center_enabled,
       // Model Marketplace feature switch
       model_marketplace_enabled: form.model_marketplace_enabled,
-      model_monitor_enabled: form.model_marketplace_enabled && form.model_monitor_enabled,
-      model_marketplace_performance_visible: form.model_marketplace_enabled && form.model_marketplace_performance_visible,
+      model_monitor_enabled:
+        form.model_marketplace_enabled && form.model_monitor_enabled,
+      model_marketplace_performance_visible:
+        form.model_marketplace_enabled &&
+        form.model_marketplace_performance_visible,
       contact_us_enabled: form.contact_us_enabled,
       contact_qq_enabled: form.contact_qq_enabled,
       contact_qq_name: form.contact_qq_name.trim(),
@@ -12224,10 +13653,13 @@ async function saveSettings() {
       };
     }
 
-    payload.default_platform_quotas = sanitizePlatformQuotasMap(form.default_platform_quotas);
-    payload.account_scheduling_thresholds = sanitizeAccountSchedulingThresholdsMap(
-      form.account_scheduling_thresholds,
+    payload.default_platform_quotas = sanitizePlatformQuotasMap(
+      form.default_platform_quotas,
     );
+    payload.account_scheduling_thresholds =
+      sanitizeAccountSchedulingThresholdsMap(
+        form.account_scheduling_thresholds,
+      );
     appendAuthSourceDefaultsToUpdateRequest(payload, authSourceDefaults);
 
     const updated = await settingsStepUp.run(() =>
@@ -12240,10 +13672,13 @@ async function saveSettings() {
       }
     }
     Object.assign(authSourceDefaults, buildAuthSourceDefaultsState(updated));
-    form.default_platform_quotas = normalizePlatformQuotasMap(updated.default_platform_quotas);
-    form.account_scheduling_thresholds = normalizeAccountSchedulingThresholdsMap(
-      updated.account_scheduling_thresholds,
+    form.default_platform_quotas = normalizePlatformQuotasMap(
+      updated.default_platform_quotas,
     );
+    form.account_scheduling_thresholds =
+      normalizeAccountSchedulingThresholdsMap(
+        updated.account_scheduling_thresholds,
+      );
     registrationEmailSuffixWhitelistTags.value =
       normalizeRegistrationEmailSuffixDomains(
         updated.registration_email_suffix_whitelist,
@@ -12533,7 +13968,10 @@ async function saveOllamaCloudUsageSettings() {
     appStore.showSuccess(t("admin.settings.ollamaCloudUsage.saved"));
   } catch (error: unknown) {
     appStore.showError(
-      extractApiErrorMessage(error, t("admin.settings.ollamaCloudUsage.saveFailed")),
+      extractApiErrorMessage(
+        error,
+        t("admin.settings.ollamaCloudUsage.saveFailed"),
+      ),
     );
   } finally {
     ollamaCloudUsageSaving.value = false;
@@ -12834,6 +14272,16 @@ const openaiFastPolicyActionOptions = computed(() => [
   { value: "block", label: t("admin.settings.openaiFastPolicy.actionBlock") },
 ]);
 
+function openaiFastPolicyActionSummary(action: OpenAIFastPolicyRule["action"]) {
+  return t(`admin.settings.openaiFastPolicy.summaryAction.${action}`);
+}
+
+function hasOpenAIFastPolicyTargetModels(rule: OpenAIFastPolicyRule) {
+  return Boolean(
+    rule.model_whitelist?.some((pattern) => pattern.trim() !== ""),
+  );
+}
+
 const openaiFastPolicyScopeOptions = computed(() => [
   { value: "all", label: t("admin.settings.openaiFastPolicy.scopeAll") },
   { value: "oauth", label: t("admin.settings.openaiFastPolicy.scopeOAuth") },
@@ -13090,9 +14538,10 @@ function findProviderEnablementConflict(
   return null;
 }
 
-function showProviderEnablementConflict(
-  conflict: { method: "alipay" | "wxpay"; conflicting: ProviderInstance },
-) {
+function showProviderEnablementConflict(conflict: {
+  method: "alipay" | "wxpay";
+  conflicting: ProviderInstance;
+}) {
   appStore.showError(
     t("admin.settings.payment.enableConflict", {
       method: t(`payment.methods.${conflict.method}`),
@@ -13115,7 +14564,9 @@ async function loadProviders() {
         : [],
     }));
   } catch (err: unknown) {
-    appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
+    appStore.showError(
+      extractI18nErrorMessage(err, t, "payment.errors", t("common.error")),
+    );
   } finally {
     providersLoading.value = false;
   }
@@ -13164,7 +14615,9 @@ async function handleSaveProvider(payload: Partial<ProviderInstance>) {
     // Auto-save settings so provider changes take effect immediately
     await saveSettings();
   } catch (err: unknown) {
-    appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
+    appStore.showError(
+      extractI18nErrorMessage(err, t, "payment.errors", t("common.error")),
+    );
   } finally {
     providerSaving.value = false;
   }
@@ -13202,7 +14655,9 @@ async function handleToggleField(
     await adminAPI.payment.updateProvider(provider.id, payload);
     await loadProviders();
   } catch (err: unknown) {
-    appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
+    appStore.showError(
+      extractI18nErrorMessage(err, t, "payment.errors", t("common.error")),
+    );
   }
 }
 
@@ -13230,7 +14685,9 @@ async function handleToggleType(provider: ProviderInstance, type: string) {
     } as any);
     await loadProviders();
   } catch (err: unknown) {
-    appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
+    appStore.showError(
+      extractI18nErrorMessage(err, t, "payment.errors", t("common.error")),
+    );
   }
 }
 
@@ -13252,7 +14709,9 @@ async function handleReorderProviders(
     );
     await loadProviders();
   } catch (err: unknown) {
-    appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
+    appStore.showError(
+      extractI18nErrorMessage(err, t, "payment.errors", t("common.error")),
+    );
     loadProviders();
   }
 }
@@ -13265,7 +14724,9 @@ async function handleDeleteProvider() {
     showDeleteProviderDialog.value = false;
     loadProviders();
   } catch (err: unknown) {
-    appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
+    appStore.showError(
+      extractI18nErrorMessage(err, t, "payment.errors", t("common.error")),
+    );
   }
 }
 
@@ -13401,7 +14862,11 @@ function cancelAffiliateConfirm() {
 
 // debounceTimer wires a single timer slot to a callback with a delay,
 // canceling any pending invocation. Used for type-as-you-go search inputs.
-function debounceTimer(slot: { searchTimer: number | null }, delayMs: number, run: () => void) {
+function debounceTimer(
+  slot: { searchTimer: number | null },
+  delayMs: number,
+  run: () => void,
+) {
   if (slot.searchTimer != null) window.clearTimeout(slot.searchTimer);
   slot.searchTimer = window.setTimeout(run, delayMs);
 }
@@ -13419,7 +14884,9 @@ function parseRebateRate(raw: unknown): number | null | undefined {
   if (s === "") return null;
   const parsed = Number(s);
   if (Number.isNaN(parsed) || parsed < 0 || parsed > 100) {
-    appStore.showError(t("admin.settings.features.affiliate.modal.errorBadRate"));
+    appStore.showError(
+      t("admin.settings.features.affiliate.modal.errorBadRate"),
+    );
     return undefined;
   }
   return parsed;
@@ -13437,7 +14904,9 @@ async function loadAffiliateUsers() {
     affiliateState.total = res.total ?? 0;
     // Drop selections that are no longer visible.
     const visibleIds = new Set(affiliateState.entries.map((e) => e.user_id));
-    affiliateState.selected = affiliateState.selected.filter((id) => visibleIds.has(id));
+    affiliateState.selected = affiliateState.selected.filter((id) =>
+      visibleIds.has(id),
+    );
   } catch (err) {
     appStore.showError(extractApiErrorMessage(err, t("common.error")));
   } finally {
@@ -13460,7 +14929,9 @@ function changeAffiliatePage(page: number) {
 
 function toggleAffiliateSelectAll(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
-  affiliateState.selected = checked ? affiliateState.entries.map((entry) => entry.user_id) : [];
+  affiliateState.selected = checked
+    ? affiliateState.entries.map((entry) => entry.user_id)
+    : [];
 }
 
 function toggleAffiliateSelect(userId: number) {
@@ -13480,7 +14951,9 @@ function openAffiliateModal(entry: AffiliateAdminEntry | null) {
   affiliateModal.editingEntry = entry;
   affiliateModal.code = entry?.aff_code_custom ? entry.aff_code : "";
   affiliateModal.rate =
-    entry?.aff_rebate_rate_percent != null ? String(entry.aff_rebate_rate_percent) : "";
+    entry?.aff_rebate_rate_percent != null
+      ? String(entry.aff_rebate_rate_percent)
+      : "";
 }
 
 function closeAffiliateModal() {
@@ -13560,7 +15033,10 @@ async function submitAffiliateModal() {
   const rateInput = parseRebateRate(affiliateModal.rate);
   if (rateInput === undefined) return; // toast already shown
   if (rateInput === null) {
-    if (affiliateModal.mode === "edit" && affiliateModal.editingEntry?.aff_rebate_rate_percent != null) {
+    if (
+      affiliateModal.mode === "edit" &&
+      affiliateModal.editingEntry?.aff_rebate_rate_percent != null
+    ) {
       payload.clear_rebate_rate = true;
     }
   } else {
@@ -13644,10 +15120,14 @@ watch(
   () => form.dingtalk_connect_corp_restriction_policy,
   (policy) => {
     if (policy !== "internal_only") {
-      if (form.dingtalk_connect_bypass_registration) form.dingtalk_connect_bypass_registration = false;
-      if (form.dingtalk_connect_sync_corp_email) form.dingtalk_connect_sync_corp_email = false;
-      if (form.dingtalk_connect_sync_display_name) form.dingtalk_connect_sync_display_name = false;
-      if (form.dingtalk_connect_sync_dept) form.dingtalk_connect_sync_dept = false;
+      if (form.dingtalk_connect_bypass_registration)
+        form.dingtalk_connect_bypass_registration = false;
+      if (form.dingtalk_connect_sync_corp_email)
+        form.dingtalk_connect_sync_corp_email = false;
+      if (form.dingtalk_connect_sync_display_name)
+        form.dingtalk_connect_sync_display_name = false;
+      if (form.dingtalk_connect_sync_dept)
+        form.dingtalk_connect_sync_dept = false;
     }
   },
 );
@@ -13711,7 +15191,10 @@ watch(
   font-size: 13px;
   font-weight: 650;
   white-space: nowrap;
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }
 
 @media (min-width: 768px) {

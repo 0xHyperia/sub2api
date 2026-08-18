@@ -54,6 +54,13 @@
       secondary-unit="ms"
     />
 
+    <!-- 配额模式：最新用量/余额快照（服务端已按系统开关剥离，此处 flag 为纵深防御） -->
+    <MonitorQuotaView
+      v-if="quotaVisible"
+      :snapshot="item.latest_quota"
+      class="mt-2"
+    />
+
     <!-- Divider -->
     <!-- Availability row -->
     <MonitorAvailabilityRow
@@ -71,54 +78,54 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { UserMonitorView } from '@/api/channelMonitor'
-import { useChannelMonitorFormat } from '@/composables/useChannelMonitorFormat'
-import ProviderIcon from './ProviderIcon.vue'
-import MonitorMetricPair from './MonitorMetricPair.vue'
-import MonitorAvailabilityRow from './MonitorAvailabilityRow.vue'
-import MonitorTimeline from './MonitorTimeline.vue'
-
-const PROVIDER_TINT: Record<string, string> = {
-  openai: 'text-success-foreground',
-  anthropic: 'text-warning-foreground',
-  gemini: 'text-info-foreground',
-  grok: 'text-foreground-subtle',
-}
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import type { UserMonitorView } from "@/api/channelMonitor";
+import { useChannelMonitorFormat } from "@/composables/useChannelMonitorFormat";
+import { isChannelMonitorQuotaVisible } from "@/utils/featureFlags";
+import { platformIconClass } from "@/utils/platformColors";
+import ProviderIcon from "./ProviderIcon.vue";
+import MonitorMetricPair from "./MonitorMetricPair.vue";
+import MonitorAvailabilityRow from "./MonitorAvailabilityRow.vue";
+import MonitorTimeline from "./MonitorTimeline.vue";
+import MonitorQuotaView from "@/components/common/MonitorQuotaView.vue";
 
 const props = defineProps<{
-  item: UserMonitorView
-  window: '7d' | '15d' | '30d'
-  availabilityValue: number | null
-  countdownSeconds: number
-}>()
+  item: UserMonitorView;
+  window: "7d" | "15d" | "30d";
+  availabilityValue: number | null;
+  countdownSeconds: number;
+}>();
 
 const emit = defineEmits<{
-  (e: 'click'): void
-}>()
+  (e: "click"): void;
+}>();
 
-const { t } = useI18n()
+const { t } = useI18n();
 const {
   statusLabel,
   statusBadgeClass,
   providerLabel,
   providerBadgeClass,
   formatLatency,
-} = useChannelMonitorFormat()
+} = useChannelMonitorFormat();
 
 const providerTintClass = computed(() =>
-  PROVIDER_TINT[props.item.provider] ?? 'text-foreground-muted'
-)
+  platformIconClass(props.item.provider),
+);
+
+const quotaVisible = computed(
+  () => isChannelMonitorQuotaVisible() && !!props.item.latest_quota,
+);
 
 const availabilityLabel = computed(() => {
-  const win = t(`channelStatus.windowTab.${props.window}`)
-  return `${t('monitorCommon.availabilityPrefix')} · ${win}`
-})
+  const win = t(`channelStatus.windowTab.${props.window}`);
+  return `${t("monitorCommon.availabilityPrefix")} · ${win}`;
+});
 
 const extraModelsCountLabel = computed(() => {
-  const count = props.item.extra_models?.length ?? 0
-  if (count === 0) return undefined
-  return t('monitorCommon.extraModelsCount', { n: count })
-})
+  const count = props.item.extra_models?.length ?? 0;
+  if (count === 0) return undefined;
+  return t("monitorCommon.extraModelsCount", { n: count });
+});
 </script>

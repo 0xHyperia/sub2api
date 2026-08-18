@@ -139,7 +139,11 @@ func (r *distributionRepository) AccrueRegistrationReward(ctx context.Context, c
 }
 
 func (r *distributionRepository) QueueDistributionBindingClaim(ctx context.Context, userID int64, code, signupSource string) error {
-	_, err := r.db.ExecContext(ctx, `INSERT INTO distribution_binding_claims
+	exec := distributionClaimExecutor(r.db)
+	if tx := dbent.TxFromContext(ctx); tx != nil {
+		exec = tx.Client()
+	}
+	_, err := exec.ExecContext(ctx, `INSERT INTO distribution_binding_claims
 		(user_id,promotion_code,signup_source,status,attempts,last_error,updated_at,completed_at)
 		VALUES($1,$2,$3,'pending',0,NULL,NOW(),NULL)
 		ON CONFLICT(user_id) DO UPDATE SET
@@ -153,6 +157,10 @@ func (r *distributionRepository) QueueDistributionBindingClaim(ctx context.Conte
 		return fmt.Errorf("queue distribution binding claim: %w", err)
 	}
 	return nil
+}
+
+type distributionClaimExecutor interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
 }
 
 func (r *distributionRepository) PendingDistributionBindingClaim(ctx context.Context, userID int64) (string, bool, error) {

@@ -14,6 +14,36 @@ type durableDistributionBindingRepository interface {
 	FinishDistributionBindingClaim(ctx context.Context, userID int64, bindErr error) error
 }
 
+func (s *AuthService) queueDistributionBindingClaim(ctx context.Context, userID int64, code, signupSource string) (bool, error) {
+	code = strings.TrimSpace(code)
+	if s == nil || s.distributionService == nil || userID <= 0 || code == "" {
+		return false, nil
+	}
+	repo, durable := s.distributionService.repo.(durableDistributionBindingRepository)
+	if !durable {
+		return false, nil
+	}
+	if err := repo.QueueDistributionBindingClaim(ctx, userID, code, signupSource); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *AuthService) tryQueuedDistributionBinding(ctx context.Context, userID int64, code string) (bool, error) {
+	if s == nil || s.distributionService == nil || userID <= 0 || strings.TrimSpace(code) == "" {
+		return false, nil
+	}
+	repo, durable := s.distributionService.repo.(durableDistributionBindingRepository)
+	if !durable {
+		return false, nil
+	}
+	bindErr := s.distributionService.BindCustomerByCode(ctx, userID, strings.TrimSpace(code))
+	if finishErr := repo.FinishDistributionBindingClaim(ctx, userID, bindErr); finishErr != nil {
+		return true, finishErr
+	}
+	return true, bindErr
+}
+
 // queueAndTryDistributionBinding records the registration-time claim before
 // applying it. A true durable result means a failed bind is recoverable.
 func (s *AuthService) queueAndTryDistributionBinding(ctx context.Context, userID int64, code, signupSource string) (bool, error) {
@@ -21,20 +51,15 @@ func (s *AuthService) queueAndTryDistributionBinding(ctx context.Context, userID
 	if s == nil || s.distributionService == nil || userID <= 0 || code == "" {
 		return true, nil
 	}
-	repo, durable := s.distributionService.repo.(durableDistributionBindingRepository)
+	durable, err := s.queueDistributionBindingClaim(ctx, userID, code, signupSource)
+	if err != nil {
+		return false, err
+	}
 	if durable {
-		if err := repo.QueueDistributionBindingClaim(ctx, userID, code, signupSource); err != nil {
-			return false, err
-		}
+		return s.tryQueuedDistributionBinding(ctx, userID, code)
 	}
 	bindErr := s.distributionService.BindCustomerByCode(ctx, userID, code)
-	if durable {
-		finishErr := repo.FinishDistributionBindingClaim(ctx, userID, bindErr)
-		if finishErr != nil {
-			return true, finishErr
-		}
-	}
-	return durable || bindErr == nil, bindErr
+	return bindErr == nil, bindErr
 }
 
 func (s *AuthService) retryPendingDistributionBinding(ctx context.Context, userID int64) {
