@@ -348,6 +348,32 @@ describe('admin GroupsView column settings', () => {
     )
   })
 
+  it('renders a scrollable, stateful column menu without clipping its final item', async () => {
+    const wrapper = await mountView()
+
+    await openColumnSettings(wrapper)
+
+    const menu = wrapper.get('[role="menu"]')
+    const items = menu.findAll('[role="menuitemcheckbox"]')
+    expect(items).toHaveLength(9)
+    expect(items.at(-1)?.text()).toContain('Status')
+    expect(menu.classes()).toEqual(
+      expect.arrayContaining([
+        'left-0',
+        'right-auto',
+        'w-52',
+        'overscroll-contain',
+        'md:left-auto',
+        'md:right-0',
+      ]),
+    )
+    expect(items[0].attributes('tabindex')).toBe('-1')
+    expect(items[0].classes()).toEqual(expect.arrayContaining(['min-h-10']))
+    expect(items[0].attributes('aria-checked')).toBe('false')
+    expect(items[1].attributes('aria-checked')).toBe('true')
+    expect(items[1].classes()).toEqual(expect.arrayContaining(['font-medium', 'text-foreground']))
+  })
+
   it('can show the id column from column settings', async () => {
     const wrapper = await mountView()
 

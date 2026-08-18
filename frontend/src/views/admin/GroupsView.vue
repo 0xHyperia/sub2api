@@ -89,7 +89,7 @@
                 v-if="showColumnDropdown"
                 :id="columnMenuId"
                 ref="columnMenuRef"
-                class="resource-menu absolute right-0 top-full z-50 mt-1 max-h-80 w-48 overflow-y-auto"
+                class="resource-menu absolute left-0 right-auto top-full z-50 mt-2 w-52 overscroll-contain md:left-auto md:right-0"
                 role="menu"
                 :aria-labelledby="columnMenuTriggerId"
                 @keydown="handleColumnMenuKeydown"
@@ -99,18 +99,29 @@
                   :key="col.key"
                   type="button"
                   role="menuitemcheckbox"
+                  tabindex="-1"
                   :aria-checked="isColumnVisible(col.key)"
                   @click="toggleColumn(col.key)"
-                  class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle"
+                  :class="[
+                    'flex min-h-10 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:bg-surface-subtle',
+                    isColumnVisible(col.key)
+                      ? 'font-medium text-foreground'
+                      : 'text-foreground-muted',
+                  ]"
                 >
-                  <span>{{ col.label }}</span>
-                  <Icon
-                    v-if="isColumnVisible(col.key)"
-                    name="check"
-                    size="sm"
-                    class="text-brand"
-                    :stroke-width="2"
-                  />
+                  <span class="min-w-0 flex-1 truncate">{{ col.label }}</span>
+                  <span
+                    class="flex h-5 w-5 flex-none items-center justify-center"
+                    aria-hidden="true"
+                  >
+                    <Icon
+                      v-if="isColumnVisible(col.key)"
+                      name="check"
+                      size="sm"
+                      class="text-brand"
+                      :stroke-width="2"
+                    />
+                  </span>
                 </button>
               </div>
             </div>
@@ -7098,7 +7109,10 @@ onUnmounted(() => {
 }
 
 .resource-menu {
-  overflow: hidden;
+  max-height: min(24rem, calc(100vh - 7rem));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 4px;
   border: 1px solid var(--ui-border, #dbe3ee);
   border-radius: 8px;
@@ -7107,7 +7121,6 @@ onUnmounted(() => {
 }
 
 .resource-menu > button {
-  min-height: 36px;
   border-radius: 6px;
 }
 
