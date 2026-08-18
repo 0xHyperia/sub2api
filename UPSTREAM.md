@@ -2,7 +2,18 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
-## 官方 v0.1.178 同步（本地集成完成）
+## USA0 v1.0.17
+
+- 发布版本：v1.0.17
+- 官方基线版本：v0.1.178（`e0c48a19ed794a565e3858662520afe0a1f9f0ba`）
+- 上一 USA0 版本：v1.0.16
+- 上游集成提交：`8fdf8134dfc8bc3ca27127d2700a453e2e8cacc3`
+- 发布范围：同步官方 v0.1.177 至 v0.1.178，新增 Kimi、智谱、DeepSeek 一等供应商、Channel Monitor 配额模式、渠道模型分时倍率、分组用量日汇总、Codex remote compaction v2 与 turn state、OpenAI Team 联动熔断及批量账号设置；保留并适配 USA0 模型广场、模型监控、ZeroAgent 授权、支付、分销、经营分析和响应式管理界面
+- 附加修复：修正分组管理列设置菜单的视口定位、滚动、末项裁切及桌面/移动端对齐
+- 发布方式：创建并推送 v1.0.17 annotated tag 后触发 Release workflow；Actions 运行结果由后续单独确认
+- 记录日期：2026-08-18
+
+## 官方 v0.1.178 同步（已合并）
 
 - 集成分支：`codex/merge-upstream-v0.1.178`
 - 官方目标版本：v0.1.178
@@ -10,8 +21,8 @@
 - 官方目标提交：`e0c48a19ed794a565e3858662520afe0a1f9f0ba`
 - 上一官方基线：v0.1.176（`e803e3851c0a7e222cfadeafad7b8636ab959d11`）
 - 集成前 USA0 提交：`3331cbd6b879d61b196a5d17a5d61640eb0f7f47`
-- USA0 版本：保持 v1.0.16，未推断下一发布版本
-- 同步状态：已完成本地合并、冲突解决、USA0 适配、代码审计和自动化验证，并已快进合入本地 `usa0/main`；尚未推送、创建 tag 或发布
+- USA0 发布版本：v1.0.17
+- 同步状态：已完成合并、冲突解决、USA0 适配、代码审计和自动化验证，并已快进合入 `usa0/main`，作为 USA0 v1.0.17 的发布基线
 - 记录日期：2026-08-18
 
 ### 同步范围
@@ -41,7 +52,7 @@
 - `go generate ./ent ./cmd/server` 通过且再生成无漂移；`go test ./...`、`go test -tags=unit ./...`、`go test -tags=integration ./... -timeout=30m` 全部通过，CI 固定版 `golangci-lint v2.9 run ./... --timeout=30m` 为 0 issues。
 - 新增 PostgreSQL 集成回归覆盖注册事务中的 distribution claim；设置审计测试覆盖 Channel Monitor 三个契约字段；CN provider、quota 模式、分时定价、日汇总、Codex 指纹回填及迁移测试均通过。
 - 前端全量 Vitest 共 335 个测试文件、2160 项测试通过；`vue-tsc --noEmit` 和生产构建通过；ESLint 为 0 errors、1 条既有未使用测试常量 warning。
-- `git diff --check`、暂存差异检查、源码冲突标记和未解决索引扫描通过；官方 tag、目标提交、124 个提交、347 个文件及迁移 `176–241` 唯一连续均已复核，`backend/cmd/server/VERSION` 保持 `1.0.16`。
+- `git diff --check`、暂存差异检查、源码冲突标记和未解决索引扫描通过；官方 tag、目标提交、124 个提交、347 个文件及迁移 `176–241` 唯一连续均已复核；v1.0.17 发布提交中的 `backend/cmd/server/VERSION` 为 `1.0.17`。
 - 本地后端健康接口返回 `{"status":"ok"}`。Playwright 在 1440×900 与 390×844 下验证登录页无横向溢出和控制台错误；现有浏览器会话无登录态，受保护的 Settings、Groups、Accounts、Channel Monitor、Model Monitor 和模型市场仅验证了正确跳转，未声明登录态页面视觉通过。`/model-plaza` 因当前功能门控回到自定义首页，首页无溢出但有一项既有资源 404。
 
 ---
