@@ -256,9 +256,9 @@ func TestDistributionAdminManagementQueries(t *testing.T) {
 		require.EqualValues(t, 1, totalAgents)
 		require.Len(t, agents, 1)
 	}
-	periodStart := time.Now().UTC().Add(-time.Hour)
-	periodEnd := time.Now().UTC().Add(time.Hour)
 	paidAt := time.Now().UTC()
+	periodStart := paidAt.Add(-time.Hour)
+	periodEnd := paidAt
 	orderID := createBusinessPaymentOrder(t, &service.User{ID: customerUserID, Email: fmt.Sprintf("distribution-management-customer-%d@example.com", suffix)}, "COMPLETED", &paidAt, "CNY", 100)
 	listFilter := service.DistributionAdminListFilter{
 		Page: 1, PageSize: 20, Search: "management-agent", DateFrom: &periodStart, DateTo: &periodEnd,
