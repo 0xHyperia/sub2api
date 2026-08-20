@@ -195,8 +195,8 @@ WHERE ns.nspname = 'public'
 	requireIndex(t, tx, "tickets", "idx_tickets_admin_unread")
 }
 
-func TestMigrationsRunner_UpgradeFrom215To235(t *testing.T) {
-	dbName := fmt.Sprintf("sub2api_upgrade_215_%d", time.Now().UnixNano())
+func TestMigrationsRunner_UpgradeFrom241To244(t *testing.T) {
+	dbName := fmt.Sprintf("sub2api_upgrade_241_%d", time.Now().UnixNano())
 	adminURL, err := url.Parse(integrationDSN)
 	require.NoError(t, err)
 	adminURL.Path = "/postgres"
@@ -223,23 +223,50 @@ WHERE datname = $1 AND pid <> pg_backend_pid()
 	})
 	require.NoError(t, upgradeDB.PingContext(context.Background()))
 
-	require.NoError(t, applyMigrationsFS(context.Background(), upgradeDB, migrationsThrough(t, 215)))
-	requireMigrationPrefixCount(t, upgradeDB, 215, 1)
-	requireMigrationPrefixCount(t, upgradeDB, 216, 0)
+	require.NoError(t, applyMigrationsFS(context.Background(), upgradeDB, migrationsThrough(t, 241)))
+	requireMigrationPrefixCount(t, upgradeDB, 241, 1)
+	requireMigrationPrefixCount(t, upgradeDB, 242, 0)
 
 	require.NoError(t, ApplyMigrations(context.Background(), upgradeDB))
-	require.NoError(t, ApplyMigrations(context.Background(), upgradeDB), "235 schema must remain idempotent after restart")
-	for version := 216; version <= 235; version++ {
+	require.NoError(t, ApplyMigrations(context.Background(), upgradeDB), "244 schema must remain idempotent after restart")
+	for version := 242; version <= 244; version++ {
 		requireMigrationPrefixCount(t, upgradeDB, version, 1)
 	}
 
 	tx, err := upgradeDB.BeginTx(context.Background(), nil)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = tx.Rollback() })
-	requireColumn(t, tx, "usage_logs", "upstream_response_model", "character varying", 200, true)
-	requireColumn(t, tx, "groups", "long_context_pricing_enabled", "boolean", 0, false)
-	requireColumn(t, tx, "groups", "model_pricing", "jsonb", 0, true)
-	requireIndex(t, tx, "usage_logs", usageLogsUpstreamModelMismatchIndex)
+	requireIndex(t, tx, "usage_logs", usageLogsEffectiveRequestedModelIndex)
+	requireIndex(t, tx, "usage_logs", usageLogsEffectiveUpstreamModelIndex)
+	requireConstraintDefinitionContains(
+		t,
+		tx,
+		"composite_model_routes",
+		"composite_model_routes_target_platform_check",
+		"kimi",
+		"zhipu",
+		"deepseek",
+	)
+	requireColumn(t, tx, "channel_model_pricing", "fast_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "channel_model_pricing", "flex_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "channel_pricing_intervals", "input_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "channel_pricing_intervals", "output_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "channel_pricing_intervals", "cache_write_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "channel_pricing_intervals", "cache_read_multiplier", "numeric", 0, true)
+	for _, constraint := range []struct {
+		table  string
+		name   string
+		column string
+	}{
+		{"channel_model_pricing", "channel_model_pricing_fast_multiplier_positive", "fast_multiplier"},
+		{"channel_model_pricing", "channel_model_pricing_flex_multiplier_positive", "flex_multiplier"},
+		{"channel_pricing_intervals", "channel_pricing_intervals_input_multiplier_positive", "input_multiplier"},
+		{"channel_pricing_intervals", "channel_pricing_intervals_output_multiplier_positive", "output_multiplier"},
+		{"channel_pricing_intervals", "channel_pricing_intervals_cache_write_multiplier_positive", "cache_write_multiplier"},
+		{"channel_pricing_intervals", "channel_pricing_intervals_cache_read_multiplier_positive", "cache_read_multiplier"},
+	} {
+		requireConstraintDefinitionContains(t, tx, constraint.table, constraint.name, constraint.column, ">")
+	}
 }
 
 func execCreateDatabase(ctx context.Context, db *sql.DB, name string) error {

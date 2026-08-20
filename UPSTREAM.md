@@ -2,6 +2,49 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.1.179 同步（本地集成完成）
+
+- 集成分支：`codex/merge-upstream-v0.1.179`
+- 官方目标版本：v0.1.179
+- 官方 annotated tag：`3c28fad50472b409e18666df617f4237d8ba7007`
+- 官方目标提交：`75f88be5f75c27771836b586f7de1503afa0e3bc`
+- 上一官方基线：v0.1.178（`e0c48a19ed794a565e3858662520afe0a1f9f0ba`）
+- 集成前 USA0 提交：`606ceec7b53e341c717a6c1dd0b6a03d2a3b3458`
+- 当前 USA0 版本：v1.0.17
+- 本地集成提交：本节所在合并提交
+- 同步状态：已完成本地合并、冲突解决、USA0 适配、代码审计和自动化验证，并已快进合入本地 `usa0/main`；未推送、未打 tag、未发布
+- 记录日期：2026-08-20
+
+### 同步范围
+
+- 从官方 v0.1.178 同步至 v0.1.179，共纳入 78 个上游提交、212 个官方变更文件，官方差异为 9,567 行新增、1,446 行删除；当前 USA0 集成差异为 213 个文件。
+- Kimi、智谱 GLM、DeepSeek API Key 账号新增 `adaptive` 协议，同一账号可承接 Chat Completions、Anthropic Messages 和 OpenAI Responses，并可分别配置协议 Base URL；账号连接测试、请求头覆写、配额与余额探测同步适配。
+- Composite 新增 Kimi/智谱/DeepSeek 路由目标，并支持 Codex 模型列表、故障转移、Alpha Search 与 Live；管理端平台选择改用共享平台目录，补齐订阅、账号、运维与错误透传筛选。
+- 渠道定价新增 `fast_multiplier`、`flex_multiplier` 和上下文区间输入/输出/缓存倍率；Anthropic `speed: fast` 纳入 Fast 计费与使用日志，渠道标准价覆盖不再抹掉模型价卡的 Fast 比例。
+- 新增可配置代理探测目标和解析器，以及 `POST /v1/responses/input_tokens`：官方端点透传真实计数，自定义中转、Grok 和国产供应商使用本地估算。
+- 用量统计改用 `GROUPING SETS` 单次扫描并统一筛选口径，新增 requested/upstream effective model 并发表达式索引；Channel Monitor 修复 quota 凭据判定、模式组合校验、账号解绑、模式徽标和配额标签布局。
+- 同步 OpenAI 非流式读取失败 failover、容量文本错误识别、Responses WS 后续轮换号、reasoning bridge、Grok 图片/工具搜索、Grok xhigh 以及国产供应商连接测试路由修复。
+- 长上下文计费采用上游破坏性变更：分组或账号任一开关启用即生效。存量 OpenAI 分组若需维持旧口径，升级后必须显式关闭分组 `long_context_pricing_enabled`。
+
+### 冲突与 USA0 适配
+
+- 初始 21 个文本冲突均按业务语义解决，没有整文件选择 ours/theirs；保留 USA0 首页、合并登录注册、语义设计令牌、移动布局、分组列设置菜单修复、ZeroAgent 授权、支付、分销、经营分析、模型市场和模型监控。
+- 账号测试事件同时保留 USA0 TTFT 收集和上游 adaptive 多协议测试的 completion 抑制；Composite 默认候选新增 Kimi/智谱/DeepSeek，同时继续通过 USA0 导出的 `DefaultModelsListCandidateIDs` 为模型市场及管理端复用。
+- `/model-marketplace`、官方 `/model-plaza` 与标准 `/models` 继续保持独立；新增供应商与 Composite 扩展的是上游接入能力，不替代 USA0 模型级图标、分组图标、发现、价格和性能展示。
+- Channel Monitor V1/V2/quota 与 USA0 Model Monitor 的服务、数据表、游标、路由和开关保持独立；共享平台目录只统一平台选项，不让 `channel_monitor_mode` 控制 `model_monitor_enabled`。
+- 定价基础优先级继续为 Group → Channel → 内置价卡；渠道标准价、Fast/Flex 和区间倍率在同一解析结果上组合，USA0 用户/分组/峰值倍率及利润控制继续消费最终解析价格。长上下文关闭时选择最低渠道区间，开启时按实际上下文选择。
+- 设置严格公开响应仅删除已下线 Sora 的旧例外；Sora 配置、文档和示例同步清理，当前非测试源码没有可运行 Sora 路径。代理探测新增配置已接入后端配置、环境可达性测试和部署示例。
+- 官方迁移 `226–228` 与 USA0 已发布历史冲突，保持 SQL 语义并顺延为 `242–244`：effective model 并发索引、Composite 国产供应商约束、渠道定价倍率。`176–244` 每个迁移前缀唯一连续，`242` 已接入非事务索引恢复逻辑。
+- Ent/Wire 从合并后的 schema/provider 连续生成两次且无漂移；生成结果继续包含 ZeroAgent 应用授权、分销、支付、工单、模型监控、汇率同步与上游新增服务依赖。USA0 `VERSION` 保持 `1.0.17`，未推断下一个发布号。
+
+### 验证结果
+
+- 后端 `go test ./...`、`go test -tags=unit ./...` 和 `go test -tags=integration ./... -timeout=30m` 通过；unit 套件发现并修复了 Composite 候选测试对旧私有符号的引用。integration 首轮有一项既有 Server-Timing 调度计时断言抖动，单项连续 5 次及全量复跑均通过。
+- `golangci-lint v2.9 run ./... --timeout=30m` 为 0 issues。真实 PostgreSQL 已验证空库应用全部迁移，以及从 `241` 升级到 `242–244`；两个表达式索引、Composite 平台约束、倍率列、正值约束与重启幂等均通过。
+- 前端 `pnpm run lint:check` 为 0 errors、1 条既有支付测试未使用变量 warning；`pnpm run typecheck`、全量 Vitest（344 个测试文件、2,207 项测试）和生产构建通过。构建仅有既有 Browserslist、动态导入和大 chunk 警告。
+- `git diff --cached --check`、未解决索引检查和源码冲突标记扫描通过；`VERSION` 为 `1.0.17`，迁移 `176–244` 唯一连续。
+- 本次未替换本地服务，也未进行登录态桌面/390px 管理页面浏览器复核；不得将运行时健康、视觉验证、远端推送或发布表述为已完成。
+
 ## USA0 v1.0.17
 
 - 发布版本：v1.0.17

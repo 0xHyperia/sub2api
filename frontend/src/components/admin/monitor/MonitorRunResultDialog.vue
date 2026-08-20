@@ -12,7 +12,7 @@
         class="flex items-center justify-between rounded-panel border px-3 py-2 text-sm border-outline-strong"
       >
         <div class="flex flex-col">
-          <span class="font-medium text-foreground">{{ r.model }}</span>
+          <span class="font-medium text-foreground">{{ formatMonitorModel(r.model) }}</span>
           <span v-if="r.message" class="text-xs text-foreground-subtle">{{
             r.message
           }}</span>
@@ -58,6 +58,6 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { statusLabel, statusBadgeClass, formatLatency } =
+const { statusLabel, statusBadgeClass, formatLatency, formatMonitorModel } =
   useChannelMonitorFormat();
 </script>

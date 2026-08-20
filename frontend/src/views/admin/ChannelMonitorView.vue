@@ -157,6 +157,10 @@
             <span class="inline-flex items-center rounded-control px-2 py-0.5 text-xs font-medium" :class="providerBadgeClass(row.provider)">
               {{ providerLabel(row.provider) }}
             </span>
+            <!-- 三种检测模式并列展示，quota 系配额数据源与纯探活一眼可分 -->
+            <span class="ml-1 inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium" :class="checkModeBadgeClass(row.check_mode)">
+              {{ checkModeLabel(row.check_mode) }}
+            </span>
           </template>
 
           <template #cell-primary_model="{ row }">
@@ -294,6 +298,8 @@ const {
   providerBadgeClass,
   statusLabel,
   statusBadgeClass,
+  checkModeLabel,
+  checkModeBadgeClass,
   formatLatency,
   formatAvailability,
 } = useChannelMonitorFormat()

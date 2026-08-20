@@ -24,7 +24,7 @@
             {{ providerLabel(item.provider) }}
           </span>
           <span class="font-mono text-xs truncate text-foreground-subtle">
-            {{ item.primary_model }}
+            {{ formatMonitorModel(item.primary_model) }}
           </span>
           <span
             v-if="item.group_name"
@@ -108,6 +108,7 @@ const {
   providerLabel,
   providerBadgeClass,
   formatLatency,
+  formatMonitorModel,
 } = useChannelMonitorFormat();
 
 const providerTintClass = computed(() =>
