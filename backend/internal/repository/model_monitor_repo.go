@@ -19,6 +19,47 @@ func NewModelMonitorRepository(db *sql.DB) service.ModelMonitorRepository {
 
 const modelMonitorColumns = `id, platform, model, enabled, interval_seconds, display_order, label, last_checked_at, created_by, created_at, updated_at`
 
+// These predicates intentionally require positive evidence. Model Monitor is
+// an upstream model-health signal, not a generic gateway error counter: client,
+// account, routing and transport failures must not lower its success rate.
+const modelMonitorSuccessfulUsagePredicate = `COALESCE(ul.request_type,0) NOT IN (4,6)
+    AND (COALESCE(ul.actual_cost,0)>0 OR COALESCE(ul.total_cost,0)>0
+      OR COALESCE(ul.input_tokens,0)>0 OR COALESCE(ul.output_tokens,0)>0
+      OR COALESCE(ul.cache_creation_tokens,0)>0 OR COALESCE(ul.cache_read_tokens,0)>0
+      OR COALESCE(ul.image_count,0)>0 OR COALESCE(ul.video_count,0)>0)`
+
+const modelMonitorConfirmedFailurePredicate = `(
+    (
+      COALESCE(e.upstream_status_code,e.status_code,0) IN (500,503,529)
+      AND (LOWER(COALESCE(e.error_owner,''))='provider'
+        OR e.upstream_status_code IS NOT NULL
+        OR (jsonb_typeof(e.upstream_errors)='array' AND jsonb_array_length(e.upstream_errors)>0))
+    )
+    OR (
+      (LOWER(COALESCE(e.error_owner,''))='provider'
+        OR e.upstream_status_code IS NOT NULL
+        OR (jsonb_typeof(e.upstream_errors)='array' AND jsonb_array_length(e.upstream_errors)>0))
+      AND LOWER(CONCAT_WS(' ',e.error_message,e.error_body,e.upstream_error_message,
+                          e.upstream_error_detail,e.provider_error_code,e.provider_error_type)) LIKE ANY(ARRAY[
+        '%selected model is at capacity%','%model_capacity_exhausted%',
+        '%no capacity available for model%','%server_is_overloaded%',
+        '%servers are currently overloaded%','%server is overloaded%',
+        '%upstream service overloaded%','%engine_overloaded%','%overloaded_error%'])
+    )
+  ) AND NOT (
+    LOWER(CONCAT_WS(' ',e.error_message,e.error_body,e.upstream_error_message,
+                    e.upstream_error_detail,e.provider_error_code,e.provider_error_type)) LIKE ANY(ARRAY[
+      '%model not found%','%model_not_found%','%unsupported model%','%invalid model%',
+      '%invalid request%','%invalid_request%','%context length%','%context_length%',
+      '%maximum context%','%insufficient balance%','%insufficient quota%','%quota exceeded%',
+      '%unauthorized%','%forbidden%','%authentication%','%invalid api key%',
+      '%content policy%','%content_policy%','%safety policy%',
+      '%timeout%','%timed out%','%deadline exceeded%','%tls handshake%',
+      '%network error%','%transport error%','%connection%','%dial tcp%','%read tcp%','%write tcp%',
+      '%no such host%','%name resolution%','%x509%','%certificate%','%broken pipe%','%eof%','%stream error%',
+      '%client disconnected%','%cancelled%','%canceled%'])
+  )`
+
 func scanModelMonitor(scanner interface{ Scan(...any) error }) (*service.ModelMonitor, error) {
 	var m service.ModelMonitor
 	if err := scanner.Scan(&m.ID, &m.Platform, &m.Model, &m.Enabled, &m.IntervalSeconds, &m.DisplayOrder, &m.Label, &m.LastCheckedAt, &m.CreatedBy, &m.CreatedAt, &m.UpdatedAt); err != nil {
@@ -306,7 +347,8 @@ func (r *modelMonitorRepository) PersistGroupProbeResult(ctx context.Context, mo
 		}
 		outputTokens, generationMs = int64(h.OutputTokens), h.GenerationMs
 	}
-	if _, err = tx.ExecContext(ctx, `INSERT INTO model_monitor_metric_buckets
+	if h.Status != service.MonitorStatusError {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO model_monitor_metric_buckets
 	 (monitor_id,group_id,resolution,source,bucket_start,request_count,success_count,latency_sum_ms,latency_count,ttft_sum_ms,ttft_count,output_tokens,generation_ms,probe_cost,probe_cost_known)
 	 VALUES ($1,$2,'minute','probe',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 	 ON CONFLICT (monitor_id,group_id,resolution,source,bucket_start) DO UPDATE SET
@@ -321,8 +363,9 @@ func (r *modelMonitorRepository) PersistGroupProbeResult(ctx context.Context, mo
 	 probe_cost=model_monitor_metric_buckets.probe_cost+EXCLUDED.probe_cost,
 	 probe_cost_known=model_monitor_metric_buckets.probe_cost_known AND EXCLUDED.probe_cost_known,
 	 updated_at=NOW()`, h.MonitorID, *h.GroupID, h.CheckedAt.UTC().Truncate(time.Minute), requestCount, successCount,
-		latencySum, latencyCount, ttftSum, ttftCount, outputTokens, generationMs, cost, h.ProbeCostKnown); err != nil {
-		return err
+			latencySum, latencyCount, ttftSum, ttftCount, outputTokens, generationMs, cost, h.ProbeCostKnown); err != nil {
+			return err
+		}
 	}
 	success := h.Status == service.MonitorStatusOperational || h.Status == service.MonitorStatusDegraded
 	retryable := h.Status == service.MonitorStatusFailed
@@ -398,10 +441,10 @@ func (r *modelMonitorRepository) Summaries(ctx context.Context, keys []service.M
 	}
 	rows, err := r.db.QueryContext(ctx, `
 SELECT m.id,m.platform,m.model,m.enabled,m.display_order,m.label,h.status,h.latency_ms,h.checked_at,
-       CASE WHEN COUNT(h7.id) FILTER (WHERE h7.checked_at >= NOW()-INTERVAL '7 days')=0 THEN NULL
-            ELSE 100.0*COUNT(h7.id) FILTER (WHERE h7.checked_at >= NOW()-INTERVAL '7 days' AND h7.status IN ('operational','degraded'))/COUNT(h7.id) FILTER (WHERE h7.checked_at >= NOW()-INTERVAL '7 days') END
+		CASE WHEN COUNT(h7.id) FILTER (WHERE h7.checked_at >= NOW()-INTERVAL '7 days' AND h7.status IN ('operational','degraded','failed'))=0 THEN NULL
+		     ELSE 100.0*COUNT(h7.id) FILTER (WHERE h7.checked_at >= NOW()-INTERVAL '7 days' AND h7.status IN ('operational','degraded'))/COUNT(h7.id) FILTER (WHERE h7.checked_at >= NOW()-INTERVAL '7 days' AND h7.status IN ('operational','degraded','failed')) END
 FROM model_monitors m
-LEFT JOIN LATERAL (SELECT status,latency_ms,checked_at FROM model_monitor_histories WHERE monitor_id=m.id ORDER BY checked_at DESC LIMIT 1) h ON TRUE
+LEFT JOIN LATERAL (SELECT status,latency_ms,checked_at FROM model_monitor_histories WHERE monitor_id=m.id AND status IN ('operational','degraded','failed') ORDER BY checked_at DESC LIMIT 1) h ON TRUE
 LEFT JOIN model_monitor_histories h7 ON h7.monitor_id=m.id
 WHERE (m.platform,m.model) IN (SELECT * FROM unnest($1::text[],$2::text[]))
 GROUP BY m.id,m.platform,m.model,m.enabled,m.display_order,m.label,h.status,h.latency_ms,h.checked_at`, pq.Array(platforms), pq.Array(models))
@@ -451,7 +494,7 @@ GROUP BY m.id,m.platform,m.model,m.enabled,m.display_order,m.label,h.status,h.la
 	}
 	timelineRows, err := r.db.QueryContext(ctx, `SELECT monitor_id,status,latency_ms,checked_at,group_id,group_name FROM (
 SELECT monitor_id,status,latency_ms,checked_at,group_id,group_name,ROW_NUMBER() OVER (PARTITION BY monitor_id ORDER BY checked_at DESC) AS row_num
-FROM model_monitor_histories WHERE monitor_id = ANY($1)) ranked WHERE row_num <= $2 ORDER BY monitor_id,checked_at DESC`, pq.Array(monitorIDs), timelineLimit)
+FROM model_monitor_histories WHERE monitor_id = ANY($1) AND status IN ('operational','degraded','failed')) ranked WHERE row_num <= $2 ORDER BY monitor_id,checked_at DESC`, pq.Array(monitorIDs), timelineLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -485,48 +528,60 @@ func (r *modelMonitorRepository) RefreshTrafficMetrics(ctx context.Context, from
 		return err
 	}
 	_, err = tx.ExecContext(ctx, `
-WITH successful AS (
-  SELECT m.id AS monitor_id,ul.group_id,date_trunc('minute',ul.created_at) AS bucket_start,
-         COUNT(*)::bigint AS request_count,COUNT(*)::bigint AS success_count,
-         COALESCE(SUM(ul.duration_ms),0)::bigint AS latency_sum_ms,
-         COUNT(ul.duration_ms)::bigint AS latency_count,
-         COALESCE(SUM(ul.first_token_ms),0)::bigint AS ttft_sum_ms,
-         COUNT(ul.first_token_ms)::bigint AS ttft_count,
-         COALESCE(SUM(ul.output_tokens),0)::bigint AS output_tokens,
-         COALESCE(SUM(CASE WHEN ul.output_tokens>0 AND ul.duration_ms>0 THEN GREATEST(ul.duration_ms-COALESCE(ul.first_token_ms,0),1) ELSE 0 END),0)::bigint AS generation_ms
+WITH successful_candidates AS (
+  SELECT DISTINCT ON (m.id,ul.group_id,COALESCE(ul.api_key_id::text,'')||':'||COALESCE(NULLIF(ul.request_id,''),'usage:'||ul.id::text))
+         m.id AS monitor_id,ul.group_id,date_trunc('minute',ul.created_at) AS bucket_start,
+         ul.created_at,ul.duration_ms,ul.first_token_ms,ul.output_tokens,ul.api_key_id,ul.request_id,
+         COALESCE(ul.api_key_id::text,'')||':'||COALESCE(NULLIF(ul.request_id,''),'usage:'||ul.id::text) AS request_key
   FROM usage_logs ul
   JOIN accounts a ON a.id=ul.account_id
   JOIN model_monitors m ON m.platform=a.platform AND m.model=COALESCE(NULLIF(ul.requested_model,''),ul.model)
   JOIN model_monitor_groups mg ON mg.monitor_id=m.id AND mg.group_id=ul.group_id
   WHERE ul.created_at >= $1 AND ul.created_at < $2 AND ul.group_id IS NOT NULL
-    AND COALESCE(ul.request_type,0) <> 4
-  GROUP BY m.id,ul.group_id,date_trunc('minute',ul.created_at)
-), failed AS (
-  SELECT m.id AS monitor_id,e.group_id,date_trunc('minute',e.created_at) AS bucket_start,
-         COUNT(DISTINCT COALESCE(NULLIF(e.request_id,''),e.id::text))::bigint AS request_count
+    AND `+modelMonitorSuccessfulUsagePredicate+`
+  ORDER BY m.id,ul.group_id,COALESCE(ul.api_key_id::text,'')||':'||COALESCE(NULLIF(ul.request_id,''),'usage:'||ul.id::text),ul.created_at DESC,ul.id DESC
+), successful AS (
+  SELECT monitor_id,group_id,bucket_start,COUNT(*)::bigint AS request_count,COUNT(*)::bigint AS success_count,
+         COALESCE(SUM(duration_ms),0)::bigint AS latency_sum_ms,COUNT(duration_ms)::bigint AS latency_count,
+         COALESCE(SUM(first_token_ms),0)::bigint AS ttft_sum_ms,COUNT(first_token_ms)::bigint AS ttft_count,
+         COALESCE(SUM(output_tokens),0)::bigint AS output_tokens,
+         COALESCE(SUM(CASE WHEN output_tokens>0 AND duration_ms>0 THEN GREATEST(duration_ms-COALESCE(first_token_ms,0),1) ELSE 0 END),0)::bigint AS generation_ms
+  FROM successful_candidates GROUP BY monitor_id,group_id,bucket_start
+), final_errors AS (
+  SELECT DISTINCT ON (COALESCE(e.api_key_id::text,'')||':'||COALESCE(NULLIF(e.request_id,''),'error:'||e.id::text))
+		 e.id,e.group_id,e.created_at,e.api_key_id,e.request_id,e.platform,e.model,e.requested_model,
+		 e.status_code,e.upstream_status_code,e.error_owner,e.upstream_errors,e.error_message,e.error_body,
+		 e.upstream_error_message,e.upstream_error_detail,e.provider_error_code,e.provider_error_type,
+		 e.is_count_tokens,e.is_business_limited,
+         COALESCE(e.api_key_id::text,'')||':'||COALESCE(NULLIF(e.request_id,''),'error:'||e.id::text) AS request_key
   FROM ops_error_logs e
-  JOIN model_monitors m ON m.platform=e.platform AND m.model=COALESCE(NULLIF(e.requested_model,''),e.model)
-  JOIN model_monitor_groups mg ON mg.monitor_id=m.id AND mg.group_id=e.group_id
   WHERE e.created_at >= $1 AND e.created_at < $2 AND e.group_id IS NOT NULL
-    AND COALESCE(e.is_count_tokens,FALSE)=FALSE AND COALESCE(e.is_business_limited,FALSE)=FALSE
-    AND COALESCE(e.status_code,0) >= 400 AND e.error_phase IN ('upstream','network','internal')
-    AND NOT (e.status_code=499 AND (lower(COALESCE(e.error_type,'')) LIKE '%cancel%' OR lower(COALESCE(e.error_type,'')) LIKE '%disconnect%' OR lower(COALESCE(e.error_owner,''))='client'))
-    AND NOT EXISTS (
-      SELECT 1 FROM usage_logs completed
-      WHERE completed.request_id=e.request_id
-        AND (e.api_key_id IS NULL OR completed.api_key_id=e.api_key_id)
-        AND completed.created_at >= $1 AND completed.created_at < $2
-    )
-  GROUP BY m.id,e.group_id,date_trunc('minute',e.created_at)
+  ORDER BY COALESCE(e.api_key_id::text,'')||':'||COALESCE(NULLIF(e.request_id,''),'error:'||e.id::text),e.created_at DESC,e.id DESC
+), failed_candidates AS (
+	SELECT m.id AS monitor_id,e.group_id,date_trunc('minute',e.created_at) AS bucket_start,e.created_at,
+         e.api_key_id,e.request_id,e.request_key
+  FROM final_errors e
+	JOIN model_monitors m ON m.platform=e.platform AND m.model=COALESCE(NULLIF(e.requested_model,''),e.model)
+	JOIN model_monitor_groups mg ON mg.monitor_id=m.id AND mg.group_id=e.group_id
+  WHERE COALESCE(e.is_count_tokens,FALSE)=FALSE AND COALESCE(e.is_business_limited,FALSE)=FALSE
+    AND `+modelMonitorConfirmedFailurePredicate+`
+), failed AS (
+  SELECT f.monitor_id,f.group_id,f.bucket_start,COUNT(*)::bigint AS request_count
+  FROM failed_candidates f
+  WHERE NOT EXISTS (
+    SELECT 1 FROM successful_candidates s
+	WHERE NULLIF(f.request_id,'') IS NOT NULL AND s.request_id=f.request_id
+      AND (f.api_key_id IS NULL OR s.api_key_id=f.api_key_id)
+  )
+  GROUP BY f.monitor_id,f.group_id,f.bucket_start
 ), combined AS (
-  SELECT COALESCE(s.monitor_id,f.monitor_id) AS monitor_id,
-         COALESCE(s.group_id,f.group_id) AS group_id,
+  SELECT COALESCE(s.monitor_id,f.monitor_id) AS monitor_id,COALESCE(s.group_id,f.group_id) AS group_id,
          COALESCE(s.bucket_start,f.bucket_start) AS bucket_start,
          COALESCE(s.request_count,0)+COALESCE(f.request_count,0) AS request_count,
-         COALESCE(s.success_count,0) AS success_count,
-         COALESCE(s.latency_sum_ms,0) AS latency_sum_ms,COALESCE(s.latency_count,0) AS latency_count,
-         COALESCE(s.ttft_sum_ms,0) AS ttft_sum_ms,COALESCE(s.ttft_count,0) AS ttft_count,
-         COALESCE(s.output_tokens,0) AS output_tokens,COALESCE(s.generation_ms,0) AS generation_ms
+         COALESCE(s.success_count,0) AS success_count,COALESCE(s.latency_sum_ms,0) AS latency_sum_ms,
+         COALESCE(s.latency_count,0) AS latency_count,COALESCE(s.ttft_sum_ms,0) AS ttft_sum_ms,
+         COALESCE(s.ttft_count,0) AS ttft_count,COALESCE(s.output_tokens,0) AS output_tokens,
+         COALESCE(s.generation_ms,0) AS generation_ms
   FROM successful s FULL JOIN failed f USING (monitor_id,group_id,bucket_start)
 )
 INSERT INTO model_monitor_metric_buckets
@@ -537,24 +592,31 @@ FROM combined WHERE request_count>0`, from, to)
 		return err
 	}
 	_, err = tx.ExecContext(ctx, `
+WITH final_errors AS (
+  SELECT DISTINCT ON (COALESCE(e.api_key_id::text,'')||':'||COALESCE(NULLIF(e.request_id,''),'error:'||e.id::text))
+		 e.id,e.group_id,e.created_at,e.api_key_id,e.request_id,e.platform,e.model,e.requested_model,
+		 e.status_code,e.upstream_status_code,e.error_owner,e.upstream_errors,e.error_message,e.error_body,
+		 e.upstream_error_message,e.upstream_error_detail,e.provider_error_code,e.provider_error_type,
+		 e.is_count_tokens,e.is_business_limited
+  FROM ops_error_logs e
+  WHERE e.created_at >= $1 AND e.created_at < $2 AND e.group_id IS NOT NULL
+  ORDER BY COALESCE(e.api_key_id::text,'')||':'||COALESCE(NULLIF(e.request_id,''),'error:'||e.id::text),e.created_at DESC,e.id DESC
+)
 UPDATE model_monitor_groups mg SET last_traffic_at=x.last_traffic_at
 FROM (
   SELECT monitor_id,group_id,MAX(activity_at) AS last_traffic_at FROM (
     SELECT m.id AS monitor_id,ul.group_id,ul.created_at AS activity_at
     FROM usage_logs ul JOIN accounts a ON a.id=ul.account_id
     JOIN model_monitors m ON m.platform=a.platform AND m.model=COALESCE(NULLIF(ul.requested_model,''),ul.model)
-    WHERE ul.created_at >= $1 AND ul.created_at < $2 AND ul.group_id IS NOT NULL
-      AND COALESCE(ul.request_type,0) <> 4
+    WHERE ul.created_at >= $1 AND ul.created_at < $2 AND ul.group_id IS NOT NULL AND `+modelMonitorSuccessfulUsagePredicate+`
     UNION ALL
-    SELECT m.id AS monitor_id,e.group_id,e.created_at AS activity_at
-    FROM ops_error_logs e
-    JOIN model_monitors m ON m.platform=e.platform AND m.model=COALESCE(NULLIF(e.requested_model,''),e.model)
-    WHERE e.created_at >= $1 AND e.created_at < $2 AND e.group_id IS NOT NULL
-      AND COALESCE(e.is_count_tokens,FALSE)=FALSE AND COALESCE(e.is_business_limited,FALSE)=FALSE
-      AND COALESCE(e.status_code,0) >= 400 AND e.error_phase IN ('upstream','network','internal')
-      AND NOT (e.status_code=499 AND (lower(COALESCE(e.error_type,'')) LIKE '%cancel%' OR lower(COALESCE(e.error_type,'')) LIKE '%disconnect%' OR lower(COALESCE(e.error_owner,''))='client'))
-  ) activity
-  GROUP BY monitor_id,group_id
+	SELECT m.id AS monitor_id,e.group_id,e.created_at AS activity_at
+    FROM final_errors e
+	JOIN model_monitors m ON m.platform=e.platform AND m.model=COALESCE(NULLIF(e.requested_model,''),e.model)
+	JOIN model_monitor_groups mg ON mg.monitor_id=m.id AND mg.group_id=e.group_id
+    WHERE COALESCE(e.is_count_tokens,FALSE)=FALSE AND COALESCE(e.is_business_limited,FALSE)=FALSE
+      AND `+modelMonitorConfirmedFailurePredicate+`
+  ) activity GROUP BY monitor_id,group_id
 ) x WHERE mg.monitor_id=x.monitor_id AND mg.group_id=x.group_id
   AND (mg.last_traffic_at IS NULL OR mg.last_traffic_at < x.last_traffic_at)`, from, to)
 	if err != nil {
@@ -569,7 +631,7 @@ FROM (
   FROM usage_logs ul JOIN accounts a ON a.id=ul.account_id
   JOIN model_monitors m ON m.platform=a.platform AND m.model=COALESCE(NULLIF(ul.requested_model,''),ul.model)
   WHERE ul.created_at >= $1 AND ul.created_at < $2 AND ul.group_id IS NOT NULL
-    AND COALESCE(ul.request_type,0) <> 4
+    AND `+modelMonitorSuccessfulUsagePredicate+`
   GROUP BY m.id,ul.group_id
 ) recovered
 WHERE mg.monitor_id=recovered.monitor_id AND mg.group_id=recovered.group_id

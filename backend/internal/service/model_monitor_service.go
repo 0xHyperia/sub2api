@@ -426,6 +426,7 @@ func (s *ModelMonitorService) RunGroup(ctx context.Context, monitor *ModelMonito
 	attempts := 0
 	lastMessage := ""
 	var finalResult *ScheduledTestResult
+	confirmedUpstreamFailure := false
 	costs := probeCostAccumulator{known: true}
 	for attempts < modelMonitorMaxAttempts {
 		account, selectErr := s.selectAccount(ctx, monitor.Platform, monitor.Model, group.GroupID, excluded)
@@ -446,10 +447,19 @@ func (s *ModelMonitorService) RunGroup(ctx context.Context, monitor *ModelMonito
 		} else if result != nil {
 			lastMessage = result.ErrorMessage
 		}
+		if testErr != nil && isConfirmedUpstreamModelFailure(testErr.Error()) {
+			confirmedUpstreamFailure = true
+		}
+		if result != nil && isConfirmedUpstreamModelFailure(result.ErrorMessage) {
+			confirmedUpstreamFailure = true
+		}
 	}
 	checkedAt := time.Now()
 	latency := int(checkedAt.Sub(started).Milliseconds())
-	status := MonitorStatusFailed
+	status := MonitorStatusError
+	if confirmedUpstreamFailure {
+		status = MonitorStatusFailed
+	}
 	if attempts == 0 {
 		status = MonitorStatusError
 	}
@@ -525,12 +535,70 @@ func applyProbeCostMultiplier(cost *float64, account *Account) *float64 {
 	return &value
 }
 
+func isConfirmedUpstreamModelFailure(message string) bool {
+	text := strings.ToLower(strings.TrimSpace(message))
+	if text == "" {
+		return false
+	}
+	for _, marker := range []string{
+		"model not found", "model_not_found", "unsupported model", "invalid model",
+		"invalid request", "invalid_request", "context length", "context_length", "maximum context",
+		"insufficient balance", "insufficient quota", "quota exceeded",
+		"unauthorized", "forbidden", "authentication", "invalid api key",
+		"content policy", "content_policy", "safety policy",
+		"timeout", "timed out", "deadline exceeded", "tls handshake",
+		"network error", "transport error", "connection", "dial tcp", "read tcp", "write tcp",
+		"no such host", "name resolution", "x509", "certificate", "broken pipe", "eof", "stream error",
+		"client disconnected", "cancelled", "canceled",
+	} {
+		if strings.Contains(text, marker) {
+			return false
+		}
+	}
+	for _, marker := range []string{
+		"selected model is at capacity",
+		"model_capacity_exhausted",
+		"no capacity available for model",
+		"server_is_overloaded",
+		"servers are currently overloaded",
+		"server is overloaded",
+		"upstream service overloaded",
+		"engine_overloaded",
+		"overloaded_error",
+	} {
+		if strings.Contains(text, marker) {
+			return true
+		}
+	}
+	return containsUpstreamStatusCode(text, 500) || containsUpstreamStatusCode(text, 503) || containsUpstreamStatusCode(text, 529)
+}
+
+func containsUpstreamStatusCode(text string, status int) bool {
+	code := fmt.Sprintf("%d", status)
+	for _, marker := range []string{
+		"status " + code,
+		"status=" + code,
+		"status_code=" + code,
+		"status_code\":" + code,
+		"http " + code,
+		"returned " + code,
+		"(" + code + ")",
+		code + ":",
+	} {
+		if strings.Contains(text, marker) {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *ModelMonitorService) Run(ctx context.Context, monitor *ModelMonitor) (*ModelMonitorHistory, error) {
 	started := time.Now()
 	excluded := make(map[int64]struct{})
 	attempts := 0
 	lastMessage := ""
 	finalStatus := MonitorStatusFailed
+	confirmedUpstreamFailure := false
 	groups, err := s.monitorGroups(ctx, monitor)
 	if err != nil {
 		return nil, err
@@ -566,10 +634,19 @@ func (s *ModelMonitorService) Run(ctx context.Context, monitor *ModelMonitor) (*
 			} else if result != nil {
 				lastMessage = result.ErrorMessage
 			}
+			if testErr != nil && isConfirmedUpstreamModelFailure(testErr.Error()) {
+				confirmedUpstreamFailure = true
+			}
+			if result != nil && isConfirmedUpstreamModelFailure(result.ErrorMessage) {
+				confirmedUpstreamFailure = true
+			}
 		}
 		if attempts >= modelMonitorMaxAttempts {
 			break
 		}
+	}
+	if !confirmedUpstreamFailure {
+		finalStatus = MonitorStatusError
 	}
 	if attempts == 0 {
 		finalStatus = MonitorStatusError

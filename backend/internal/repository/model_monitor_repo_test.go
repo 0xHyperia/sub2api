@@ -215,6 +215,38 @@ func TestModelMonitorPersistGroupProbeResultCommitsAtomically(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestModelMonitorPersistGroupProbeErrorSkipsMetricBucket(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	checkedAt := time.Date(2026, 8, 9, 12, 31, 7, 0, time.UTC)
+	slot := checkedAt.Truncate(time.Minute)
+	groupID := int64(7)
+	monitor := &service.ModelMonitor{ID: 3}
+	history := &service.ModelMonitorHistory{
+		MonitorID: 3, GroupID: &groupID, GroupName: "Standard", Status: service.MonitorStatusError,
+		Message: "dial tcp: connection timed out", CheckedAt: checkedAt,
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(`(?s)INSERT INTO model_monitor_histories.*scheduled_slot_at.*ON CONFLICT.*RETURNING id`).
+		WithArgs(anyArgs(14)...).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(100)))
+	mock.ExpectExec(`(?s)UPDATE model_monitor_groups.*last_probe_at.*probe_claimed_until=CASE`).
+		WithArgs(monitor.ID, groupID, slot, checkedAt, false, false).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(`UPDATE model_monitors SET last_checked_at=GREATEST`).
+		WithArgs(monitor.ID, checkedAt).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	repo := &modelMonitorRepository{db: db}
+	require.NoError(t, repo.PersistGroupProbeResult(context.Background(), monitor, history, &slot))
+	require.EqualValues(t, 100, history.ID)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestModelMonitorPersistGroupProbeResultReusesCommittedSlot(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -273,7 +305,7 @@ func TestModelMonitorTrafficRefreshClaimIsMultiInstanceSafe(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestModelMonitorPassiveRefreshExcludesClientCancellation(t *testing.T) {
+func TestModelMonitorPassiveRefreshUsesConfirmedModelOutcomes(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
@@ -286,10 +318,10 @@ func TestModelMonitorPassiveRefreshExcludesClientCancellation(t *testing.T) {
 	mock.ExpectExec(`DELETE FROM model_monitor_metric_buckets`).
 		WithArgs(normalizedFrom, normalizedTo).
 		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectExec(`(?s)WITH successful AS.*status_code=499.*error_type.*cancel.*error_owner.*client.*INSERT INTO model_monitor_metric_buckets`).
+	mock.ExpectExec(`(?s)WITH successful_candidates AS.*DISTINCT ON.*final_errors AS.*failed_candidates AS.*IN \(500,503,529\).*NOT EXISTS.*INSERT INTO model_monitor_metric_buckets`).
 		WithArgs(normalizedFrom, normalizedTo).
 		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectExec(`(?s)UPDATE model_monitor_groups mg SET last_traffic_at=.*status_code=499.*error_type.*cancel.*error_owner.*client`).
+	mock.ExpectExec(`(?s)WITH final_errors AS.*UPDATE model_monitor_groups mg SET last_traffic_at=.*IN \(500,503,529\)`).
 		WithArgs(normalizedFrom, normalizedTo).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`(?s)UPDATE model_monitor_groups mg.*failure_compensation_pending=FALSE`).
@@ -300,6 +332,26 @@ func TestModelMonitorPassiveRefreshExcludesClientCancellation(t *testing.T) {
 	repo := &modelMonitorRepository{db: db}
 	require.NoError(t, repo.RefreshTrafficMetrics(context.Background(), from, to))
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestModelMonitorTrafficPredicatesAreConservative(t *testing.T) {
+	require.Contains(t, modelMonitorSuccessfulUsagePredicate, "actual_cost")
+	require.Contains(t, modelMonitorSuccessfulUsagePredicate, "input_tokens")
+	require.Contains(t, modelMonitorSuccessfulUsagePredicate, "image_count")
+	require.Contains(t, modelMonitorSuccessfulUsagePredicate, "request_type,0) NOT IN (4,6)")
+
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "IN (500,503,529)")
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "error_owner,''))='provider'")
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "jsonb_array_length(e.upstream_errors)>0")
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "selected model is at capacity")
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "overloaded_error")
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "model not found")
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "invalid request")
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "insufficient balance")
+	require.Contains(t, modelMonitorConfirmedFailurePredicate, "deadline exceeded")
+	require.NotContains(t, modelMonitorConfirmedFailurePredicate, "502")
+	require.NotContains(t, modelMonitorConfirmedFailurePredicate, "504")
+	require.NotContains(t, modelMonitorConfirmedFailurePredicate, "429")
 }
 
 func anyArgs(count int) []driver.Value {

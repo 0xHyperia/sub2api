@@ -372,6 +372,39 @@ func TestProbeCostAccumulatorRejectsPartialKnownCost(t *testing.T) {
 	require.Nil(t, accumulator.value())
 }
 
+func TestConfirmedUpstreamModelFailureClassification(t *testing.T) {
+	tests := []struct {
+		name      string
+		message   string
+		confirmed bool
+	}{
+		{name: "upstream 500", message: "upstream request failed with HTTP 500", confirmed: true},
+		{name: "upstream 503", message: `provider response: status_code":503`, confirmed: true},
+		{name: "upstream 529", message: "upstream status=529", confirmed: true},
+		{name: "account test format", message: "API returned 503: service unavailable", confirmed: true},
+		{name: "model capacity", message: "selected model is at capacity", confirmed: true},
+		{name: "overload code", message: "model_capacity_exhausted", confirmed: true},
+		{name: "ordinary 429", message: "HTTP 429 rate limit exceeded", confirmed: false},
+		{name: "bad gateway", message: "upstream HTTP 502 bad gateway", confirmed: false},
+		{name: "gateway timeout", message: "upstream HTTP 504 gateway timeout", confirmed: false},
+		{name: "network timeout", message: "dial tcp: i/o timeout", confirmed: false},
+		{name: "misclassified model not found", message: "API returned 500: model not found", confirmed: false},
+		{name: "misclassified context error", message: "API returned 503: context length exceeded", confirmed: false},
+		{name: "misclassified auth error", message: "API returned 500: invalid API key", confirmed: false},
+		{name: "misclassified network error", message: "API returned 503: TLS handshake timeout", confirmed: false},
+		{name: "invalid request", message: "invalid request: context length exceeded", confirmed: false},
+		{name: "model not found", message: "model not found", confirmed: false},
+		{name: "balance", message: "insufficient balance", confirmed: false},
+		{name: "authentication", message: "invalid API key", confirmed: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.confirmed, isConfirmedUpstreamModelFailure(tt.message))
+		})
+	}
+}
+
 func TestRedactModelMonitorDetailedPerformanceKeepsSuccessRate(t *testing.T) {
 	ttft := 120.0
 	tps := 42.0
