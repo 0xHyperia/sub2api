@@ -2,6 +2,17 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## USA0 v1.0.19
+
+- 发布版本：v1.0.19
+- 官方基线版本：v0.1.183（`e8cb019fabf8b55199436229044cbf9aa7a82564`）
+- 上一 USA0 版本：v1.0.18
+- 上游集成提交：`2b7ccd440a38915870a309176f1ac0678298c815`
+- 发布范围：同步官方 v0.1.183，包含 OpenAI/Codex 会话与额度保护、Kimi/Antigravity/Grok 稳定性修复、Model Plaza 上下文与分时定价、OAuth 出站插件系统、媒体/工具/Responses 兼容性和 Channel Monitor V2 修复
+- USA0 兼容：保留 ZeroAgent 授权、模型市场与模型监控、支付分销及经营分析；插件管理入口继续由 `plugin_management_enabled` 门控
+- 发布方式：创建并推送 v1.0.19 annotated tag 后触发 Release workflow；Actions 运行结果由后续单独确认
+- 记录日期：2026-08-27
+
 ## 官方 v0.1.183 同步（集成分支）
 
 - 集成分支：`codex/merge-upstream-v0.1.183`
@@ -10,8 +21,8 @@
 - 官方 annotated tag 对象：`c21fd3382a1c39fe491a96ac6780bac927327ae4`
 - 官方目标提交：`e8cb019fabf8b55199436229044cbf9aa7a82564`
 - 上一官方基线：v0.1.179（`75f88be5f75c27771836b586f7de1503afa0e3bc`）
-- 当前 USA0 版本：保持 `1.0.18`；本次不推断下一发布版本
-- 同步状态：已完成合并、冲突解决、USA0 适配、代码审计和自动化验证，并已合回本地 `usa0/main`；尚未推送、创建 tag 或发布
+- 当前 USA0 版本：`1.0.19`
+- 同步状态：已完成合并、冲突解决、USA0 适配、代码审计和自动化验证，并已合回本地 `usa0/main`；已完成 v1.0.19 发布准备，尚未推送、创建 tag 或发布
 - 记录日期：2026-08-27
 
 ### 同步范围
@@ -43,8 +54,8 @@
 - `mise exec golangci-lint@2.13.0 -- golangci-lint run ./... --timeout=30m` 通过，报告 `0 issues`。
 - `go generate ./ent` 与 `go generate ./cmd/server` 使用仓库固定 Go 工具链通过，重复生成后无 Ent/Wire 漂移。
 - 前端 `mise exec -- pnpm run lint:check` 通过（0 errors，1 条既有未使用测试常量 warning）；`typecheck` 通过；Vitest 共 351 个测试文件、2,286 项测试通过；生产 `build` 通过，仅有既有 Browserslist、动态导入和大 chunk 警告。
-- `git diff --check`、暂存差异检查、未解决索引检查和源码冲突标记检查通过；迁移 `176–247` 新增区间唯一连续，`backend/cmd/server/VERSION` 保持 `1.0.18`。
-- 本次尚未执行推送、合回主分支、tag、发布或 GitHub Actions；不得将这些状态表述为已完成。登录态桌面/移动浏览器复核也未在本轮新增声明。
+- `git diff --check`、暂存差异检查、未解决索引检查和源码冲突标记检查通过；迁移 `176–247` 新增区间唯一连续，合并验证时 `backend/cmd/server/VERSION` 为 `1.0.18`，发布提交更新为 `1.0.19`。
+- 本次尚未执行推送、tag、发布或 GitHub Actions；不得将这些状态表述为已完成。登录态桌面/移动浏览器复核也未在本轮新增声明。
 
 ## USA0 v1.0.18
 
