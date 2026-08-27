@@ -297,6 +297,7 @@ const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const distributionAccess = ref(false)
 const flagDistribution = () => distributionAccess.value
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
+const flagPluginManagement = makeSidebarFlag(FeatureFlags.pluginManagement)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 const flagBatchImageAccess = () => canUseBatchImage.value
@@ -545,6 +546,7 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
         ...(authStore.isSimpleMode
           ? [{ path: '/keys', label: t('nav.apiKeys'), icon: 'key' as const }]
           : []),
+        { path: '/admin/plugins', label: t('nav.plugins'), icon: 'cube', featureFlag: flagPluginManagement },
         { path: '/admin/software-center', label: localText('软件中心', 'Software center'), icon: 'grid' },
         { path: '/admin/settings', label: t('nav.settings'), icon: 'cog' }
       ]

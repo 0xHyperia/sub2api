@@ -19,6 +19,7 @@ func resetViperWithJWTSecret(t *testing.T) {
 	viper.Reset()
 	t.Cleanup(viper.Reset)
 	t.Setenv("CONFIG_FILE", "")
+	t.Setenv("DATA_DIR", "")
 	setEmptyConfigDir(t)
 	t.Setenv("JWT_SECRET", strings.Repeat("x", 32))
 }
@@ -30,6 +31,13 @@ func setEmptyConfigDir(t *testing.T) {
 		t.Fatalf("write isolated config: %v", err)
 	}
 	t.Setenv("DATA_DIR", dataDir)
+}
+
+func TestLoadDefaultModelsListReadMaxBytes(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.Equal(t, DefaultModelsListReadMaxBytes, cfg.Gateway.ModelsListReadMaxBytes)
 }
 
 func TestLoadTimezonePrecedence(t *testing.T) {
@@ -573,6 +581,15 @@ func TestLoadOpenAIWSClientFirstMessageTimeoutFromEnv(t *testing.T) {
 	cfg, err := Load()
 	require.NoError(t, err)
 	require.Equal(t, 120, cfg.Gateway.OpenAIWS.ClientFirstMessageTimeoutSeconds)
+}
+
+func TestLoadOpenAIWSForceHTTPFromEnv(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	t.Setenv("GATEWAY_OPENAI_WS_FORCE_HTTP", "true")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.True(t, cfg.Gateway.OpenAIWS.ForceHTTP)
 }
 
 func TestLoadDefaultOpenAICompactModel(t *testing.T) {
@@ -1815,6 +1832,11 @@ func TestValidateConfigErrors(t *testing.T) {
 			name:    "gateway text body exceeds media body",
 			mutate:  func(c *Config) { c.Gateway.TextMaxBodySize = c.Gateway.MaxBodySize + 1 },
 			wantErr: "gateway.text_max_body_size",
+		},
+		{
+			name:    "gateway models list read limit",
+			mutate:  func(c *Config) { c.Gateway.ModelsListReadMaxBytes = 0 },
+			wantErr: "gateway.models_list_read_max_bytes",
 		},
 		{
 			name:    "gateway response header timeout",

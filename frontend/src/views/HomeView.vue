@@ -100,6 +100,15 @@
           >
             <Icon name="book" size="md" />
           </a>
+          <router-link
+            v-if="showModelPlazaEntry"
+            to="/model-plaza"
+            class="flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
+            :title="t('nav.modelPlaza')"
+          >
+            <Icon name="grid" size="md" />
+            <span class="hidden sm:inline">{{ t('nav.modelPlaza') }}</span>
+          </router-link>
           <button
             type="button"
             class="btn btn-ghost btn-icon h-10 w-10"
@@ -132,14 +141,24 @@
     </footer>
   </div>
 
-  <HomeExperiment
-    v-else
-    :site-name="siteName"
-    :site-subtitle="siteSubtitle"
-    :is-authenticated="isAuthenticated"
-    :dashboard-path="dashboardPath"
-    :software-center-enabled="softwareCenterEnabled"
-  />
+  <div v-else class="home-experiment-shell">
+    <HomeExperiment
+      :site-name="siteName"
+      :site-subtitle="siteSubtitle"
+      :is-authenticated="isAuthenticated"
+      :dashboard-path="dashboardPath"
+      :software-center-enabled="softwareCenterEnabled"
+    />
+    <router-link
+      v-if="appStore.cachedPublicSettings && showModelPlazaEntry"
+      to="/model-plaza"
+      class="home-model-plaza-entry inline-flex min-h-10 items-center gap-1.5 rounded-full border border-outline bg-surface px-3 text-sm font-medium text-foreground-muted shadow-card transition-colors hover:bg-surface-subtle hover:text-foreground"
+      :title="t('nav.modelPlaza')"
+    >
+      <Icon name="grid" size="sm" aria-hidden="true" />
+      {{ t('nav.modelPlaza') }}
+    </router-link>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -152,6 +171,7 @@ import Icon from '@/components/icons/Icon.vue'
 import { useTheme } from '@/composables/useTheme'
 import { sanitizeUrl } from '@/utils/url'
 import HomeExperiment from './HomeExperiment.vue'
+import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -178,9 +198,19 @@ const compactHomeEnabled = computed(() => appStore.cachedPublicSettings?.compact
 const homeContentUrl = computed(() => sanitizeUrl(homeContent.value))
 const isHomeContentUrl = computed(() => Boolean(homeContentUrl.value))
 const sanitizedHomeContent = computed(() => sanitizeHomeHtml(homeContent.value))
+const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const dashboardPath = computed(() => authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+const modelPlazaRequiresAuth = computed(
+  () => appStore.cachedPublicSettings?.model_plaza_require_auth === true,
+)
+const showModelPlazaEntry = computed(
+  () => modelPlazaEnabled.value && (isAuthenticated.value || !modelPlazaRequiresAuth.value),
+)
+const isAdmin = computed(() => authStore.isAdmin)
+const dashboardPath = computed(() => isAdmin.value ? '/admin/dashboard' : '/dashboard')
+
+// Current year for footer
 const currentYear = computed(() => new Date().getFullYear())
 const softwareCenterEnabled = computed(
   () => appStore.cachedPublicSettings?.software_center_enabled !== false
@@ -243,6 +273,24 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.home-experiment-shell {
+  position: relative;
+}
+
+.home-model-plaza-entry {
+  position: absolute;
+  top: 18px;
+  right: max(18px, calc((100% - 1180px) / 2 + 216px));
+  z-index: 30;
+}
+
+@media (max-width: 900px) {
+  .home-model-plaza-entry {
+    top: 72px;
+    right: 12px;
+  }
+}
+
 .custom-home-frame-shell {
   display: flex;
   min-height: 100dvh;

@@ -130,8 +130,9 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		ContactTelegramURL:                 settings.ContactTelegramURL,
 		ContactTicketEnabled:               settings.ContactTicketEnabled,
 
-		ModelPlazaEnabled:     settings.ModelPlazaEnabled,
-		ModelPlazaRequireAuth: settings.ModelPlazaRequireAuth,
+		ModelPlazaEnabled:       settings.ModelPlazaEnabled,
+		ModelPlazaRequireAuth:   settings.ModelPlazaRequireAuth,
+		PluginManagementEnabled: settings.PluginManagementEnabled,
 
 		AffiliateEnabled: settings.AffiliateEnabled,
 

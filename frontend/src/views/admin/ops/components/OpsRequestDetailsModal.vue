@@ -22,6 +22,7 @@ interface Props {
   preset: OpsRequestDetailsPreset
   platform?: string
   groupId?: number | null
+  resumeState?: boolean
 }
 
 interface OpsRequestDetailMetrics extends OpsRequestDetail {
@@ -106,6 +107,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
+      if (props.resumeState) return
       page.value = 1
       pageSize.value = 10
       fetchData()
@@ -150,7 +152,7 @@ async function handleCopyRequestId(requestId: string) {
 
 function openErrorDetail(errorId: number | null | undefined) {
   if (!errorId) return
-  close()
+  emit('update:modelValue', false)
   emit('openErrorDetail', errorId)
 }
 

@@ -2,6 +2,50 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.1.183 同步（集成分支）
+
+- 集成分支：`codex/merge-upstream-v0.1.183`
+- USA0 合并基线：`usa0/main` / `4c0725fbf4358318628c52af01df8241e40cc3dc`
+- 官方目标版本：v0.1.183
+- 官方 annotated tag 对象：`c21fd3382a1c39fe491a96ac6780bac927327ae4`
+- 官方目标提交：`e8cb019fabf8b55199436229044cbf9aa7a82564`
+- 上一官方基线：v0.1.179（`75f88be5f75c27771836b586f7de1503afa0e3bc`）
+- 当前 USA0 版本：保持 `1.0.18`；本次不推断下一发布版本
+- 同步状态：已完成合并、冲突解决、USA0 适配、代码审计和自动化验证，并已合回本地 `usa0/main`；尚未推送、创建 tag 或发布
+- 记录日期：2026-08-27
+
+### 同步范围
+
+- 从官方 v0.1.179 到 v0.1.183 共纳入 225 个上游提交、516 个官方变更文件，官方差异为 42,026 行新增、3,281 行删除；基于三方合并结果识别 23 个文本冲突文件。
+- OpenAI OAuth 新增 5 小时/7 天额度耗尽 429 的重置时间识别与账号暂停；普通瞬时 429 继续重试。Codex 支持 `session-id` 粘性会话，容量溢出时保留持久绑定；Responses Lite、parallel tool calls、custom tool/tool search 恢复和工具 ID 前缀兼容性同步修复。
+- Kimi 并发限制 403 改为可恢复临时冷却并保留故障转移；Antigravity 兼容模式 token 上限收敛到 64,000；Grok CLI 使用官方 UA；邮箱换绑增加别名去重和事务级并发保护。
+- Model Plaza 增加上下文阶梯定价、渠道分时定价及工作日规则；Fast/service tier 计费、响应模型和模型列表读取上限贯穿路由、用量、审计、经营分析和公开模型价格。
+- OAuth 出站传输插件系统落地，增加插件清单、签名/兼容性检查、运行时、管理端上传/配置页面和 OpenAI 出站插件路由；插件迁移在 USA0 中顺延为 `246_plugins.sql`、`247_plugin_artifacts.sql`。
+- Gemini schema、Grok 媒体/工具调用、Responses Lite、OpenAI 文件输入、Realtime、图片和国产供应商协议兼容性获得修复；补充配额自动重置、请求体诊断和多种 failover/会话边界测试。
+- Channel Monitor V2 修复 Composite 平台聚合 SQL 条件；同步渠道缓存失效、监控吞吐、usage 守卫、OpenAI 配额暂停以及备份/插件运行稳定性修复。
+
+### 冲突与 USA0 适配
+
+- 23 个冲突均按业务语义解决，没有整文件选择 ours/theirs；保留 USA0 首页、登录注册、语义设计令牌、移动布局、`/model-marketplace`、模型监控、支付、分销、经营分析、工单、ZeroAgent/App 授权和自有模型市场。
+- 上游 OAuth 出站插件系统与 USA0 自定义 OAuth 服务依赖并存；插件仅扩展出站传输能力，不改变 ZeroAgent 授权契约、账号采用决策或分销归因流程。插件管理入口受现有管理员能力门控，secret 仍只返回 configured 状态。
+- 上游 Model Plaza、标准 `/models` 与 USA0 `/model-marketplace` 保持独立。上游供应商/模型能力可进入模型市场数据源，但不替代 USA0 的模型级图标、分组图标、价格倍率、性能展示和模型监控目录。
+- Channel Monitor V1/V2 与 USA0 Model Monitor 继续使用独立服务、数据表、游标、路由和开关；V2 被动聚合真实渠道流量，Model Monitor 继续执行模型×分组主动探测、持久游标、多实例认领、补录和公平补偿，两套监控可以并行运行。
+- 退款、余额、佣金和经营事实仍由 USA0 财务事务统一维护；上游账号状态抢占、额度暂停、重试和可恢复错误语义仅作为请求生命周期输入，不绕过 USA0 的 affiliate/distribution 幂等事务。
+- 价格解析固定为 Group → Channel → 内置基础价，再应用 USA0 用户/分组/峰值倍率及利润控制；上下文阶梯、分时、Fast/service tier 和响应模型计费全部消费同一解析结果，模型市场和经营成本不得继续使用孤立全局价。
+- 用量和审计保留 requested、routed/upstream、response 三种模型维度；渠道开关决定最终计费模型，经营分析读取最终计费模型，模型监控目录仍使用请求/路由模型，避免上游降级结果污染模型可用性。
+- 设置 DTO、局部 PATCH、审计键、公开脱敏响应、前端类型和严格 fixture 同步接入上游新增字段；默认值继续 fail-closed，任何 OAuth、插件和供应商凭证不进入公开响应。
+- 迁移保持已发布 `176–245` 不变；上游插件迁移原编号 `229–230` 在 USA0 顺延为 `246–247`。`176–247` 每个新增区间前缀唯一连续，Ent/Wire 均从合并后的 schema/provider 重新生成。
+- 前端页面采用 USA0 semantic token、共享组件和既有响应式布局；不覆盖 USA0 首页、登录注册设计、模型市场及 ZeroAgent 品牌。此前模型广场入口、账号状态颜色、插件页面和运维错误详情交互修复与本次同步合并为同一提交。
+
+### 验证结果
+
+- `PATH=/tmp/sub2api-go-n7aFsf/go/bin:$PATH go test -tags=integration ./... -timeout=30m` 通过，退出码 0；此前普通 `go test ./...` 与 `go test -tags=unit ./...` 也已通过。
+- `mise exec golangci-lint@2.13.0 -- golangci-lint run ./... --timeout=30m` 通过，报告 `0 issues`。
+- `go generate ./ent` 与 `go generate ./cmd/server` 使用仓库固定 Go 工具链通过，重复生成后无 Ent/Wire 漂移。
+- 前端 `mise exec -- pnpm run lint:check` 通过（0 errors，1 条既有未使用测试常量 warning）；`typecheck` 通过；Vitest 共 351 个测试文件、2,286 项测试通过；生产 `build` 通过，仅有既有 Browserslist、动态导入和大 chunk 警告。
+- `git diff --check`、暂存差异检查、未解决索引检查和源码冲突标记检查通过；迁移 `176–247` 新增区间唯一连续，`backend/cmd/server/VERSION` 保持 `1.0.18`。
+- 本次尚未执行推送、合回主分支、tag、发布或 GitHub Actions；不得将这些状态表述为已完成。登录态桌面/移动浏览器复核也未在本轮新增声明。
+
 ## USA0 v1.0.18
 
 - 发布版本：v1.0.18

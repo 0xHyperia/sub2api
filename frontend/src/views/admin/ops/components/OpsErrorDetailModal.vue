@@ -101,9 +101,18 @@
         </div>
 
         <div class="detail-field p-4">
+          <div class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.errorDetail.upstreamStatus') }}</div>
+          <div class="mt-1">
+            <span :class="['inline-flex items-center rounded-panel px-2 py-1 text-xs font-black ring-1 ring-inset shadow-sm', upstreamStatusClass]">
+              {{ detail.upstream_status_code ?? '—' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-field p-4">
           <div class="text-xs font-bold uppercase tracking-wider text-foreground-subtle">{{ t('admin.ops.errorDetail.message') }}</div>
-          <div class="mt-1 truncate text-sm font-medium text-foreground" :title="detail.message">
-            {{ detail.message || '—' }}
+          <div class="mt-1 break-words text-sm font-medium text-foreground" :title="rootCauseMessage || detail.message">
+            {{ rootCauseMessage || '—' }}
           </div>
         </div>
 
@@ -121,6 +130,21 @@
         <h3 class="text-sm font-semibold text-foreground">{{ t('admin.ops.errorDetail.responseBody') }}</h3>
         <pre class="mt-3 max-h-[520px] overflow-auto rounded-panel border border-outline bg-surface-subtle p-4 text-xs text-foreground"><code>{{ prettyJSON(primaryResponseBody || '') }}</code></pre>
       </section>
+      <div v-if="rootCauseMessage" class="rounded-panel border border-warning/30 bg-warning-subtle p-4">
+        <h3 class="text-sm font-semibold text-warning-foreground">{{ t('admin.ops.errorDetail.rootCause') }}</h3>
+        <div class="mt-3 break-words text-sm font-medium text-warning-foreground">{{ rootCauseMessage }}</div>
+      </div>
+
+      <div class="rounded-panel border border-outline bg-surface-subtle p-4">
+        <h3 class="text-sm font-semibold text-foreground">{{ t('admin.ops.errorDetail.diagnosticPayloads') }}</h3>
+        <div v-if="!diagnosticPayloadSections.length" class="mt-4 text-sm text-foreground-subtle">{{ t('common.noData') }}</div>
+        <div v-else class="mt-4 space-y-4">
+          <div v-for="section in diagnosticPayloadSections" :key="section.key">
+            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">{{ diagnosticPayloadLabel(section.key) }}</div>
+            <pre class="max-h-[520px] overflow-auto rounded-panel border border-outline bg-surface p-4 text-xs text-foreground"><code>{{ prettyJSON(section.value) }}</code></pre>
+          </div>
+        </div>
+      </div>
 
       <!-- Upstream errors list (only for request errors) -->
       <section v-if="showUpstreamList" class="border-t border-outline pt-4">
@@ -192,6 +216,16 @@
         </div>
       </section>
     </div>
+    <template v-if="backToList" #footer>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        data-testid="error-detail-back-to-list"
+        @click="goBack"
+      >
+        {{ t('admin.ops.errorDetail.backToList') }}
+      </button>
+    </template>
   </BaseDialog>
 </template>
 
@@ -209,10 +243,12 @@ interface Props {
   show: boolean
   errorId: number | null
   errorType?: 'request' | 'upstream'
+  backToList?: boolean
 }
 
 interface Emits {
   (e: 'update:show', value: boolean): void
+  (e: 'back'): void
 }
 
 const props = defineProps<Props>()
@@ -228,12 +264,46 @@ const showUpstreamList = computed(() => props.errorType === 'request')
 
 const requestId = computed(() => detail.value?.request_id || detail.value?.client_request_id || '')
 
-const primaryResponseBody = computed(() => {
-  return resolvePrimaryResponseBody(detail.value, props.errorType)
+const primaryResponseBody = computed(() => resolvePrimaryResponseBody(detail.value, props.errorType))
+
+type DiagnosticPayloadKey = 'client' | 'upstream_message' | 'upstream_detail' | 'upstream_events'
+
+const rootCauseMessage = computed(() => {
+  const current = detail.value
+  if (!current) return ''
+  for (const candidate of [current.upstream_error_message, current.upstream_error_detail, current.message, current.error_body]) {
+    const value = meaningfulPayload(candidate)
+    if (value) return value
+  }
+  return ''
 })
 
+const diagnosticPayloadSections = computed(() => {
+  const current = detail.value
+  if (!current) return []
+  const candidates: Array<{ key: DiagnosticPayloadKey; value: string }> = [
+    { key: 'client', value: meaningfulPayload(current.error_body) },
+    { key: 'upstream_message', value: meaningfulPayload(current.upstream_error_message) },
+    { key: 'upstream_detail', value: meaningfulPayload(current.upstream_error_detail) },
+    { key: 'upstream_events', value: meaningfulPayload(current.upstream_errors) }
+  ]
+  const primary = primaryResponseBody.value
+  return candidates.filter((section, index, all) => {
+    return section.value
+      && section.value !== primary
+      && all.findIndex(candidate => candidate.value === section.value) === index
+  })
+})
 
+function meaningfulPayload(candidate: unknown): string {
+  const value = String(candidate || '').trim()
+  if (!value || value === '[]' || value === '{}' || value.toLowerCase() === 'null') return ''
+  return value
+}
 
+function diagnosticPayloadLabel(key: DiagnosticPayloadKey): string {
+  return t(`admin.ops.errorDetail.payloads.${key}`)
+}
 
 const title = computed(() => {
   if (!props.errorId) return t('admin.ops.errorDetail.title')
@@ -315,6 +385,11 @@ function close() {
   emit('update:show', false)
 }
 
+function goBack() {
+  emit('update:show', false)
+  emit('back')
+}
+
 function prettyJSON(raw?: string): string {
   if (!raw) return 'N/A'
   try {
@@ -360,6 +435,13 @@ watch(
 
 const statusClass = computed(() => {
   const code = detail.value?.status_code ?? 0
+  if (code >= 500) return 'bg-danger-subtle text-danger-foreground ring-danger/20'
+  if (code === 429) return 'bg-warning-subtle text-warning-foreground ring-warning/20'
+  if (code >= 400) return 'bg-warning-subtle text-warning-foreground ring-warning/20'
+  return 'bg-surface-subtle text-foreground-subtle ring-outline'
+})
+const upstreamStatusClass = computed(() => {
+  const code = detail.value?.upstream_status_code ?? 0
   if (code >= 500) return 'bg-danger-subtle text-danger-foreground ring-danger/20'
   if (code === 429) return 'bg-warning-subtle text-warning-foreground ring-warning/20'
   if (code >= 400) return 'bg-warning-subtle text-warning-foreground ring-warning/20'

@@ -255,6 +255,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyContactTicketEnabled,
 		SettingKeyModelPlazaEnabled,
 		SettingKeyModelPlazaRequireAuth,
+		SettingKeyPluginManagementEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyAllowUserViewErrorRequests,
@@ -400,8 +401,9 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ContactTelegramURL:                 strings.TrimSpace(settings[SettingKeyContactTelegramURL]),
 		ContactTicketEnabled:               !isFalseSettingValue(settings[SettingKeyContactTicketEnabled]),
 
-		ModelPlazaEnabled:     settings[SettingKeyModelPlazaEnabled] == "true",
-		ModelPlazaRequireAuth: settings[SettingKeyModelPlazaRequireAuth] == "true",
+		ModelPlazaEnabled:       settings[SettingKeyModelPlazaEnabled] == "true",
+		ModelPlazaRequireAuth:   settings[SettingKeyModelPlazaRequireAuth] == "true",
+		PluginManagementEnabled: settings[SettingKeyPluginManagementEnabled] == "true",
 
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
@@ -721,6 +723,7 @@ type PublicSettingsInjectionPayload struct {
 	AllowUserViewErrorRequests         bool   `json:"allow_user_view_error_requests"`
 	ModelPlazaEnabled                  bool   `json:"model_plaza_enabled"`
 	ModelPlazaRequireAuth              bool   `json:"model_plaza_require_auth"`
+	PluginManagementEnabled            bool   `json:"plugin_management_enabled"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -816,6 +819,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ContactTicketEnabled:                 settings.ContactTicketEnabled,
 		ModelPlazaEnabled:                    settings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:                settings.ModelPlazaRequireAuth,
+		PluginManagementEnabled:              settings.PluginManagementEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,

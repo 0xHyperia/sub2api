@@ -8022,6 +8022,33 @@
           <div class="card">
             <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
+                {{ t('admin.settings.features.pluginManagement.title') }}
+              </h2>
+              <p class="mt-1 text-sm text-foreground-subtle">
+                {{ t('admin.settings.features.pluginManagement.description') }}
+              </p>
+            </div>
+            <div class="space-y-5 p-6">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <label class="text-sm font-medium text-foreground-muted">
+                    {{ t('admin.settings.features.pluginManagement.enabled') }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-foreground-subtle">
+                    {{ t('admin.settings.features.pluginManagement.enabledHint') }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.plugin_management_enabled"
+                  :aria-label="t('admin.settings.features.pluginManagement.enabled')"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="border-b border-outline px-6 py-4">
+              <h2 class="text-lg font-semibold text-foreground">
                 {{ t("admin.settings.features.channelMonitor.title") }}
               </h2>
               <p class="mt-1 text-sm text-foreground-subtle">
@@ -11683,7 +11710,9 @@ const form = reactive<SettingsForm>({
   // Model Plaza feature switches + description
   model_plaza_enabled: false,
   model_plaza_require_auth: false,
-  model_plaza_description: "",
+  model_plaza_description: '',
+  // Plugin management menu visibility; plugin runtime is unaffected.
+  plugin_management_enabled: false,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
   // Allow user view error requests
@@ -13616,6 +13645,7 @@ async function saveSettings() {
       model_plaza_enabled: form.model_plaza_enabled,
       model_plaza_require_auth: form.model_plaza_require_auth,
       model_plaza_description: form.model_plaza_description,
+      plugin_management_enabled: form.plugin_management_enabled,
       // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,
