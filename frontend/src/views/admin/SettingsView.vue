@@ -5849,10 +5849,10 @@
               </div>
 
               <!-- OpenAI Responses 首 token 统计 -->
-              <div class="border-b border-gray-100 pb-5 dark:border-dark-700 md:col-span-2">
+              <div class="border-b border-outline pb-5 md:col-span-2">
                 <label
                   for="openai-ttft-mode"
-                  class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="text-sm font-medium text-foreground"
                 >
                   {{ t("admin.settings.gatewayForwarding.openaiTTFTMode") }}
                 </label>
@@ -5869,7 +5869,7 @@
                     {{ t("admin.settings.gatewayForwarding.openaiTTFTModeVisible") }}
                   </option>
                 </select>
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="mt-1.5 text-xs text-foreground-muted">
                   {{ t("admin.settings.gatewayForwarding.openaiTTFTModeHint") }}
                 </p>
               </div>

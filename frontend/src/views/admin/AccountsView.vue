@@ -610,6 +610,7 @@
           <template #cell-actions="{ row }">
             <div class="resource-row-actions">
               <button type="button" @click="handleEdit(row)" class="resource-row-action" :title="t('common.edit')" :aria-label="t('common.edit')">
+                <span class="sr-only">{{ t('common.edit') }}</span>
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
               </button>
               <button type="button" @click="handleDelete(row)" class="resource-row-action resource-row-action--danger" :title="t('common.delete')" :aria-label="t('common.delete')">
@@ -1305,6 +1306,7 @@ const {
     group: '',
     search: '',
     include_scheduler_score: shouldIncludeSchedulerScore() ? '1' : '0',
+    lite: '1',
     sort_by: sortState.sort_by,
     sort_order: sortState.sort_order
   }
@@ -1375,19 +1377,14 @@ function markUpstreamBillingSortRefresh() {
 }
 
 const load = async () => {
-  const requestParams = params as any
   markUpstreamBillingSortRefresh()
   syncAccountListDerivedParams()
   hasPendingListSync.value = false
   resetAutoRefreshCache()
   pendingTodayStatsRefresh.value = false
-  if (isFirstLoad.value) {
-    requestParams.lite = '1'
-  }
   await baseLoad()
   if (isFirstLoad.value) {
     isFirstLoad.value = false
-    delete requestParams.lite
   }
   await refreshTodayStatsBatch()
 }
@@ -1991,7 +1988,11 @@ const mobileQuotaValue = (account: Account) => {
   return quota ? `$${quota.used.toFixed(2)} / $${quota.limit.toFixed(2)}` : t('admin.accounts.quotaUnlimited')
 }
 
-const handleEdit = (a: Account) => { edAcc.value = a; showEdit.value = true }
+const loadFullAccount = async (account: Account): Promise<Account | null> => {
+  if (typeof adminAPI.accounts.getById !== 'function') return account
+  try { return await adminAPI.accounts.getById(account.id) } catch (error) { appStore.showError(error instanceof Error ? error.message : String(error)); return null }
+}
+const handleEdit = async (a: Account) => { const full = await loadFullAccount(a); if (full) { edAcc.value = full; showEdit.value = true } }
 const openMenu = (a: Account, e: MouseEvent, showDelete = false) => {
   menu.acc = a
   menu.showDelete = showDelete
@@ -2530,8 +2531,8 @@ const accountExportStepUp = useStepUp()
 const closeTestModal = () => { showTest.value = false; testingAcc.value = null }
 const closeStatsModal = () => { showStats.value = false; statsAcc.value = null }
 const closeReAuthModal = () => { showReAuth.value = false; reAuthAcc.value = null }
-const handleTest = (a: Account) => { testingAcc.value = a; showTest.value = true }
-const handleViewStats = (a: Account) => { statsAcc.value = a; showStats.value = true }
+const handleTest = async (a: Account) => { const full = await loadFullAccount(a); if (full) { testingAcc.value = full; showTest.value = true } }
+const handleViewStats = async (a: Account) => { const full = await loadFullAccount(a); if (full) { statsAcc.value = full; showStats.value = true } }
 const handleSchedule = async (a: Account) => {
   scheduleAcc.value = a
   scheduleModelOptions.value = []
@@ -2761,6 +2762,11 @@ onMounted(async () => {
   }
   if (groupsResult.status === 'fulfilled') {
     groups.value = groupsResult.value
+    const groupsByID = new Map(groups.value.map(group => [group.id, group]))
+    accounts.value = accounts.value.map(account => ({
+      ...account,
+      groups: account.groups?.length ? account.groups : (account.group_ids ?? []).map(id => groupsByID.get(id)).filter((group): group is AdminGroup => Boolean(group))
+    }))
   } else {
     console.error('Failed to load groups:', groupsResult.reason)
   }
