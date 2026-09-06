@@ -2,6 +2,35 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## USA0 v1.0.20
+
+- 发布版本：v1.0.20
+- 官方基线版本：v0.2.1（`578785ee7fb35030b094b69624efe25670a36f5f`）
+- 上一 USA0 版本：v1.0.19
+- 上游集成提交：`2e68248fbb76652dc8710637dfbefc46500f738c`
+- 发布范围：同步 Sub2API v0.2.1，接入 GPT-6 Astra、OpenAI Fast/Ultrafast、Claude CLI 与 reasoning effort 策略、价格覆盖与热加载、请求追踪、native compaction、图片 URL 回填及上游媒体/工具兼容性修复
+- USA0 适配：保留 ZeroAgent 授权、模型市场与模型监控、支付分销、经营分析和 semantic token；Model Monitor 与 Channel Monitor V2 继续独立运行
+- 前端修复：完整 Vitest `361` 个测试文件、`2325` 项测试通过；typecheck、生产构建和 `git diff --check` 通过
+- 发布方式：创建并推送 v1.0.20 annotated tag 后触发 Release workflow；Actions 运行结果由后续单独确认
+- 记录日期：2026-09-06
+
+## 官方 v0.2.1 同步（已合并）
+
+- 集成分支：`codex/merge-upstream-v0.2.1`
+- USA0 合并基线：`usa0/main` / `c2f16ccae9640c3dce07b0a1fc57809a12de11`
+- 官方目标版本：v0.2.1
+- 官方目标提交：`578785ee7fb35030b094b69624efe25670a36f5f`
+- 集成提交：`2e68248fbb76652dc8710637dfbefc46500f738c`
+- 同步状态：已完成合并、冲突解决、USA0 适配、代码审计、完整前端测试和构建，并已合回本地 `usa0/main`
+
+### v0.2.1 兼容摘要
+
+- 基础价格按 Group → Channel → 内置价格解析，再应用 USA0 用户、分组、峰值倍率和利润控制。
+- 用量审计保留 requested、routed/upstream、response 三种模型维度；实际成本和经营分析使用最终计费模型，模型监控目录仍按 requested/routed 模型统计。
+- OpenAI Fast、Ultrafast、reasoning effort 限制、Claude reasoning pricing、native compaction、upstream request ID 和图片 URL SSRF 防护接入现有 USA0 业务链路。
+- 上游账户 compact 列表只压缩传输结构，不删除 USA0 账户管理字段；OAuth、ZeroAgent、分销归因和支付事务保持原有安全与幂等语义。
+- USA0 已发布迁移 `176–247` 保持不变，上游新增迁移顺延为 `248–258`；Ent/Wire 从合并后的源定义重新生成。
+
 ## USA0 v1.0.19
 
 - 发布版本：v1.0.19
