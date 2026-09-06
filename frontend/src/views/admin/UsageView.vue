@@ -118,6 +118,7 @@
                 :aria-expanded="showColumnDropdown"
                 :aria-controls="showColumnDropdown ? columnMenuId : undefined"
                 aria-haspopup="menu"
+                data-testid="usage-column-settings"
                 @click="toggleColumnMenu"
                 @keydown="handleColumnTriggerKeydown"
               >
@@ -142,6 +143,7 @@
                   role="menuitemcheckbox"
                   tabindex="-1"
                   :aria-checked="isCurrentColumnVisible(col.key)"
+                  :data-testid="`usage-column-toggle-${col.key}`"
                   @click="toggleCurrentColumn(col.key)"
                   class="flex min-h-10 w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-subtle hover:text-foreground"
                 >

@@ -201,9 +201,21 @@ export function formatDateTimeLocalInput(timestampSeconds: number | null): strin
  */
 export function parseDateTimeLocalInput(value: string): number | null {
   if (!value) return null
-  const date = new Date(value)
-  if (isNaN(date.getTime())) return null
-  return Math.floor(date.getTime() / 1000)
+  const match = /^(\d{4,})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?$/.exec(value)
+  if (!match) return null
+  const year = Number(match[1]); const month = Number(match[2]); const day = Number(match[3])
+  const hours = Number(match[4]); const minutes = Number(match[5]); const seconds = match[6] ? Number(match[6]) : 0
+  const milliseconds = match[7] ? Number(match[7].slice(0, 3).padEnd(3, '0')) : 0
+  if (!Number.isSafeInteger(year) || year < 1 || month < 1 || month > 12 || day < 1 || hours > 23 || minutes > 59 || seconds > 59) return null
+  const date = new Date(0)
+  date.setFullYear(year, month - 1, day)
+  date.setHours(hours, minutes, seconds, milliseconds)
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day || date.getHours() !== hours || date.getMinutes() !== minutes || date.getSeconds() !== seconds) return null
+  return Number.isFinite(date.getTime()) ? Math.floor(date.getTime() / 1000) : null
+}
+
+export function getBrowserTimeZone(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
 /**
@@ -235,6 +247,20 @@ export function formatReasoningEffort(effort: string | null | undefined): string
       // best-effort: Title-case first letter
       return raw.length > 1 ? raw[0].toUpperCase() + raw.slice(1) : raw.toUpperCase()
   }
+}
+
+const reasoningEffortKey = (value: string | null | undefined) => (value ?? '').toString().trim().toLowerCase().replace(/[-_\s]/g, '')
+export function reasoningEffortValuesEqual(left: string | null | undefined, right: string | null | undefined): boolean {
+  const a = reasoningEffortKey(left); const b = reasoningEffortKey(right)
+  if (!a && !b) return true
+  return a !== '' && a === b
+}
+export function formatReasoningEffortMapping(requested: string | null | undefined, forwarded: string | null | undefined): string {
+  const requestedLabel = formatReasoningEffort(requested); const forwardedLabel = formatReasoningEffort(forwarded)
+  if (requestedLabel === '-' && forwardedLabel === '-') return '-'
+  if (requestedLabel === '-' || reasoningEffortValuesEqual(requested, forwarded)) return forwardedLabel === '-' ? requestedLabel : forwardedLabel
+  if (forwardedLabel === '-') return requestedLabel
+  return `${requestedLabel} → ${forwardedLabel}`
 }
 
 /**

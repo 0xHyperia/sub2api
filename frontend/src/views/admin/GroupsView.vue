@@ -867,6 +867,7 @@
           id-prefix="create-group-reasoning"
           :platform="createForm.platform"
           v-model:max-effort="createForm.max_reasoning_effort"
+          v-model:over-limit="createForm.max_reasoning_effort_over_limit"
           v-model:mappings="createForm.reasoning_effort_mappings"
         />
         <div
@@ -2587,6 +2588,7 @@
           id-prefix="edit-group-reasoning"
           :platform="editForm.platform"
           v-model:max-effort="editForm.max_reasoning_effort"
+          v-model:over-limit="editForm.max_reasoning_effort_over_limit"
           v-model:mappings="editForm.reasoning_effort_mappings"
         />
         <div v-if="editForm.subscription_type !== 'subscription'">
@@ -5329,6 +5331,7 @@ const createForm = reactive({
   // 分组级 RPM 限制（每用户每分钟最大请求数；0 = 不限制）
   rpm_limit: 0 as number,
   max_reasoning_effort: "",
+  max_reasoning_effort_over_limit: "downgrade",
   reasoning_effort_mappings: [] as ReasoningEffortMappingRow[],
 });
 
@@ -5695,6 +5698,7 @@ const editForm = reactive({
   // 分组级 RPM 限制（每用户每分钟最大请求数；0 = 不限制）
   rpm_limit: 0 as number,
   max_reasoning_effort: "",
+  max_reasoning_effort_over_limit: "downgrade",
   reasoning_effort_mappings: [] as ReasoningEffortMappingRow[],
 });
 

@@ -148,8 +148,9 @@
         </template>
 
         <template #cell-reasoning_effort="{ row }">
-          <span class="text-sm text-foreground">
-            {{ formatReasoningEffort(row.reasoning_effort) }}
+          <span data-testid="reasoning-effort-cell" class="space-y-0.5 text-sm text-foreground">
+            <span class="block">{{ formatReasoningEffort(row.reasoning_effort) }}</span>
+            <span v-if="showAccountBilling && row.upstream_reasoning_effort && !reasoningEffortValuesEqual(row.reasoning_effort, row.upstream_reasoning_effort)" class="block text-foreground-muted">↳ {{ formatReasoningEffort(row.upstream_reasoning_effort) }}</span>
           </span>
         </template>
 
@@ -606,6 +607,7 @@ import IpGeoCell from '@/components/common/IpGeoCell.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { fetchBatch, getEntry } from '@/utils/ipGeoLookup'
 import type { AdminUsageLog } from '@/types'
+import { reasoningEffortValuesEqual } from '@/utils/format'
 import type { Column } from '@/components/common/types'
 
 interface Props {

@@ -780,6 +780,11 @@ export default {
     groups: {
       title: 'Group Management',
       description: 'Manage API key groups and rate multipliers',
+      openaiFast: {
+        title: 'OpenAI Fast mode', force: 'Force Fast (priority)',
+        hint: 'Forces service_tier=priority on OpenAI requests in this group.',
+        free: 'Free Fast', freeHint: 'Fast requests use the priority tier but are charged the equivalent Standard price.'
+      },
       searchGroups: 'Search groups...',
       createGroup: 'Create Group',
       editGroup: 'Edit Group',

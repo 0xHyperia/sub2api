@@ -777,6 +777,11 @@ export default {
     groups: {
       title: '分组管理',
       description: '管理 API 密钥分组和费率配置',
+      openaiFast: {
+        title: 'OpenAI Fast 模式', force: '强制 Fast（Priority）',
+        hint: '为此分组的 OpenAI 请求强制使用 service_tier=priority。',
+        free: '免费 Fast', freeHint: 'Fast 请求仍使用 Priority 档位，但按 Standard 价格计费。'
+      },
       searchGroups: '搜索分组...',
       createGroup: '创建分组',
       editGroup: '编辑分组',
