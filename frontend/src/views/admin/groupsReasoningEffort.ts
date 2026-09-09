@@ -4,6 +4,7 @@ const effortValues = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as con
 const sourceValues = ['none', ...effortValues] as const
 export const reasoningEffortOverLimitDowngrade = 'downgrade'
 export const reasoningEffortOverLimitDeny = 'deny'
+export const reasoningEffortMappingDeny = 'deny'
 
 export interface ReasoningEffortMappingPair { id: string; from: string; to: string }
 export interface ReasoningEffortMappingRow { id: string; match_type: ReasoningEffortMatchType | ''; model: string; pairs: ReasoningEffortMappingPair[] }
@@ -15,11 +16,16 @@ const id = (prefix: string) => `${prefix}-${++nextID}`
 export const supportsReasoningEffortPolicyPlatform = (platform: GroupPlatform) => platform === 'openai' || platform === 'composite'
 export const reasoningEffortOptionsForPlatform = (platform: GroupPlatform) => (supportsReasoningEffortPolicyPlatform(platform) ? effortValues : []).map(value => ({ value, label: value }))
 export const reasoningEffortSourceOptionsForPlatform = (platform: GroupPlatform) => (supportsReasoningEffortPolicyPlatform(platform) ? sourceValues : []).map(value => ({ value, label: value }))
+export const reasoningEffortTargetOptionsForPlatform = (platform: GroupPlatform) => {
+  const options = reasoningEffortOptionsForPlatform(platform)
+  return options.length ? [...options, { value: reasoningEffortMappingDeny, label: reasoningEffortMappingDeny }] : options
+}
 export const normalizeReasoningEffortForPlatform = (platform: GroupPlatform, value?: string | null) => {
   const normalized = value?.trim().toLowerCase() ?? ''
   return reasoningEffortOptionsForPlatform(platform).some(option => option.value === normalized) ? normalized : ''
 }
 export const normalizeReasoningEffortSourceForPlatform = (platform: GroupPlatform, value?: string | null) => value?.trim().toLowerCase() === 'none' && supportsReasoningEffortPolicyPlatform(platform) ? 'none' : normalizeReasoningEffortForPlatform(platform, value)
+export const normalizeReasoningEffortTargetForPlatform = (platform: GroupPlatform, value?: string | null) => value?.trim().toLowerCase() === reasoningEffortMappingDeny && supportsReasoningEffortPolicyPlatform(platform) ? reasoningEffortMappingDeny : normalizeReasoningEffortForPlatform(platform, value)
 export const normalizeReasoningEffortMatchType = (value?: string | null): ReasoningEffortMatchType | '' => ['exact', 'prefix', 'suffix'].includes(value?.trim().toLowerCase() ?? '') ? value!.trim().toLowerCase() as ReasoningEffortMatchType : ''
 
 export function createReasoningEffortMappingPair(pair: Partial<Pick<ReasoningEffortMapping, 'from' | 'to'>> = {}): ReasoningEffortMappingPair { return { id: id('reasoning-effort-pair'), from: pair.from ?? '', to: pair.to ?? '' } }
@@ -30,7 +36,7 @@ export function createReasoningEffortMappingRow(mapping: Partial<ReasoningEffort
 export function reasoningEffortMappingsToRows(mappings?: ReasoningEffortMapping[] | null, platform: GroupPlatform = 'openai'): ReasoningEffortMappingRow[] {
   const rows: ReasoningEffortMappingRow[] = []
   for (const mapping of mappings ?? []) {
-    const from = normalizeReasoningEffortSourceForPlatform(platform, mapping.from); const to = normalizeReasoningEffortForPlatform(platform, mapping.to)
+    const from = normalizeReasoningEffortSourceForPlatform(platform, mapping.from); const to = normalizeReasoningEffortTargetForPlatform(platform, mapping.to)
     if (!from || !to) continue
     const match_type = normalizeReasoningEffortMatchType(mapping.match_type); const model = mapping.model?.trim() ?? ''
     const existing = rows.find(row => row.match_type === match_type && row.model.toLowerCase() === model.toLowerCase())
@@ -54,7 +60,7 @@ export function validateReasoningEffortMappings(rows: ReasoningEffortMappingRow[
       const from = pair.from.trim(); const to = pair.to.trim()
       const target = row.pairs.length === 1 ? row.id : pair.id
       if (!from) errors[target] = { ...errors[target], from: 'fromRequired' }; else if (!normalizeReasoningEffortSourceForPlatform(platform, from)) errors[target] = { ...errors[target], from: 'unsupportedFrom' }; else { const key = `${row.model.trim() ? row.id : ''}\0${from.toLowerCase()}`; duplicateSources.set(key, [...(duplicateSources.get(key) ?? []), target]) }
-      if (!to) errors[target] = { ...errors[target], to: 'toRequired' }; else if (!normalizeReasoningEffortForPlatform(platform, to)) errors[target] = { ...errors[target], to: 'unsupportedTo' }
+      if (!to) errors[target] = { ...errors[target], to: 'toRequired' }; else if (!normalizeReasoningEffortTargetForPlatform(platform, to)) errors[target] = { ...errors[target], to: 'unsupportedTo' }
     })
   })
   duplicateSources.forEach(ids => { if (ids.length > 1) ids.forEach(target => { errors[target] = { ...errors[target], from: 'duplicateFrom' } }) })

@@ -12,6 +12,6 @@ export default {
   ...dashboard,
   ...channelMonitorV2,
   ...batchImage,
-  admin,
   ...misc,
+  admin: { ...((misc as any).admin ?? {}), ...admin },
 }

@@ -265,6 +265,9 @@ export default {
 
   // Usage
   usage: {
+    allCompactionTypes: 'All compaction types',
+    compactionFilter: 'Compaction',
+    compactionOnly: 'Compaction only',
     title: 'Usage Records',
     description: 'View and analyze your API usage history',
     costDetails: 'Cost Breakdown',

@@ -723,6 +723,8 @@ export default {
       modelRestriction: 'Model Restriction (Optional)',
       modelWhitelist: 'Model Whitelist',
       modelMapping: 'Model Mapping',
+      fromModel: 'Request model',
+      toModel: 'Target model',
       selectAllowedModels: 'Select allowed models. Leave empty to support all models.',
       mapRequestModels:
         'Map request models to actual models. Left is the requested model, right is the actual model sent to API.',
@@ -939,6 +941,15 @@ export default {
       creating: 'Creating...',
       updating: 'Updating...',
       accountCreated: 'Account created successfully',
+      messages: { accountCreated: 'Account created successfully' },
+      upstreamRequestIdHeader: 'Upstream request ID response header',
+      upstreamRequestIdHeaderPlaceholder: 'e.g. X-Upstream-Request-Id',
+      upstreamRequestIdHeaderHelp: {
+        intro: 'Optionally expose the upstream request ID in a response header.',
+        examplesTitle: 'Examples',
+        official: 'Official upstream request ID',
+        sub2apiNote: 'Only a header name is stored; secrets are never returned.'
+      },
       accountUpdated: 'Account updated successfully',
       failedToCreate: 'Failed to create account',
       failedToUpdate: 'Failed to update account',

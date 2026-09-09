@@ -413,7 +413,7 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
       label: localText('资源与路由', 'Resources'),
       items: [
         { path: '/admin/users', label: t('nav.users'), icon: 'users', hideInSimpleMode: true },
-        { path: '/admin/groups', label: t('nav.groups'), icon: 'grid', hideInSimpleMode: true },
+        { path: '/admin/groups', label: t('nav.groups'), icon: 'grid' },
         {
           path: '/admin/channels',
           label: t('nav.channelManagement'),
