@@ -2,6 +2,25 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.2.4 同步准备（集成分支）
+
+- 集成分支：`codex/merge-upstream-v0.2.4`
+- USA0 合并基线：`codex/merge-upstream-v0.2.3` / `2660e0d5a`
+- 官方 annotated tag 对象：`d681d0798064ee0ffff376d19687d12f09fe600f`
+- 官方目标提交：`5de5e2bed035d43591a2e10e51f420ef6a84eb98`
+- 上一官方基线：v0.2.3（`8fa67d477d6651a744754392a8982ea589c26ae6`）
+- 同步范围：70 个上游提交、266 个变更文件；初始 35 个文本冲突
+- 主要新增：MiniMax 平台及额度监控、HTTP/2 长流 PING 保活、OpenAI Image 2.5、Grok 媒体资格、OpenAI 周消耗估算、Channel Monitor V2 用户排行开关、支付帮助 Markdown、自定义页面按钮拖拽。
+- 主要修复：OAuth 生图主控模型、Grok external_web_access、429 额度退避、代理部分更新/备份/过期回退、模型广场订阅分组、注册可见性、停用分组解绑及日志存储上限。
+- 兼容处理：保留 USA0 模型广场、Model Monitor、ZeroAgent、支付分销和经营分析；MiniMax 迁移因 `237` 已被 USA0 占用顺延为 `261_add_minimax_platform.sql`。
+- 状态：已完成冲突解决和后端全量测试、前端类型检查；尚未提交、推送、合回主分支或发布。
+
+### v0.2.4 当前验证
+
+- 后端 `mise exec -- go test ./...` 通过，含公开设置注入契约和 MiniMax 迁移测试。
+- 前端 `pnpm run typecheck` 通过；i18n、MiniMax 平台标签、凭据构建和语义色板检查已适配。
+- 全量 Vitest 仍有上游新增账户菜单/支付帮助测试与 USA0 页面契约差异，及 2 项颜色断言与 USA0 semantic token 规则冲突；这些不影响生产编译，但在合回主分支前需决定继续适配测试还是保留 USA0 语义令牌优先。
+
 ## 官方 v0.2.3 同步准备（集成分支）
 
 - 集成分支：`codex/merge-upstream-v0.2.3`
