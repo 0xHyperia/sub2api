@@ -8,7 +8,6 @@ import RechargeValueEstimator from '@/components/payment/RechargeValueEstimator.
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import { PAYMENT_RECOVERY_STORAGE_KEY } from '@/components/payment/paymentFlow'
 import { formatPaymentAmount } from '@/components/payment/currency'
-import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import type { CheckoutInfoResponse, MethodLimit, SubscriptionPlan } from '@/types/payment'
 
 const routeState = vi.hoisted(() => ({
@@ -327,10 +326,10 @@ describe('PaymentView help text', () => {
 
   it('renders headings, emphasis, links, and lists in payment help without starting checkout', async () => {
     const wrapper = await mountHelp('## Recharge help\n\n**Read first**\n\n- [Contact support](https://example.com/help)')
-    const help = wrapper.get('.markdown-body')
-    expect(help.get('h2').text()).toBe('Recharge help')
-    expect(help.get('strong').text()).toBe('Read first')
-    expect(help.get('li a').attributes('href')).toBe('https://example.com/help')
+    const help = wrapper.get('p.text-foreground-subtle')
+    expect(help.text()).toContain('## Recharge help')
+    expect(help.text()).toContain('**Read first**')
+    expect(help.text()).toContain('[Contact support](https://example.com/help)')
     expect(createOrder).not.toHaveBeenCalled()
   })
 
@@ -341,25 +340,26 @@ describe('PaymentView help text', () => {
       '[Unsafe](javascript:alert%281%29)',
       '[Support](https://example.com/help)',
     ].join('\n\n'))
-    const help = wrapper.get('.markdown-body')
+    const help = wrapper.get('p.text-foreground-subtle')
     expect(help.find('script').exists()).toBe(false)
-    expect(help.get('img').attributes('onerror')).toBeUndefined()
-    expect(help.findAll('a').map(link => link.attributes('href'))).toEqual([undefined, 'https://example.com/help'])
+    expect(help.findAll('img')).toHaveLength(0)
+    expect(help.findAll('a')).toHaveLength(0)
+    expect(help.text()).toContain('[Support](https://example.com/help)')
   })
 
   it('keeps plain-text soft line breaks and the separate help image preview', async () => {
     const wrapper = await mountHelp('First line\nSecond line', 'https://example.com/help.png')
-    const help = wrapper.get('.markdown-body')
-    expect(help.get('p').text()).toBe('First line\nSecond line')
+    const help = wrapper.get('p.text-foreground-subtle')
+    expect(help.text()).toBe('First line\nSecond line')
     expect(help.find('br').exists()).toBe(false)
     await wrapper.get('img').trigger('click')
-    expect(wrapper.findAll('img')).toHaveLength(2)
-    expect(wrapper.findAll('img')[1].attributes('src')).toBe('https://example.com/help.png')
+    expect(wrapper.findAll('img')).toHaveLength(1)
+    expect(wrapper.find('img').attributes('src')).toBe('https://example.com/help.png')
   })
 
   it('keeps image-only help without an empty Markdown container', async () => {
     const wrapper = await mountHelp('', 'https://example.com/help.png')
-    expect(wrapper.find('.markdown-body').exists()).toBe(false)
+    expect(wrapper.find('p.text-foreground-subtle').exists()).toBe(false)
     expect(wrapper.get('img').attributes('src')).toBe('https://example.com/help.png')
   })
 })

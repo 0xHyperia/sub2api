@@ -78,7 +78,7 @@ func TestShowcasePlatformRankPrioritizesPrimaryProviders(t *testing.T) {
 func TestMarketplaceModelIDs_CustomGroupListTakesPriority(t *testing.T) {
 	group := service.Group{
 		Platform: service.PlatformOpenAI,
-		ModelsListConfig: service.GroupModelsListConfig{
+		ModelAllowlist: service.GroupModelAllowlist{
 			Enabled: true,
 			Models:  []string{"gpt-custom", " gpt-custom ", "gpt-other", "gpt-*"},
 		},
