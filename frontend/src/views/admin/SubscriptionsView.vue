@@ -349,12 +349,15 @@
                   }}
                 </span>
               </div>
-              <span class="font-medium text-foreground">
+              <RouterLink
+                :to="{ path: '/admin/usage', query: { user_id: row.user_id } }"
+                class="rounded font-medium text-foreground hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
                 {{ userColumnMode === 'email'
                   ? (row.user?.email || t('admin.redeem.userPrefix', { id: row.user_id }))
-                  : (row.user?.username || '-')
+                  : (row.user?.username || t('admin.redeem.userPrefix', { id: row.user_id }))
                 }}
-              </span>
+              </RouterLink>
             </div>
           </template>
 

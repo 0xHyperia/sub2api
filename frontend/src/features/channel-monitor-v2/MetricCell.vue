@@ -57,6 +57,7 @@ const detailParts = computed(() => {
 })
 
 const stateClass = computed(() => {
+  if (!props.value || props.value === '-' || props.value === '—') return 'text-foreground-muted'
   if (!props.state) return 'text-foreground text-inverse-foreground'
   if (props.state === 'healthy') return 'text-success-foreground text-success-foreground'
   if (props.state === 'warning') return 'text-warning-foreground text-warning-foreground'

@@ -497,6 +497,7 @@ export default {
       leaveEmptyToKeep: '留空则保持原密码不变',
       generatePassword: '生成随机密码',
       copyPassword: '复制密码',
+      passwordCopied: '密码已复制',
       creating: '创建中...',
       updating: '更新中...',
       columns: {
@@ -853,8 +854,14 @@ export default {
         removeReasoningEffortMapping: '删除映射',
         reasoningEffortFrom: '请求值',
         reasoningEffortTo: '转发值',
+        reasoningEffortToDeny: '拒绝',
         reasoningEffortFromPlaceholder: '请选择 A',
         reasoningEffortToPlaceholder: '请选择 B',
+        reasoningEffortMatchType: '匹配类型',
+        reasoningEffortMatchTypePlaceholder: '请选择匹配类型',
+        reasoningEffortModel: '模型范围',
+        reasoningEffortModelPlaceholder: '留空=全部 / gpt / gpt-5.4',
+        addReasoningEffortPair: '添加推理强度映射',
         fromRequired: '请选择请求值 A',
         toRequired: '请选择转发值 B',
         unsupportedFrom: '请求值不受当前平台支持',
@@ -895,6 +902,7 @@ export default {
         kimi: 'Kimi',
         zhipu: 'Zhipu GLM',
         deepseek: 'DeepSeek',
+        minimax: 'MiniMax',
         composite: 'Composite',
       },
       saving: '保存中...',
@@ -1065,6 +1073,20 @@ export default {
         selectAll: '全选',
         invertSelection: '反选'
       },
+      modelAllowlist: {
+        title: '模型白名单',
+        hint: '启用后，白名单之外的模型请求会被拒绝，模型列表接口也只展示白名单模型。',
+        loading: '正在加载候选模型...',
+        empty: '没有候选模型，可在下方添加自定义条目',
+        selectedSummary: '已选择 {selected} / {total}',
+        selectAll: '全选',
+        invertSelection: '反选',
+        wildcardTag: '通配符',
+        customPlaceholder: '自定义条目，例如 claude-* 或 gpt-5.5-codex',
+        addCustom: '添加',
+        emptySelectionError: '模型白名单已启用，请至少选择或添加一个模型条目',
+        errors: { empty: '请输入模型条目', invalidWildcard: '通配符 * 只能放在末尾', duplicate: '该条目已存在' }
+      },
       compositeRoutes: {
         action: '路由',
         title: 'Composite 路由',
@@ -1183,19 +1205,31 @@ export default {
         selectAccounts: '选择账号',
         noAccounts: '此分组暂无账号',
         loadingAccounts: '加载账号中...',
-      claudeMaxSimulation: {
-        title: 'Claude Max 用量模拟',
-        tooltip:
-          '启用后，对于没有上游缓存写入用量的 Claude 模型，系统会确定性地将 token 映射为少量输入加 1h 缓存创建，同时保持总 token 不变。',
-        enabled: '已启用（模拟 1h 缓存）',
-        disabled: '已禁用',
-        hint: '仅调整用量计费日志中的 token 类别。不会持久化每个请求的映射状态。'
-      },
         removeRule: '删除规则',
         noRules: '暂无路由规则',
         noRulesHint: '添加路由规则以将特定模型请求优先路由到指定账号',
         searchAccountPlaceholder: '搜索账号...',
         accountsHint: '选择此模型模式优先使用的账号'
+      },
+      codexModelsManifest: {
+        title: '模型列表固定账号',
+        hint: '启用后优先从固定账号获取普通模型列表和 Codex manifest。',
+        enable: '使用指定账号获取模型列表',
+        enabledHint: '最多选择 10 个绑定到此分组的 OpenAI 账号。',
+        disabledHint: '已禁用：模型列表使用本地映射或调度器发现。',
+        accounts: '固定账号',
+        searchPlaceholder: '搜索账号（此分组的 OpenAI 账号）',
+        searchEmpty: '没有匹配账号',
+        fallback: '回退到调度器',
+        fallbackHint: '固定账号无法提供 manifest 时使用正常调度器发现。',
+        selectAtLeastOne: '至少选择一个账号'
+      },
+      claudeMaxSimulation: {
+        title: 'Claude Max 用量模拟',
+        tooltip: '启用后，对于没有上游缓存写入用量的 Claude 模型，系统会确定性地将 token 映射为少量输入加 1h 缓存创建，同时保持总 token 不变。',
+        enabled: '已启用（模拟 1h 缓存）',
+        disabled: '已禁用',
+        hint: '仅调整用量计费日志中的 token 类别。不会持久化每个请求的映射状态。'
       },
       mcpXml: {
         title: 'MCP XML 协议注入',

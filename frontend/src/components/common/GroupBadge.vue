@@ -180,6 +180,9 @@ const labelClass = computed(() => {
   if (props.platform === 'deepseek') {
     return `${base} bg-brand-subtle/60 text-brand `
   }
+  if (props.platform === 'minimax') {
+    return `${base} bg-brand-subtle text-brand`
+  }
   if (props.platform === 'composite') {
     return `${base} bg-info-subtle text-info-foreground`
   }
@@ -227,6 +230,11 @@ const badgeClass = computed(() => {
       : 'bg-brand-subtle text-brand'
   }
   if (props.platform === 'deepseek') {
+    return isSubscription.value
+      ? 'bg-brand-subtle text-brand'
+      : 'bg-brand-subtle text-brand'
+  }
+  if (props.platform === 'minimax') {
     return isSubscription.value
       ? 'bg-brand-subtle text-brand'
       : 'bg-brand-subtle text-brand'

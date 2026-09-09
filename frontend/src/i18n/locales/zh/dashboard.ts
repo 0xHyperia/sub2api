@@ -270,6 +270,9 @@ export default {
 
   // Usage
   usage: {
+    allCompactionTypes: '全部压缩类型',
+    compactionFilter: '压缩',
+    compactionOnly: '仅压缩请求',
     title: '使用记录',
     description: '查看和分析您的 API 使用历史',
     costDetails: '费用明细',
@@ -443,7 +446,8 @@ export default {
       antigravity: 'Antigravity',
       kimi: 'Kimi',
       zhipu: '智谱 GLM',
-      deepseek: 'DeepSeek'
+      deepseek: 'DeepSeek',
+      minimax: 'MiniMax'
     },
     // 检查模式（监控条目的工作方式）
     checkMode: {

@@ -61,6 +61,7 @@ const runtimePanelOpen = ref(false)
 const filterPanelOpen = ref(false)
 const runtimeConfig = reactive<OpsRuntimeLogConfig>({
   level: 'info',
+  persist_access_logs: false,
   enable_sampling: false,
   sampling_initial: 100,
   sampling_thereafter: 100,

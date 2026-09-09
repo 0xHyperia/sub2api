@@ -189,7 +189,7 @@ func TestModelMonitorCatalogModelsDoesNotInferDefaultsFromUnrestrictedAccount(t 
 func TestModelMonitorCatalogModelsIntersectsGroupListWithAccountRestrictions(t *testing.T) {
 	group := Group{
 		Platform: PlatformOpenAI,
-		ModelsListConfig: GroupModelsListConfig{
+		ModelAllowlist: GroupModelAllowlist{
 			Enabled: true,
 			Models:  []string{"gpt-5", "gpt-5-codex", "o3-mini", "unsupported", " gpt-5 "},
 		},
@@ -215,7 +215,7 @@ func TestModelMonitorCatalogModelsIntersectsGroupListWithAccountRestrictions(t *
 func TestModelMonitorCatalogModelsRequiresAccountRestrictionEvenWithGroupList(t *testing.T) {
 	group := Group{
 		Platform: PlatformOpenAI,
-		ModelsListConfig: GroupModelsListConfig{
+		ModelAllowlist: GroupModelAllowlist{
 			Enabled: true,
 			Models:  []string{"gpt-5"},
 		},

@@ -4621,6 +4621,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAppStore } from "@/stores/app";
+import { useAuthStore } from "@/stores/auth";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { adminAPI } from "@/api/admin";
 import type {
@@ -4784,6 +4785,7 @@ const groupPricingToAPI = (
 
 const { t } = useI18n();
 const appStore = useAppStore();
+const authStore = useAuthStore();
 const onboardingStore = useOnboardingStore();
 
 const ALWAYS_VISIBLE_COLUMNS = new Set(["name", "actions"]);
@@ -5546,6 +5548,7 @@ const loadModelsListCandidates = async (
   groupID: number,
   platform: GroupPlatform,
 ) => {
+  if (authStore.isSimpleMode) return;
   const request = { mode, groupID, platform };
   const requestID = modelsListCandidatesTracker.next(request);
   const state = mode === "create" ? createModelsListState : editModelsListState;
@@ -5553,7 +5556,7 @@ const loadModelsListCandidates = async (
     mode === "create" ? createModelsListLoading : editModelsListLoading;
   loadingRef.value = true;
   try {
-    const models = await adminAPI.groups.getModelsListCandidates(
+    const models = await adminAPI.groups.getModelAllowlistCandidates(
       groupID,
       platform,
     );
@@ -5887,6 +5890,7 @@ const deleteConfirmMessage = computed(() => {
 });
 
 const loadLiveCapability = async () => {
+  if (authStore.isSimpleMode) return { supported: false }
   if (liveCapability.value) return liveCapability.value;
   // Keep partial API mocks and rolling frontend/backend deployments fail-safe.
   if (typeof adminAPI.groups.getLiveCapability !== "function") {
@@ -5957,12 +5961,12 @@ const loadGroups = async () => {
     groups.value = response.items;
     pagination.total = response.total;
     pagination.pages = response.pages;
-    if (hasVisibleUsageSummaryConsumer.value) {
+    if (!authStore.isSimpleMode && hasVisibleUsageSummaryConsumer.value) {
       loadUsageSummary();
     } else {
       usageLoading.value = false;
     }
-    if (hasVisibleCapacityColumn.value) {
+    if (!authStore.isSimpleMode && hasVisibleCapacityColumn.value) {
       loadCapacitySummary();
     }
   } catch (error: any) {
@@ -6247,7 +6251,7 @@ const handleCreateGroup = async () => {
       model_routing: convertRoutingRulesToApiFormat(
         createModelRoutingRules.value,
       ),
-      models_list_config: buildModelsListConfig(createModelsListState),
+      model_allowlist: buildModelsListConfig(createModelsListState),
       supported_model_scopes: normalizeSupportedModelScopesForPlatform(
         createForm.platform,
         createForm.supported_model_scopes,
@@ -6431,7 +6435,7 @@ const handleEdit = async (group: AdminGroup) => {
     group.reasoning_effort_mappings,
     group.platform,
   );
-  resetModelsListState(editModelsListState, group.models_list_config);
+  resetModelsListState(editModelsListState, group.model_allowlist);
   // 加载模型路由规则（异步加载账号名称）
   editModelRoutingRules.value = await convertApiFormatToRoutingRules(
     group.model_routing,
@@ -6524,7 +6528,7 @@ const handleUpdateGroup = async () => {
       model_routing: convertRoutingRulesToApiFormat(
         editModelRoutingRules.value,
       ),
-      models_list_config: buildModelsListConfig(editModelsListState),
+      model_allowlist: buildModelsListConfig(editModelsListState),
       supported_model_scopes: normalizeSupportedModelScopesForPlatform(
         editForm.platform,
         editForm.supported_model_scopes,
@@ -6990,7 +6994,7 @@ watch(
       resetModelsListState(
         editModelsListState,
         editForm.platform === editingGroup.value.platform
-          ? editingGroup.value.models_list_config
+          ? editingGroup.value.model_allowlist
           : undefined,
       );
       loadModelsListCandidates("edit", editingGroup.value.id, newVal);

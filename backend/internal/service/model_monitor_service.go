@@ -83,7 +83,7 @@ func (s *ModelMonitorService) DiscoverCatalog(ctx context.Context) ([]ModelCatal
 }
 
 // ModelCatalogModels returns the concrete models explicitly allowed by
-// schedulable accounts in a group. A configured group model list is an
+// schedulable accounts in a group. A configured group allowlist is an
 // additional upper bound, not an independent source of model availability.
 func ModelCatalogModels(group Group, accounts []Account) []string {
 	explicitMappings := make([]map[string]string, 0, len(accounts))
@@ -95,8 +95,8 @@ func ModelCatalogModels(group Group, accounts []Account) []string {
 	}
 
 	models := make([]string, 0)
-	if group.ModelsListConfig.Enabled && len(group.ModelsListConfig.Models) > 0 {
-		for _, model := range group.ModelsListConfig.Models {
+	if group.ModelAllowlist.Enabled && len(group.ModelAllowlist.Models) > 0 {
+		for _, model := range group.ModelAllowlist.Models {
 			for _, mapping := range explicitMappings {
 				if mappingSupportsRequestedModel(mapping, strings.TrimSpace(model)) {
 					models = append(models, model)
@@ -513,7 +513,7 @@ func (s *ModelMonitorService) probeCost(ctx context.Context, model string, group
 		return nil
 	}
 	tokens := UsageTokens{InputTokens: result.InputTokens, OutputTokens: result.OutputTokens}
-	if cost := resolveAccountStatsCost(ctx, s.channels, s.billing, account.ID, groupID, model, tokens, 1, 0, ""); cost != nil {
+	if cost := resolveAccountStatsCost(ctx, s.channels, s.billing, account.ID, groupID, model, tokens, 1, 0, "", time.Now()); cost != nil {
 		return applyProbeCostMultiplier(cost, account)
 	}
 	if s.billing == nil {

@@ -62,6 +62,8 @@ export default {
       updateError: 'Failed to update channel',
       deleteError: 'Failed to delete channel',
       nameRequired: 'Please enter a channel name',
+      noGroupsSelected: 'Select at least one group for {platform}',
+      emptyModelsInPricing: 'Add at least one model to the {platform} pricing rule',
       duplicateModels: 'Model "{0}" appears in multiple pricing entries',
       modelConflict: "Model patterns '{model1}' and '{model2}' conflict: overlapping match range. Model names are matched case-insensitively, so an existing entry already covers all case variants — no need to add the variant separately.",
       mappingConflict: "Mapping source patterns '{model1}' and '{model2}' conflict: overlapping match range. Source patterns are matched case-insensitively, so an existing entry already covers all case variants.",
@@ -105,6 +107,7 @@ export default {
         video: 'Video (Per Second)'
       },
       form: {
+        interval: 'Interval',
         name: 'Name',
         namePlaceholder: 'Enter channel name',
         description: 'Description',
@@ -217,6 +220,8 @@ export default {
      },
 
     riskControl: {
+      group: 'Group',
+      groups: 'Groups',
       title: 'Risk Control',
       description: 'Configure content moderation and review audit records',
       loadFailed: 'Failed to load risk control',
@@ -244,8 +249,6 @@ export default {
       modeOffDesc: 'Content moderation is disabled and no audit records are written.',
       baseUrl: 'OpenAI Base URL',
       model: 'Model',
-      groups: 'Monitor groups',
-      group: 'Group',
       apiKey: 'OpenAI API Key',
       apiKeys: 'OpenAI API Keys',
       apiKeyCount: '{count} keys',
@@ -595,6 +598,7 @@ export default {
         actions: 'Actions'
       },
       form: {
+        interval: 'Interval',
         name: 'Name',
         namePlaceholder: 'Enter monitor name',
         provider: 'Platform',

@@ -2,6 +2,51 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.2.4 同步准备（集成分支）
+
+- 集成分支：`codex/merge-upstream-v0.2.4`
+- USA0 合并基线：`codex/merge-upstream-v0.2.3` / `2660e0d5a`
+- 官方 annotated tag 对象：`d681d0798064ee0ffff376d19687d12f09fe600f`
+- 官方目标提交：`5de5e2bed035d43591a2e10e51f420ef6a84eb98`
+- 上一官方基线：v0.2.3（`8fa67d477d6651a744754392a8982ea589c26ae6`）
+- 同步范围：70 个上游提交、266 个变更文件；初始 35 个文本冲突
+- 主要新增：MiniMax 平台及额度监控、HTTP/2 长流 PING 保活、OpenAI Image 2.5、Grok 媒体资格、OpenAI 周消耗估算、Channel Monitor V2 用户排行开关、支付帮助 Markdown、自定义页面按钮拖拽。
+- 主要修复：OAuth 生图主控模型、Grok external_web_access、429 额度退避、代理部分更新/备份/过期回退、模型广场订阅分组、注册可见性、停用分组解绑及日志存储上限。
+- 兼容处理：保留 USA0 模型广场、Model Monitor、ZeroAgent、支付分销和经营分析；MiniMax 迁移因 `237` 已被 USA0 占用顺延为 `261_add_minimax_platform.sql`。
+- 状态：已完成冲突解决和后端全量测试、前端类型检查；尚未提交、推送、合回主分支或发布。
+
+### v0.2.4 当前验证
+
+- 后端 `mise exec -- go test ./...` 通过，含公开设置注入契约和 MiniMax 迁移测试。
+- 前端 `pnpm run typecheck` 通过；i18n、MiniMax 平台标签、凭据构建和语义色板检查已适配。
+- 全量 Vitest 仍有上游新增账户菜单/支付帮助测试与 USA0 页面契约差异，及 2 项颜色断言与 USA0 semantic token 规则冲突；这些不影响生产编译，但在合回主分支前需决定继续适配测试还是保留 USA0 语义令牌优先。
+
+## 官方 v0.2.3 同步准备（集成分支）
+
+- 集成分支：`codex/merge-upstream-v0.2.3`
+- USA0 合并基线：`usa0/main` / `dc5b1176b1c49fed97851d4ed1fd4cbdc9ff810d`
+- 官方目标版本：v0.2.3
+- 官方 annotated tag 对象：`fe2b5c04b1c9503fba7e01a099b206f14867cfc1`
+- 官方目标提交：`8fa67d477d6651a744754392a8982ea589c26ae6`
+- 上一官方基线：v0.2.1（`578785ee7fb35030b094b69624efe25670a36f5f`）
+- 同步范围：111 个上游提交、279 个变更文件；初始 18 个文本冲突
+- 状态：已完成无提交合并、冲突适配、后端全量测试、前端全量 Vitest、typecheck 和生产构建；尚未提交、推送、合回主分支或发布
+
+### v0.2.3 重点更新与兼容决策
+
+- 上游新增 `groups.model_allowlist` 收敛迁移，修复回滚后升级不自愈；USA0 保留模型广场和 Model Monitor，分组管理保留现有响应式布局并改用白名单字段及候选接口。
+- Ollama Cloud DeepSeek 在 Messages、Responses 和尾斜杠 Base URL 场景统一压制输出上限；Anthropic 兼容入口自动采用 Bearer 鉴权；OpenAI OAuth/API Key 连接测试恢复实时模型名称。
+- 同步 Codex/Astra、Claude Fable、Fast/推理映射、计费、备份锁、简单模式和错误可观测性修复；保留 ZeroAgent 授权、支付分销、经营分析、模型市场和双监控架构。
+- USA0 与上游迁移编号 `235/236` 冲突，上游模型白名单迁移顺延为 `259_group_model_allowlist.sql`、`260_group_model_allowlist_repair.sql`，已同步测试引用；已发布 `176–258` 不改名。
+- 版本字段继续保持 USA0 `1.0.20`，不在同步分支提前推断新的 USA0 发布号。
+
+### v0.2.3 验证结果
+
+- `mise exec -- go test ./...` 通过。
+- 前端 `pnpm run test:run`：370 个测试文件通过，2367 项测试通过；1 项上游独立 Codex manifest 集成测试跳过，因为 USA0 分组编辑器已由模型白名单实现替代该入口。
+- 前端 i18n 完整性、`vue-tsc -b`、Vite 生产构建和 `git diff --check` 通过；构建仅保留既有 chunk 大小及 Browserslist 提示。
+- 迁移 `259`、`260` 已加入，已发布 `176–258` 未改名；源码中无未解决 Git 冲突标记。
+
 ## USA0 v1.0.20
 
 - 发布版本：v1.0.20

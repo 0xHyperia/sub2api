@@ -497,6 +497,7 @@ export default {
       leaveEmptyToKeep: 'Leave empty to keep current password',
       generatePassword: 'Generate random password',
       copyPassword: 'Copy password',
+      passwordCopied: 'Password copied',
       creating: 'Creating...',
       updating: 'Updating...',
       form: {
@@ -835,7 +836,7 @@ export default {
       accountsAvailable: 'Avail:',
       accountsRateLimited: 'Limited:',
       accountsTotal: 'Total:',
-      accountsUnit: '',
+      accountsUnit: 'accounts',
       rateAndAccounts: '{rate}x rate · {count} accounts',
       accountsCount: '{count} accounts',
       rateLabel: 'rate',
@@ -871,6 +872,12 @@ export default {
         removeReasoningEffortMapping: 'Remove mapping',
         reasoningEffortFrom: 'Request value',
         reasoningEffortTo: 'Forwarded value',
+        reasoningEffortToDeny: 'Deny',
+        addReasoningEffortPair: 'Add request value',
+        reasoningEffortMatchType: 'Match type',
+        reasoningEffortMatchTypePlaceholder: 'Select match type',
+        reasoningEffortModel: 'Model scope',
+        reasoningEffortModelPlaceholder: 'Empty = all / gpt / gpt-5.4',
         reasoningEffortFromPlaceholder: 'Select A',
         reasoningEffortToPlaceholder: 'Select B',
         fromRequired: 'Select request value A',
@@ -962,6 +969,7 @@ export default {
         kimi: 'Kimi',
         zhipu: 'Zhipu GLM',
         deepseek: 'DeepSeek',
+        minimax: 'MiniMax',
         composite: 'Composite',
       },
       deleteConfirm:
@@ -1067,6 +1075,20 @@ export default {
         selectedSummary: 'Selected {selected} / {total}',
         selectAll: 'Select all',
         invertSelection: 'Invert'
+      },
+      modelAllowlist: {
+        title: 'Model Allowlist',
+        hint: 'When enabled, models outside the allowlist are rejected and model listing endpoints only show allowlisted models.',
+        loading: 'Loading candidate models...',
+        empty: 'No candidate models; add custom entries below',
+        selectedSummary: 'Selected {selected} / {total}',
+        selectAll: 'Select all',
+        invertSelection: 'Invert',
+        wildcardTag: 'wildcard',
+        customPlaceholder: 'Custom entry, e.g. claude-* or gpt-5.5-codex',
+        addCustom: 'Add',
+        emptySelectionError: 'The model allowlist is enabled; select or add at least one model entry',
+        errors: { empty: 'Please enter a model entry', invalidWildcard: 'Wildcard * is only allowed at the end of an entry', duplicate: 'This entry already exists' }
       },
       compositeRoutes: {
         action: 'Routes',
@@ -1195,6 +1217,19 @@ export default {
         tooltip: 'When enabled, if the request contains MCP tools, an XML format call protocol prompt will be injected into the system prompt. Disable this to avoid interference with certain clients.',
         enabled: 'Enabled',
         disabled: 'Disabled'
+      },
+      codexModelsManifest: {
+        title: 'Pinned Accounts for Model Lists',
+        hint: 'When enabled, ordinary model lists and Codex manifests are discovered from pinned accounts first.',
+        enable: 'Fetch model lists with specific accounts',
+        enabledHint: 'Accounts are limited to OpenAI accounts bound to this group, at most 10.',
+        disabledHint: 'Disabled: model lists use local mappings or scheduler discovery.',
+        accounts: 'Pinned accounts',
+        searchPlaceholder: 'Search accounts (OpenAI accounts in this group)',
+        searchEmpty: 'No matching accounts',
+        fallback: 'Fallback to scheduler',
+        fallbackHint: 'Use normal scheduler discovery when pinned accounts cannot provide the manifest.',
+        selectAtLeastOne: 'Select at least one account'
       },
       claudeMaxSimulation: {
         title: 'Claude Max Usage Simulation',

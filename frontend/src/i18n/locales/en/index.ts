@@ -12,6 +12,9 @@ export default {
   ...dashboard,
   ...channelMonitorV2,
   ...batchImage,
-  admin,
   ...misc,
+  // `misc` contains a small legacy admin namespace for the onboarding tour
+  // and business cards. Merge it instead of letting it replace the complete
+  // admin locale imported from ./admin.
+  admin: { ...((misc as any).admin ?? {}), ...admin },
 }
