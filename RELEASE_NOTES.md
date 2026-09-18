@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## v1.0.23 - 2026-09-19
+
 ### 新增功能
 
 - 同步 Sub2API v0.2.5，新增 OpenCode 平台：支持 Zen 按量与 GO 订阅账号、按模型选择 Chat Completions / Responses / Anthropic 协议、模型同步及额度监控。
