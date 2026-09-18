@@ -151,6 +151,10 @@ describe('model marketplace data', () => {
 
   it('formats prices after applying the selected group rate', () => {
     expect(scaledPrice(0.000002, 1_000_000, 1.1)).toBe('$2.20')
+    expect(scaledPrice(0.00000002, 1_000_000, 0.1)).toBe('$0.002')
+    expect(scaledPrice(0, 1_000_000, 0.1)).toBe('$0.00')
+    expect(scaledRechargePrice(0.00000002, 1_000_000, 0.1, 1)).toBe('¥0.002')
+    expect(scaledCurrencyPrice(0.00000002, 1_000_000, 7.2)).toBe('¥0.144')
     expect(scaledPrice(null, 1_000_000, 1)).toBe('-')
   })
 

@@ -321,7 +321,7 @@
                   <span class="max-w-20 truncate text-[9px] font-medium uppercase" :title="providerLabel(marketplaceVendor(entry))">
                     {{ providerLabel(marketplaceVendor(entry)) }}
                   </span>
-                  <span class="shrink-0 text-[9px]">{{ billingModeLabel(entry.pricing?.billing_mode) }}</span>
+                  <span class="shrink-0 text-[9px]">{{ billingModeLabel(pricingForGroup(entry, activeEntryGroup(entry))?.billing_mode) }}</span>
                   <span class="h-3 w-px shrink-0 bg-outline" aria-hidden="true"></span>
                   <span class="flex min-w-0 items-center gap-1.5" :aria-label="t('modelMarketplace.capabilities.label')">
                   <span
@@ -382,7 +382,7 @@
                 </div>
               </div>
 
-              <div v-if="entry.pricing" class="mt-1 flex min-h-6 items-center">
+              <div v-if="pricingForGroup(entry, activeEntryGroup(entry))" class="mt-1 flex min-h-6 items-center">
                 <template v-if="cardBillingCategory(entry) === 'usage'">
                   <dl class="flex min-w-0 items-baseline divide-x divide-outline overflow-hidden">
                     <div v-for="row in cardPrimaryPriceRows(entry)" :key="row.key" class="flex min-w-0 items-baseline gap-1.5 px-2 first:pl-0 last:pr-0">
@@ -395,7 +395,7 @@
                     <span class="shrink-0 pl-2 text-[9px] text-foreground-subtle">/ 1M</span>
                   </dl>
                 </template>
-                <template v-else-if="entry.pricing.billing_mode === 'image'">
+                <template v-else-if="pricingForGroup(entry, activeEntryGroup(entry))?.billing_mode === 'image'">
                   <dl class="flex min-w-0 items-baseline divide-x divide-outline overflow-hidden">
                     <div v-for="row in cardImagePriceRows(entry)" :key="row.key" class="flex min-w-0 items-baseline gap-1.5 px-2 first:pl-0 last:pr-0">
                       <dt class="shrink-0 text-[9px] font-medium text-foreground-subtle">{{ row.tier }}</dt>
@@ -498,8 +498,6 @@
     <ModelMarketplaceDetailDrawer
       :entry="detailEntry"
       :groups="detailEntry ? sortedEntryGroups(detailEntry, userGroupRates) : []"
-      :active-group="detailEntry ? activeEntryGroup(detailEntry) : null"
-      :show-effective-prices="showEffectivePrices"
       :show-recharge-prices="showRechargePrices"
       :balance-recharge-multiplier="balanceRechargeMultiplier"
       :official-usd-to-cny-rate="officialUsdToCnyRate"
@@ -507,7 +505,6 @@
       :performance-loading="resolutionLoading"
       :show-detailed-performance="appStore.cachedPublicSettings?.model_marketplace_performance_visible !== false"
       @close="detailEntry = null"
-      @select-group="detailEntry && selectEntryGroup(detailEntry, $event)"
       @update:monitor-resolution="setMonitorResolution"
     />
   </AppLayout>
@@ -542,6 +539,7 @@ import {
   DEFAULT_USD_TO_CNY_RATE,
   effectiveRateForEntry,
   imagePriceRows,
+  pricingForGroup,
   inferMarketplaceModelCapabilities,
   MARKETPLACE_CARD_CAPABILITY_ORDER,
   MARKETPLACE_MODEL_CAPABILITIES,
@@ -633,7 +631,7 @@ const providers = computed(() => {
 const billingOptions = computed(() => {
   const counts = new Map<string, number>()
   for (const entry of entries.value) {
-    const mode = billingCategory(entry.pricing)
+    const mode = billingCategory(pricingForGroup(entry, activeEntryGroup(entry)))
     counts.set(mode, (counts.get(mode) ?? 0) + 1)
   }
   return [
@@ -686,7 +684,7 @@ const mobileFilterResultCount = computed(() => {
   return entries.value.filter((entry) => {
     if (draftProvider.value !== 'all' && marketplaceVendor(entry) !== draftProvider.value) return false
     if (groupId != null && !entry.groups.some(group => group.id === groupId)) return false
-    if (draftBilling.value !== 'all' && billingCategory(entry.pricing) !== draftBilling.value) return false
+    if (draftBilling.value !== 'all' && billingCategory(pricingForGroup(entry, activeEntryGroup(entry))) !== draftBilling.value) return false
     if (draftCapability.value !== 'all' && !inferMarketplaceModelCapabilities(entry).includes(draftCapability.value as MarketplaceModelCapability)) return false
     if (!query) return true
     return entry.name.toLowerCase().includes(query)
@@ -699,7 +697,7 @@ const filteredEntries = computed(() => {
   const result = entries.value.filter((entry) => {
     if (selectedProvider.value !== 'all' && marketplaceVendor(entry) !== selectedProvider.value) return false
     if (selectedGroupId.value != null && !entry.groups.some((group) => group.id === selectedGroupId.value)) return false
-    const mode = billingCategory(entry.pricing)
+    const mode = billingCategory(pricingForGroup(entry, activeEntryGroup(entry)))
     if (selectedBilling.value !== 'all' && mode !== selectedBilling.value) return false
     if (selectedCapability.value !== 'all' && !inferMarketplaceModelCapabilities(entry).includes(selectedCapability.value as MarketplaceModelCapability)) return false
     if (!query) return true
@@ -792,7 +790,7 @@ function formatOfficialPrice(value: number | null, scale: number): string {
 }
 
 function cardBillingCategory(entry: MarketplaceModelEntry) {
-  return billingCategory(entry.pricing)
+  return billingCategory(pricingForGroup(entry, activeEntryGroup(entry)))
 }
 
 function cardCapabilityBadges(entry: MarketplaceModelEntry) {
@@ -843,7 +841,7 @@ function cardPrice(value: number | null, scale: number, entry: MarketplaceModelE
 }
 
 function cardPrimaryPriceRows(entry: MarketplaceModelEntry) {
-  const pricing = entry.pricing
+  const pricing = pricingForGroup(entry, activeEntryGroup(entry))
   if (!pricing) return []
   return [
     { key: 'input', label: t('modelMarketplace.price.input'), ...cardPrice(pricing.input_price, 1_000_000, entry) },
@@ -853,7 +851,7 @@ function cardPrimaryPriceRows(entry: MarketplaceModelEntry) {
 
 function cardImagePriceRows(entry: MarketplaceModelEntry) {
   const group = activeEntryGroup(entry)
-  return imagePriceRows(entry.pricing, group).map((row) => {
+  return imagePriceRows(pricingForGroup(entry, group), group).map((row) => {
     const value = showEffectivePrices.value
       ? formatEffectivePrice(row.effectiveValue, 1, 1)
       : formatOfficialPrice(row.rawValue, 1)
@@ -867,15 +865,17 @@ function cardImagePriceRows(entry: MarketplaceModelEntry) {
 }
 
 function entrySortPrice(entry: MarketplaceModelEntry): number {
-  if (entry.pricing?.billing_mode === 'image') {
-    return imagePriceRows(entry.pricing, activeEntryGroup(entry))[0]?.effectiveValue ?? Number.POSITIVE_INFINITY
+  const group = activeEntryGroup(entry)
+  const pricing = pricingForGroup(entry, group)
+  if (pricing?.billing_mode === 'image') {
+    return imagePriceRows(pricing, group)[0]?.effectiveValue ?? Number.POSITIVE_INFINITY
   }
-  const price = primaryPrice(entry.pricing)
+  const price = primaryPrice(pricing)
   return price == null ? Number.POSITIVE_INFINITY : price * effectiveRate(entry)
 }
 
 function cardRequestPrice(entry: MarketplaceModelEntry) {
-  const pricing = entry.pricing
+  const pricing = pricingForGroup(entry, activeEntryGroup(entry))
   return cardPrice(pricing?.per_request_price ?? pricing?.image_output_price ?? null, 1, entry)
 }
 

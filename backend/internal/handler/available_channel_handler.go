@@ -29,6 +29,8 @@ type AvailableChannelHandler struct {
 	groupRepo           service.GroupRepository
 	accountRepo         service.AccountRepository
 	pricingService      *service.PricingService
+	billingService      *service.BillingService
+	pricingResolver     *service.ModelPricingResolver
 	modelMonitorService *service.ModelMonitorService
 }
 
@@ -40,6 +42,8 @@ func NewAvailableChannelHandler(
 	groupRepo service.GroupRepository,
 	accountRepo service.AccountRepository,
 	pricingService *service.PricingService,
+	billingService *service.BillingService,
+	pricingResolver *service.ModelPricingResolver,
 	modelMonitorService *service.ModelMonitorService,
 ) *AvailableChannelHandler {
 	return &AvailableChannelHandler{
@@ -49,6 +53,8 @@ func NewAvailableChannelHandler(
 		groupRepo:           groupRepo,
 		accountRepo:         accountRepo,
 		pricingService:      pricingService,
+		billingService:      billingService,
+		pricingResolver:     pricingResolver,
 		modelMonitorService: modelMonitorService,
 	}
 }
@@ -93,26 +99,28 @@ type userAvailableGroup struct {
 // image-generation billing controls used only by /models/marketplace.
 type userMarketplaceGroup struct {
 	userAvailableGroup
-	ImageRateIndependent bool     `json:"image_rate_independent"`
-	ImageRateMultiplier  float64  `json:"image_rate_multiplier"`
-	ImagePrice1K         *float64 `json:"image_price_1k"`
-	ImagePrice2K         *float64 `json:"image_price_2k"`
-	ImagePrice4K         *float64 `json:"image_price_4k"`
+	ImageRateIndependent bool                       `json:"image_rate_independent"`
+	ImageRateMultiplier  float64                    `json:"image_rate_multiplier"`
+	ImagePrice1K         *float64                   `json:"image_price_1k"`
+	ImagePrice2K         *float64                   `json:"image_price_2k"`
+	ImagePrice4K         *float64                   `json:"image_price_4k"`
+	Pricing              *userSupportedModelPricing `json:"pricing"`
 }
 
 // userSupportedModelPricing 用户可见的定价字段白名单。
 type userSupportedModelPricing struct {
-	BillingMode                  string                   `json:"billing_mode"`
-	InputPrice                   *float64                 `json:"input_price"`
-	OutputPrice                  *float64                 `json:"output_price"`
-	CacheWritePrice              *float64                 `json:"cache_write_price"`
-	CacheWrite1hPrice            *float64                 `json:"cache_write_1h_price"`
-	CacheReadPrice               *float64                 `json:"cache_read_price"`
-	MaxReasoningEffortMultiplier *float64                 `json:"max_reasoning_effort_multiplier,omitempty"`
-	ImageInputPrice              *float64                 `json:"image_input_price"`
-	ImageOutputPrice             *float64                 `json:"image_output_price"`
-	PerRequestPrice              *float64                 `json:"per_request_price"`
-	Intervals                    []userPricingIntervalDTO `json:"intervals"`
+	BillingMode                  string                      `json:"billing_mode"`
+	InputPrice                   *float64                    `json:"input_price"`
+	OutputPrice                  *float64                    `json:"output_price"`
+	CacheWritePrice              *float64                    `json:"cache_write_price"`
+	CacheWrite1hPrice            *float64                    `json:"cache_write_1h_price"`
+	CacheReadPrice               *float64                    `json:"cache_read_price"`
+	MaxReasoningEffortMultiplier *float64                    `json:"max_reasoning_effort_multiplier,omitempty"`
+	ImageInputPrice              *float64                    `json:"image_input_price"`
+	ImageOutputPrice             *float64                    `json:"image_output_price"`
+	PerRequestPrice              *float64                    `json:"per_request_price"`
+	Intervals                    []userPricingIntervalDTO    `json:"intervals"`
+	TimePricing                  *service.ChannelTimePricing `json:"time_pricing,omitempty"`
 }
 
 // userPricingIntervalDTO 定价区间白名单（去掉内部 ID、SortOrder 等前端不渲染的字段）。
@@ -237,20 +245,21 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 			continue
 		}
 
-		models := marketplaceModelIDs(group, accounts)
+		models := marketplaceModelIDsForGroup(ctx, h.channelService, group, accounts)
 		if len(models) == 0 {
 			continue
 		}
 		if byPlatform[platform] == nil {
 			byPlatform[platform] = make(map[string]*modelAggregate)
 		}
-		groupView := toUserMarketplaceGroup(group)
 		for _, model := range models {
 			aggregate := byPlatform[platform][model]
 			if aggregate == nil {
 				aggregate = &modelAggregate{groups: make(map[int64]userMarketplaceGroup)}
 				byPlatform[platform][model] = aggregate
 			}
+			groupView := toUserMarketplaceGroup(group)
+			groupView.Pricing = h.marketplacePricing(ctx, model, platform, group)
 			aggregate.groups[group.ID] = groupView
 		}
 	}
@@ -276,10 +285,17 @@ func (h *AvailableChannelHandler) marketplaceForUser(ctx context.Context, userID
 		for _, name := range modelNames {
 			aggregate := byPlatform[platform][name]
 			modelGroups := sortedMarketplaceGroups(aggregate.groups)
+			var pricing *userSupportedModelPricing
+			for _, group := range modelGroups {
+				if group.Pricing != nil {
+					pricing = group.Pricing
+					break
+				}
+			}
 			models = append(models, userMarketplaceModel{
 				Name:         name,
 				Platform:     platform,
-				Pricing:      toUserPricing(h.pricingService.GetDisplayModelPricing(name)),
+				Pricing:      pricing,
 				Capabilities: h.pricingService.GetModelCapabilities(name),
 				Groups:       modelGroups,
 			})
@@ -330,6 +346,7 @@ func (h *AvailableChannelHandler) showcaseForPublic(ctx context.Context) ([]publ
 	type modelAggregate struct {
 		rate    float64
 		hasRate bool
+		pricing *userSupportedModelPricing
 	}
 	byPlatform := make(map[string]map[string]*modelAggregate)
 	for i := range groups {
@@ -348,7 +365,7 @@ func (h *AvailableChannelHandler) showcaseForPublic(ctx context.Context) ([]publ
 		if byPlatform[platform] == nil {
 			byPlatform[platform] = make(map[string]*modelAggregate)
 		}
-		for _, model := range marketplaceModelIDs(group, accounts) {
+		for _, model := range marketplaceModelIDsForGroup(ctx, h.channelService, group, accounts) {
 			aggregate := byPlatform[platform][model]
 			if aggregate == nil {
 				aggregate = &modelAggregate{}
@@ -357,6 +374,7 @@ func (h *AvailableChannelHandler) showcaseForPublic(ctx context.Context) ([]publ
 			if !aggregate.hasRate || group.RateMultiplier < aggregate.rate {
 				aggregate.rate = group.RateMultiplier
 				aggregate.hasRate = true
+				aggregate.pricing = h.marketplacePricing(ctx, model, platform, group)
 			}
 		}
 	}
@@ -369,7 +387,7 @@ func (h *AvailableChannelHandler) showcaseForPublic(ctx context.Context) ([]publ
 			models = append(models, publicModelShowcaseModel{
 				Name:           name,
 				Platform:       platform,
-				Pricing:        toUserPricing(h.pricingService.GetDisplayModelPricing(name)),
+				Pricing:        aggregate.pricing,
 				RateMultiplier: aggregate.rate,
 			})
 			keys = append(keys, service.ModelCatalogEntry{Platform: platform, Model: name})
@@ -447,15 +465,19 @@ func marketplaceModelIDs(group service.Group, accounts []service.Account) []stri
 	return service.ModelCatalogModels(group, accounts)
 }
 
+func marketplaceModelIDsForGroup(ctx context.Context, channels *service.ChannelService, group service.Group, accounts []service.Account) []string {
+	return service.ChannelCatalogModels(ctx, channels, group, accounts)
+}
+
 func marketplaceGroupAccounts(ctx context.Context, repo service.AccountRepository, groupID int64, platform string) ([]service.Account, error) {
 	if platform == service.PlatformComposite {
-		return repo.ListSchedulableByGroupIDAndPlatforms(ctx, groupID, []string{
+		return repo.ListModelAvailabilityCandidates(ctx, &groupID, []string{
 			service.PlatformAnthropic,
 			service.PlatformOpenAI,
 			service.PlatformGemini,
 			service.PlatformAntigravity,
 			service.PlatformGrok,
-		})
+		}, false)
 	}
 	return repo.ListSchedulableByGroupIDAndPlatform(ctx, groupID, platform)
 }
@@ -485,6 +507,13 @@ func toUserMarketplaceGroup(group service.Group) userMarketplaceGroup {
 		ImagePrice2K:         group.ImagePrice2K,
 		ImagePrice4K:         group.ImagePrice4K,
 	}
+}
+
+func (h *AvailableChannelHandler) marketplacePricing(ctx context.Context, model, platform string, group service.Group) *userSupportedModelPricing {
+	if h.billingService == nil || h.pricingResolver == nil {
+		return toUserPricing(h.pricingService.GetDisplayModelPricing(model))
+	}
+	return toUserPricing(h.pricingResolver.MarketplacePricing(ctx, model, platform, &group))
 }
 
 func sortedMarketplaceGroups(groups map[int64]userMarketplaceGroup) []userMarketplaceGroup {
@@ -754,5 +783,6 @@ func toUserPricing(p *service.ChannelModelPricing) *userSupportedModelPricing {
 		ImageOutputPrice:             p.ImageOutputPrice,
 		PerRequestPrice:              p.PerRequestPrice,
 		Intervals:                    intervals,
+		TimePricing:                  p.TimePricing,
 	}
 }

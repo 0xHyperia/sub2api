@@ -20,6 +20,73 @@ func ordinaryModelsUpstreamResponse(body string) *http.Response {
 	return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}
 }
 
+func TestPinnedOpenAIModelsListIncludesChannelAliasesBeforeAllowlistAndETag(t *testing.T) {
+	ctx := context.Background()
+	var calls atomic.Int32
+	s := newCodexModelsAPIKeyTestService(&codexModelsHTTPUpstreamStub{do: func(_ *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
+		calls.Add(1)
+		return ordinaryModelsUpstreamResponse(`{"data":[{"id":"provider-terra","owned_by":"provider","created":1234,"custom":true}]}`), nil
+	}})
+	account := newCodexModelsAPIKeyTestAccount("https://models.example/v1")
+	account.Status, account.Schedulable = StatusActive, true
+	account.Credentials["model_mapping"] = map[string]any{"gpt-5.6-terra": "provider-terra"}
+	s.accountRepo = splitCodexModelsAccountRepo{all: map[int64][]Account{10: {*account}, 20: {*account}}}
+	s.channelService = &ChannelService{}
+	setMapping := func(target string) {
+		s.channelService.cache.Store(populateChannelCache([]Channel{{
+			ID: 1, Status: StatusActive, GroupIDs: []int64{10},
+			ModelMapping: map[string]map[string]string{PlatformOpenAI: {"gpt-5.6-luna": target}},
+		}}, map[int64]string{10: PlatformOpenAI}))
+	}
+	setMapping("gpt-5.6-terra")
+	group := &Group{ID: 10, Platform: PlatformOpenAI,
+		CodexModelsManifestConfig: GroupCodexModelsManifestConfig{Enabled: true, AccountIDs: []int64{account.ID}}}
+	response, _, err := s.FetchPinnedOpenAIModelsList(ctx, group, 3, "")
+	require.NoError(t, err)
+	var catalog struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Owner   string `json:"owned_by"`
+			Created int    `json:"created"`
+			Custom  bool   `json:"custom"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(response.Body, &catalog))
+	require.Len(t, catalog.Data, 2)
+	require.Equal(t, "gpt-5.6-terra", catalog.Data[0].ID)
+	require.Equal(t, "gpt-5.6-luna", catalog.Data[1].ID)
+	require.Equal(t, "provider", catalog.Data[1].Owner)
+	require.Equal(t, 1234, catalog.Data[1].Created)
+	require.True(t, catalog.Data[1].Custom)
+	initialETag := response.ETag
+	unchanged, _, err := s.FetchPinnedOpenAIModelsList(ctx, group, 3, initialETag)
+	require.NoError(t, err)
+	require.True(t, unchanged.NotModified)
+
+	group.ModelAllowlist = GroupModelAllowlist{Enabled: true, Models: []string{"gpt-5.6-luna"}}
+	response, _, err = s.FetchPinnedOpenAIModelsList(ctx, group, 3, initialETag)
+	require.NoError(t, err)
+	require.False(t, response.NotModified)
+	require.NoError(t, json.Unmarshal(response.Body, &catalog))
+	require.Len(t, catalog.Data, 1)
+	require.Equal(t, "gpt-5.6-luna", catalog.Data[0].ID)
+	group.ModelAllowlist = GroupModelAllowlist{}
+
+	other := *group
+	other.ID = 20
+	response, _, err = s.FetchPinnedOpenAIModelsList(ctx, &other, 3, initialETag)
+	require.NoError(t, err)
+	require.NotContains(t, string(response.Body), "gpt-5.6-luna")
+	setMapping("unavailable-model")
+	response, _, err = s.FetchPinnedOpenAIModelsList(ctx, group, 3, initialETag)
+	require.NoError(t, err)
+	require.False(t, response.NotModified)
+	require.NotEqual(t, initialETag, response.ETag)
+	require.NotContains(t, string(response.Body), "gpt-5.6-luna")
+	require.Contains(t, string(response.Body), "gpt-5.6-terra")
+	require.EqualValues(t, 1, calls.Load(), "channel projection must not contaminate or invalidate the raw account cache")
+}
+
 func TestFetchOpenAIModelsListUsesStandardRequestAndIsolatesCodexCache(t *testing.T) {
 	var calls atomic.Int32
 	s := newCodexModelsAPIKeyTestService(&codexModelsHTTPUpstreamStub{do: func(req *http.Request, _ string, accountID int64, concurrency int) (*http.Response, error) {

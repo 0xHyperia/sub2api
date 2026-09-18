@@ -165,6 +165,32 @@ func TestModelMonitorCatalogModelsUsesExplicitAccountRestrictions(t *testing.T) 
 	require.Equal(t, []string{"gpt-5", "gpt-5-codex", "o3-mini"}, ModelCatalogModels(group, accounts))
 }
 
+func TestModelCatalogModelsKeepsExplicitAliasAndOriginal(t *testing.T) {
+	group := Group{Platform: PlatformOpenAI}
+	accounts := []Account{{Platform: PlatformOpenAI, Credentials: map[string]any{
+		"model_mapping": map[string]any{"gpt-5.6-luna": "gpt-5.6-terra", "gpt-5.6-terra": "gpt-5.6-terra"},
+	}}}
+	require.Equal(t, []string{"gpt-5.6-luna", "gpt-5.6-terra"}, ModelCatalogModels(group, accounts))
+}
+
+func TestChannelCatalogModelsKeepsAliasAndUpstreamWhenCatalogIsSynced(t *testing.T) {
+	group := Group{Platform: PlatformOpenAI}
+	account := Account{Platform: PlatformOpenAI, Extra: map[string]any{
+		AccountModelCatalogKey: []string{"gpt-5.6-terra"},
+	}, Credentials: map[string]any{
+		"model_mapping": map[string]any{"gpt-5.6-luna": "gpt-5.6-terra", "gpt-5.6-terra": "gpt-5.6-terra"},
+	}}
+	require.Equal(t, []string{"gpt-5.6-luna", "gpt-5.6-terra"}, ChannelCatalogModels(context.Background(), nil, group, []Account{account}))
+}
+
+func TestChannelCatalogModelsDoesNotExposeUnobservedMappingTarget(t *testing.T) {
+	group := Group{Platform: PlatformOpenAI}
+	account := Account{Platform: PlatformOpenAI, Extra: map[string]any{AccountModelCatalogKey: []string{"other-model"}}, Credentials: map[string]any{
+		"model_mapping": map[string]any{"public-model": "unavailable-upstream"},
+	}}
+	require.Empty(t, ChannelCatalogModels(context.Background(), nil, group, []Account{account}))
+}
+
 func TestAlignedModelMonitorSlotUsesNaturalBoundaries(t *testing.T) {
 	now := time.Date(2026, 8, 6, 12, 37, 42, 0, time.FixedZone("CST", 8*60*60))
 	require.Equal(t, time.Date(2026, 8, 6, 4, 0, 0, 0, time.UTC), alignedModelMonitorSlot(now, 3600))

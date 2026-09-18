@@ -187,14 +187,15 @@ export async function getModelDefaultPricing(model: string): Promise<ModelDefaul
 
 export interface SyncPricingModelsResult {
   models: string[]
+  warnings?: string[]
 }
 
 /**
  * Fetch the latest model names from the LiteLLM pricing catalog for the given platform
  */
-export async function syncPricingModels(platform: string): Promise<SyncPricingModelsResult> {
+export async function syncPricingModels(platform: string, groupIds: number[] = []): Promise<SyncPricingModelsResult> {
   const { data } = await apiClient.get<SyncPricingModelsResult>('/admin/channels/pricing/sync-models', {
-    params: { platform }
+    params: { platform, ...(groupIds.length ? { group_ids: groupIds.join(',') } : {}) }
   })
   return data
 }

@@ -1008,7 +1008,11 @@ async function syncLatestModels(sectionIdx: number) {
   if (syncingPlatform.value) return
   syncingPlatform.value = platform
   try {
-    const result = await adminAPI.channels.syncPricingModels(platform)
+    const groupIds = form.platforms[sectionIdx].group_ids
+    const result = await adminAPI.channels.syncPricingModels(platform, groupIds)
+    for (const warning of result.warnings || []) {
+      appStore.showWarning(warning)
+    }
     // Collect all model names already present in this platform's pricing entries
     const existingModels = new Set<string>()
     for (const entry of form.platforms[sectionIdx].model_pricing) {

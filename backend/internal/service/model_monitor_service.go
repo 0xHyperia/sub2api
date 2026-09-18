@@ -49,7 +49,8 @@ func (s *ModelMonitorService) DiscoverCatalog(ctx context.Context) ([]ModelCatal
 		if len(accounts) == 0 {
 			continue
 		}
-		for _, model := range ModelCatalogModels(group, accounts) {
+		models := ChannelCatalogModels(ctx, s.channels, group, accounts)
+		for _, model := range models {
 			key := ModelMonitorKey(platform, model)
 			entry := seen[key]
 			entry.Platform = platform
@@ -88,7 +89,7 @@ func (s *ModelMonitorService) DiscoverCatalog(ctx context.Context) ([]ModelCatal
 func ModelCatalogModels(group Group, accounts []Account) []string {
 	explicitMappings := make([]map[string]string, 0, len(accounts))
 	for i := range accounts {
-		mapping := stringMappingFromRaw(accounts[i].Credentials["model_mapping"])
+		mapping := catalogAccountMapping(&accounts[i])
 		if len(mapping) > 0 {
 			explicitMappings = append(explicitMappings, mapping)
 		}
@@ -115,7 +116,7 @@ func ModelCatalogModels(group Group, accounts []Account) []string {
 	out := make([]string, 0, len(models))
 	for _, model := range models {
 		model = strings.TrimSpace(model)
-		if model == "" || strings.Contains(model, "*") {
+		if model == "" || strings.Contains(model, "*") || !group.ModelAllowlist.Allows(model) {
 			continue
 		}
 		if _, ok := seen[model]; ok {
@@ -425,16 +426,21 @@ func (s *ModelMonitorService) RunGroup(ctx context.Context, monitor *ModelMonito
 	confirmedUpstreamFailure := false
 	costs := probeCostAccumulator{known: true}
 	for attempts < modelMonitorMaxAttempts {
-		account, selectErr := s.selectAccount(ctx, monitor.Platform, monitor.Model, group.GroupID, excluded)
+		upstreamModel := s.resolveMonitorModel(ctx, group.GroupID, monitor.Model)
+		selectionModel := monitor.Model
+		if upstreamModel != "" {
+			selectionModel = upstreamModel
+		}
+		account, selectErr := s.selectAccount(ctx, monitor.Platform, selectionModel, group.GroupID, excluded)
 		if selectErr != nil {
 			lastMessage = selectErr.Error()
 			break
 		}
 		attempts++
 		excluded[account.ID] = struct{}{}
-		result, testErr := s.accountTester.RunTestBackground(ctx, account.ID, monitor.Model)
+		result, testErr := s.accountTester.RunTestBackground(ctx, account.ID, upstreamModel)
 		finalResult = result
-		costs.add(result, s.probeCost(ctx, monitor.Model, group.GroupID, account, result))
+		costs.add(result, s.probeCost(ctx, upstreamModel, group.GroupID, account, result))
 		if testErr == nil && result != nil && result.Status == "success" {
 			break
 		}
@@ -603,7 +609,12 @@ func (s *ModelMonitorService) Run(ctx context.Context, monitor *ModelMonitor) (*
 	for i := range groups {
 		group := groups[i]
 		for attempts < modelMonitorMaxAttempts {
-			account, selectErr := s.selectAccount(ctx, monitor.Platform, monitor.Model, group.GroupID, excluded)
+			upstreamModel := s.resolveMonitorModel(ctx, group.GroupID, monitor.Model)
+			selectionModel := monitor.Model
+			if upstreamModel != "" {
+				selectionModel = upstreamModel
+			}
+			account, selectErr := s.selectAccount(ctx, monitor.Platform, selectionModel, group.GroupID, excluded)
 			if selectErr != nil {
 				lastMessage = fmt.Sprintf("%s: %s", group.Name, selectErr.Error())
 				break
@@ -611,7 +622,7 @@ func (s *ModelMonitorService) Run(ctx context.Context, monitor *ModelMonitor) (*
 			lastGroup = &group
 			attempts++
 			excluded[account.ID] = struct{}{}
-			result, testErr := s.accountTester.RunTestBackground(ctx, account.ID, monitor.Model)
+			result, testErr := s.accountTester.RunTestBackground(ctx, account.ID, upstreamModel)
 			if testErr == nil && result != nil && result.Status == "success" {
 				latency := int(time.Since(started).Milliseconds())
 				finalStatus = MonitorStatusOperational
@@ -705,6 +716,17 @@ func (s *ModelMonitorService) selectAccount(ctx context.Context, platform, model
 	default:
 		return s.gateway.SelectAccountForModelWithExclusions(ctx, &groupID, "", model, excluded)
 	}
+}
+
+func (s *ModelMonitorService) resolveMonitorModel(ctx context.Context, groupID int64, requested string) string {
+	if s.channels == nil {
+		return requested
+	}
+	resolved := s.channels.ResolveChannelMapping(ctx, groupID, requested)
+	if strings.TrimSpace(resolved.MappedModel) == "" {
+		return requested
+	}
+	return resolved.MappedModel
 }
 
 func (s *ModelMonitorService) persistResult(ctx context.Context, m *ModelMonitor, h *ModelMonitorHistory) error {

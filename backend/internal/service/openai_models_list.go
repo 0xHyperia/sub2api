@@ -274,6 +274,9 @@ func (s *OpenAIGatewayService) FetchPinnedOpenAIModelsList(ctx context.Context, 
 			return nil, err
 		}
 		response.Body, err = projectAccountModelsBody(response.Body, account, group, false)
+		if err == nil {
+			response.Body, err = s.projectChannelModelsBody(ctx, response.Body, group)
+		}
 		return response, err
 	}
 	results, err := s.fetchPinnedOpenAIModels(ctx, group, fetch)
@@ -317,6 +320,52 @@ func (s *OpenAIGatewayService) FetchPinnedOpenAIModelsList(ctx context.Context, 
 	}
 	response := &OpenAIModelsResponse{Body: body, ETag: codexModelsManifestBodyETag(body)}
 	return openAIModelsResponseForClient(response, ifNoneMatch), results[0].account, nil
+}
+
+func (s *OpenAIGatewayService) projectChannelModelsBody(ctx context.Context, body []byte, group *Group) ([]byte, error) {
+	if s.channelService == nil || group == nil {
+		return body, nil
+	}
+	envelope, entries, err := modelCatalogEntries(body, "data")
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[string]json.RawMessage, len(entries))
+	ids := make([]string, 0, len(entries))
+	for _, raw := range entries {
+		var model struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal(raw, &model); err != nil {
+			return nil, err
+		}
+		byID[model.ID] = raw
+		ids = append(ids, model.ID)
+	}
+	aliases := s.channelService.modelListAliases(ctx, group.ID, PlatformOpenAI, ids)
+	if len(aliases) == 0 {
+		return body, nil
+	}
+	for _, alias := range aliases {
+		var entry map[string]json.RawMessage
+		if err := json.Unmarshal(byID[alias.target], &entry); err != nil {
+			return nil, err
+		}
+		entry["id"], _ = json.Marshal(alias.name)
+		if _, ok := entry["display_name"]; ok {
+			entry["display_name"], _ = json.Marshal(alias.name)
+		}
+		raw, err := json.Marshal(entry)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, raw)
+	}
+	envelope["data"], err = json.Marshal(entries)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(envelope)
 }
 
 func selectModelCatalogEntries(byID map[string]json.RawMessage, selected []string) []json.RawMessage {

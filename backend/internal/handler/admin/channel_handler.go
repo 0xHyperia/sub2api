@@ -1,9 +1,12 @@
 package admin
 
 import (
+	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -18,11 +21,14 @@ type ChannelHandler struct {
 	channelService *service.ChannelService
 	billingService *service.BillingService
 	pricingService *service.PricingService
+	groupRepo      service.GroupRepository
+	accountRepo    service.AccountRepository
+	accountTester  *service.AccountTestService
 }
 
 // NewChannelHandler creates a new admin channel handler
-func NewChannelHandler(channelService *service.ChannelService, billingService *service.BillingService, pricingService *service.PricingService) *ChannelHandler {
-	return &ChannelHandler{channelService: channelService, billingService: billingService, pricingService: pricingService}
+func NewChannelHandler(channelService *service.ChannelService, billingService *service.BillingService, pricingService *service.PricingService, groupRepo service.GroupRepository, accountRepo service.AccountRepository, accountTester *service.AccountTestService) *ChannelHandler {
+	return &ChannelHandler{channelService: channelService, billingService: billingService, pricingService: pricingService, groupRepo: groupRepo, accountRepo: accountRepo, accountTester: accountTester}
 }
 
 // --- Request / Response types ---
@@ -59,7 +65,7 @@ type updateChannelRequest struct {
 type channelModelPricingRequest struct {
 	Platform                     string                     `json:"platform" binding:"omitempty,max=50"`
 	Models                       []string                   `json:"models" binding:"required,min=1,max=100"`
-	BillingMode                  string                     `json:"billing_mode" binding:"omitempty,oneof=token per_request image"`
+	BillingMode                  string                     `json:"billing_mode" binding:"omitempty,oneof=token per_request image video"`
 	InputPrice                   *float64                   `json:"input_price" binding:"omitempty,min=0"`
 	OutputPrice                  *float64                   `json:"output_price" binding:"omitempty,min=0"`
 	CacheWritePrice              *float64                   `json:"cache_write_price" binding:"omitempty,min=0"`
@@ -665,6 +671,77 @@ func (h *ChannelHandler) SyncPricingModels(c *gin.Context) {
 		return
 	}
 
-	models := h.pricingService.ListModelNamesByProvider(provider)
-	response.Success(c, gin.H{"models": models})
+	models := make([]string, 0)
+	warnings := make([]string, 0)
+	if rawGroupIDs, groupMode := c.GetQuery("group_ids"); groupMode {
+		if strings.TrimSpace(rawGroupIDs) == "" || h.groupRepo == nil || h.accountRepo == nil || h.accountTester == nil {
+			response.BadRequest(c, "Select groups before syncing models")
+			return
+		}
+		groupIDs := make([]int64, 0)
+		for _, raw := range strings.Split(rawGroupIDs, ",") {
+			id, parseErr := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+			if parseErr != nil || id <= 0 {
+				response.BadRequest(c, "Invalid group ID")
+				return
+			}
+			groupIDs = append(groupIDs, id)
+		}
+		if len(groupIDs) > 100 {
+			response.BadRequest(c, "Too many groups")
+			return
+		}
+		seen := make(map[string]bool)
+		refreshed := make(map[int64][]string)
+		ctx := c.Request.Context()
+		for _, groupID := range groupIDs {
+			group, groupErr := h.groupRepo.GetByID(ctx, groupID)
+			if groupErr != nil || group == nil {
+				response.BadRequest(c, "Group not found")
+				return
+			}
+			if group.Platform != platform && group.Platform != service.PlatformComposite {
+				response.BadRequest(c, "Group platform does not match requested platform")
+				return
+			}
+			accounts, accountErr := h.accountRepo.ListModelAvailabilityCandidates(ctx, &groupID, []string{platform}, false)
+			if accountErr != nil {
+				response.InternalError(c, "Unable to list group accounts")
+				return
+			}
+			for i := range accounts {
+				account := &accounts[i]
+				ids, cached := refreshed[account.ID]
+				if !cached {
+					fetchCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+					var fetchErr error
+					ids, fetchErr = h.accountTester.FetchUpstreamSupportedModels(fetchCtx, account)
+					cancel()
+					if fetchErr != nil {
+						warnings = append(warnings, fmt.Sprintf("Account %d: upstream unavailable; using configured or previously synced models", account.ID))
+					} else if err := h.accountRepo.UpdateExtra(ctx, account.ID, map[string]any{service.AccountModelCatalogKey: ids}); err != nil {
+						response.InternalError(c, "Unable to save account model catalog")
+						return
+					}
+					refreshed[account.ID] = ids
+				}
+				if ids != nil {
+					if account.Extra == nil {
+						account.Extra = make(map[string]any)
+					}
+					account.Extra[service.AccountModelCatalogKey] = ids
+				}
+			}
+			for _, model := range service.ChannelCatalogModels(ctx, nil, *group, accounts) {
+				if !seen[strings.ToLower(model)] {
+					seen[strings.ToLower(model)] = true
+					models = append(models, model)
+				}
+			}
+		}
+		sort.Strings(models)
+	} else {
+		models = h.pricingService.ListModelNamesByProvider(provider)
+	}
+	response.Success(c, gin.H{"models": models, "warnings": warnings})
 }

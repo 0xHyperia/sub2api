@@ -556,9 +556,30 @@ func (s *ChannelService) GetChannelModelPricing(ctx context.Context, groupID int
 	if pricing == nil {
 		return nil
 	}
+	// A synchronized catalog entry is represented by an empty pricing card. It
+	// must inherit the resolver's reference price until an administrator enters
+	// at least one explicit value. Pointer presence is intentional so a manual
+	// zero price remains a valid override.
+	if channelPricingIsEmpty(pricing) {
+		return nil
+	}
+	if lk.channel.inheritsCatalogPricing(pricing.Platform, model) {
+		return nil
+	}
 
 	cp := pricing.Clone()
 	return &cp
+}
+
+func channelPricingIsEmpty(p *ChannelModelPricing) bool {
+	if p == nil {
+		return true
+	}
+	return p.InputPrice == nil && p.OutputPrice == nil &&
+		p.CacheWritePrice == nil && p.CacheWrite1hPrice == nil && p.CacheReadPrice == nil &&
+		p.ImageInputPrice == nil && p.ImageOutputPrice == nil && p.PerRequestPrice == nil &&
+		p.FastMultiplier == nil && p.FlexMultiplier == nil && p.MaxReasoningEffortMultiplier == nil &&
+		len(p.Intervals) == 0 && p.TimePricing == nil
 }
 
 // ResolveChannelMapping 解析渠道级模型映射（热路径 O(1)）

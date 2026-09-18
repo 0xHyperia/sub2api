@@ -12,7 +12,7 @@
         <aside
           ref="drawerPanel"
           tabindex="-1"
-          class="absolute inset-y-0 right-0 flex h-full w-full max-w-5xl min-h-0 flex-col border-l border-outline bg-surface-raised shadow-floating outline-none"
+          class="absolute inset-y-0 right-0 flex h-full w-full max-w-[672px] min-h-0 flex-col border-l border-outline bg-surface-raised shadow-floating outline-none"
         >
           <header class="z-20 shrink-0 border-b border-outline bg-surface-raised">
             <div class="flex min-h-[76px] w-full items-center gap-3 px-4 py-3 sm:px-6">
@@ -22,7 +22,7 @@
               <div class="min-w-0 flex-1">
                 <div class="flex min-w-0 items-center gap-2">
                   <div class="flex min-w-0 items-center gap-2">
-                    <h2 :id="titleId" class="truncate font-mono text-lg font-bold text-foreground sm:text-xl">{{ entry.name }}</h2>
+                    <h2 :id="titleId" class="break-all font-mono text-base font-bold text-foreground sm:text-lg">{{ entry.name }}</h2>
                     <span
                       v-if="entry.label"
                       class="inline-flex h-5 max-w-28 shrink-0 items-center truncate rounded-control bg-black px-2 text-[10px] font-bold leading-none text-inverse-foreground"
@@ -53,7 +53,7 @@
             </div>
           </header>
 
-          <div class="min-h-0 flex-1 overflow-y-auto">
+          <div class="min-h-0 flex-1 overflow-y-auto bg-surface-subtle/40">
             <main class="w-full px-4 py-5 sm:px-6">
               <nav
                 class="grid h-10 rounded-panel bg-surface-subtle p-0.5"
@@ -76,115 +76,85 @@
               </nav>
 
               <div v-if="activeTab === 'overview'" class="drawer-tab-content mt-6 space-y-7">
-                <section class="rounded-panel border border-outline p-4 sm:p-5">
+                <section class="rounded-lg border border-outline bg-surface-raised p-3 shadow-sm sm:p-4" data-testid="pricing-panel">
                   <h3 class="text-sm font-semibold text-foreground">{{ t('modelMarketplace.details.pricing') }}</h3>
 
-                  <template v-if="pricingRows.length">
-                    <h4 class="mt-4 text-xs font-semibold text-foreground-muted">{{ t('modelMarketplace.details.basePricing') }}</h4>
-                    <dl v-if="billingCategory(entry.pricing) === 'usage'" class="mt-3 grid gap-2 sm:grid-cols-2">
-                      <div v-for="row in primaryBasePricingRows" :key="row.key" class="rounded-panel border border-outline px-4 py-3">
-                        <dt class="text-xs text-foreground-muted">{{ row.label }}</dt>
-                        <dd class="mt-1 flex items-baseline gap-2">
-                          <span class="font-mono text-xl font-semibold tabular-nums text-foreground">{{ row.value }}</span>
-                          <span class="text-[10px] text-foreground-subtle">/ 1M</span>
-                        </dd>
-                      </div>
-                    </dl>
-                    <dl v-if="secondaryBasePricingRows.length" class="mt-3 divide-y divide-outline rounded-panel border border-outline px-4">
-                      <div v-for="row in secondaryBasePricingRows" :key="row.key" class="flex items-center justify-between gap-4 py-2.5">
-                        <dt class="text-xs text-foreground-muted">{{ row.label }}</dt>
-                        <dd class="flex items-baseline gap-1.5">
-                          <span class="font-mono text-sm tabular-nums text-foreground">{{ row.value }}</span>
-                          <span class="text-[9px] text-foreground-subtle">/ 1M</span>
-                        </dd>
-                      </div>
-                    </dl>
-                    <dl v-if="billingCategory(entry.pricing) === 'request'" class="mt-3 rounded-panel border border-outline px-4 py-3">
-                      <div v-for="row in primaryBasePricingRows" :key="row.key" class="flex items-end justify-between gap-4">
-                        <div>
-                          <dt class="text-xs text-foreground-muted">{{ row.label }}</dt>
-                          <dd class="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground">{{ row.value }}</dd>
-                        </div>
-                        <span class="text-[10px] text-foreground-subtle">{{ entry.pricing?.billing_mode === 'image' ? t('modelMarketplace.price.perImage') : t('modelMarketplace.price.perRequest') }}</span>
-                      </div>
-                    </dl>
-                  </template>
-                  <p v-else class="mt-4 border-y border-outline py-5 text-sm text-foreground-subtle">{{ t('modelMarketplace.noPricing') }}</p>
+                  <h4 class="mt-4 text-xs font-semibold text-foreground-muted">{{ t('modelMarketplace.details.basePricing') }}</h4>
+                  <ModelMarketplacePricingTable
+                    class="mt-3"
+                    data-testid="base-pricing"
+                    variant="base"
+                    :pricing="activePricing"
+                    :show-recharge-prices="showRechargePrices"
+                    :balance-recharge-multiplier="balanceRechargeMultiplier"
+                    :official-usd-to-cny-rate="officialUsdToCnyRate"
+                  />
+                  <p v-if="activePricing" class="mt-2 text-[10px] text-foreground-subtle">{{ pricingUnit(activePricing) }}</p>
 
-                  <div v-if="groups.length && pricingRows.length" class="mt-5">
+                  <div v-if="activePricing?.intervals.length" class="mt-6" data-testid="base-tiers">
+                    <h4 class="mb-2 text-xs font-semibold text-foreground">{{ t('modelMarketplace.details.tieredPricing') }}</h4>
+                    <ModelMarketplacePricingTable
+                      :pricing="activePricing"
+                      :show-recharge-prices="showRechargePrices"
+                      :balance-recharge-multiplier="balanceRechargeMultiplier"
+                      :official-usd-to-cny-rate="officialUsdToCnyRate"
+                    />
+                  </div>
+
+                  <div v-if="activePricing?.time_pricing?.periods.length" class="mt-5" data-testid="time-pricing">
+                    <h4 class="text-xs font-semibold text-foreground">{{ t('modelMarketplace.details.timePricing') }}</h4>
+                    <p class="mt-1 text-xs text-foreground-muted">{{ activePricing.time_pricing.timezone }} · {{ t(activePricing.time_pricing.weekdays_only ? 'modelMarketplace.details.weekdaysOnly' : 'modelMarketplace.details.everyDay') }}</p>
+                    <dl class="mt-2 space-y-1.5">
+                      <div v-for="(period, index) in activePricing.time_pricing.periods" :key="index" class="flex items-center justify-between gap-3 rounded-control bg-surface-subtle px-3 py-2">
+                        <dt class="min-w-0 text-xs text-foreground-muted">{{ period.start_time }} ~ {{ period.end_time }}</dt>
+                        <dd class="shrink-0 font-mono text-xs font-semibold text-foreground">{{ formatRate(period.multiplier) }}×</dd>
+                      </div>
+                    </dl>
+                    <p class="mt-2 text-[10px] text-foreground-subtle">{{ t('modelMarketplace.details.timePricingHint') }}</p>
+                  </div>
+
+                  <div v-if="groups.length" class="mt-5 border-t border-outline pt-4">
                     <h4 class="text-xs font-semibold text-foreground-muted">{{ t('modelMarketplace.details.groupPricing') }}</h4>
-                    <div class="mt-2 space-y-2 sm:hidden">
+                    <ModelMarketplacePricingTable
+                      v-if="compactGroupPricing"
+                      class="mt-2"
+                      data-testid="group-comparison"
+                      variant="groups"
+                      :pricing="activePricing"
+                      :groups="groupPricingRows"
+                      :show-recharge-prices="showRechargePrices"
+                      :balance-recharge-multiplier="balanceRechargeMultiplier"
+                      :official-usd-to-cny-rate="officialUsdToCnyRate"
+                    />
+                    <div v-else class="mt-2 space-y-3">
                       <article
                         v-for="row in groupPricingRows"
-                        :key="`mobile-price-${row.id}`"
-                        class="rounded-panel border border-outline p-3"
-                        :class="row.id === activeGroup?.id ? 'bg-surface-subtle ring-1 ring-inset ring-outline-strong' : ''"
+                        :key="row.id"
+                        :data-testid="`group-pricing-${row.id}`"
+                        class="overflow-hidden rounded-lg border border-outline"
                       >
-                        <div class="flex items-center justify-between gap-3">
-                          <h5 class="min-w-0 truncate text-xs font-semibold text-foreground" :title="row.name">{{ row.name }}</h5>
+                        <div class="flex items-center justify-between gap-3 border-b border-outline px-3 py-2.5">
+                          <h5 class="min-w-0 break-words text-xs font-semibold text-foreground">{{ row.name }}</h5>
                           <span class="shrink-0 font-mono text-xs text-foreground-muted">{{ formatRate(row.effectiveRate) }}×</span>
                         </div>
-                        <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-outline pt-2">
-                          <div v-for="price in row.prices" :key="price.key" class="min-w-0">
-                            <dt class="truncate text-[10px] text-foreground-subtle">{{ price.label }}</dt>
-                            <dd class="mt-0.5 truncate font-mono text-xs tabular-nums text-foreground">{{ price.value }}</dd>
+                        <ModelMarketplacePricingTable
+                          :pricing="row.pricing"
+                          :group="row"
+                          :show-recharge-prices="showRechargePrices"
+                          :balance-recharge-multiplier="balanceRechargeMultiplier"
+                          :official-usd-to-cny-rate="officialUsdToCnyRate"
+                        />
+                        <div v-if="row.timePricing?.periods.length" class="border-t border-outline px-3 py-2 text-xs text-foreground-muted">
+                          <p>{{ row.timePricing.timezone }} · {{ t(row.timePricing.weekdays_only ? 'modelMarketplace.details.weekdaysOnly' : 'modelMarketplace.details.everyDay') }}</p>
+                          <div v-for="(period, index) in row.timePricing.periods" :key="index" class="mt-1 flex items-center justify-between gap-3">
+                            <span>{{ period.start_time }} ~ {{ period.end_time }}</span>
+                            <span class="font-mono">{{ formatRate(period.multiplier) }}×</span>
                           </div>
-                        </dl>
+                        </div>
                       </article>
                     </div>
-                    <div class="mt-2 hidden overflow-x-auto rounded-panel border border-outline sm:block">
-                      <table class="w-full min-w-[680px] text-left text-xs">
-                        <thead class="border-b border-outline bg-surface-subtle text-foreground-muted">
-                          <tr>
-                            <th class="px-3 py-2.5 font-medium">{{ t('modelMarketplace.details.group') }}</th>
-                            <th class="px-3 py-2.5 font-medium">{{ t('modelMarketplace.details.multiplier') }}</th>
-                            <th v-for="row in pricingRows" :key="row.key" class="px-3 py-2.5 text-right font-medium">{{ row.label }}</th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-outline">
-                          <tr v-for="row in groupPricingRows" :key="row.id" :class="row.id === activeGroup?.id ? 'bg-surface-subtle' : ''">
-                            <td class="max-w-60 px-3 py-3 font-medium text-foreground"><span class="block truncate" :title="row.name">{{ row.name }}</span></td>
-                            <td class="px-3 py-3 font-mono text-foreground-muted">{{ formatRate(row.effectiveRate) }}×</td>
-                            <td v-for="price in row.prices" :key="price.key" class="px-3 py-3 text-right font-mono tabular-nums text-foreground">{{ price.value }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <p class="mt-2 text-[10px] text-foreground-subtle">{{ entry.pricing?.billing_mode === 'image' ? t('modelMarketplace.details.imagePricingHint') : t('modelMarketplace.details.pricePerMillionHint') }}</p>
                   </div>
 
-                  <div v-if="entry.pricing?.intervals.length" class="mt-5">
-                    <h4 class="text-xs font-semibold text-foreground-muted">{{ t('modelMarketplace.details.tieredPricing') }}</h4>
-                    <dl class="mt-2 divide-y divide-outline rounded-panel border border-outline sm:hidden">
-                      <div v-for="(interval, index) in entry.pricing.intervals" :key="`mobile-tier-${index}`" class="p-3">
-                        <dt class="text-xs font-medium text-foreground">{{ intervalLabel(interval.min_tokens, interval.max_tokens) }}</dt>
-                        <dd class="mt-2 grid grid-cols-2 gap-3">
-                          <span>
-                            <span class="block text-[10px] text-foreground-subtle">{{ t('modelMarketplace.price.input') }}</span>
-                            <span class="mt-0.5 block font-mono text-xs text-foreground">{{ intervalPrice(interval.input_price) }}</span>
-                          </span>
-                          <span>
-                            <span class="block text-[10px] text-foreground-subtle">{{ t('modelMarketplace.price.output') }}</span>
-                            <span class="mt-0.5 block font-mono text-xs text-foreground">{{ intervalPrice(interval.output_price) }}</span>
-                          </span>
-                        </dd>
-                      </div>
-                    </dl>
-                    <div class="mt-2 hidden overflow-x-auto rounded-panel border border-outline sm:block">
-                      <table class="w-full min-w-96 text-left text-xs">
-                        <thead class="border-b border-outline bg-surface-subtle text-foreground-muted">
-                          <tr><th class="px-3 py-2">{{ t('modelMarketplace.details.range') }}</th><th class="px-3 py-2">{{ t('modelMarketplace.price.input') }}</th><th class="px-3 py-2">{{ t('modelMarketplace.price.output') }}</th></tr>
-                        </thead>
-                        <tbody class="divide-y divide-outline text-foreground-muted">
-                          <tr v-for="(interval, index) in entry.pricing.intervals" :key="index">
-                            <td class="px-3 py-2">{{ intervalLabel(interval.min_tokens, interval.max_tokens) }}</td>
-                            <td class="px-3 py-2 font-mono">{{ intervalPrice(interval.input_price) }}</td>
-                            <td class="px-3 py-2 font-mono">{{ intervalPrice(interval.output_price) }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
                 </section>
 
                 <section>
@@ -201,14 +171,11 @@
                     <div class="border-b border-outline px-4 py-3 sm:border-b-0 sm:border-r">
                       <dt class="text-[10px] text-foreground-subtle">{{ t('modelMarketplace.details.groups') }}</dt>
                       <dd class="mt-2 flex flex-wrap gap-1.5">
-                        <button
+                        <span
                           v-for="group in groups"
                           :key="group.id"
-                          type="button"
-                          class="rounded-control bg-surface-subtle px-2 py-1 text-[10px] text-foreground-muted transition-colors hover:text-foreground"
-                          :class="group.id === activeGroup?.id ? 'font-semibold text-foreground ring-1 ring-inset ring-outline-strong' : ''"
-                          @click="emit('selectGroup', group.id)"
-                        >{{ group.name }}</button>
+                          class="rounded-control bg-surface-subtle px-2 py-1 text-[10px] text-foreground-muted"
+                        >{{ group.name }}</span>
                       </dd>
                     </div>
                     <div class="px-4 py-3">
@@ -448,9 +415,11 @@ import Icon from '@/components/icons/Icon.vue'
 import ModelIcon from '@/components/common/ModelIcon.vue'
 import SuccessRateTimeline from '@/components/common/SuccessRateTimeline.vue'
 import ModelMarketplacePerformanceCharts from '@/components/user/ModelMarketplacePerformanceCharts.vue'
+import ModelMarketplacePricingTable from '@/components/user/ModelMarketplacePricingTable.vue'
 import { useAppStore } from '@/stores/app'
 import { useClipboard } from '@/composables/useClipboard'
-import { billingCategory, imagePriceRows, scaledCurrencyPrice, scaledPrice, scaledRechargePrice, type MarketplaceGroupOption, type MarketplaceModelEntry } from '@/views/user/modelMarketplace'
+import type { UserSupportedModelPricing } from '@/api/channels'
+import { billingCategory, pricingForGroup, type MarketplaceGroupOption, type MarketplaceModelEntry } from '@/views/user/modelMarketplace'
 
 type DetailTab = 'overview' | 'performance' | 'api'
 type ApiProtocol = 'anthropic' | 'openai' | 'gemini'
@@ -459,8 +428,6 @@ type CodeLanguage = 'curl' | 'python' | 'typescript' | 'javascript'
 const props = withDefaults(defineProps<{
   entry: MarketplaceModelEntry | null
   groups: MarketplaceGroupOption[]
-  activeGroup: MarketplaceGroupOption | null
-  showEffectivePrices: boolean
   showRechargePrices: boolean
   balanceRechargeMultiplier: number
   officialUsdToCnyRate: number
@@ -474,7 +441,6 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   close: []
-  selectGroup: [groupId: number]
   'update:monitorResolution': [value: 'minute' | 'hour']
 }>()
 
@@ -503,46 +469,22 @@ const codeLanguages = [
 ]
 
 const providerLabel = computed(() => props.entry ? labelOrFallback(`modelMarketplace.providers.${props.entry.platform}`, props.entry.platform.toUpperCase()) : '')
-const billingLabel = computed(() => props.entry ? t(`modelMarketplace.billing.${billingCategory(props.entry.pricing)}`) : '')
+const activePricing = computed(() => props.entry?.pricing ?? null)
+const billingLabel = computed(() => t(`modelMarketplace.billing.${billingCategory(activePricing.value)}`))
 const resolutionOptions = computed(() => [
   { value: 'minute' as const, label: t('modelMarketplace.details.minuteView') },
   { value: 'hour' as const, label: t('modelMarketplace.details.hourView') },
 ])
 
-const pricingRows = computed(() => {
-  const pricing = props.entry?.pricing
-  if (!pricing) return []
-  if (pricing.billing_mode === 'image') {
-    return imagePriceRows(pricing, props.activeGroup).map(row => ({
-      key: row.key,
-      label: row.tier,
-      rawValue: row.rawValue,
-      scale: 1,
-    }))
-  }
-  const primaryRows = pricing.billing_mode === 'token'
-    ? [
-        ['input', t('modelMarketplace.price.input'), pricing.input_price, 1_000_000],
-        ['output', t('modelMarketplace.price.output'), pricing.output_price, 1_000_000],
-        ['cache-read', t('modelMarketplace.price.cacheRead'), pricing.cache_read_price, 1_000_000],
-        ['cache-write', t('modelMarketplace.price.cacheWrite'), pricing.cache_write_price, 1_000_000],
-      ] as const
-    : [['request', t('modelMarketplace.price.request'), pricing.per_request_price ?? pricing.image_output_price, 1]] as const
-  const rows = [
-    ...primaryRows,
-    ['image-input', t('modelMarketplace.price.imageInput'), pricing.image_input_price, 1_000_000] as const,
-  ]
-  return rows.filter(([, , value]) => value != null).map(([key, label, value, scale]) => ({ key, label, rawValue: value, scale }))
+const groupPricingRows = computed(() => props.groups.map(group => {
+  const pricing = props.entry ? pricingForGroup(props.entry, group) : null
+  return { ...group, pricing, timePricing: pricing?.time_pricing }
+}))
+const compactGroupPricing = computed(() => {
+  const prices = [activePricing.value, ...groupPricingRows.value.map(group => group.pricing)].filter((pricing): pricing is UserSupportedModelPricing => pricing != null)
+  return prices.every(pricing => pricing.billing_mode !== 'image' && !pricing.intervals.length)
+    && new Set(prices.map(pricing => pricing.billing_mode)).size <= 1
 })
-const basePricingRows = computed(() => pricingRows.value.map(row => ({ ...row, value: officialPrice(row.rawValue, row.scale) })))
-const primaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'input' || row.key === 'output' || row.key === 'request' || row.key.startsWith('image-')))
-const secondaryBasePricingRows = computed(() => basePricingRows.value.filter(row => row.key === 'cache-read' || row.key === 'cache-write' || row.key === 'image-input'))
-const groupPricingRows = computed(() => props.groups.map(group => ({
-  ...group,
-  prices: props.entry?.pricing?.billing_mode === 'image'
-    ? imagePriceRows(props.entry.pricing, group).map(row => ({ key: row.key, label: row.tier, value: effectivePrice(row.effectiveValue, 1, 1) }))
-    : pricingRows.value.map(row => ({ key: row.key, label: row.label, value: effectivePrice(row.rawValue, row.scale, group.effectiveRate) })),
-})))
 
 const groupPerformanceRows = computed(() => props.groups.map(group => {
   const metrics = props.entry?.monitorStatus?.groups?.find(item => item.group_id === group.id)?.metrics
@@ -657,21 +599,10 @@ function parameter(name: string, type: string, range: string, descriptionKey: st
 function labelOrFallback(key: string, fallback: string) { const value = t(key); return value === key ? fallback : value }
 function formatRate(value: number) { return Number(value.toFixed(4)).toString() }
 function formatLatency(value: number) { return value >= 1000 ? `${(value / 1000).toFixed(2)} s` : `${Math.round(value)} ms` }
-function intervalLabel(min: number, max: number | null) { return max == null ? `${min.toLocaleString()}+` : `${min.toLocaleString()}–${max.toLocaleString()}` }
-function effectivePrice(value: number | null, scale: number, rate: number) {
-  return props.showRechargePrices
-    ? scaledRechargePrice(value, scale, rate, props.balanceRechargeMultiplier)
-    : scaledPrice(value, scale, rate)
-}
-function officialPrice(value: number | null, scale: number) {
-  return props.showRechargePrices
-    ? scaledCurrencyPrice(value, scale, props.officialUsdToCnyRate)
-    : scaledPrice(value, scale, 1)
-}
-function intervalPrice(value: number | null) {
-  return props.showEffectivePrices
-    ? effectivePrice(value, 1_000_000, props.activeGroup?.effectiveRate ?? 1)
-    : officialPrice(value, 1_000_000)
+function pricingUnit(pricing: UserSupportedModelPricing) {
+  return t(pricing.billing_mode === 'token'
+    ? 'modelMarketplace.details.pricePerMillionHint'
+    : pricing.billing_mode === 'image' ? 'modelMarketplace.details.imagePricingHint' : 'modelMarketplace.price.perRequest')
 }
 function formatObject(value: Record<string, string>, indent: number) {
   const padding = ' '.repeat(indent)

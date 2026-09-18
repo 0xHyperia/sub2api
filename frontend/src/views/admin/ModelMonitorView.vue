@@ -56,8 +56,8 @@
               <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-foreground-muted transition-colors hover:bg-surface-subtle hover:text-foreground" :aria-expanded="isExpanded(row)" @click="toggleExpanded(row)">
                 <Icon name="chevronRight" size="xs" class="transition-transform" :class="isExpanded(row) ? 'rotate-90' : ''" />
               </button>
-              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-surface-subtle" :class="platformIconClass(row.platform)">
-                <PlatformIcon :platform="row.platform as GroupPlatform" size="md" />
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-surface-subtle" aria-hidden="true">
+                <ModelIcon :model="row.model" size="20px" />
               </span>
               <button type="button" class="min-w-0 flex-1 text-left" @click="toggleExpanded(row)">
                 <span class="flex min-w-0 items-center gap-2">
@@ -175,7 +175,6 @@ import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref } from 'v
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import type { ModelMonitorGroupMetrics, ModelMonitorGroupOption, ModelMonitorHistoryItem, ModelMonitorResolution, ModelMonitorRow } from '@/api/admin/modelMonitor'
-import type { GroupPlatform } from '@/types'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -184,9 +183,8 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import Toggle from '@/components/common/Toggle.vue'
 import Select from '@/components/common/Select.vue'
 import SuccessRateTimeline from '@/components/common/SuccessRateTimeline.vue'
-import PlatformIcon from '@/components/common/PlatformIcon.vue'
+import ModelIcon from '@/components/common/ModelIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { platformIconClass } from '@/utils/platformColors'
 import { compareModelMonitorRows, type ModelMonitorMetricSortField } from './modelMonitorSorting'
 
 const ModelMetric = defineComponent({ props: { label: String, value: String }, setup: props => () => h('div', { class: 'min-w-0 bg-surface px-3 py-2.5' }, [h('div', { class: 'truncate text-[9px] text-foreground-subtle' }, props.label), h('div', { class: 'mt-0.5 truncate font-mono text-sm font-semibold tabular-nums text-foreground' }, props.value)]) })

@@ -204,6 +204,9 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 	cacheReadMultiplier := 2.0
 	pricing := toUserPricing(&service.ChannelModelPricing{
 		BillingMode: service.BillingModeToken,
+		TimePricing: &service.ChannelTimePricing{Timezone: "Asia/Shanghai", WeekdaysOnly: true, Periods: []service.ChannelTimePricingPeriod{
+			{StartTime: "09:00:00", EndTime: "18:00:00", Multiplier: 2},
+		}},
 		Intervals: []service.PricingInterval{
 			{
 				ID: 7, MinTokens: 0, MaxTokens: nil, SortOrder: 3,
@@ -213,6 +216,14 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 		},
 	})
 	require.NotNil(t, pricing)
+	rawPricing, err := json.Marshal(pricing)
+	require.NoError(t, err)
+	var pricingDecoded map[string]any
+	require.NoError(t, json.Unmarshal(rawPricing, &pricingDecoded))
+	require.Equal(t, map[string]any{
+		"timezone": "Asia/Shanghai", "weekdays_only": true,
+		"periods": []any{map[string]any{"start_time": "09:00:00", "end_time": "18:00:00", "multiplier": float64(2)}},
+	}, pricingDecoded["time_pricing"])
 	require.Len(t, pricing.Intervals, 1)
 	rawIv, err := json.Marshal(pricing.Intervals[0])
 	require.NoError(t, err)

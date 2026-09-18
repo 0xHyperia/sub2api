@@ -49,7 +49,7 @@ describe('model monitor presentation controls', () => {
     expect(source).toContain('xl:justify-self-end')
     expect(source).toContain('xl:justify-self-center')
     expect(source).toContain('xl:w-[112px]')
-    expect(source).toContain('<PlatformIcon')
+    expect(source).toContain('<ModelIcon :model="row.model" size="20px"')
     expect(source).toContain("t('admin.modelMonitor.displayOrderHint')")
     expect(source).toContain('updateGroupConfig')
     expect(source).toContain('failure_compensation_enabled')

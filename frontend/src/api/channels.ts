@@ -32,6 +32,7 @@ export interface UserMarketplaceGroup extends UserAvailableGroup {
   image_price_1k: number | null
   image_price_2k: number | null
   image_price_4k: number | null
+  pricing?: UserSupportedModelPricing | null
 }
 
 export interface UserPricingInterval {
@@ -51,6 +52,11 @@ export interface UserPricingInterval {
 }
 
 export interface UserSupportedModelPricing {
+  time_pricing?: {
+    timezone: string
+    weekdays_only?: boolean
+    periods: { start_time: string; end_time: string; multiplier: number }[]
+  } | null
   billing_mode: BillingMode
   input_price: number | null
   output_price: number | null

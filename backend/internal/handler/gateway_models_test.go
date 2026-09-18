@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
@@ -80,13 +81,94 @@ func (s *gatewayModelsAccountRepoStub) ListModelAvailabilityCandidates(ctx conte
 	return s.ListSchedulableByGroupID(ctx, *groupID)
 }
 
-func newGatewayModelsHandlerForTest(repo service.AccountRepository) *GatewayHandler {
+func newGatewayModelsHandlerForTest(repo service.AccountRepository, channels ...*service.ChannelService) *GatewayHandler {
+	var channelService *service.ChannelService
+	if len(channels) > 0 {
+		channelService = channels[0]
+	}
 	return &GatewayHandler{
 		gatewayService: service.NewGatewayService(
 			repo,
 			nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-			nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+			nil, nil, nil, nil, nil, nil, nil, nil, nil, channelService, nil, nil, nil, nil,
 		),
+	}
+}
+
+func TestGatewayModels_ChannelAliasesUseCurrentGroupCatalog(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for _, tt := range []struct {
+		name       string
+		groupID    int64
+		platform   string
+		mapping    map[string]string
+		allowlist  service.GroupModelAllowlist
+		wantAlias  bool
+		wantTerra  bool
+		noAccounts bool
+	}{
+		{name: "account mapping", groupID: 10, platform: service.PlatformOpenAI, mapping: map[string]string{"gpt-5.6-terra": "provider-terra"}, wantAlias: true, wantTerra: true},
+		{name: "default models", groupID: 10, platform: service.PlatformOpenAI, wantAlias: true, wantTerra: true},
+		{name: "missing target in linked group", groupID: 20, platform: service.PlatformOpenAI, mapping: map[string]string{"gpt-6-astra": "gpt-6-astra"}},
+		{name: "unlinked group", groupID: 30, platform: service.PlatformOpenAI, mapping: map[string]string{"gpt-5.6-terra": "gpt-5.6-terra"}, wantTerra: true},
+		{name: "alias only allowlist", groupID: 10, platform: service.PlatformOpenAI, mapping: map[string]string{"gpt-5.6-terra": "gpt-5.6-terra"}, allowlist: service.GroupModelAllowlist{Enabled: true, Models: []string{"gpt-5.6-luna"}}, wantAlias: true},
+		{name: "composite", groupID: 40, platform: service.PlatformComposite, mapping: map[string]string{"gpt-5.6-terra": "provider-terra"}, wantAlias: true, wantTerra: true},
+		{name: "empty group retains default behavior", groupID: 10, platform: service.PlatformOpenAI, noAccounts: true, wantAlias: true, wantTerra: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			channels := service.NewChannelService(&openAIWSUsageHandlerChannelRepoStub{
+				channels: []service.Channel{{ID: 1, Status: service.StatusActive, GroupIDs: []int64{10, 20, 40},
+					ModelMapping: map[string]map[string]string{
+						service.PlatformOpenAI: {"gpt-5.6-luna": "gpt-5.6-terra", "extra-channel-alias": "gpt-5.6-terra"},
+						service.PlatformGemini: {"wrong-platform-alias": "gpt-5.6-terra"},
+					}}},
+				groupPlatforms: map[int64]string{10: service.PlatformOpenAI, 20: service.PlatformOpenAI, 40: service.PlatformComposite},
+			}, nil, nil, nil, nil)
+			mapping := make(map[string]any, len(tt.mapping))
+			for name, target := range tt.mapping {
+				mapping[name] = target
+			}
+			repo := &gatewayModelsAccountRepoStub{byGroup: map[int64][]service.Account{tt.groupID: {{
+				ID: 1, Platform: service.PlatformOpenAI,
+				Credentials: map[string]any{"model_mapping": mapping},
+			}}}}
+			if tt.noAccounts {
+				delete(repo.byGroup, tt.groupID)
+			}
+			h := newGatewayModelsHandlerForTest(repo, channels)
+			for _, path := range []string{"/v1/models", "/v1/models/gpt-5.6-luna"} {
+				rec := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(rec)
+				c.Request = httptest.NewRequest(http.MethodGet, path, nil)
+				c.Set(string(middleware2.ContextKeyAPIKey), &service.APIKey{Group: &service.Group{
+					ID: tt.groupID, Platform: tt.platform, ModelAllowlist: tt.allowlist,
+				}})
+				if path != "/v1/models" {
+					c.Params = gin.Params{{Key: "model", Value: "gpt-5.6-luna"}}
+				}
+				h.Models(c)
+				if path != "/v1/models" {
+					if tt.wantAlias {
+						require.Equal(t, http.StatusOK, rec.Code)
+					} else {
+						require.Equal(t, http.StatusNotFound, rec.Code)
+					}
+					continue
+				}
+				require.Equal(t, http.StatusOK, rec.Code)
+				var response gatewayModelsResponseForTest
+				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &response))
+				ids := make([]string, 0, len(response.Data))
+				for _, model := range response.Data {
+					ids = append(ids, model.ID)
+				}
+				require.Equal(t, tt.wantAlias, slices.Contains(ids, "gpt-5.6-luna"), ids)
+				require.Equal(t, tt.wantTerra, slices.Contains(ids, "gpt-5.6-terra"), ids)
+				require.Equal(t, tt.wantAlias && !tt.noAccounts && !tt.allowlist.Enabled, slices.Contains(ids, "extra-channel-alias"), ids)
+				require.NotContains(t, ids, "wrong-platform-alias")
+				require.NotContains(t, ids, "provider-terra")
+			}
+		})
 	}
 }
 

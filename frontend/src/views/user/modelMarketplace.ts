@@ -113,6 +113,11 @@ export function billingCategory(pricing: UserSupportedModelPricing | null): Mark
   return pricing.billing_mode === 'token' ? 'usage' : 'request'
 }
 
+export function pricingForGroup(entry: MarketplaceModelEntry, group: MarketplaceGroupOption | UserMarketplaceGroup | null): UserSupportedModelPricing | null {
+  if (!group) return entry.pricing
+  return group.pricing === undefined ? entry.pricing : group.pricing
+}
+
 export function inferMarketplaceModelCapabilities(
   entry: Pick<MarketplaceModelEntry, 'name' | 'platform' | 'pricing'> & { capabilities?: string[] },
 ): MarketplaceModelCapability[] {
@@ -279,10 +284,11 @@ export function imagePriceRows(
 ): MarketplaceImagePriceRow[] {
   if (pricing?.billing_mode !== 'image' || !group) return []
   const fallback = pricing.per_request_price ?? pricing.image_output_price
+  const intervalPrices = new Map((pricing.intervals ?? []).map(interval => [String(interval.tier_label || '').toUpperCase(), interval.per_request_price]))
   const configuredPrices: Record<MarketplaceImagePriceTier, number | null> = {
-    '1K': group.image_price_1k,
-    '2K': group.image_price_2k,
-    '4K': group.image_price_4k,
+    '1K': group.image_price_1k ?? intervalPrices.get('1K') ?? null,
+    '2K': group.image_price_2k ?? intervalPrices.get('2K') ?? null,
+    '4K': group.image_price_4k ?? intervalPrices.get('4K') ?? null,
   }
   return MARKETPLACE_IMAGE_PRICE_TIERS.map((tier) => {
     const configured = configuredPrices[tier]
@@ -325,7 +331,7 @@ export function primaryPrice(pricing: UserSupportedModelPricing | null): number 
 export function scaledPrice(value: number | null, scale: number, rate: number): string {
   if (value == null) return '-'
   const amount = value * scale * rate
-  return `$${amount.toFixed(2)}`
+  return `$${formatPriceAmount(amount)}`
 }
 
 export function scaledRechargePrice(
@@ -339,7 +345,7 @@ export function scaledRechargePrice(
     ? balanceRechargeMultiplier
     : 1
   const amount = value * scale * rate / rechargeMultiplier
-  return `¥${amount.toFixed(2)}`
+  return `¥${formatPriceAmount(amount)}`
 }
 
 export function scaledCurrencyPrice(
@@ -352,5 +358,9 @@ export function scaledCurrencyPrice(
     ? usdToCnyRate
     : DEFAULT_USD_TO_CNY_RATE
   const amount = value * scale * exchangeRate
-  return `¥${amount.toFixed(2)}`
+  return `¥${formatPriceAmount(amount)}`
+}
+
+function formatPriceAmount(amount: number): string {
+  return amount.toLocaleString('en-US', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 8 })
 }
