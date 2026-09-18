@@ -461,10 +461,6 @@ func showcasePlatformRank(platform string) int {
 	}
 }
 
-func marketplaceModelIDs(group service.Group, accounts []service.Account) []string {
-	return service.ModelCatalogModels(group, accounts)
-}
-
 func marketplaceModelIDsForGroup(ctx context.Context, channels *service.ChannelService, group service.Group, accounts []service.Account) []string {
 	return service.ChannelCatalogModels(ctx, channels, group, accounts)
 }
