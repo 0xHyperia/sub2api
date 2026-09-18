@@ -31,7 +31,7 @@
       <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
         <div class="min-w-0 space-y-4">
           <div class="card p-4 sm:p-5">
-            <RedeemCodeForm :show-description="true" @redeemed="fetchHistory" />
+            <RedeemCodeForm :show-description="true" @redeemed="fetchHistory(1)" />
           </div>
         </div>
 
@@ -65,7 +65,7 @@
             :disabled="loadingHistory"
             :title="t('common.refresh')"
             :aria-label="t('common.refresh')"
-            @click="fetchHistory"
+            @click="fetchHistory(historyPage)"
           >
             <Icon name="refresh" size="sm" :class="{ 'animate-spin': loadingHistory }" aria-hidden="true" />
           </button>
@@ -78,7 +78,7 @@
         <div v-else-if="historyError" class="p-4 sm:p-5" role="alert">
           <div class="flex flex-col gap-3 rounded-panel border border-danger/20 bg-danger-subtle p-4 text-sm text-danger-foreground sm:flex-row sm:items-center sm:justify-between">
             <span>{{ t('common.error') }}. {{ t('errors.tryAgain') }}</span>
-            <button type="button" class="btn btn-secondary btn-sm" @click="fetchHistory">
+            <button type="button" class="btn btn-secondary btn-sm" @click="fetchHistory(historyPage)">
               <Icon name="refresh" size="sm" aria-hidden="true" />
               <span>{{ t('common.refresh') }}</span>
             </button>
@@ -134,6 +134,47 @@
         </ul>
 
         <EmptyState v-else :title="t('redeem.historyWillAppear')" />
+        <div class="flex flex-col gap-3 border-t border-outline px-4 py-3.5 text-sm text-foreground-muted sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <span>{{ t('common.total') }}: {{ historyTotal }} {{ t('pagination.results') }}</span>
+            <label class="flex items-center gap-2">
+              {{ t('pagination.perPage') }}
+              <select
+                v-model="historyPageSize"
+                class="input w-20"
+                :disabled="loadingHistory"
+                @change="fetchHistory(1)"
+              >
+                <option v-for="size in [20, 50, 100]" :key="size" :value="size">{{ size }}</option>
+              </select>
+            </label>
+          </div>
+          <nav class="flex items-center justify-between gap-3" :aria-label="t('redeem.recentActivity')">
+            <button
+              type="button"
+              class="btn btn-secondary btn-icon min-h-11 min-w-11"
+              :title="t('pagination.previous')"
+              :disabled="loadingHistory || historyPage <= 1"
+              @click="fetchHistory(historyPage - 1)"
+            >
+              <Icon name="chevronLeft" size="sm" aria-hidden="true" />
+              <span class="sr-only">{{ t('pagination.previous') }}</span>
+            </button>
+            <span class="tabular-nums" aria-live="polite">
+              {{ t('pagination.pageOf', { page: historyPage, total: Math.max(1, Math.ceil(historyTotal / historyPageSize)) }) }}
+            </span>
+            <button
+              type="button"
+              class="btn btn-secondary btn-icon min-h-11 min-w-11"
+              :title="t('pagination.next')"
+              :disabled="loadingHistory || historyPage * historyPageSize >= historyTotal"
+              @click="fetchHistory(historyPage + 1)"
+            >
+              <Icon name="chevronRight" size="sm" aria-hidden="true" />
+              <span class="sr-only">{{ t('pagination.next') }}</span>
+            </button>
+          </nav>
+        </div>
       </section>
     </div>
   </AppLayout>
@@ -143,6 +184,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useAppStore } from '@/stores/app'
 import { redeemAPI, authAPI, type RedeemHistoryItem } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -153,11 +195,17 @@ import { formatDateTime } from '@/utils/format'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+const appStore = useAppStore()
 
 const user = computed(() => authStore.user)
 const history = ref<RedeemHistoryItem[]>([])
 const loadingHistory = ref(false)
 const historyError = ref(false)
+const historyPage = ref(1)
+const historyPageSize = ref(20)
+const historyTotal = ref(0)
+let historyRequest = 0
+let loadedHistoryPageSize = 20
 const contactInfo = ref('')
 
 const isBalanceType = (type: string) => type === 'balance' || type === 'admin_balance'
@@ -208,16 +256,27 @@ function historyValueClass(item: RedeemHistoryItem): string {
   return item.value >= 0 ? 'text-success-foreground' : 'text-danger-foreground'
 }
 
-async function fetchHistory(): Promise<void> {
+const fetchHistory = async (page = 1) => {
+  const request = ++historyRequest
+  const pageSize = historyPageSize.value
   loadingHistory.value = true
   historyError.value = false
   try {
-    history.value = await redeemAPI.getHistory()
+    const result = await redeemAPI.getHistory(page, pageSize)
+    if (request !== historyRequest) return
+    history.value = result.items
+    historyTotal.value = result.total
+    historyPage.value = page
+    historyPageSize.value = pageSize
+    loadedHistoryPageSize = pageSize
   } catch (error) {
-    historyError.value = true
+    if (request !== historyRequest) return
+    historyPageSize.value = loadedHistoryPageSize
+    appStore.showError(t('redeem.historyLoadFailed'))
+    historyError.value = history.value.length === 0
     console.error('Failed to fetch history:', error)
   } finally {
-    loadingHistory.value = false
+    if (request === historyRequest) loadingHistory.value = false
   }
 }
 
