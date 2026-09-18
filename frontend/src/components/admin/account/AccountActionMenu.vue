@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="show && position">
+    <div v-if="show && (effectivePosition || anchorRect)">
       <div
         class="fixed inset-0 z-[9998]"
         aria-hidden="true"
@@ -10,7 +10,7 @@
         ref="menuRef"
         role="menu"
         :aria-label="menuLabel"
-        class="action-menu-content fixed z-[9999] w-52 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-panel border border-outline bg-surface-raised p-1 shadow-floating"
+        class="action-menu-content fixed z-[9999] w-52 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain rounded-panel border border-outline bg-surface-raised p-1 shadow-floating"
         :style="menuStyle"
         @click.stop
         @keydown="handleMenuKeydown"
@@ -167,7 +167,9 @@ type AccountAction =
 const props = defineProps<{
   show: boolean
   account: Account | null
-  position: { top: number; left: number } | null
+  position?: { top: number; left: number } | null
+  /** Trigger geometry used to measure the menu after it is teleported. */
+  anchorRect?: DOMRect | null
   showDelete?: boolean
 }>()
 
@@ -188,10 +190,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const menuRef = ref<HTMLElement | null>(null)
+const measuredPosition = ref<{ top: number; left: number } | null>(null)
 const viewportWidth = ref(typeof window === 'undefined' ? 1024 : window.innerWidth)
 const viewportHeight = ref(typeof window === 'undefined' ? 768 : window.innerHeight)
 let previousActiveElement: HTMLElement | null = null
 let restoreFocusOnClose = true
+let resizeObserver: ResizeObserver | null = null
 
 const menuItems = () =>
   Array.from(menuRef.value?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [])
@@ -201,21 +205,24 @@ const menuLabel = computed(() => {
   return accountName ? `${accountName}: ${t('common.more')}` : t('common.more')
 })
 
+const effectivePosition = computed(() => props.position ?? measuredPosition.value)
+
 const menuStyle = computed(() => {
-  if (!props.position) return undefined
+  if (!effectivePosition.value) return undefined
 
   const padding = 8
   const width = Math.min(208, Math.max(0, viewportWidth.value - padding * 2))
   const left = Math.max(
     padding,
-    Math.min(props.position.left, viewportWidth.value - width - padding)
+    Math.min(effectivePosition.value.left, viewportWidth.value - width - padding)
   )
-  const top = Math.max(padding, Math.min(props.position.top, viewportHeight.value - 88))
+  const top = Math.max(padding, Math.min(effectivePosition.value.top, viewportHeight.value - 88))
 
   return {
     left: `${left}px`,
     top: `${top}px`,
-    maxHeight: `${Math.max(80, viewportHeight.value - top - padding)}px`
+    maxHeight: `${Math.max(80, viewportHeight.value - top - padding)}px`,
+    maxWidth: `${Math.max(0, viewportWidth.value - padding * 2)}px`
   }
 })
 
@@ -342,14 +349,45 @@ const handleMenuKeydown = (event: KeyboardEvent) => {
 const updateViewport = () => {
   viewportWidth.value = window.innerWidth
   viewportHeight.value = window.innerHeight
+  void measureFromAnchor()
 }
 
+const handleWindowKeydown = (event: KeyboardEvent) => {
+  if (props.show && event.key === 'Escape') requestClose(true)
+}
+
+const measureFromAnchor = async () => {
+  if (props.position || !props.anchorRect || !props.show) return
+  await nextTick()
+  const menu = menuRef.value
+  if (!menu) return
+  const { width, height } = menu.getBoundingClientRect()
+  const gap = 4
+  const padding = 8
+  const anchor = props.anchorRect
+  const maxTop = viewportHeight.value - height - padding
+  const below = anchor.bottom + gap
+  const top = below + height <= viewportHeight.value - padding
+    ? below
+    : anchor.top - height - gap
+  const left = viewportWidth.value < 768
+    ? anchor.left + anchor.width / 2 - width / 2
+    : anchor.right - width
+  measuredPosition.value = {
+    top: Math.max(padding, Math.min(top, Math.max(padding, maxTop))),
+    left: Math.max(padding, Math.min(left, viewportWidth.value - width - padding))
+  }
+}
+
+watch(() => props.anchorRect, () => { void measureFromAnchor() })
+
 watch(
-  () => props.show && Boolean(props.position),
+  () => props.show && Boolean(effectivePosition.value || props.anchorRect),
   async (visible, wasVisible) => {
     if (visible) {
       previousActiveElement = document.activeElement as HTMLElement | null
       restoreFocusOnClose = true
+      await measureFromAnchor()
       await nextTick()
       menuItems()[0]?.focus()
       return
@@ -367,9 +405,24 @@ watch(
 
 onMounted(() => {
   window.addEventListener('resize', updateViewport)
+  window.addEventListener('keydown', handleWindowKeydown)
+  void measureFromAnchor()
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => { void measureFromAnchor() })
+    if (menuRef.value) resizeObserver.observe(menuRef.value)
+  }
+})
+
+watch(menuRef, (element, previous) => {
+  if (!resizeObserver) return
+  if (previous) resizeObserver.unobserve(previous)
+  if (element) resizeObserver.observe(element)
 })
 
 onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
   window.removeEventListener('resize', updateViewport)
+  window.removeEventListener('keydown', handleWindowKeydown)
 })
 </script>

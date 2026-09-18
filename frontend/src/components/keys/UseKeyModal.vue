@@ -371,6 +371,9 @@ const clientTabs = computed((): TabConfig[] => {
     default:
       return [
         { id: 'claude', label: t('keys.useKeyModal.cliTabs.claudeCode'), icon: TerminalIcon },
+        ...(props.platform === 'anthropic' ? [] : [
+          { id: 'codex', label: t('keys.useKeyModal.cliTabs.codexCli'), icon: TerminalIcon }
+        ]),
         { id: 'opencode', label: t('keys.useKeyModal.cliTabs.opencode'), icon: TerminalIcon }
       ]
   }
@@ -549,6 +552,9 @@ const currentFiles = computed((): FileConfig[] => {
       }
       return generateGrokFiles(apiBase, apiKey)
     default:
+      if (activeClientTab.value === 'codex' && props.platform) {
+        return generateRoutedCodexFiles(apiBase, apiKey, props.platform)
+      }
       return generateAnthropicFiles(baseUrl, apiKey)
   }
 })
@@ -973,6 +979,73 @@ supports_websockets = false
   ]
 }
 
+function generateRoutedCodexFiles(
+  baseUrl: string,
+  apiKey: string,
+  platform: GroupPlatform
+): FileConfig[] {
+  const isWindows = activeTab.value === 'windows'
+  const configDir = isWindows ? '%userprofile%\\.codex' : '~/.codex'
+  const preferredModels: Partial<Record<GroupPlatform, string>> = {
+    openai: 'gpt-5.5',
+    anthropic: 'claude-sonnet-4-6',
+    gemini: 'gemini-2.5-pro',
+    antigravity: 'claude-sonnet-4-6',
+    grok: 'grok-4.5',
+    kimi: 'kimi-k2.5',
+    zhipu: 'glm-4.7',
+    deepseek: 'deepseek-v4-pro',
+    minimax: 'MiniMax-M3',
+    opencode_go: 'glm-5.3',
+    composite: 'gpt-5.5'
+  }
+  const preferredModel = preferredModels[platform] || ''
+  const model = preferredModel
+  const labels: Record<GroupPlatform, string> = {
+    anthropic: 'Anthropic',
+    openai: 'OpenAI',
+    gemini: 'Gemini',
+    antigravity: 'Antigravity',
+    grok: 'Grok',
+    kimi: 'Kimi',
+    zhipu: 'Zhipu',
+    deepseek: 'DeepSeek',
+    minimax: 'MiniMax',
+    opencode_go: 'OpenCode',
+    composite: 'Composite'
+  }
+  const label = labels[platform]
+  const envContent = isWindows
+    ? `$env:SUB2API_API_KEY="${apiKey}"`
+    : `export SUB2API_API_KEY="${apiKey}"`
+
+  const configContent = `# Codex CLI -> Sub2API ${label} group
+model_provider = "sub2api"
+model = "${model}"
+review_model = "${model}"
+disable_response_storage = true
+
+[model_providers.sub2api]
+name = "Sub2API ${label}"
+base_url = "${baseUrl}"
+env_key = "SUB2API_API_KEY"
+wire_api = "responses"
+requires_openai_auth = false
+supports_websockets = false`
+
+  return [
+    { path: isWindows ? 'PowerShell' : 'Terminal', content: envContent },
+    {
+      path: joinConfigPath(configDir, 'config.toml', isWindows),
+      content: configContent,
+      hint: t(
+        platform === 'deepseek' || platform === 'minimax' || platform === 'composite'
+          ? `keys.useKeyModal.${platform}.codexConfigTomlHint`
+          : 'keys.useKeyModal.routedCodex.configTomlHint'
+      )
+    }
+  ]
+}
 function generateOpenAIWsFiles(baseUrl: string, apiKey: string): FileConfig[] {
   const isWindows = activeTab.value === 'windows'
   const configDir = isWindows ? '%userprofile%\\.codex' : '~/.codex'

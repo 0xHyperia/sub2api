@@ -65,6 +65,8 @@ function createPublicSettings(overrides: Partial<PublicSettings> = {}): PublicSe
     contact_telegram_name: '',
     contact_telegram_url: '',
     contact_ticket_enabled: true,
+    subscription_enabled: true,
+    payment_balance_disabled: false,
     model_plaza_enabled: false,
     model_plaza_require_auth: false,
     plugin_management_enabled: false,

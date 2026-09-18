@@ -364,11 +364,7 @@ func (s *ModelMonitorService) Upsert(ctx context.Context, platform, model string
 }
 
 func validModelMonitorPlatform(platform string) bool {
-	switch platform {
-	case PlatformAnthropic, PlatformOpenAI, PlatformGemini, PlatformAntigravity, PlatformGrok:
-		return true
-	}
-	return false
+	return isConcreteRequestPlatform(platform)
 }
 
 func (s *ModelMonitorService) RunByKey(ctx context.Context, platform, model string, createdBy int64) (*ModelMonitorHistory, error) {
@@ -701,7 +697,7 @@ func (s *ModelMonitorService) monitorGroups(ctx context.Context, monitor *ModelM
 
 func (s *ModelMonitorService) selectAccount(ctx context.Context, platform, model string, groupID int64, excluded map[int64]struct{}) (*Account, error) {
 	switch platform {
-	case PlatformOpenAI, PlatformGrok:
+	case PlatformOpenAI, PlatformGrok, PlatformKimi, PlatformZhipu, PlatformDeepseek, PlatformMiniMax, PlatformOpenCodeGo:
 		return s.openAIGateway.selectAccountForModelWithExclusions(ctx, &groupID, platform, "", model, excluded, false, 0, "", false)
 	case PlatformGemini, PlatformAntigravity:
 		ctx = context.WithValue(ctx, ctxkey.ForcePlatform, platform)

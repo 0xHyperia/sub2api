@@ -389,7 +389,7 @@
                   >
                     <img :src="checkout.help_image_url" :alt="checkout.help_text || t('payment.title')" class="h-20 w-28 rounded-control object-contain" />
                   </button>
-                  <p v-if="checkout.help_text" class="text-sm leading-6 text-foreground-subtle">{{ checkout.help_text }}</p>
+                  <div v-if="checkout.help_text" class="markdown-body w-full overflow-x-auto break-words text-sm leading-6 text-foreground-subtle" v-html="renderedHelpText"></div>
                 </div>
               </article>
             </section>
@@ -479,11 +479,14 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DOMPurify from 'dompurify'
+import { marked } from 'marked'
 import { RouterLink, useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePaymentStore } from '@/stores/payment'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import { useAppStore } from '@/stores'
+import { FeatureFlags, resolveFeatureFlag } from '@/utils/featureFlags'
 import { paymentAPI } from '@/api/payment'
 import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
@@ -740,10 +743,17 @@ const checkout = ref<CheckoutInfoResponse>({
   subscription_usd_to_cny_rate: 0, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
 })
 
+const renderedHelpText = computed(() => DOMPurify.sanitize(
+  marked.parse(checkout.value.help_text || '', { async: false, gfm: true, breaks: false }),
+))
+
+// 订阅功能开关（public settings 的 subscription_enabled，opt-out）。关闭后购买页只保留充值：
+// 不再渲染「订阅」tab，只剩单个 tab 时顶部切换器也随之隐藏。
+const subscriptionEnabled = computed(() => resolveFeatureFlag(appStore.cachedPublicSettings, FeatureFlags.subscription))
 const tabs = computed(() => {
   const result: { key: PurchaseTab; label: string }[] = []
   if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
-  result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
+  if (subscriptionEnabled.value) result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
   return result
 })
 
@@ -791,6 +801,14 @@ function ensureVisiblePurchaseTab(preferred?: PurchaseTab) {
     activeTab.value = available[0] || 'recharge'
   }
 }
+// tab 列表随 checkout（balance_disabled）与订阅开关变化。当前 tab 不在列表里时收敛到第一个可用 tab，
+// 两个方向都覆盖：关闭订阅 → 回到充值；仅订阅站点重新打开订阅 → 进入订阅。列表为空时模板展示不可用提示。
+watch(tabs, (available) => {
+  if (available.some((tab) => tab.key === activeTab.value)) return
+  const leavingSubscription = activeTab.value === 'subscription'
+  activeTab.value = available[0]?.key ?? 'recharge'
+  if (leavingSubscription) selectedPlan.value = null
+})
 
 const visibleMethods = computed(() => getVisibleMethods(checkout.value.methods))
 const enabledMethods = computed(() => Object.keys(visibleMethods.value))
@@ -1564,7 +1582,7 @@ onMounted(async () => {
     }
     await resumeWechatPaymentFromQuery()
     // Handle direct checkout navigation: ?tab=subscription&plan=123 or renewal ?group=123.
-    if (route.query.tab === 'subscription') {
+    if (route.query.tab === 'subscription' && subscriptionEnabled.value) {
       ensureVisiblePurchaseTab('subscription')
       const planId = Number(route.query.plan)
       const routePlan = Number.isFinite(planId) && planId > 0
@@ -1588,8 +1606,10 @@ onMounted(async () => {
     appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error')))
   }
   finally { loading.value = false }
-  // Fetch active subscriptions (uses cache, non-blocking)
-  subscriptionStore.fetchActiveSubscriptions().catch(() => {})
+  // Fetch active subscriptions (uses cache, non-blocking); skipped when the subscription feature is off
+  if (subscriptionEnabled.value) {
+    subscriptionStore.fetchActiveSubscriptions().catch(() => {})
+  }
 })
 </script>
 

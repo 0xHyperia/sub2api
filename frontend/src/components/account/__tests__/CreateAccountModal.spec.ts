@@ -4,12 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   createAccountMock,
+  syncUpstreamModelsMock,
+  showWarningMock,
   probeUpstreamBillingMock,
   importCodexSessionMock,
   createOpenAICodexPATMock,
   authIsSimpleMode,
 } = vi.hoisted(() => ({
   createAccountMock: vi.fn(),
+  syncUpstreamModelsMock: vi.fn(),
+  showWarningMock: vi.fn(),
   probeUpstreamBillingMock: vi.fn(),
   importCodexSessionMock: vi.fn(),
   createOpenAICodexPATMock: vi.fn(),
@@ -20,7 +24,7 @@ vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
     showError: vi.fn(),
     showSuccess: vi.fn(),
-    showWarning: vi.fn(),
+    showWarning: showWarningMock,
   }),
 }))
 
@@ -36,6 +40,7 @@ vi.mock('@/api/admin', () => ({
   adminAPI: {
     accounts: {
       create: createAccountMock,
+      syncUpstreamModels: syncUpstreamModelsMock,
       probeUpstreamBilling: probeUpstreamBillingMock,
       checkMixedChannelRisk: vi.fn().mockResolvedValue({ has_risk: false }),
       importCodexSession: importCodexSessionMock,
@@ -120,7 +125,7 @@ const ModelWhitelistSelectorStub = defineComponent({
     platform: String,
     syncCredentials: Object,
   },
-  emits: ['update:modelValue'],
+  emits: ['update:modelValue', 'upstream-synced'],
   template: '<div data-testid="model-whitelist-selector" />',
 })
 
@@ -189,6 +194,8 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
   beforeEach(() => {
     authIsSimpleMode.value = true
     createAccountMock.mockReset().mockResolvedValue({ id: 42, platform: 'openai', type: 'apikey' })
+    syncUpstreamModelsMock.mockReset().mockResolvedValue({ warnings: [] })
+    showWarningMock.mockReset()
     probeUpstreamBillingMock.mockReset().mockResolvedValue({})
     importCodexSessionMock.mockReset().mockResolvedValue({
       created: 1,
@@ -202,6 +209,41 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
   })
 
   afterEach(() => vi.useRealTimers())
+
+  it.each([
+    ['upstream_model_metadata_incomplete', 'admin.accounts.syncUpstreamModelsMetadataIncomplete'],
+    ['upstream_model_metadata_partial', 'admin.accounts.syncUpstreamModelsMetadataPartial'],
+  ])('persists previewed model capabilities and reports %s', async (code, warning) => {
+    syncUpstreamModelsMock.mockResolvedValue({ warnings: [{ code }] })
+    const wrapper = mountModal()
+    await selectButtonByText(wrapper, 'OpenAI')
+    await selectButtonByText(wrapper, 'API Key')
+    await wrapper.get('form#create-account-form input[type="text"]').setValue('model sync')
+    await wrapper.get('form#create-account-form input[type="password"]').setValue('test-api-key')
+    wrapper.getComponent(ModelWhitelistSelectorStub).vm.$emit('upstream-synced')
+    await wrapper.get('form#create-account-form').trigger('submit.prevent')
+    await flushPromises()
+    expect(syncUpstreamModelsMock).toHaveBeenCalledWith(42)
+    expect(showWarningMock).toHaveBeenCalledWith(warning)
+    expect(wrapper.emitted('created')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('preserves successful creation when model capability persistence fails', async () => {
+    syncUpstreamModelsMock.mockRejectedValue(new Error('upstream unavailable'))
+    const wrapper = mountModal()
+    await selectButtonByText(wrapper, 'OpenAI')
+    await selectButtonByText(wrapper, 'API Key')
+    await wrapper.get('form#create-account-form input[type="text"]').setValue('model sync')
+    await wrapper.get('form#create-account-form input[type="password"]').setValue('test-api-key')
+    wrapper.getComponent(ModelWhitelistSelectorStub).vm.$emit('upstream-synced')
+    await wrapper.get('form#create-account-form').trigger('submit.prevent')
+    await flushPromises()
+    expect(syncUpstreamModelsMock).toHaveBeenCalledWith(42)
+    expect(showWarningMock).toHaveBeenCalledWith('admin.accounts.syncUpstreamModelsFailed')
+    expect(wrapper.emitted('created')).toHaveLength(1)
+    wrapper.unmount()
+  })
 
   it('sets month and year expiry presets without submitting the account form', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
@@ -325,6 +367,65 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
 
     expect(createAccountMock.mock.calls[0]?.[0]?.upstream_billing_probe_enabled).toBe(false)
     expect(probeUpstreamBillingMock).not.toHaveBeenCalled()
+  })
+
+  it('submits OpenCode Zen default protocol rules with adaptive endpoints', async () => {
+    const wrapper = mountModal()
+    await selectButtonByText(wrapper, 'OpenCode')
+    await wrapper.get('form#create-account-form input[type="text"]').setValue('oc')
+    await wrapper.get('form#create-account-form input[type="password"]').setValue('sk-opencode-zen')
+
+    await wrapper.get('form#create-account-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(createAccountMock).toHaveBeenCalledTimes(1)
+    expect(createAccountMock.mock.calls[0]?.[0]?.credentials).toMatchObject({
+      account_mode: 'zen',
+      api_protocol: 'adaptive',
+      base_url: 'https://opencode.ai/zen/v1',
+      api_base_urls: {
+        chat_completions: 'https://opencode.ai/zen/v1',
+        anthropic: 'https://opencode.ai/zen',
+        responses: 'https://opencode.ai/zen/v1'
+      },
+      protocol_rules: [
+        { pattern: 'grok-*', protocol: 'responses' },
+        { pattern: 'gpt-*', protocol: 'responses' },
+        { pattern: 'muse-spark-*', protocol: 'responses' },
+        { pattern: 'claude-*', protocol: 'anthropic' },
+        { pattern: 'qwen*', protocol: 'anthropic' }
+      ]
+    })
+  })
+
+  it('submits OpenCode GO endpoints after switching account type', async () => {
+    const wrapper = mountModal()
+    await selectButtonByText(wrapper, 'OpenCode')
+    await selectButtonByText(wrapper, 'admin.accounts.opencodeGo.accountMode.go')
+    await wrapper.get('form#create-account-form input[type="text"]').setValue('oc-go')
+    await wrapper.get('form#create-account-form input[type="password"]').setValue('sk-opencode-go')
+
+    await wrapper.get('form#create-account-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(createAccountMock).toHaveBeenCalledTimes(1)
+    expect(createAccountMock.mock.calls[0]?.[0]?.credentials).toMatchObject({
+      account_mode: 'go',
+      api_protocol: 'adaptive',
+      base_url: 'https://opencode.ai/zen/go/v1',
+      api_base_urls: {
+        chat_completions: 'https://opencode.ai/zen/go/v1',
+        anthropic: 'https://opencode.ai/zen/go',
+        responses: 'https://opencode.ai/zen/go/v1'
+      },
+      protocol_rules: [
+        { pattern: 'grok-*', protocol: 'responses' },
+        { pattern: 'gpt-*', protocol: 'responses' },
+        { pattern: 'muse-spark-*', protocol: 'responses' },
+        { pattern: 'minimax-*', protocol: 'anthropic' },
+        { pattern: 'qwen*', protocol: 'anthropic' }
+      ]
+    })
   })
 
   it('submits adaptive Kimi protocol endpoints', async () => {

@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 
-const copyToClipboard = vi.fn().mockResolvedValue(true)
+const { copyToClipboard, syncUpstreamModels, syncUpstreamModelsPreview, showSuccess, showWarning } = vi.hoisted(() => ({
+  copyToClipboard: vi.fn().mockResolvedValue(true),
+  syncUpstreamModels: vi.fn(),
+  syncUpstreamModelsPreview: vi.fn(),
+  showSuccess: vi.fn(),
+  showWarning: vi.fn()
+}))
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
@@ -16,9 +22,14 @@ vi.mock('vue-i18n', async () => {
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
     showError: vi.fn(),
-    showSuccess: vi.fn(),
+    showSuccess,
+    showWarning,
     showInfo: vi.fn()
   })
+}))
+
+vi.mock('@/api/admin/accounts', () => ({
+  accountsAPI: { syncUpstreamModels, syncUpstreamModelsPreview }
 }))
 
 vi.mock('@/composables/useClipboard', () => ({
@@ -29,11 +40,12 @@ vi.mock('@/composables/useClipboard', () => ({
 
 import ModelWhitelistSelector from '../ModelWhitelistSelector.vue'
 
-function mountSelector() {
+function mountSelector(extraProps: Record<string, unknown> = {}) {
   return mount(ModelWhitelistSelector, {
     props: {
       modelValue: [],
-      platform: 'openai'
+      platform: 'openai',
+      ...extraProps
     },
     global: {
       stubs: {
@@ -58,6 +70,10 @@ function findModelRow(wrapper: ReturnType<typeof mountSelector>, modelId: string
 describe('ModelWhitelistSelector', () => {
   beforeEach(() => {
     copyToClipboard.mockClear()
+    syncUpstreamModels.mockReset()
+    syncUpstreamModelsPreview.mockReset()
+    showSuccess.mockClear()
+    showWarning.mockClear()
   })
 
   it('copies a model ID without selecting the model', async () => {
@@ -85,5 +101,125 @@ describe('ModelWhitelistSelector', () => {
 
     expect(wrapper.emitted('update:modelValue')).toEqual([[['gpt-5.6-sol']]])
     expect(copyToClipboard).not.toHaveBeenCalled()
+  })
+
+  it('warns when model IDs sync but capability metadata is incomplete', async () => {
+    syncUpstreamModels.mockResolvedValue({
+      models: ['x-preview-f-free'],
+      warnings: [
+        {
+          code: 'upstream_model_metadata_incomplete',
+          message: 'Model IDs were synced, but capability metadata could not be updated.'
+        }
+      ]
+    })
+    const wrapper = mount(ModelWhitelistSelector, {
+      props: {
+        modelValue: [],
+        platform: 'openai',
+        accountId: 46
+      },
+      global: {
+        stubs: {
+          ModelIcon: true
+        }
+      }
+    })
+
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+    expect(syncButton).toBeDefined()
+    await syncButton!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['x-preview-f-free']]])
+    expect(showWarning).toHaveBeenCalledWith('admin.accounts.syncUpstreamModelsMetadataIncomplete')
+    expect(showSuccess).not.toHaveBeenCalled()
+  })
+
+  it('shows success and a partial warning when some capabilities were saved', async () => {
+    syncUpstreamModels.mockResolvedValue({
+      models: ['gpt-6-astra', 'gpt-image-2'],
+      warnings: [
+        {
+          code: 'upstream_model_metadata_partial',
+          message: 'Some model capabilities were saved; remaining models are still incomplete.'
+        }
+      ]
+    })
+    const wrapper = mount(ModelWhitelistSelector, {
+      props: {
+        modelValue: [],
+        platform: 'openai',
+        accountId: 46
+      },
+      global: {
+        stubs: {
+          ModelIcon: true
+        }
+      }
+    })
+
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+    expect(syncButton).toBeDefined()
+    await syncButton!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['gpt-6-astra', 'gpt-image-2']]])
+    expect(showSuccess).toHaveBeenCalledWith('admin.accounts.syncUpstreamModelsSuccess')
+    expect(showWarning).toHaveBeenCalledWith('admin.accounts.syncUpstreamModelsMetadataPartial')
+  })
+
+  it('reports a successful preview so account creation can persist metadata', async () => {
+    syncUpstreamModelsPreview.mockResolvedValue({
+      models: ['x-preview-f-free'],
+      metadata: {
+        'x-preview-f-free': {
+          id: 'x-preview-f-free',
+          reasoning: true,
+          supported_reasoning_levels: ['low', 'high', 'max'],
+        },
+      },
+    })
+    const wrapper = mountSelector({
+      syncCredentials: {
+        platform: 'openai',
+        type: 'apikey',
+        base_url: 'https://opencode.ai/zen/v1',
+        api_key: 'test-key',
+      },
+    })
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+
+    expect(syncButton).toBeDefined()
+    await syncButton?.trigger('click')
+    await flushPromises()
+
+    expect(syncUpstreamModelsPreview).toHaveBeenCalledOnce()
+    expect(wrapper.emitted('upstream-synced')).toEqual([[]])
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['x-preview-f-free']]])
+  })
+
+  it('shows the upstream sync button for OpenCode Go create-account credentials', () => {
+    const wrapper = mountSelector({
+      platform: 'opencode_go',
+      syncCredentials: {
+        platform: 'opencode_go',
+        type: 'apikey',
+        base_url: 'https://opencode.ai/zen/go/v1',
+        api_key: 'sk-test',
+      },
+    })
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+
+    expect(syncButton).toBeDefined()
+    expect(syncButton?.exists()).toBe(true)
   })
 })

@@ -2,4 +2,4 @@
 go = "1.26.6"
 node = "20.20.0"
 "npm:pnpm" = "9.15.9"
-golangci-lint = "2.9.0"
+golangci-lint = "2.13.0"

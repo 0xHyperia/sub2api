@@ -369,6 +369,9 @@ type UpdateSettingsRequest struct {
 	ContactTelegramURL                 *string `json:"contact_telegram_url"`
 	ContactTicketEnabled               *bool   `json:"contact_ticket_enabled"`
 
+	// Subscription feature switch (user-facing subscription surface; see SettingKeySubscriptionEnabled)
+	SubscriptionEnabled *bool `json:"subscription_enabled"`
+
 	// Model Plaza feature switches + description
 	ModelPlazaEnabled     *bool   `json:"model_plaza_enabled"`
 	ModelPlazaRequireAuth *bool   `json:"model_plaza_require_auth"`
@@ -2043,6 +2046,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.ContactTicketEnabled
 		}(),
+		SubscriptionEnabled: func() bool {
+			if req.SubscriptionEnabled != nil {
+				return *req.SubscriptionEnabled
+			}
+			return previousSettings.SubscriptionEnabled
+		}(),
 		ModelPlazaEnabled: func() bool {
 			if req.ModelPlazaEnabled != nil {
 				return *req.ModelPlazaEnabled
@@ -2524,6 +2533,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactTelegramName:                updatedSettings.ContactTelegramName,
 		ContactTelegramURL:                 updatedSettings.ContactTelegramURL,
 		ContactTicketEnabled:               updatedSettings.ContactTicketEnabled,
+		SubscriptionEnabled:                updatedSettings.SubscriptionEnabled,
 
 		ModelPlazaEnabled:       updatedSettings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:   updatedSettings.ModelPlazaRequireAuth,

@@ -172,6 +172,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string[]]
+  'upstream-synced': []
 }>()
 
 const appStore = useAppStore()
@@ -208,7 +209,8 @@ const upstreamSyncPlatforms = new Set([
   'kimi',
   'zhipu',
   'deepseek',
-  'minimax'
+  'minimax',
+  'opencode_go'
 ])
 const canSyncUpstream = computed(() => {
   if (props.accountId) {
@@ -322,12 +324,21 @@ const syncUpstreamModels = async () => {
       }
     }
 
+    if (!props.accountId) emit('upstream-synced')
     emit('update:modelValue', newModels)
+    const warnings = result.warnings ?? []
+    const hasIncompleteMetadata = warnings.some(warning => warning.code === 'upstream_model_metadata_incomplete')
+    const hasPartialMetadata = warnings.some(warning => warning.code === 'upstream_model_metadata_partial')
+    if (hasIncompleteMetadata) {
+      appStore.showWarning(t('admin.accounts.syncUpstreamModelsMetadataIncomplete'))
+      return
+    }
     if (addedCount > 0) {
       appStore.showSuccess(t('admin.accounts.syncUpstreamModelsSuccess', { count: addedCount, total: upstreamModels.length }))
     } else {
       appStore.showInfo(t('admin.accounts.syncUpstreamModelsNoChanges', { count: upstreamModels.length }))
     }
+    if (hasPartialMetadata) appStore.showWarning(t('admin.accounts.syncUpstreamModelsMetadataPartial'))
   } catch (error) {
     const message = error instanceof Error ? error.message : t('admin.accounts.syncUpstreamModelsFailed')
     appStore.showError(t('admin.accounts.syncUpstreamModelsError', { message }))

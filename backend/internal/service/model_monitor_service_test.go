@@ -15,6 +15,47 @@ type modelMonitorTestGroupRepo struct {
 	groups []Group
 }
 
+func TestModelMonitorAcceptsAllConcretePlatforms(t *testing.T) {
+	for _, platform := range []string{PlatformAnthropic, PlatformOpenAI, PlatformGemini, PlatformAntigravity, PlatformGrok,
+		PlatformKimi, PlatformZhipu, PlatformDeepseek, PlatformMiniMax, PlatformOpenCodeGo} {
+		require.True(t, validModelMonitorPlatform(platform), platform)
+		group := Group{ID: 7, Platform: platform, Status: StatusActive}
+		account := Account{Platform: platform, Credentials: map[string]any{
+			"model_mapping": map[string]any{"public-model": "upstream-model"},
+		}}
+		service := &ModelMonitorService{
+			groupRepo:   modelMonitorTestGroupRepo{groups: []Group{group}},
+			accountRepo: modelMonitorTestAccountRepo{accounts: map[int64][]Account{group.ID: {account}}},
+		}
+		catalog, err := service.DiscoverCatalog(context.Background())
+		require.NoError(t, err)
+		require.Len(t, catalog, 1, platform)
+		require.Equal(t, platform, catalog[0].Platform)
+		require.Equal(t, "public-model", catalog[0].Model)
+	}
+	require.False(t, validModelMonitorPlatform(PlatformComposite))
+	require.False(t, validModelMonitorPlatform("unknown"))
+}
+
+func TestModelMonitorSelectsCompatibleProviderAccounts(t *testing.T) {
+	for _, platform := range []string{PlatformKimi, PlatformZhipu, PlatformDeepseek, PlatformMiniMax, PlatformOpenCodeGo} {
+		t.Run(platform, func(t *testing.T) {
+			account := Account{ID: 1, Platform: platform, Type: AccountTypeAPIKey,
+				Status: StatusActive, Schedulable: true,
+				Credentials: map[string]any{"model_mapping": map[string]any{"public-model": "upstream-model"}},
+			}
+			service := &ModelMonitorService{openAIGateway: &OpenAIGatewayService{
+				accountRepo: stubOpenAIAccountRepo{accounts: []Account{account}},
+			}}
+			selected, err := service.selectAccount(context.Background(), platform, "public-model", 7, nil)
+			require.NoError(t, err)
+			require.Equal(t, account.ID, selected.ID)
+			_, err = service.selectAccount(context.Background(), platform, "public-model", 7, map[int64]struct{}{1: {}})
+			require.ErrorIs(t, err, ErrNoAvailableAccounts)
+		})
+	}
+}
+
 func (r modelMonitorTestGroupRepo) ListActive(context.Context) ([]Group, error) {
 	return r.groups, nil
 }

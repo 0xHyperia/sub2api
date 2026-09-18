@@ -74,7 +74,7 @@
         </button>
 
         <div v-if="user && !authStore.isAdmin" class="hidden xl:block">
-          <SubscriptionProgressMini />
+          <SubscriptionProgressMini v-if="subscriptionFeatureEnabled" />
         </div>
 
         <div
@@ -283,6 +283,8 @@ import AnnouncementBell from "@/components/common/AnnouncementBell.vue";
 import Icon from "@/components/icons/Icon.vue";
 import { sanitizeUrl } from '@/utils/url';
 import { FeatureFlags, isFeatureFlagEnabled } from "@/utils/featureFlags";
+import { resolveRouteMetaKeys } from '@/router/title'
+import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
 
 const router = useRouter();
 const route = useRoute();
@@ -357,6 +359,14 @@ const displayName = computed(
   () => user.value?.username || user.value?.email?.split("@")[0] || "",
 );
 
+// 订阅功能关闭时不挂载顶栏订阅徽章（组件 onMounted 会拉取订阅接口）。
+const subscriptionFeatureEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.subscription))
+
+// /purchase 的标题/描述随站点计费模式切换，与 document.title 共用同一解析。
+const routeMetaKeys = computed(() => resolveRouteMetaKeys(route, {
+  billingMode: resolveSiteBillingMode(appStore.cachedPublicSettings),
+}))
+
 const pageTitle = computed(() => {
   if (route.name === "CustomPage") {
     const id = route.params.id as string;
@@ -368,16 +378,20 @@ const pageTitle = computed(() => {
         : undefined);
     if (menuItem?.label) return menuItem.label;
   }
-  const titleKey = route.meta.titleKey as string;
-  if (titleKey) return t(titleKey);
-  return (route.meta.title as string) || appStore.siteName;
-});
+  const titleKey = routeMetaKeys.value.titleKey
+  if (titleKey) {
+    return t(titleKey)
+  }
+  return (route.meta.title as string) || appStore.siteName
+})
 
 const pageDescription = computed(() => {
-  const descriptionKey = route.meta.descriptionKey as string;
-  if (descriptionKey) return t(descriptionKey);
-  return (route.meta.description as string) || "";
-});
+  const descKey = routeMetaKeys.value.descriptionKey
+  if (descKey) {
+    return t(descKey)
+  }
+  return (route.meta.description as string) || ''
+})
 
 function toggleMobileSidebar(): void {
   appStore.toggleMobileSidebar();

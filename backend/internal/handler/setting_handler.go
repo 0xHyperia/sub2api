@@ -101,6 +101,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		PaymentEnabled:                      settings.PaymentEnabled,
 		PaymentRechargePageVisible:          settings.PaymentRechargePageVisible,
 		PaymentOrdersPageVisible:            settings.PaymentOrdersPageVisible,
+		PaymentBalanceDisabled:              settings.PaymentBalanceDisabled,
 		Version:                             h.version,
 		ServerTimezone:                      timezone.Name(),
 		ServerUTCOffset:                     timezone.UTCOffset(),
@@ -130,6 +131,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		ContactTelegramName:                settings.ContactTelegramName,
 		ContactTelegramURL:                 settings.ContactTelegramURL,
 		ContactTicketEnabled:               settings.ContactTicketEnabled,
+		SubscriptionEnabled:                settings.SubscriptionEnabled,
 
 		ModelPlazaEnabled:       settings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:   settings.ModelPlazaRequireAuth,

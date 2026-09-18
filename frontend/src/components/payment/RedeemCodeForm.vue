@@ -120,7 +120,12 @@ async function handleRedeem(): Promise<void> {
   try {
     const result = await redeemAPI.redeem(code)
     redeemResult.value = result
-    await authStore.refreshUser()
+    try {
+      await authStore.refreshUser()
+    } catch (error) {
+      console.error('Failed to refresh user after redemption:', error)
+      appStore.showWarning(t('redeem.userRefreshFailed'))
+    }
 
     if (result.type === 'subscription') {
       try {

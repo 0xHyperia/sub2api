@@ -41,6 +41,7 @@ vi.mock('@/composables/useAutoRefresh', async () => {
       intervals: [30, 60, 120] as const,
       setEnabled: mocks.setEnabled,
       setInterval: vi.fn(),
+      resetCountdown: vi.fn(),
       start: mocks.start,
       stop: mocks.stop,
     }),

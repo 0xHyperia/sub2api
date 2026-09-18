@@ -1197,7 +1197,10 @@
                       :modelValue="rule.service_tier"
                       @update:modelValue="
                         rule.service_tier = $event as
-                          'all' | 'priority' | 'flex'
+                          | 'all'
+                          | 'priority'
+                          | 'flex'
+                          | 'missing'
                       "
                       :options="openaiFastPolicyTierOptions"
                     />
@@ -7562,6 +7565,17 @@
                     />
                   </div>
 
+                  <label class="flex items-center gap-2 sm:col-span-2">
+                    <input
+                      v-model="item.hide_open_button"
+                      type="checkbox"
+                      data-testid="custom-menu-hide-open-button"
+                    />
+                    <span class="text-sm text-foreground-muted ">
+                      {{ t("admin.settings.customMenu.hideOpenButton") }}
+                    </span>
+                  </label>
+
                   <!-- SVG Icon (full width) -->
                   <div class="sm:col-span-2">
                     <label
@@ -7874,6 +7888,19 @@
 
         <!-- Tab: Features (功能开关) -->
         <div v-show="activeTab === 'features'" class="space-y-6">
+          <section class="border-b border-outline px-6 py-4">
+            <h2 class="text-lg font-semibold text-foreground">{{ t('admin.settings.features.siteBillingMode.title') }}</h2>
+            <p class="mt-1 text-sm text-foreground-subtle">{{ t('admin.settings.features.siteBillingMode.description') }}</p>
+            <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0">
+                <label class="text-sm font-medium text-foreground-muted">{{ t('admin.settings.features.siteBillingMode.label') }}</label>
+                <p class="mt-1 text-xs text-foreground-subtle">{{ siteBillingModeHint }}</p>
+              </div>
+              <div class="w-full shrink-0 sm:w-56">
+                <Select :modelValue="siteBillingMode" :options="siteBillingModeOptions" @update:modelValue="siteBillingMode = $event as SiteBillingMode" />
+              </div>
+            </div>
+          </section>
           <div class="card">
             <div class="border-b border-outline px-6 py-4">
               <h2 class="text-lg font-semibold text-foreground">
@@ -10620,7 +10647,14 @@ import type {
 import type { ProviderInstance, QuickRechargeAmount } from "@/types/payment";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import Icon from "@/components/icons/Icon.vue";
-import Select from "@/components/common/Select.vue";
+import Select, { type SelectOption } from "@/components/common/Select.vue";
+import {
+  SITE_BILLING_MODES,
+  SITE_BILLING_MODE_I18N_KEYS,
+  billingModeToSettings,
+  resolveSiteBillingMode,
+  type SiteBillingMode,
+} from "@/utils/siteBillingMode";
 import BaseDialog from "@/components/common/BaseDialog.vue";
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import PaymentProviderList from "@/components/payment/PaymentProviderList.vue";
@@ -11516,6 +11550,7 @@ const form = reactive<SettingsForm>({
     url: string;
     visibility: "user" | "admin";
     sort_order: number;
+    hide_open_button?: boolean;
   }>,
   custom_endpoints: [] as Array<{
     name: string;
@@ -11734,6 +11769,8 @@ const form = reactive<SettingsForm>({
   contact_telegram_name: "",
   contact_telegram_url: "",
   contact_ticket_enabled: true,
+  // Subscription feature switch (user sidebar "My Subscriptions" entry)
+  subscription_enabled: true,
   // Model Plaza feature switches + description
   model_plaza_enabled: false,
   model_plaza_require_auth: false,
@@ -13147,6 +13184,24 @@ function findDuplicateDefaultSubscription(
   });
 }
 
+// 站点类型：由 subscription_enabled 与 payment_balance_disabled 两个开关派生的单选，
+// 保存时同时写回两者，避免出现「既无充值也无订阅」的组合。
+const siteBillingModeOptions = computed<SelectOption[]>(() =>
+  SITE_BILLING_MODES.map((mode) => ({
+    value: mode,
+    label: t(`admin.settings.features.siteBillingMode.options.${SITE_BILLING_MODE_I18N_KEYS[mode]}`),
+  })),
+);
+const siteBillingMode = computed<SiteBillingMode>({
+  get: () => resolveSiteBillingMode(form),
+  set: (mode) => {
+    Object.assign(form, billingModeToSettings(mode));
+  },
+});
+const siteBillingModeHint = computed(() =>
+  t(`admin.settings.features.siteBillingMode.hints.${SITE_BILLING_MODE_I18N_KEYS[siteBillingMode.value]}`),
+);
+
 async function saveSettings() {
   saving.value = true;
   try {
@@ -13670,6 +13725,8 @@ async function saveSettings() {
       contact_telegram_name: form.contact_telegram_name.trim(),
       contact_telegram_url: form.contact_telegram_url.trim(),
       contact_ticket_enabled: form.contact_ticket_enabled,
+      // Subscription feature switch
+      subscription_enabled: form.subscription_enabled,
       // Model Plaza feature switches + description
       model_plaza_enabled: form.model_plaza_enabled,
       model_plaza_require_auth: form.model_plaza_require_auth,
@@ -14323,6 +14380,7 @@ const openaiFastPolicyTierOptions = computed(() => [
     label: t("admin.settings.openaiFastPolicy.tierUltrafast"),
   },
   { value: "flex", label: t("admin.settings.openaiFastPolicy.tierFlex") },
+  { value: "missing", label: t("admin.settings.openaiFastPolicy.tierMissing") },
 ]);
 
 const openaiFastPolicyActionOptions = computed(() => [

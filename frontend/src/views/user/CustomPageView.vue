@@ -141,6 +141,7 @@
         <!-- Iframe embed mode -->
         <div v-else class="custom-embed-shell">
           <a
+            v-if="!menuItem?.hide_open_button"
             :href="embeddedUrl"
             target="_blank"
             rel="noopener noreferrer"

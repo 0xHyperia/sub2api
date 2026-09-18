@@ -251,6 +251,7 @@ import Icon from '@/components/icons/Icon.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
+import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 import { getDistributionAccess } from '@/api/distribution'
 import {
@@ -293,6 +294,19 @@ function localText(zh: string, en: string): string {
 const flagChannelMonitor = makeSidebarFlag(FeatureFlags.channelMonitor)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagModelMarketplace = makeSidebarFlag(FeatureFlags.modelMarketplace)
+const flagSubscription = makeSidebarFlag(FeatureFlags.subscription)
+
+// 购买入口文案随站点计费模式切换：仅充值 → 「充值」，仅订阅 → 「订阅」，否则「充值/订阅」。
+const purchaseNavLabel = computed(() => {
+  switch (resolveSiteBillingMode(appStore.cachedPublicSettings)) {
+    case 'recharge_only':
+      return t('nav.recharge')
+    case 'subscription_only':
+      return t('nav.subscribe')
+    default:
+      return t('nav.buySubscription')
+  }
+})
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const distributionAccess = ref(false)
 const flagDistribution = () => distributionAccess.value
@@ -307,6 +321,7 @@ const flagPurchase = () =>
 const flagPaymentOrders = () =>
   appStore.cachedPublicSettings?.payment_enabled === true &&
   (authStore.isAdmin || appStore.cachedPublicSettings?.payment_orders_page_visible !== false)
+
 
 const customMenuItemsForUser = computed(() => {
   const items = appStore.cachedPublicSettings?.custom_menu_items ?? []
@@ -362,11 +377,12 @@ function buildSelfNavItems(): ShellNavItem[] {
       path: '/subscriptions',
       label: t('nav.mySubscriptions'),
       icon: 'creditCard',
-      hideInSimpleMode: true
+      hideInSimpleMode: true,
+      featureFlag: flagSubscription
     },
     {
       path: '/purchase',
-      label: t('nav.buySubscription'),
+      label: purchaseNavLabel.value,
       icon: 'dollar',
       hideInSimpleMode: true,
       featureFlag: flagPurchase
@@ -482,7 +498,8 @@ const adminNavSections = computed<ShellNavSection[]>(() => {
           path: '/admin/subscriptions',
           label: t('nav.subscriptions'),
           icon: 'creditCard',
-          hideInSimpleMode: true
+          hideInSimpleMode: true,
+          featureFlag: flagSubscription
         },
         {
           path: '/admin/orders',

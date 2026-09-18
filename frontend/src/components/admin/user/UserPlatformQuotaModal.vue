@@ -66,7 +66,8 @@
                   <button
                     type="button"
                     class="inline-flex h-10 w-10 flex-none items-center justify-center rounded-control text-foreground-subtle hover:bg-surface-subtle hover:text-warning-foreground focus:outline-none focus:ring-2 focus:ring-focus disabled:opacity-50"
-                    :disabled="!!resetting[`${row.platform}.${quotaWindow}`]"
+                    :disabled="!!resetting[`${row.platform}.${quotaWindow}`] || !savedConfigured.has(row.platform)"
+                    data-quota-reset
                     :aria-label="resetButtonLabel(row.platform, quotaWindow)"
                     :title="resetButtonLabel(row.platform, quotaWindow)"
                     @click="onReset(row.platform, quotaWindow)"
@@ -107,7 +108,8 @@
                     <button
                       type="button"
                       class="inline-flex h-8 w-8 flex-none items-center justify-center rounded-panel text-foreground-subtle hover:bg-surface-subtle hover:text-warning-foreground focus:outline-none focus:ring-2 focus:ring-focus disabled:opacity-50"
-                      :disabled="!!resetting[`${row.platform}.${quotaWindow}`]"
+                      :disabled="!!resetting[`${row.platform}.${quotaWindow}`] || !savedConfigured.has(row.platform)"
+                      data-quota-reset
                       :aria-label="resetButtonLabel(row.platform, quotaWindow)"
                       :title="resetButtonLabel(row.platform, quotaWindow)"
                       @click="onReset(row.platform, quotaWindow)"
@@ -217,6 +219,18 @@ const confirmationMessage = computed(() => {
     window: pending.windowLabel,
   })
 })
+// 已保存且至少配置了一档限额的平台。只有这些平台在后端有配额记录，重置用量窗口才有对象。
+const savedConfigured = ref<Set<PlatformQuotaPlatform>>(new Set())
+
+function configuredPlatforms(items: PlatformQuotaItem[]): Set<PlatformQuotaPlatform> {
+  const out = new Set<PlatformQuotaPlatform>()
+  for (const it of items) {
+    if (it.daily_limit_usd != null || it.weekly_limit_usd != null || it.monthly_limit_usd != null) {
+      out.add(it.platform)
+    }
+  }
+  return out
+}
 
 function emptyRow(p: PlatformQuotaPlatform): QuotaRow {
   return {
@@ -267,6 +281,7 @@ function limitInputLabel(platform: PlatformQuotaPlatform, quotaWindow: PlatformQ
 }
 
 function resetButtonLabel(platform: PlatformQuotaPlatform, quotaWindow: PlatformQuotaWindow): string {
+  if (!savedConfigured.value.has(platform)) return t('admin.users.platformQuota.reset.unavailable')
   return t('admin.users.platformQuota.reset.confirm', {
     platform,
     window: windowLabel(quotaWindow),
@@ -284,9 +299,11 @@ async function load() {
   try {
     const data = await adminAPI.users.getPlatformQuotas(props.user.id)
     quotas.value = normalize(data.platform_quotas || [])
+    savedConfigured.value = configuredPlatforms(data.platform_quotas || [])
   } catch {
     appStore.showError(t('admin.users.platformQuota.loadFailed'))
     quotas.value = PLATFORMS.map(emptyRow)
+    savedConfigured.value = new Set()
   } finally {
     loading.value = false
   }
@@ -386,6 +403,7 @@ async function resetQuotaWindow(
   try {
     const data = await adminAPI.users.resetPlatformQuotaWindow(props.user.id, platform, quotaWindow)
     quotas.value = normalize(data.platform_quotas || [])
+    savedConfigured.value = configuredPlatforms(data.platform_quotas || [])
     appStore.showSuccess(t('admin.users.platformQuota.reset.success', { platform, window: quotaWindowLabel }))
   } catch (e: any) {
     appStore.showError(e?.response?.data?.message || t('admin.users.platformQuota.reset.failed'))

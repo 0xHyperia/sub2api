@@ -415,6 +415,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		ContactTelegramName:                settings.ContactTelegramName,
 		ContactTelegramURL:                 settings.ContactTelegramURL,
 		ContactTicketEnabled:               settings.ContactTicketEnabled,
+		SubscriptionEnabled:                settings.SubscriptionEnabled,
 
 		ModelPlazaEnabled:       settings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:   settings.ModelPlazaRequireAuth,

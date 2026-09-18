@@ -223,6 +223,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingPaymentEnabled,
 		SettingPaymentRechargePageVisible,
 		SettingPaymentOrdersPageVisible,
+		SettingBalancePayDisabled,
 		SettingKeyOIDCConnectEnabled,
 		SettingKeyOIDCConnectProviderName,
 		SettingKeyGitHubOAuthEnabled,
@@ -240,6 +241,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorDefaultIntervalSeconds,
 		SettingKeyChannelMonitorHideThroughput,
 		SettingKeyChannelMonitorShowQuota,
+		SettingKeyChannelMonitorHideUserRanking,
 		SettingKeyAvailableChannelsEnabled,
 		SettingKeySoftwareCenterEnabled,
 		SettingKeyModelMarketplaceEnabled,
@@ -253,6 +255,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyContactTelegramName,
 		SettingKeyContactTelegramURL,
 		SettingKeyContactTicketEnabled,
+		SettingKeySubscriptionEnabled,
 		SettingKeyModelPlazaEnabled,
 		SettingKeyModelPlazaRequireAuth,
 		SettingKeyPluginManagementEnabled,
@@ -371,6 +374,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		PaymentEnabled:                      settings[SettingPaymentEnabled] == "true",
 		PaymentRechargePageVisible:          !isFalseSettingValue(settings[SettingPaymentRechargePageVisible]),
 		PaymentOrdersPageVisible:            !isFalseSettingValue(settings[SettingPaymentOrdersPageVisible]),
+		PaymentBalanceDisabled:              settings[SettingBalancePayDisabled] == "true",
 		OIDCOAuthEnabled:                    oidcEnabled,
 		OIDCOAuthProviderName:               oidcProviderName,
 		GitHubOAuthEnabled:                  gitHubEnabled,
@@ -401,6 +405,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ContactTelegramName:                strings.TrimSpace(settings[SettingKeyContactTelegramName]),
 		ContactTelegramURL:                 strings.TrimSpace(settings[SettingKeyContactTelegramURL]),
 		ContactTicketEnabled:               !isFalseSettingValue(settings[SettingKeyContactTicketEnabled]),
+
+		SubscriptionEnabled: !isFalseSettingValue(settings[SettingKeySubscriptionEnabled]),
 
 		ModelPlazaEnabled:       settings[SettingKeyModelPlazaEnabled] == "true",
 		ModelPlazaRequireAuth:   settings[SettingKeyModelPlazaRequireAuth] == "true",
@@ -689,6 +695,7 @@ type PublicSettingsInjectionPayload struct {
 	PaymentEnabled                      bool                     `json:"payment_enabled"`
 	PaymentRechargePageVisible          bool                     `json:"payment_recharge_page_visible"`
 	PaymentOrdersPageVisible            bool                     `json:"payment_orders_page_visible"`
+	PaymentBalanceDisabled              bool                     `json:"payment_balance_disabled"`
 	Version                             string                   `json:"version"`
 	// 服务器全局时区（IANA 名称与当前 UTC 偏移），高峰时段等服务端本地时间窗口的展示标注用
 	ServerTimezone              string  `json:"server_timezone"`
@@ -730,6 +737,7 @@ type PublicSettingsInjectionPayload struct {
 	ModelPlazaEnabled                  bool   `json:"model_plaza_enabled"`
 	ModelPlazaRequireAuth              bool   `json:"model_plaza_require_auth"`
 	PluginManagementEnabled            bool   `json:"plugin_management_enabled"`
+	SubscriptionEnabled                bool   `json:"subscription_enabled"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -797,6 +805,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PaymentEnabled:                      settings.PaymentEnabled,
 		PaymentRechargePageVisible:          settings.PaymentRechargePageVisible,
 		PaymentOrdersPageVisible:            settings.PaymentOrdersPageVisible,
+		PaymentBalanceDisabled:              settings.PaymentBalanceDisabled,
 		Version:                             s.version,
 		ServerTimezone:                      timezone.Name(),
 		ServerUTCOffset:                     timezone.UTCOffset(),
@@ -824,6 +833,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ContactTelegramName:                  settings.ContactTelegramName,
 		ContactTelegramURL:                   settings.ContactTelegramURL,
 		ContactTicketEnabled:                 settings.ContactTicketEnabled,
+		SubscriptionEnabled:                  settings.SubscriptionEnabled,
 		ModelPlazaEnabled:                    settings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:                settings.ModelPlazaRequireAuth,
 		PluginManagementEnabled:              settings.PluginManagementEnabled,

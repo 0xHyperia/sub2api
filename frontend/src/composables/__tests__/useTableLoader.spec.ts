@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useTableLoader } from '@/composables/useTableLoader'
+import { onUnmounted } from 'vue'
 
 // Mock @vueuse/core 的 useDebounceFn
 vi.mock('@vueuse/core', () => ({
@@ -192,6 +193,27 @@ describe('useTableLoader', () => {
   // --- 请求取消 ---
 
   describe('请求取消', () => {
+    it('does not fetch when a debounced reload fires after unmount', async () => {
+      const fetchFn = createMockFetchFn()
+      const { debouncedReload } = useTableLoader({ fetchFn })
+      debouncedReload()
+      const unmount = vi.mocked(onUnmounted).mock.calls.at(-1)![0]
+      unmount()
+      await vi.runAllTimersAsync()
+      expect(fetchFn).not.toHaveBeenCalled()
+    })
+
+    it('ignores a response that resolves after unmount even if fetch ignores abort', async () => {
+      let resolveLoad!: (value: any) => void
+      const fetchFn = vi.fn(() => new Promise<any>(resolve => { resolveLoad = resolve }))
+      const { load, items } = useTableLoader({ fetchFn })
+      const pending = load()
+      vi.mocked(onUnmounted).mock.calls.at(-1)![0]()
+      resolveLoad({ items: [{ id: 1 }], total: 1, pages: 1 })
+      await pending
+      expect(items.value).toEqual([])
+    })
+
     it('新请求取消前一个未完成的请求', async () => {
       let callCount = 0
       const fetchFn = vi.fn((_page, _size, _params, options) => {

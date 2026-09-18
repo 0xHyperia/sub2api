@@ -112,7 +112,11 @@ const mountView = () => mount(AccountsView, {
         template: '<div data-test="data-table"><div v-for="row in data" :key="row.id"><slot name="cell-select" :row="row" /></div></div>'
       },
       Pagination: true,
-      ConfirmDialog: true,
+      ConfirmDialog: {
+        props: ['show'],
+        emits: ['confirm', 'cancel'],
+        template: '<button v-if="show" data-test="confirm-bulk" @click="$emit(\'confirm\')">confirm</button>'
+      },
       AccountTableActions: { template: '<div><slot name="beforeCreate" /><slot name="after" /></div>' },
       AccountTableFilters: AccountTableFiltersStub,
       AccountBulkActionsBar: AccountBulkActionsBarStub,
@@ -179,6 +183,7 @@ describe('admin AccountsView select all filtered results', () => {
     await flushPromises()
     await wrapper.get('[data-test="select-page"]').trigger('click')
     await wrapper.get('[data-test="refresh-token"]').trigger('click')
+    await wrapper.get('[data-test="confirm-bulk"]').trigger('click')
     await flushPromises()
 
     expect(batchRefresh).toHaveBeenCalledWith([1, 2, 3])
@@ -189,6 +194,7 @@ describe('admin AccountsView select all filtered results', () => {
     if (result.failed > 0) {
       expect(showError).toHaveBeenCalledWith('admin.accounts.bulkActions.partialSuccess')
       await wrapper.get('[data-test="refresh-token"]').trigger('click')
+      await wrapper.get('[data-test="confirm-bulk"]').trigger('click')
       await flushPromises()
       expect(batchRefresh).toHaveBeenLastCalledWith(expectedIds)
     }
@@ -234,6 +240,7 @@ describe('admin AccountsView select all filtered results', () => {
 
     expect(wrapper.get('[data-test="selected-count"]').text()).toBe('0')
     expect(wrapper.get('[data-test="all-results-selected"]').text()).toBe('false')
+    wrapper.unmount()
   })
 
   it('keeps the original page selection when loading all results fails', async () => {
@@ -263,5 +270,6 @@ describe('admin AccountsView select all filtered results', () => {
     expect(wrapper.get('[data-test="selected-count"]').text()).toBe('20')
     expect(wrapper.get('[data-test="all-results-selected"]').text()).toBe('false')
     expect(showError).toHaveBeenCalledWith('admin.accounts.bulkActions.selectAllFailed')
+    wrapper.unmount()
   })
 })

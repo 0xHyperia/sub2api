@@ -94,6 +94,7 @@ import GrokFreeIcon from "./GrokFreeIcon.vue";
 import PlatformIcon from "./PlatformIcon.vue";
 import Icon from "@/components/icons/Icon.vue";
 import { platformBadgeLightClass } from "@/utils/platformColors";
+import { normalizePlanType, openAIPlanTypeLabel } from '@/utils/planType'
 
 const { t } = useI18n();
 
@@ -117,6 +118,7 @@ const platformLabel = computed(() => {
   if (props.platform === "zhipu") return "Zhipu GLM";
   if (props.platform === "deepseek") return "DeepSeek";
   if (props.platform === "minimax") return "MiniMax";
+  if (props.platform === "opencode_go") return "OpenCode";
   return "Gemini";
 });
 
@@ -148,15 +150,16 @@ const typeLabel = computed(() => {
   }
 });
 
-const normalizedPlanType = computed(() =>
-  (props.planType || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, ""),
-);
+const normalizedPlanType = computed(() => normalizePlanType(props.planType))
 
 const planLabel = computed(() => {
-  if (!normalizedPlanType.value) return "";
+  if (!normalizedPlanType.value) return ''
+  // ChatGPT 档位命名（Pro 5x / Pro 20x、Business Standard / Business Premium）只适用于
+  // OpenAI：Antigravity 与 Grok 各自的 pro/team 沿用下面的通用标签。
+  if (props.platform === 'openai') {
+    const label = openAIPlanTypeLabel(props.planType)
+    if (label) return label
+  }
   switch (normalizedPlanType.value) {
     case "plus":
       return "Plus";
@@ -251,32 +254,32 @@ const planBadgeClass = computed(() => {
     normalizedPlanType.value === "basic" ||
     normalizedPlanType.value === "xbasic"
   ) {
-    return "bg-surface-subtle text-foreground-muted bg-surface-subtle text-foreground-muted";
+    return "bg-surface-subtle text-foreground-muted";
   }
   if (props.platform === "grok" && normalizedPlanType.value) {
     // Heavy / SuperGrok Heavy → purple
     if (normalizedPlanType.value.includes("heavy")) {
-      return "bg-brand-subtle text-brand bg-brand-subtle/30 text-brand";
+      return "bg-brand-subtle text-brand";
     }
     // SuperGrok → cyan
     if (normalizedPlanType.value.includes("supergrok")) {
-      return "bg-info-subtle text-info-foreground bg-info-subtle/30 text-info-foreground";
+      return "bg-info-subtle text-info-foreground";
     }
     // Any other non-free Grok plan (future tiers) → amber so it still stands out
-    return "bg-warning-subtle text-warning-foreground bg-warning-subtle/30 text-warning-foreground";
+    return "bg-warning-subtle text-warning-foreground";
   }
   // OpenAI / other paid plan labels: keep readable distinction from free gray
   if (normalizedPlanType.value === "plus") {
-    return "bg-info-subtle text-info-foreground bg-info-subtle/30 text-info-foreground";
+    return "bg-info-subtle text-info-foreground";
   }
-  if (normalizedPlanType.value === "team") {
-    return "bg-info-subtle text-info-foreground bg-info-subtle/30 text-info-foreground";
+  if (normalizedPlanType.value === "team" || normalizedPlanType.value === "selfservebusinessprolite") {
+    return "bg-info-subtle text-info-foreground";
   }
   if (
     normalizedPlanType.value === "pro" ||
-    normalizedPlanType.value === "chatgptpro"
+    normalizedPlanType.value === "chatgptpro" || normalizedPlanType.value === "prolite"
   ) {
-    return "bg-brand-subtle text-brand bg-brand-subtle/30 text-brand";
+    return "bg-brand-subtle text-brand";
   }
   return typeClass.value;
 });

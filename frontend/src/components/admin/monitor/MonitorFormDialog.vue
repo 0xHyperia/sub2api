@@ -400,6 +400,8 @@ import {
   PROVIDER_KIMI,
   PROVIDER_ZHIPU,
   PROVIDER_DEEPSEEK,
+  PROVIDER_MINIMAX,
+  PROVIDER_OPENCODE_GO,
   API_MODE_CHAT_COMPLETIONS,
   API_MODE_RESPONSES,
   CHECK_MODE_PROBE,
@@ -410,6 +412,8 @@ import {
   DEFAULT_KIMI_ENDPOINT,
   DEFAULT_ZHIPU_ENDPOINT,
   DEFAULT_DEEPSEEK_ENDPOINT,
+  DEFAULT_MINIMAX_ENDPOINT,
+  DEFAULT_OPENCODE_GO_ENDPOINT,
   DEFAULT_INTERVAL_SECONDS,
 } from "@/constants/channelMonitor";
 
@@ -607,25 +611,26 @@ interface ProviderOption {
 }
 
 const providerOptions = computed<ProviderOption[]>(() => [
-  { value: PROVIDER_ANTHROPIC, label: t("monitorCommon.providers.anthropic") },
-  { value: PROVIDER_OPENAI, label: t("monitorCommon.providers.openai") },
-  { value: PROVIDER_GEMINI, label: t("monitorCommon.providers.gemini") },
-  { value: PROVIDER_GROK, label: t("monitorCommon.providers.grok") },
-  {
-    value: PROVIDER_ANTIGRAVITY,
-    label: t("monitorCommon.providers.antigravity"),
-  },
-  { value: PROVIDER_KIMI, label: t("monitorCommon.providers.kimi") },
-  { value: PROVIDER_ZHIPU, label: t("monitorCommon.providers.zhipu") },
-  { value: PROVIDER_DEEPSEEK, label: t("monitorCommon.providers.deepseek") },
-]);
+  { value: PROVIDER_ANTHROPIC, label: t('monitorCommon.providers.anthropic') },
+  { value: PROVIDER_OPENAI, label: t('monitorCommon.providers.openai') },
+  { value: PROVIDER_GEMINI, label: t('monitorCommon.providers.gemini') },
+  { value: PROVIDER_GROK, label: t('monitorCommon.providers.grok') },
+  { value: PROVIDER_ANTIGRAVITY, label: t('monitorCommon.providers.antigravity') },
+  { value: PROVIDER_KIMI, label: t('monitorCommon.providers.kimi') },
+  { value: PROVIDER_ZHIPU, label: t('monitorCommon.providers.zhipu') },
+  { value: PROVIDER_DEEPSEEK, label: t('monitorCommon.providers.deepseek') },
+  { value: PROVIDER_MINIMAX, label: t('monitorCommon.providers.minimax') },
+  { value: PROVIDER_OPENCODE_GO, label: t('monitorCommon.providers.opencode_go') },
+])
 
 // 国产 provider 预填的官方 endpoint（仅探活侧；配额模式 endpoint 可留空）。
 const PROVIDER_DEFAULT_ENDPOINTS: Partial<Record<Provider, string>> = {
   [PROVIDER_KIMI]: DEFAULT_KIMI_ENDPOINT,
   [PROVIDER_ZHIPU]: DEFAULT_ZHIPU_ENDPOINT,
   [PROVIDER_DEEPSEEK]: DEFAULT_DEEPSEEK_ENDPOINT,
-};
+  [PROVIDER_MINIMAX]: DEFAULT_MINIMAX_ENDPOINT,
+  [PROVIDER_OPENCODE_GO]: DEFAULT_OPENCODE_GO_ENDPOINT,
+}
 
 interface CheckModeOption {
   value: CheckMode;
