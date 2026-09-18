@@ -762,6 +762,7 @@ export default {
       REDEEM_CODE_LOCKED: '该兑换码正在处理中，请稍后再试。',
       REDEEM_CODE_UNSUPPORTED_TYPE: '该兑换码不能在此处使用。'
     },
+    historyLoadFailed: '加载兑换记录失败，请重试。',
     userRefreshFailed: '兑换成功，但账户信息刷新失败。',
     subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
     pleaseEnterCode: '请输入兑换码'

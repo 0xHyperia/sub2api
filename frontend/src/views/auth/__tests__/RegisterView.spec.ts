@@ -14,7 +14,8 @@ const {
   validatePromoCodeMock,
   validateInvitationCodeMock,
   verifyActionMock,
-  routeQuery
+  routeQuery,
+  appStoreMock
 } = vi.hoisted(() => ({
   getPublicSettingsMock: vi.fn(),
   pushMock: vi.fn(),
@@ -27,7 +28,13 @@ const {
   validatePromoCodeMock: vi.fn(),
   validateInvitationCodeMock: vi.fn(),
   verifyActionMock: vi.fn(),
-  routeQuery: {} as Record<string, string>
+  routeQuery: {} as Record<string, string>,
+  appStoreMock: {
+    cachedPublicSettings: null as { promo_code_enabled?: boolean } | null,
+    showError: (...args: unknown[]) => showErrorMock(...args),
+    showSuccess: (...args: unknown[]) => showSuccessMock(...args),
+    showWarning: vi.fn()
+  }
 }))
 
 vi.mock('vue-router', () => ({
@@ -56,12 +63,8 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('@/stores', () => ({
-  useAuthStore: () => ({ register: registerMock }),
-  useAppStore: () => ({
-    showError: showErrorMock,
-    showSuccess: showSuccessMock,
-    showWarning: vi.fn()
-  })
+  useAuthStore: () => ({ register: (...args: unknown[]) => registerMock(...args) }),
+  useAppStore: () => appStoreMock
 }))
 
 vi.mock('@/api/auth', async () => {
@@ -118,6 +121,7 @@ describe('RegisterView', () => {
     showErrorMock.mockReset()
     pushMock.mockReset()
     verifyActionMock.mockReset()
+    appStoreMock.cachedPublicSettings = null
     sessionStorage.removeItem('register_data')
     verifyActionMock.mockResolvedValue({ token: 'ticket', randstr: 'randstr' })
     registerMock.mockResolvedValue({})
@@ -445,6 +449,39 @@ describe('RegisterView', () => {
       path: '/register',
       query: { step: 'verify' }
     })
+  })
+
+  it('does not flash the promo-code field before disabled settings finish loading', async () => {
+    let resolveSettings!: (settings: typeof enabledSettings) => void
+    getPublicSettingsMock.mockReturnValueOnce(
+      new Promise<typeof enabledSettings>((resolve) => {
+        resolveSettings = resolve
+      })
+    )
+
+    const wrapper = mountRegisterView()
+
+    expect(wrapper.find('#promo_code').exists()).toBe(false)
+
+    resolveSettings(enabledSettings)
+    await flushPromises()
+
+    expect(wrapper.find('#promo_code').exists()).toBe(false)
+  })
+
+  it('keeps the form gated until registration is confirmed even with cached promo settings', async () => {
+    appStoreMock.cachedPublicSettings = { promo_code_enabled: true }
+    let resolveSettings!: (settings: typeof enabledSettings) => void
+    getPublicSettingsMock.mockReturnValueOnce(new Promise<typeof enabledSettings>((resolve) => {
+      resolveSettings = resolve
+    }))
+
+    const wrapper = mountRegisterView()
+
+    expect(wrapper.find('form').exists()).toBe(false)
+    resolveSettings({ ...enabledSettings, promo_code_enabled: true })
+    await flushPromises()
+    expect(wrapper.find('#promo_code').exists()).toBe(true)
   })
 
   it.each([

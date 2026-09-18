@@ -758,6 +758,7 @@ export default {
       REDEEM_CODE_LOCKED: 'This redeem code is being processed. Please try again later.',
       REDEEM_CODE_UNSUPPORTED_TYPE: 'This redeem code cannot be used here.'
     },
+    historyLoadFailed: 'Failed to load activity. Please try again.',
     userRefreshFailed: 'Redeemed successfully, but failed to refresh account information.',
     subscriptionRefreshFailed: 'Redeemed successfully, but failed to refresh subscription status.',
     pleaseEnterCode: 'Please enter a redeem code'
