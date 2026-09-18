@@ -1314,8 +1314,8 @@ func TestBuildCache_PlatformFiltering(t *testing.T) {
 		Status:   StatusActive,
 		GroupIDs: []int64{10, 20},
 		ModelPricing: []ChannelModelPricing{
-			{ID: 100, Platform: "anthropic", Models: []string{"claude-opus-4"}},
-			{ID: 200, Platform: "openai", Models: []string{"gpt-5.1"}},
+			{ID: 100, Platform: "anthropic", Models: []string{"claude-opus-4"}, InputPrice: testPtrFloat64(1e-6)},
+			{ID: 200, Platform: "openai", Models: []string{"gpt-5.1"}, InputPrice: testPtrFloat64(1e-6)},
 		},
 	}
 	repo := makeStandardRepo(ch, map[int64]string{
@@ -1373,7 +1373,7 @@ func TestInvalidateCache(t *testing.T) {
 		Status:   StatusActive,
 		GroupIDs: []int64{10},
 		ModelPricing: []ChannelModelPricing{
-			{ID: 100, Platform: "anthropic", Models: []string{"claude-opus-4"}},
+			{ID: 100, Platform: "anthropic", Models: []string{"claude-opus-4"}, InputPrice: testPtrFloat64(1e-6)},
 		},
 	}
 	repo := &mockChannelRepository{
@@ -1424,6 +1424,7 @@ func TestInvalidateCachePublishesToOtherInstances(t *testing.T) {
 					ID:       100,
 					Platform: PlatformAnthropic,
 					Models:   []string{model},
+					InputPrice: testPtrFloat64(1e-6),
 				}},
 			}}, nil
 		},
@@ -2144,8 +2145,8 @@ func TestCompositeChannelLookupUsesResolvedTargetPlatform(t *testing.T) {
 		Status:   StatusActive,
 		GroupIDs: []int64{99},
 		ModelPricing: []ChannelModelPricing{
-			{Platform: PlatformOpenAI, Models: []string{"gpt-*"}},
-			{Platform: PlatformAnthropic, Models: []string{"claude-*"}},
+			{Platform: PlatformOpenAI, Models: []string{"gpt-*"}, InputPrice: testPtrFloat64(1e-6)},
+			{Platform: PlatformAnthropic, Models: []string{"claude-*"}, InputPrice: testPtrFloat64(1e-6)},
 		},
 		ModelMapping: map[string]map[string]string{
 			PlatformOpenAI: {
