@@ -88,7 +88,7 @@ func TestMarketplaceModelIDs_CustomGroupListTakesPriority(t *testing.T) {
 		Credentials: map[string]any{"model_mapping": map[string]any{"gpt-custom": "gpt-upstream", "gpt-other": "gpt-other"}},
 	}}
 
-	require.Equal(t, []string{"gpt-custom", "gpt-other"}, marketplaceModelIDs(group, accounts))
+	require.Equal(t, []string{"gpt-custom", "gpt-other"}, service.ModelCatalogModels(group, accounts))
 }
 
 func TestMarketplaceModelIDs_UsesOnlyExplicitAccountMappings(t *testing.T) {
@@ -98,7 +98,7 @@ func TestMarketplaceModelIDs_UsesOnlyExplicitAccountMappings(t *testing.T) {
 		Credentials: map[string]any{"model_mapping": map[string]any{"gpt-marketplace-only": "gpt-upstream"}},
 	}}
 
-	models := marketplaceModelIDs(group, accounts)
+	models := service.ModelCatalogModels(group, accounts)
 	require.Equal(t, []string{"gpt-marketplace-only"}, models)
 }
 
@@ -109,7 +109,7 @@ func TestMarketplaceModelIDs_CompositeCollectsConcreteAccountMappings(t *testing
 		{Platform: service.PlatformAnthropic, Credentials: map[string]any{"model_mapping": map[string]any{"claude-public": "claude-upstream"}}},
 	}
 
-	require.Equal(t, []string{"claude-public", "gpt-public"}, marketplaceModelIDs(group, accounts))
+	require.Equal(t, []string{"claude-public", "gpt-public"}, service.ModelCatalogModels(group, accounts))
 }
 
 func TestFilterUserVisibleGroups_IntersectionOnly(t *testing.T) {
