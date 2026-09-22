@@ -13,12 +13,30 @@ func RegisterUserRoutes(
 	v1 *gin.RouterGroup,
 	h *handler.Handlers,
 	jwtAuth middleware.JWTAuthMiddleware,
+	adminAuth middleware.AdminAuthMiddleware,
 	auditLog middleware.AuditLogMiddleware,
 	settingService *service.SettingService,
 	panelRateLimiter *middleware.PanelRateLimiter,
 ) {
 	// 首页模型橱窗仅返回公开分组的匿名安全摘要。
 	v1.GET("/models/showcase", h.AvailableChannel.ListShowcase)
+
+	// The marketplace is also consumed by trusted operations clients. Accepting
+	// the Admin API Key here gives those clients the same complete, user-scoped
+	// catalog as an authenticated administrator, without requiring a JWT.
+	marketplaceAuth := func(c *gin.Context) {
+		if c.GetHeader("x-api-key") != "" {
+			adminAuth(c)
+			return
+		}
+		jwtAuth(c)
+	}
+	models := v1.Group("/models")
+	models.Use(gin.HandlerFunc(marketplaceAuth))
+	models.Use(middleware.BackendModeUserGuard(settingService))
+	models.Use(panelRateLimiter.Global())
+	models.Use(gin.HandlerFunc(auditLog))
+	models.GET("/marketplace", h.AvailableChannel.ListMarketplace)
 
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
@@ -98,11 +116,6 @@ func RegisterUserRoutes(
 		channels := authenticated.Group("/channels")
 		{
 			channels.GET("/available", h.AvailableChannel.List)
-		}
-
-		models := authenticated.Group("/models")
-		{
-			models.GET("/marketplace", h.AvailableChannel.ListMarketplace)
 		}
 
 		distribution := authenticated.Group("/distribution")
