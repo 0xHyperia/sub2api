@@ -69,6 +69,10 @@ func (PaymentOrder) Fields() []ent.Field {
 		field.String("fee_mode").
 			MaxLen(20).
 			Default("platform"),
+		// 充值赠送额度（USD）。已计入 amount；单独记录用于订单展示与推广返利基数剔除。
+		field.Float("bonus_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
 		field.String("recharge_code").
 			MaxLen(64),
 

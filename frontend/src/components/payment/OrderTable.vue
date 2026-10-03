@@ -79,6 +79,9 @@
         </span>
         <div v-if="shouldShowCreditedAmount(row)" class="text-xs text-foreground-subtle">
           {{ t('payment.orders.creditedAmount') }}: {{ creditedAmountSymbol }}{{ row.amount.toFixed(2) }}
+          <span v-if="(row.bonus_amount ?? 0) > 0" class="ml-1 text-warning-foreground">
+            ({{ t('payment.orders.bonusIncluded', { amount: creditedAmountSymbol + (row.bonus_amount ?? 0).toFixed(2) }) }})
+          </span>
         </div>
       </div>
     </template>

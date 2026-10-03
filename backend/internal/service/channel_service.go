@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -367,7 +368,7 @@ func isPlatformPricingMatch(groupPlatform, pricingPlatform string) bool {
 // fallback used before a request target has been resolved.
 func matchingPlatforms(groupPlatform string) []string {
 	if groupPlatform == PlatformComposite {
-		return []string{PlatformAnthropic, PlatformGemini, PlatformOpenAI, PlatformAntigravity, PlatformGrok, PlatformKimi, PlatformZhipu, PlatformDeepseek, PlatformMiniMax, PlatformOpenCodeGo}
+		return []string{PlatformAnthropic, PlatformGemini, PlatformOpenAI, PlatformAntigravity, PlatformGrok, PlatformKimi, PlatformZhipu, PlatformDeepseek, PlatformMiniMax, PlatformOpenCodeGo, PlatformTypeSafe}
 	}
 	return []string{groupPlatform}
 }
@@ -578,7 +579,7 @@ func channelPricingIsEmpty(p *ChannelModelPricing) bool {
 	return p.InputPrice == nil && p.OutputPrice == nil &&
 		p.CacheWritePrice == nil && p.CacheWrite1hPrice == nil && p.CacheReadPrice == nil &&
 		p.ImageInputPrice == nil && p.ImageOutputPrice == nil && p.PerRequestPrice == nil &&
-		p.FastMultiplier == nil && p.FlexMultiplier == nil && p.MaxReasoningEffortMultiplier == nil &&
+		p.FastMultiplier == nil && p.FlexMultiplier == nil && len(p.ReasoningEffortMultipliers) == 0 &&
 		len(p.Intervals) == 0 && p.TimePricing == nil
 }
 
@@ -708,7 +709,28 @@ func validatePricingEntries(pricing []ChannelModelPricing) error {
 	if err := validatePricingBillingMode(pricing); err != nil {
 		return err
 	}
+	if err := validateReasoningEffortMultipliers(pricing); err != nil {
+		return err
+	}
 	return validatePricingTimePricing(pricing)
+}
+
+func validateReasoningEffortMultipliers(pricing []ChannelModelPricing) error {
+	for _, p := range pricing {
+		for effort, multiplier := range p.ReasoningEffortMultipliers {
+			switch effort {
+			case "none", "minimal", "low", "medium", "high", "xhigh", "max":
+			default:
+				return infraerrors.BadRequest("INVALID_REASONING_EFFORT_MULTIPLIER",
+					fmt.Sprintf("unsupported reasoning effort %q for models %v", effort, p.Models))
+			}
+			if math.IsNaN(multiplier) || math.IsInf(multiplier, 0) || multiplier <= 0 {
+				return infraerrors.BadRequest("INVALID_REASONING_EFFORT_MULTIPLIER",
+					fmt.Sprintf("reasoning_effort_multipliers.%s must be a finite number > 0", effort))
+			}
+		}
+	}
+	return nil
 }
 
 func validatePricingTimePricing(pricing []ChannelModelPricing) error {

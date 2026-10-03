@@ -160,7 +160,7 @@ async function loadData(userId = props.user?.id) {
     ])
     if (!isCurrentLoad(requestSeq, userId)) return
     apiKeys.value = res.items || []
-    allGroups.value = groups
+    allGroups.value = groups ?? []
   } catch (error) {
     if (!isCurrentLoad(requestSeq, userId)) return
     console.error('Failed to load API keys:', error)

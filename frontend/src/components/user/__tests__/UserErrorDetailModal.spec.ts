@@ -22,14 +22,17 @@ vi.mock('vue-i18n', async () => {
 interface Deferred<T> {
   promise: Promise<T>
   resolve: (value: T) => void
+  reject: (error: Error) => void
 }
 
 function deferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void
-  const promise = new Promise<T>((resolvePromise) => {
+  let reject!: (error: Error) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise
+    reject = rejectPromise
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
 }
 
 function detail(id: number, message = `message-${id}`) {
@@ -115,5 +118,60 @@ describe('UserErrorDetailModal async state', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('current message')
     expect(wrapper.text()).not.toContain('stale message')
+  })
+})
+
+const modelDetail = (model: string) => ({ model, status_code: 500, category: 'upstream', created_at: '2026-09-20' })
+
+async function openClosed() {
+  const wrapper = mount(UserErrorDetailModal, {
+    props: { show: false, errorId: 1 },
+    global: { stubs: { BaseDialog: { props: ['show'], template: '<div v-if="show"><slot /></div>' } } },
+  })
+  await wrapper.setProps({ show: true })
+  return wrapper
+}
+
+describe('user error detail request ownership', () => {
+  it('keeps the newer detail when an earlier request finishes last', async () => {
+    const old = deferred<unknown>(); const current = deferred<unknown>()
+    getMyErrorDetail.mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise)
+    const wrapper = await openClosed()
+    await wrapper.setProps({ show: false })
+    await wrapper.setProps({ show: true, errorId: 2 })
+    current.resolve(modelDetail('current-model')); await flushPromises()
+    old.resolve(modelDetail('old-model')); await flushPromises()
+    expect(wrapper.text()).toContain('current-model')
+    expect(wrapper.text()).not.toContain('old-model')
+  })
+
+  it('keeps loading until the current request settles', async () => {
+    const old = deferred<unknown>(); const current = deferred<unknown>()
+    getMyErrorDetail.mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise)
+    const wrapper = await openClosed()
+    await wrapper.setProps({ errorId: 2 })
+    old.resolve(modelDetail('old-model')); await flushPromises()
+    expect(wrapper.find('[role="status"]').exists()).toBe(true)
+    current.resolve(modelDetail('current-model')); await flushPromises()
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('current-model')
+  })
+
+  it('ignores an obsolete failure, including when reopening the same record', async () => {
+    const old = deferred<unknown>()
+    getMyErrorDetail.mockReturnValueOnce(old.promise).mockResolvedValueOnce(modelDetail('current-model'))
+    const wrapper = await openClosed()
+    await wrapper.setProps({ show: false })
+    await wrapper.setProps({ show: true }); await flushPromises()
+    old.reject(new Error('obsolete')); await flushPromises()
+    expect(wrapper.text()).toContain('current-model')
+    expect(wrapper.text()).not.toContain('usage.errors.detail.loadFailed')
+  })
+
+  it('still reports a failure for the current record', async () => {
+    getMyErrorDetail.mockRejectedValueOnce(new Error('current failure'))
+    const wrapper = await openClosed(); await flushPromises()
+    expect(wrapper.text()).toContain('usage.errors.detail.loadFailed')
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })
 })

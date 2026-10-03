@@ -207,6 +207,7 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 		TimePricing: &service.ChannelTimePricing{Timezone: "Asia/Shanghai", WeekdaysOnly: true, Periods: []service.ChannelTimePricingPeriod{
 			{StartTime: "09:00:00", EndTime: "18:00:00", Multiplier: 2},
 		}},
+		ReasoningEffortMultipliers: map[string]float64{"high": 1.5, "max": 3},
 		Intervals: []service.PricingInterval{
 			{
 				ID: 7, MinTokens: 0, MaxTokens: nil, SortOrder: 3,
@@ -224,6 +225,7 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 		"timezone": "Asia/Shanghai", "weekdays_only": true,
 		"periods": []any{map[string]any{"start_time": "09:00:00", "end_time": "18:00:00", "multiplier": float64(2)}},
 	}, pricingDecoded["time_pricing"])
+	require.Equal(t, map[string]float64{"high": 1.5, "max": 3}, pricing.ReasoningEffortMultipliers)
 	require.Len(t, pricing.Intervals, 1)
 	rawIv, err := json.Marshal(pricing.Intervals[0])
 	require.NoError(t, err)

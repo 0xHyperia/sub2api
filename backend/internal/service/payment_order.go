@@ -53,6 +53,13 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if s.notificationEmailService != nil {
 		s.notificationEmailService.RememberRecipientLocale(ctx, req.UserID, user.Email, req.Locale)
 	}
+	methodCurrency := payment.DefaultPaymentCurrency
+	if s.configService != nil {
+		methodCurrency, err = s.configService.ValidateMethodCurrencyConsistency(ctx, req.PaymentType)
+		if err != nil {
+			return nil, err
+		}
+	}
 	orderAmount := req.Amount
 	limitAmount := req.Amount
 	entitlementPrincipalAmount := req.Amount
@@ -62,15 +69,17 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 		limitAmount = plan.Price
 		entitlementPrincipalAmount = plan.Price
 	} else if req.OrderType == payment.OrderTypeBalance {
-		rechargeBonus, _ = quickRechargeBonus(req.Amount, cfg.QuickRechargeAmounts)
-		entitlementPrincipalAmount = calculateCreditedBalance(req.Amount, cfg.BalanceRechargeMultiplier)
-		orderAmount = calculateCreditedBalanceWithBonus(req.Amount, cfg.BalanceRechargeMultiplier, rechargeBonus)
-	}
-	methodCurrency := payment.DefaultPaymentCurrency
-	if s.configService != nil {
-		methodCurrency, err = s.configService.ValidateMethodCurrencyConsistency(ctx, req.PaymentType)
-		if err != nil {
-			return nil, err
+		// 充值优惠阶梯（官方）优先；未命中时回落到 USA0 快捷充值档位赠额。
+		// 阈值按支付金额命中；折扣模式下网关收款基数为折后金额。
+		if quote := quoteRechargeBonus(cfg, req.Amount, methodCurrency); quote.Percent > 0 {
+			limitAmount = quote.PayBase
+			rechargeBonus = quote.Bonus
+			entitlementPrincipalAmount = rechargeQuotePaidCredit(quote)
+			orderAmount = quote.Credited
+		} else {
+			rechargeBonus, _ = quickRechargeBonus(req.Amount, cfg.QuickRechargeAmounts)
+			entitlementPrincipalAmount = calculateCreditedBalance(req.Amount, cfg.BalanceRechargeMultiplier)
+			orderAmount = calculateCreditedBalanceWithBonus(req.Amount, cfg.BalanceRechargeMultiplier, rechargeBonus)
 		}
 	}
 	_, _, _, baseProviderAmount, err := calculateCreateOrderAmountsForOrderType(limitAmount, 0, methodCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate, cfg.FeeMode)
@@ -217,6 +226,7 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		SetProviderAmount(providerAmount).
 		SetFeeRate(feeRate).
 		SetFeeMode(normalizePaymentFeeMode(cfg.FeeMode)).
+		SetBonusAmount(rechargeBonus).
 		SetRechargeCode("").
 		SetOutTradeNo(outTradeNo).
 		SetPaymentType(req.PaymentType).
@@ -505,6 +515,7 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 	s.writeAuditLog(ctx, order.ID, "ORDER_CREATED", fmt.Sprintf("user:%d", req.UserID), map[string]any{
 		"paymentAmount":  req.Amount,
 		"creditedAmount": order.Amount,
+		"bonusAmount":    order.BonusAmount,
 		"payAmount":      order.PayAmount,
 		"providerAmount": order.ProviderAmount,
 		"feeMode":        order.FeeMode,
@@ -795,6 +806,7 @@ func buildCreateOrderResponse(order *dbent.PaymentOrder, req CreateOrderRequest,
 		Amount:       order.Amount,
 		PayAmount:    payAmount,
 		FeeRate:      order.FeeRate,
+		BonusAmount:  order.BonusAmount,
 		Status:       OrderStatusPending,
 		ResultType:   resultType,
 		PaymentType:  req.PaymentType,

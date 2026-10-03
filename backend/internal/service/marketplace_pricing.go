@@ -39,7 +39,7 @@ func (r *ModelPricingResolver) MarketplacePricing(ctx context.Context, model, pl
 		if raw != nil {
 			price.TimePricing = raw.TimePricing
 		}
-		return withDefaultMaxReasoningEffortMultiplier(price, model)
+		return price
 	}
 	return nil
 }

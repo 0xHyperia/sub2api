@@ -384,6 +384,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   deepseek: "DeepSeek",
   minimax: "MiniMax",
   opencode_go: "OpenCode",
+  typesafe: "TypeSafe / Jev",
 };
 
 const platformLabel = (p: string) => PLATFORM_LABELS[p] ?? p;
@@ -417,6 +418,7 @@ const platformCards = computed<FusedPlatformCard[]>(() => {
     "gemini",
     "antigravity",
     "grok",
+    "typesafe",
   ];
   const cards: FusedPlatformCard[] = [];
 

@@ -40,11 +40,16 @@
             </div>
             <div class="flex justify-between gap-4 py-3">
               <dt class="text-foreground-subtle">{{ t('payment.orders.amount') }}</dt>
-              <dd class="font-medium tabular-nums text-foreground">{{ creditedAmountSymbol }}{{ paidOrder.amount.toFixed(2) }}</dd>
+              <dd class="font-medium tabular-nums text-foreground">
+                {{ creditedAmountSymbol }}{{ paidOrder.amount.toFixed(2) }}
+                <span v-if="(paidOrder.bonus_amount ?? 0) > 0" class="ml-1 text-xs font-normal text-warning-foreground">
+                  ({{ t('payment.orders.bonusIncluded', { amount: creditedAmountSymbol + (paidOrder.bonus_amount ?? 0).toFixed(2) }) }})
+                </span>
+              </dd>
             </div>
             <div class="flex justify-between gap-4 py-3">
               <dt class="text-foreground-subtle">{{ t('payment.orders.payAmount') }}</dt>
-              <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(paidOrder.pay_amount) }}</dd>
+              <dd class="font-medium tabular-nums text-foreground">{{ formatGatewayAmount(paidOrder.pay_amount, paidOrder.currency) }}</dd>
             </div>
           </dl>
           <button type="button" class="btn btn-primary min-w-32" @click="handleDone">{{ t('common.confirm') }}</button>

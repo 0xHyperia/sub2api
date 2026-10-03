@@ -105,7 +105,8 @@ let requestSequence = 0
 
 watch(
   () => [props.show, props.errorId] as const,
-  ([show, id]) => {
+  ([show, id], _, onCleanup) => {
+    onCleanup(() => { requestSequence += 1 })
     if (show && id != null) {
       detail.value = null
       void fetchDetail(id)

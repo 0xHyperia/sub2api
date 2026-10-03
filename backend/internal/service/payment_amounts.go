@@ -75,6 +75,17 @@ func PaymentOrderEntitlementPrincipalAmount(order *dbent.PaymentOrder) float64 {
 	if order.EntitlementPrincipalAmount > 0 {
 		return order.EntitlementPrincipalAmount
 	}
+	// 旧订单或未写入本金字段的订单：到账总额扣除免费赠送额度（bonus_amount）即付费本金。
+	if order.OrderType == payment.OrderTypeBalance && order.BonusAmount > 0 {
+		base := decimal.NewFromFloat(order.Amount).
+			Sub(decimal.NewFromFloat(order.BonusAmount)).
+			Round(2).
+			InexactFloat64()
+		if base < 0 {
+			return 0
+		}
+		return base
+	}
 	return order.Amount
 }
 
@@ -117,5 +128,13 @@ func calculateGatewayRefundAmount(orderAmount, payAmount, refundAmount float64, 
 		Mul(decimal.NewFromFloat(refundAmount)).
 		Div(decimal.NewFromFloat(orderAmount)).
 		Round(fractionDigits).
+		InexactFloat64()
+}
+
+// rechargeQuotePaidCredit 返回阶梯报价中用户实际付费换得的到账额（到账总额扣除免费部分）。
+func rechargeQuotePaidCredit(quote rechargeBonusQuote) float64 {
+	return decimal.NewFromFloat(quote.Credited).
+		Sub(decimal.NewFromFloat(quote.Bonus)).
+		Round(2).
 		InexactFloat64()
 }

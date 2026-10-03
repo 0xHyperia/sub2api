@@ -2,6 +2,26 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.2.13 同步（集成分支）
+
+- 集成分支：`codex/merge-upstream-v0.2.13`
+- USA0 合并基线：`usa0/main` / `c4c53fbcb`（USA0 v1.0.24，含官方 v0.2.6）
+- 官方 annotated tag 对象：`7d0c0067f406c380f0a94cfc3879cdae7049b467`
+- 官方目标提交：`3040209f205472038c1ba745a1bedd2edd9053b1`
+- 实际 merge-base：`efe9aab1e4ec89a42ba45e8dac20e882c5409a6a`（官方历史非线性，v0.2.6 的 PR #7315 不在 v0.2.13 祖先内，`UPSTREAM.md` 的旧基线记录不可用于计算范围）
+- 同步范围：420 个上游提交、758 个变更文件；初始 111 个文本冲突
+- 状态：已完成无提交合并、冲突适配与验证；尚未提交、推送、合回主分支或发布
+
+### v0.2.13 兼容决策
+
+- Codex turn-state 票据采集/注入（官方已放弃的 PR #7315）作为 USA0 独有功能保留。
+- 充值优惠阶梯与 USA0 快捷充值档位赠额并存：`quoteRechargeBonus` 命中则以阶梯为准（`PaymentPrincipalAmount` 取折后基数，`EntitlementPrincipalAmount` 取付费到账额），否则沿用快捷档位；赠送额统一落 `bonus_amount`。返利仍以 `PaymentPrincipalAmount` 为基数。
+- 推理力度倍率改为官方的 `reasoning_effort_multipliers` 倍率表，移除 USA0 模型广场的默认 max 倍率；GPT-5.6 长上下文 272k 默认阶梯继续保留。
+- `release.yml`、`backend-ci.yml` 保留 USA0 版本，官方新增的 `.github/release-tools` 未接入。
+- Select 保持 USA0 combobox 焦点模型；GroupsView 保持 USA0 模型列表 UI；UserAllowedGroupsModal 仍无「限制公共分组」开关（既有缺口，后端字段已存在）。
+- 迁移顺延：官方 `238b/239/240/241/241` → `265–269`（内容审计 engine_meta、推理倍率表、联盟流水 operation_id、充值赠额、TypeSafe 平台）；已发布 `176–264` 不变；Ent/Wire 已重新生成。
+- 版本字段保持 USA0 `1.0.24`。
+
 ## 官方 v0.2.4 同步准备（集成分支）
 
 - 集成分支：`codex/merge-upstream-v0.2.4`

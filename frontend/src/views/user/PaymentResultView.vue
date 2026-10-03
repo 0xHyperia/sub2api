@@ -75,7 +75,11 @@
             <dt class="text-foreground-muted">{{ t('payment.orders.payAmount') }}</dt>
             <dd class="font-semibold tabular-nums text-foreground">{{ formatGatewayAmount(order.pay_amount) }}</dd>
           </div>
-          <div v-if="hasAmountFields(order) && order.amount !== order.pay_amount" class="flex items-start justify-between gap-4 py-3 text-sm">
+          <div v-if="hasAmountFields(order) && orderBonusAmount(order) > 0" class="flex items-start justify-between gap-4 py-3 text-sm">
+            <dt class="text-foreground-muted">{{ t('payment.orders.bonusAmount') }}</dt>
+            <dd class="font-medium tabular-nums text-warning-foreground">+${{ orderBonusAmount(order).toFixed(2) }}</dd>
+          </div>
+          <div v-if="hasAmountFields(order) && (order.amount !== order.pay_amount || orderBonusAmount(order) > 0)" class="flex items-start justify-between gap-4 py-3 text-sm">
             <dt class="text-foreground-muted">{{ t('payment.orders.creditedAmount') }}</dt>
             <dd class="font-medium tabular-nums text-foreground">{{ order.order_type === 'balance' ? '$' + order.amount.toFixed(2) : formatGatewayAmount(order.amount) }}</dd>
           </div>
@@ -264,6 +268,12 @@ function hasOrderId(nextOrder: ResolvedOrder | null): nextOrder is PaymentOrder 
 
 function hasAmountFields(nextOrder: ResolvedOrder | null): nextOrder is PaymentOrder {
   return !!nextOrder && 'pay_amount' in nextOrder && typeof nextOrder.pay_amount === 'number' && 'amount' in nextOrder && typeof nextOrder.amount === 'number'
+}
+
+/** 充值赠送额度（USD）；老接口/订阅订单没有该字段时视为 0 */
+function orderBonusAmount(target: unknown): number {
+  const value = (target as { bonus_amount?: unknown } | null | undefined)?.bonus_amount
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0
 }
 
 function hasPaymentType(nextOrder: ResolvedOrder | null): nextOrder is PaymentOrder {
