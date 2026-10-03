@@ -1898,13 +1898,6 @@ func (s *BillingService) applyModelSpecificPricingPolicyEx(model string, pricing
 		multiplier := 2.0
 		cloned.FastMultiplier = &multiplier
 	}
-	// USA0 保留：GPT-5.6 目录条目缺少长上下文阶梯时，按官方 272k 阈值补默认值
-	// （dc5b1176b 恢复；官方 v0.2.x 起改为纯目录驱动，同步时不跟进）。
-	if isOpenAIGPT56Model(normalized) && !cloned.CacheCreationPriceExplicit && cloned.LongContextInputThreshold <= 0 {
-		cloned.LongContextInputThreshold = 272_000
-		cloned.LongContextInputMultiplier = 2
-		cloned.LongContextOutputMultiplier = 1.5
-	}
 	if usesCacheWritePremium && !cloned.CacheCreationPriceExplicit {
 		if cloned.CacheCreationPricePerToken <= 0 {
 			cloned.CacheCreationPricePerToken = cloned.InputPricePerToken * 1.25

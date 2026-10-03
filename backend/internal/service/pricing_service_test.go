@@ -166,9 +166,8 @@ func TestBillingService_GPT56CacheWritePricingUsesOfficialMultiplier(t *testing.
 			require.NoError(t, err)
 			require.InDelta(t, tt.input*1.25, pricing.CacheCreationPricePerToken, 1e-12)
 			require.InDelta(t, tt.inputPriority*1.25, pricing.CacheCreationPricePerTokenPriority, 1e-12)
-			require.Equal(t, 272000, pricing.LongContextInputThreshold)
-			require.InDelta(t, 2.0, pricing.LongContextInputMultiplier, 1e-12)
-			require.InDelta(t, 1.5, pricing.LongContextOutputMultiplier, 1e-12)
+			// 阶梯由目录数据驱动：条目无 above/long_context 字段时不再由策略强补。
+			require.Zero(t, pricing.LongContextInputThreshold)
 
 			tokens := UsageTokens{InputTokens: 700, OutputTokens: 50, CacheCreationTokens: 200, CacheReadTokens: 100}
 			standard, err := svc.CalculateCostWithServiceTier(tt.model, tokens, 1, "")
