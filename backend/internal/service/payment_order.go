@@ -69,18 +69,12 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 		limitAmount = plan.Price
 		entitlementPrincipalAmount = plan.Price
 	} else if req.OrderType == payment.OrderTypeBalance {
-		// 充值优惠阶梯（官方）优先；未命中时回落到 USA0 快捷充值档位赠额。
-		// 阈值按支付金额命中；折扣模式下网关收款基数为折后金额。
-		if quote := quoteRechargeBonus(cfg, req.Amount, methodCurrency); quote.Percent > 0 {
-			limitAmount = quote.PayBase
-			rechargeBonus = quote.Bonus
-			entitlementPrincipalAmount = rechargeQuotePaidCredit(quote)
-			orderAmount = quote.Credited
-		} else {
-			rechargeBonus, _ = quickRechargeBonus(req.Amount, cfg.QuickRechargeAmounts)
-			entitlementPrincipalAmount = calculateCreditedBalance(req.Amount, cfg.BalanceRechargeMultiplier)
-			orderAmount = calculateCreditedBalanceWithBonus(req.Amount, cfg.BalanceRechargeMultiplier, rechargeBonus)
-		}
+		// 优惠统一由充值优惠阶梯表达：阈值按支付金额命中；折扣模式下网关收款基数为折后金额。
+		quote := quoteRechargeBonus(cfg, req.Amount, methodCurrency)
+		limitAmount = quote.PayBase
+		rechargeBonus = quote.Bonus
+		entitlementPrincipalAmount = rechargeQuotePaidCredit(quote)
+		orderAmount = quote.Credited
 	}
 	_, _, _, baseProviderAmount, err := calculateCreateOrderAmountsForOrderType(limitAmount, 0, methodCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate, cfg.FeeMode)
 	if err != nil {
@@ -151,7 +145,7 @@ func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrder
 	if math.IsNaN(req.Amount) || math.IsInf(req.Amount, 0) || req.Amount <= 0 {
 		return nil, infraerrors.BadRequest("INVALID_AMOUNT", "amount must be a positive number")
 	}
-	if _, matched := quickRechargeBonus(req.Amount, cfg.QuickRechargeAmounts); !cfg.CustomRechargeEnabled && !matched {
+	if !cfg.CustomRechargeEnabled && !quickRechargeAmountMatched(req.Amount, cfg.QuickRechargeAmounts) {
 		return nil, infraerrors.BadRequest("RECHARGE_AMOUNT_NOT_ALLOWED", "custom recharge amount is disabled")
 	}
 	if (cfg.MinAmount > 0 && req.Amount < cfg.MinAmount) || (cfg.MaxAmount > 0 && req.Amount > cfg.MaxAmount) {

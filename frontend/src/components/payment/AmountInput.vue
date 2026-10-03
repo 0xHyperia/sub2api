@@ -60,9 +60,6 @@
               ]"
               data-testid="quick-amount-credited"
             >{{ secondLine(item.amount) }}</span>
-            <span v-else-if="item.bonus > 0" class="text-[11px] font-medium leading-4 text-success-foreground">
-              {{ t('payment.quickAmountBonus', { bonus: item.bonus.toFixed(2) }) }}
-            </span>
           </span>
         </button>
       </div>
@@ -93,7 +90,7 @@ const props = withDefaults(defineProps<{
   /** 支付币种（货币符号、折扣模式第二行实付金额的币种与精度） */
   currency?: string
 }>(), {
-  amounts: () => [10, 20, 50, 100, 200, 500, 1000, 2000, 5000].map(amount => ({ amount, bonus: 0 })),
+  amounts: () => [10, 20, 50, 100, 200, 500, 1000, 2000, 5000].map(amount => ({ amount })),
   min: 0,
   max: 0,
   customEnabled: true,
@@ -113,7 +110,7 @@ const customText = ref('')
 
 const filteredAmounts = computed<QuickRechargeAmount[]>(() =>
   props.amounts
-    .map((item) => (typeof item === 'number' ? { amount: item, bonus: 0 } : item))
+    .map((item) => (typeof item === 'number' ? { amount: item } : item))
     .filter((item) => (props.min <= 0 || item.amount >= props.min) && (props.max <= 0 || item.amount <= props.max))
 )
 

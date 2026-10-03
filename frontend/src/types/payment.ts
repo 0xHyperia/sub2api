@@ -105,7 +105,6 @@ export interface CheckoutInfoResponse {
 
 export interface QuickRechargeAmount {
   amount: number
-  bonus: number
 }
 
 // ==================== Orders ====================

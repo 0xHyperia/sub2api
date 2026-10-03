@@ -464,7 +464,6 @@ export default {
     methodAutoSwitched: '{from} 不支持当前金额，已切换为 {to}',
     rechargeRatePreview: '当前倍率：1 CNY = {usd} USD',
     selectQuickAmount: '请选择一个快捷充值金额',
-    quickAmountBonus: '赠送 ${bonus}',
     bonusBalance: '额外赠送',
     fixedBalanceConversion: '平台余额固定换算：¥1 = $1 余额',
     balanceSummary: '到账平台余额',

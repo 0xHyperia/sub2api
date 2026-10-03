@@ -58,6 +58,23 @@ describe('RechargeValueEstimator', () => {
     document.body.style.overflow = ''
   })
 
+  it('applies recharge bonus tiers to the estimated platform balance', async () => {
+    const wrapper = shallowMount(RechargeValueEstimator, {
+      props: {
+        creditedAmount: 10,
+        rechargeAmount: 10,
+        bonusTiers: [{ min_amount: 10, bonus_percent: 50 }],
+        bonusMode: 'bonus',
+      },
+      global: { stubs: { Teleport: true, Transition: false } },
+    })
+    await wrapper.get('button[aria-controls="recharge-estimator-drawer"]').trigger('click')
+    await flushPromises()
+    await flushPromises()
+    // 赠金 +50%：到账 15，官方等值为未赠送时的 1.5 倍（10 -> $100.00 则 15 -> $150.00）
+    expect(wrapper.get('[data-testid="official-equivalent"]').text()).toContain('$150.00')
+  })
+
   it('lazy loads model rates and estimates official-price-equivalent usage', async () => {
     const wrapper = shallowMount(RechargeValueEstimator, {
       props: { creditedAmount: 10 },

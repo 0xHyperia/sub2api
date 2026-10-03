@@ -6,7 +6,6 @@ enableAutoUnmount(afterEach)
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, unknown>) => {
-      if (key === 'payment.quickAmountBonus') return `赠送 $${String(params?.bonus)}`
       return params && 'amount' in params ? `${key} ${String(params.amount)}` : key
     },
   }),
@@ -19,18 +18,18 @@ function mountAmountInput(customEnabled = true) {
       customEnabled,
       currency: 'USD',
       amounts: [
-        { amount: 50, bonus: 5 },
-        { amount: 100, bonus: 0 },
+        { amount: 50 },
+        { amount: 100 },
       ],
     },
   })
 }
 
 describe('AmountInput', () => {
-  it('shows preset bonuses and emits the selected payment amount', async () => {
+  it('emits the selected payment amount', async () => {
     const wrapper = mountAmountInput()
 
-    expect(wrapper.text()).toContain('赠送 $5.00')
+    expect(wrapper.find('[data-testid="quick-amount-bonus-badge"]').exists()).toBe(false)
     await wrapper.findAll('button')[0].trigger('click')
 
     expect(wrapper.emitted('update:modelValue')).toEqual([[50]])

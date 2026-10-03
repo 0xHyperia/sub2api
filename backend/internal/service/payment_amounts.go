@@ -33,13 +33,6 @@ func calculateCreditedBalance(paymentAmount, multiplier float64) float64 {
 		InexactFloat64()
 }
 
-func calculateCreditedBalanceWithBonus(paymentAmount, multiplier, bonus float64) float64 {
-	return decimal.NewFromFloat(calculateCreditedBalance(paymentAmount, multiplier)).
-		Add(decimal.NewFromFloat(math.Max(0, bonus))).
-		Round(2).
-		InexactFloat64()
-}
-
 func calculatePaymentSurcharge(principal, payAmount float64) float64 {
 	if principal <= 0 || payAmount <= principal {
 		return 0
@@ -103,17 +96,17 @@ func paymentPrincipalRefundAmount(orderAmount, principalAmount, refundAmount flo
 		InexactFloat64()
 }
 
-func quickRechargeBonus(amount float64, options []QuickRechargeAmount) (float64, bool) {
+func quickRechargeAmountMatched(amount float64, options []QuickRechargeAmount) bool {
 	if !validMoneyAmount(amount, false) {
-		return 0, false
+		return false
 	}
 	cents := int64(math.Round(amount * 100))
 	for _, option := range options {
 		if int64(math.Round(option.Amount*100)) == cents {
-			return option.Bonus, true
+			return true
 		}
 	}
-	return 0, false
+	return false
 }
 
 func calculateGatewayRefundAmount(orderAmount, payAmount, refundAmount float64, currency string) float64 {

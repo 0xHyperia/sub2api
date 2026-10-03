@@ -440,7 +440,6 @@ export default {
     methodAutoSwitched: '{from} does not support this amount. Switched to {to}.',
     rechargeRatePreview: 'Current rate: 1 CNY = {usd} USD',
     selectQuickAmount: 'Select a quick recharge amount',
-    quickAmountBonus: 'Bonus ${bonus}',
     bonusBalance: 'Bonus Balance',
     fixedBalanceConversion: 'Fixed platform balance conversion: ¥1 = $1 balance',
     balanceSummary: 'Platform Balance Credited',

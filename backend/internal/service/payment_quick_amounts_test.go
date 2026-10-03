@@ -16,13 +16,13 @@ func TestParseQuickRechargeAmounts(t *testing.T) {
 		require.Equal(t, float64(10), cfg.QuickRechargeAmounts[0].Amount)
 	})
 
-	t.Run("preserves configured order and bonuses", func(t *testing.T) {
+	t.Run("preserves configured order and ignores legacy bonus field", func(t *testing.T) {
 		cfg := (&PaymentConfigService{}).parsePaymentConfig(map[string]string{
 			SettingQuickRechargeAmounts:  `[{"amount":100,"bonus":12.5},{"amount":20,"bonus":1}]`,
 			SettingCustomRechargeEnabled: "false",
 		})
 		require.False(t, cfg.CustomRechargeEnabled)
-		require.Equal(t, []QuickRechargeAmount{{Amount: 100, Bonus: 12.5}, {Amount: 20, Bonus: 1}}, cfg.QuickRechargeAmounts)
+		require.Equal(t, []QuickRechargeAmount{{Amount: 100}, {Amount: 20}}, cfg.QuickRechargeAmounts)
 	})
 }
 
@@ -45,26 +45,34 @@ func TestUpdatePaymentConfigValidatesQuickRechargeAmounts(t *testing.T) {
 	require.Error(t, err)
 	delete(repo.values, SettingQuickRechargeAmounts)
 
-	duplicate := []QuickRechargeAmount{{Amount: 10}, {Amount: 10, Bonus: 1}}
+	duplicate := []QuickRechargeAmount{{Amount: 10}, {Amount: 10}}
 	err = svc.UpdatePaymentConfig(context.Background(), UpdatePaymentConfigRequest{QuickRechargeAmounts: &duplicate})
 	require.Error(t, err)
 
-	valid := []QuickRechargeAmount{{Amount: 10, Bonus: 1.25}, {Amount: 50}}
+	valid := []QuickRechargeAmount{{Amount: 10}, {Amount: 50}}
 	err = svc.UpdatePaymentConfig(context.Background(), UpdatePaymentConfigRequest{
 		QuickRechargeAmounts:  &valid,
 		CustomRechargeEnabled: &customDisabled,
 	})
 	require.NoError(t, err)
-	require.JSONEq(t, `[{"amount":10,"bonus":1.25},{"amount":50,"bonus":0}]`, repo.values[SettingQuickRechargeAmounts])
+	require.JSONEq(t, `[{"amount":10},{"amount":50}]`, repo.values[SettingQuickRechargeAmounts])
 	require.Equal(t, "false", repo.values[SettingCustomRechargeEnabled])
 }
 
 func TestRechargeBonusAndCustomAmountValidation(t *testing.T) {
-	options := []QuickRechargeAmount{{Amount: 10, Bonus: 2.5}, {Amount: 50}}
-	bonus, matched := quickRechargeBonus(10, options)
-	require.True(t, matched)
-	require.Equal(t, 2.5, bonus)
-	require.Equal(t, 9.5, calculateCreditedBalanceWithBonus(10, 0.7, bonus))
+	options := []QuickRechargeAmount{{Amount: 10}, {Amount: 50}}
+	require.True(t, quickRechargeAmountMatched(10, options))
+	require.False(t, quickRechargeAmountMatched(11, options))
+
+	// 赠送统一由阶梯表达：倍率 0.7、10 元命中 25% 赠金 → 到账基数 7，赠送 1.75
+	quote := quoteRechargeBonus(&PaymentConfig{
+		BalanceRechargeMultiplier: 0.7,
+		RechargeBonusMode:         RechargeBonusModeBonus,
+		RechargeBonusTiers:        []RechargeBonusTier{{MinAmount: 10, BonusPercent: 25}},
+	}, 10, "CNY")
+	require.Equal(t, 1.75, quote.Bonus)
+	require.Equal(t, 8.75, quote.Credited)
+	require.Equal(t, 7.0, rechargeQuotePaidCredit(quote))
 
 	svc := &PaymentService{}
 	cfg := &PaymentConfig{
@@ -89,7 +97,6 @@ func TestPaymentAmountSnapshotsSeparateFeeBonusAndMultiplier(t *testing.T) {
 	t.Parallel()
 	require.Equal(t, 2.0, calculatePaymentSurcharge(50, 52))
 	require.Equal(t, 7.0, calculateCreditedBalance(50, 0.14))
-	require.Equal(t, 9.0, calculateCreditedBalanceWithBonus(50, 0.14, 2))
 	require.Equal(t, 25.0, paymentPrincipalRefundAmount(9, 50, 4.5))
 	require.Equal(t, 50.0, paymentPrincipalRefundAmount(9, 50, 9))
 }

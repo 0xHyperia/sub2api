@@ -128,7 +128,7 @@ function checkoutInfoFixture(overrides: Partial<CheckoutInfoResponse> = {}) {
     plans: [],
     balance_disabled: false,
     balance_recharge_multiplier: 1,
-    quick_recharge_amounts: [10, 20, 50, 100].map(amount => ({ amount, bonus: 0 })),
+    quick_recharge_amounts: [10, 20, 50, 100].map(amount => ({ amount })),
     custom_recharge_amount_enabled: true,
     subscription_usd_to_cny_rate: 0,
     recharge_fee_rate: 0,
@@ -526,19 +526,56 @@ describe('PaymentView subscription confirmation amounts', () => {
     expect(wrapper.getComponent(PaymentMethodSelector).props('selected')).toBe('wxpay')
   })
 
-  it('shows configured bonus balance in the recharge summary', async () => {
+  it('bonus tier mode: credits base plus bonus without changing the paid amount', async () => {
     const wrapper = await mountPaymentView(checkoutInfoFixture({
-      quick_recharge_amounts: [{ amount: 50, bonus: 5 }],
+      quick_recharge_amounts: [{ amount: 50 }, { amount: 100 }],
+      recharge_bonus_tiers: [{ min_amount: 100, bonus_percent: 20 }],
+      recharge_bonus_mode: 'bonus',
     }), {})
 
-    expect(wrapper.getComponent(AmountInput).props('amounts')).toEqual([{ amount: 50, bonus: 5 }])
+    expect(wrapper.getComponent(AmountInput).props('amounts')).toEqual([{ amount: 50 }, { amount: 100 }])
+    expect(wrapper.getComponent(AmountInput).props('bonusTiers')).toEqual([{ min_amount: 100, bonus_percent: 20 }])
+
+    wrapper.getComponent(AmountInput).vm.$emit('update:modelValue', 100)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="recharge-bonus-row"]').text()).toContain('+$20.00')
+    expect(wrapper.text()).toContain('$120.00')
+    expect(wrapper.find('[data-testid="recharge-discount-row"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="recharge-confirm-action"]').text()).toContain(formatPaymentAmount(100, 'CNY'))
+  })
+
+  it('bonus tier mode: no bonus row when the amount misses every tier', async () => {
+    const wrapper = await mountPaymentView(checkoutInfoFixture({
+      recharge_bonus_tiers: [{ min_amount: 100, bonus_percent: 20 }],
+    }), {})
+
     wrapper.getComponent(AmountInput).vm.$emit('update:modelValue', 50)
     await flushPromises()
-
-    expect(wrapper.text()).toContain('payment.bonusBalance')
-    expect(wrapper.text()).toContain('+$5.00')
-    expect(wrapper.text()).toContain('$55.00')
+    expect(wrapper.find('[data-testid="recharge-bonus-row"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="recharge-confirm-action"]').text()).toContain(formatPaymentAmount(50, 'CNY'))
+  })
+
+  it('discount tier mode: credits the base amount and charges the discounted amount', async () => {
+    const wrapper = await mountPaymentView(checkoutInfoFixture({
+      recharge_bonus_tiers: [{ min_amount: 100, bonus_percent: 20 }],
+      recharge_bonus_mode: 'discount',
+    }), {})
+
+    wrapper.getComponent(AmountInput).vm.$emit('update:modelValue', 100)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="recharge-bonus-row"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="recharge-discount-row"]').text()).toContain(formatPaymentAmount(20, 'CNY'))
+    expect(wrapper.get('[data-testid="recharge-confirm-action"]').text()).toContain(formatPaymentAmount(80, 'CNY'))
+  })
+
+  it('renders the recharge bonus notice as sanitized markdown', async () => {
+    const wrapper = await mountPaymentView(checkoutInfoFixture({
+      recharge_bonus_notice: '**满 100 送 20%**<img src=x onerror="alert(1)">',
+    }), {})
+
+    const notice = wrapper.get('[data-testid="recharge-bonus-notice"]')
+    expect(notice.find('strong').text()).toBe('满 100 送 20%')
+    expect(notice.html()).not.toContain('onerror')
   })
 
   it('recalculates the CNY total from the selected payment method fee', async () => {

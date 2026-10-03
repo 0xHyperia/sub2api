@@ -155,6 +155,8 @@
                         :balance-recharge-multiplier="balanceRechargeMultiplier"
                         :official-usd-to-cny-rate="officialUsdToCnyRate"
                         :quick-recharge-amounts="checkout.quick_recharge_amounts"
+                        :bonus-tiers="rechargeBonusTiers"
+                        :bonus-mode="rechargeBonusMode"
                       />
 
                       </div>
@@ -187,7 +189,7 @@
                               <dd class="tabular-nums">{{ formatBalanceAmount(validAmount * balanceRechargeMultiplier) }}</dd>
                             </div>
                             <div v-if="rechargeBonusTotal > 0" class="mt-2 flex items-center justify-between gap-3 text-success-foreground" data-testid="recharge-bonus-row">
-                              <dt>{{ t('payment.bonusBalance') }}</dt>
+                              <dt>{{ t('payment.rechargeBonus.amountLabelWithPercent', { percent: formatRechargeBonusNumber(bonusQuote.percent) }) }}</dt>
                               <dd class="tabular-nums">+{{ formatBalanceAmount(rechargeBonusTotal) }}</dd>
                             </div>
                           </dl>
@@ -748,7 +750,7 @@ function onPaymentSettled() {
 
 // All checkout data from single API call
 const defaultQuickRechargeAmounts = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
-  .map(amount => ({ amount, bonus: 0 }))
+  .map(amount => ({ amount }))
 
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
@@ -863,10 +865,6 @@ const officialUsdToCnyRate = computed(() => {
   const rate = Number(appStore.cachedPublicSettings?.currency_usd_to_cny_rate)
   return Number.isFinite(rate) && rate > 0 ? rate : 0
 })
-const selectedRechargeBonus = computed(() => {
-  const cents = Math.round(validAmount.value * 100)
-  return checkout.value.quick_recharge_amounts.find(item => Math.round(item.amount * 100) === cents)?.bonus ?? 0
-})
 const rechargeAmountAllowed = computed(() =>
   checkout.value.custom_recharge_amount_enabled
     || checkout.value.quick_recharge_amounts.some(item => Math.round(item.amount * 100) === Math.round(validAmount.value * 100))
@@ -980,12 +978,9 @@ const bonusQuote = computed(() => quoteRechargeBonus(rechargeBonusTiers.value, v
 }))
 const payBaseAmount = computed(() => bonusQuote.value.payBase)
 const discountAmount = computed(() => roundPaymentAmount(validAmount.value - payBaseAmount.value, selectedCurrency.value))
-// 与后端一致：命中充值优惠阶梯时以阶梯报价为准，不再叠加快捷金额固定赠送；未命中阶梯时才使用快捷金额赠送。
-const tierBonusApplied = computed(() => bonusQuote.value.percent > 0)
-const quickBonusApplied = computed(() => (tierBonusApplied.value ? 0 : selectedRechargeBonus.value))
-const creditedAmount = computed(() => Math.round((bonusQuote.value.credited + quickBonusApplied.value) * 100) / 100)
-// 阶梯赠金与快捷金额赠送合计，用于金额摘要中的「赠送」行
-const rechargeBonusTotal = computed(() => Math.round(((showBonusRow.value ? bonusQuote.value.bonus : 0) + quickBonusApplied.value) * 100) / 100)
+const creditedAmount = computed(() => bonusQuote.value.credited)
+// 赠金模式的赠送额度，用于金额摘要中的「赠送」行
+const rechargeBonusTotal = computed(() => (showBonusRow.value ? bonusQuote.value.bonus : 0))
 const showBonusRow = computed(() => bonusQuote.value.mode !== 'discount' && bonusQuote.value.bonus > 0)
 
 const methodOptions = computed<PaymentMethodOption[]>(() =>

@@ -70,10 +70,10 @@ var defaultQuickRechargeAmounts = []QuickRechargeAmount{
 	{Amount: 500}, {Amount: 1000}, {Amount: 2000}, {Amount: 5000},
 }
 
-// QuickRechargeAmount defines a preset payment amount and its additional USD balance.
+// QuickRechargeAmount defines a preset payment amount shown as a quick-select button.
+// 赠送/折扣不在此处配置，统一由充值优惠阶梯（RechargeBonusTier）表达。
 type QuickRechargeAmount struct {
 	Amount float64 `json:"amount"`
-	Bonus  float64 `json:"bonus"`
 }
 
 // PaymentConfig holds the payment system configuration.
@@ -652,8 +652,8 @@ func validateQuickRechargeAmounts(amounts []QuickRechargeAmount, customEnabled *
 	}
 	seen := make(map[int64]struct{}, len(amounts))
 	for _, item := range amounts {
-		if !validMoneyAmount(item.Amount, false) || !validMoneyAmount(item.Bonus, true) {
-			return infraerrors.BadRequest("INVALID_QUICK_RECHARGE_AMOUNTS", "quick recharge amount and bonus must be valid values with at most 2 decimal places")
+		if !validMoneyAmount(item.Amount, false) {
+			return infraerrors.BadRequest("INVALID_QUICK_RECHARGE_AMOUNTS", "quick recharge amount must be a valid value with at most 2 decimal places")
 		}
 		cents := int64(math.Round(item.Amount * 100))
 		if _, exists := seen[cents]; exists {

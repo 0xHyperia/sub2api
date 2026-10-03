@@ -15,11 +15,11 @@
 ### v0.2.13 兼容决策
 
 - Codex turn-state 票据采集/注入（官方已放弃的 PR #7315）作为 USA0 独有功能保留。
-- 充值优惠阶梯与 USA0 快捷充值档位赠额并存：`quoteRechargeBonus` 命中则以阶梯为准（`PaymentPrincipalAmount` 取折后基数，`EntitlementPrincipalAmount` 取付费到账额），否则沿用快捷档位；赠送额统一落 `bonus_amount`。返利仍以 `PaymentPrincipalAmount` 为基数。
+- 充值优惠统一到官方阶梯：移除 USA0 快捷充值档位的固定赠额字段，下单只按 `quoteRechargeBonus` 报价（`PaymentPrincipalAmount` 取折后基数，`EntitlementPrincipalAmount` 取付费到账额，赠送额落 `bonus_amount`，返利仍以 `PaymentPrincipalAmount` 为基数）；迁移 `270_unify_recharge_bonus_into_tiers.sql` 把旧赠额折算成阶梯并清除 bonus 字段。
 - 推理力度倍率改为官方的 `reasoning_effort_multipliers` 倍率表，移除 USA0 模型广场的默认 max 倍率；GPT-5.6 长上下文阶梯跟进官方的纯目录驱动，移除 USA0 在 v0.2.1 集成时恢复的 272k 强制默认（静态兜底价表中的阈值保留）。
 - `release.yml`、`backend-ci.yml` 保留 USA0 版本，官方新增的 `.github/release-tools` 未接入。
 - Select 保持 USA0 combobox 焦点模型；GroupsView 保持 USA0 模型列表 UI；UserAllowedGroupsModal 仍无「限制公共分组」开关（既有缺口，后端字段已存在）。
-- 迁移顺延：官方 `238b/239/240/241/241` → `265–269`（内容审计 engine_meta、推理倍率表、联盟流水 operation_id、充值赠额、TypeSafe 平台）；已发布 `176–264` 不变；Ent/Wire 已重新生成。
+- 迁移顺延：官方 `238b/239/240/241/241` → `265–269`（内容审计 engine_meta、推理倍率表、联盟流水 operation_id、充值赠额、TypeSafe 平台）；已发布 `176–264` 不变，新增 USA0 迁移 `270`；Ent/Wire 已重新生成。
 - 版本字段保持 USA0 `1.0.24`。
 
 ## 官方 v0.2.4 同步准备（集成分支）

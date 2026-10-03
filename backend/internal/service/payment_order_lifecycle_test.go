@@ -47,16 +47,19 @@ func TestFiftyYuanBalanceOrderCompletesWithProviderFeeAndBonus(t *testing.T) {
 
 	cfg := &PaymentConfig{
 		BalanceRechargeMultiplier: 1,
-		QuickRechargeAmounts:      []QuickRechargeAmount{{Amount: 50, Bonus: 2}},
+		QuickRechargeAmounts:      []QuickRechargeAmount{{Amount: 50}},
+		RechargeBonusMode:         RechargeBonusModeBonus,
+		RechargeBonusTiers:        []RechargeBonusTier{{MinAmount: 50, BonusPercent: 4}},
 		FeeMode:                   PaymentFeeModeProvider,
 		MaxPendingOrders:          3,
 		OrderTimeoutMin:           30,
 	}
 	principal := 50.0
-	bonus, matched := quickRechargeBonus(principal, cfg.QuickRechargeAmounts)
-	require.True(t, matched)
-	entitlementPrincipal := calculateCreditedBalance(principal, cfg.BalanceRechargeMultiplier)
-	creditedAmount := calculateCreditedBalanceWithBonus(principal, cfg.BalanceRechargeMultiplier, bonus)
+	quote := quoteRechargeBonus(cfg, principal, "CNY")
+	bonus := quote.Bonus
+	require.Equal(t, 2.0, bonus)
+	entitlementPrincipal := rechargeQuotePaidCredit(quote)
+	creditedAmount := quote.Credited
 	_, payAmount, _, providerAmount, err := calculateCreateOrderAmountsForOrderType(principal, 4, "CNY", payment.OrderTypeBalance, 0, cfg.FeeMode)
 	require.NoError(t, err)
 

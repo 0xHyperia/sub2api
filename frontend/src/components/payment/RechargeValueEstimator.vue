@@ -171,7 +171,7 @@
                     <dl class="mt-3 grid gap-2 border-t border-info/15 pt-3 text-sm">
                       <div class="flex items-center justify-between gap-4">
                         <dt class="text-info-foreground/75">{{ t('payment.estimator.platformCost') }}</dt>
-                        <dd class="font-medium tabular-nums text-info-foreground">{{ formatCNY(estimateAmount) }}</dd>
+                        <dd class="font-medium tabular-nums text-info-foreground">{{ formatCNY(estimatedPayAmount) }}</dd>
                       </div>
                       <div class="flex items-center justify-between gap-4">
                         <dt class="text-info-foreground/75">{{ t('payment.estimator.officialCost') }}</dt>
@@ -209,7 +209,8 @@ import {
   sortedEntryGroups,
   type MarketplaceModelEntry,
 } from '@/views/user/modelMarketplace'
-import type { QuickRechargeAmount } from '@/types/payment'
+import type { QuickRechargeAmount, RechargeBonusTier } from '@/types/payment'
+import { quoteRechargeBonus, type RechargeBonusMode } from '@/utils/rechargeBonus'
 import { formatPaymentAmount } from './currency'
 
 const props = withDefaults(defineProps<{
@@ -218,11 +219,15 @@ const props = withDefaults(defineProps<{
   balanceRechargeMultiplier?: number
   officialUsdToCnyRate?: number
   quickRechargeAmounts?: QuickRechargeAmount[]
+  bonusTiers?: RechargeBonusTier[]
+  bonusMode?: RechargeBonusMode
 }>(), {
   rechargeAmount: 0,
   balanceRechargeMultiplier: 1,
   officialUsdToCnyRate: 0,
   quickRechargeAmounts: () => [],
+  bonusTiers: () => [],
+  bonusMode: 'bonus',
 })
 
 const { t } = useI18n()
@@ -270,23 +275,23 @@ const estimatorQuickAmounts = computed(() => {
   const unique = [...new Set(configured.length > 0 ? configured : [10, 50, 100, 200, 500])]
   return unique.slice(0, 5)
 })
-const estimatedBonus = computed(() => {
-  const cents = Math.round(estimateAmount.value * 100)
-  return props.quickRechargeAmounts.find(item => Math.round(item.amount * 100) === cents)?.bonus ?? 0
-})
-const estimatedPlatformBalance = computed(() =>
-  Math.round((Math.max(0, estimateAmount.value) * safeBalanceMultiplier.value + estimatedBonus.value) * 100) / 100,
-)
+// 与充值页同口径按优惠阶梯报价：赠金模式到账含赠额，折扣模式实付为折后基数。
+const estimateQuote = computed(() => quoteRechargeBonus(props.bonusTiers, Math.max(0, estimateAmount.value), {
+  multiplier: safeBalanceMultiplier.value,
+  mode: props.bonusMode,
+}))
+const estimatedPlatformBalance = computed(() => estimateQuote.value.credited)
+const estimatedPayAmount = computed(() => estimateQuote.value.payBase)
 const officialEquivalent = computed(() => {
   const rate = selectedGroupRate.value
   if (!Number.isFinite(rate) || rate <= 0) return 0
   return Math.round((estimatedPlatformBalance.value / rate) * 100) / 100
 })
-const officialExchangeUsd = computed(() => Math.round((Math.max(0, estimateAmount.value) / safeOfficialUsdToCnyRate.value) * 100) / 100)
+const officialExchangeUsd = computed(() => Math.round((Math.max(0, estimatedPayAmount.value) / safeOfficialUsdToCnyRate.value) * 100) / 100)
 const officialEquivalentCostCny = computed(() => Math.round(officialEquivalent.value * safeOfficialUsdToCnyRate.value * 100) / 100)
-const purchasePowerMultiple = computed(() => estimateAmount.value > 0 ? officialEquivalentCostCny.value / estimateAmount.value : 0)
+const purchasePowerMultiple = computed(() => estimatedPayAmount.value > 0 ? officialEquivalentCostCny.value / estimatedPayAmount.value : 0)
 const estimatedSavingsPercent = computed(() => officialEquivalentCostCny.value > 0
-  ? Math.max(0, (1 - Math.max(0, estimateAmount.value) / officialEquivalentCostCny.value) * 100)
+  ? Math.max(0, (1 - Math.max(0, estimatedPayAmount.value) / officialEquivalentCostCny.value) * 100)
   : 0)
 
 watch(selectedModelGroups, (groups) => {
