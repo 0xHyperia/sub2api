@@ -2,6 +2,15 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## USA0 v1.0.25
+
+- 发布版本：v1.0.25
+- 官方基线版本：v0.2.14（`0363b8cdba8cec3e2ba4b2dbd49c4481143fa55d`）
+- 上一 USA0 版本：v1.0.24
+- 发布范围：同步官方 v0.2.7 ~ v0.2.14（TypeSafe 平台、Seedance、插件宿主服务、OpenCode Go 用量窗口、推理力度倍率表、Claude 重置额度、API Key 创建限制、余额在途预占、EasyPay 回调伪造与管理员默认账号等安全修复），并统一充值优惠到官方阶梯（迁移 `270`）
+- 发布方式：创建并推送 v1.0.25 annotated tag 后触发 Release workflow；Actions 运行结果由后续单独确认
+- 记录日期：2026-10-07
+
 ## 官方 v0.2.14 同步（集成分支）
 
 - 集成分支：`codex/merge-upstream-v0.2.14`
