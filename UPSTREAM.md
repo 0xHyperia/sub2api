@@ -2,6 +2,14 @@
 
 本文档记录 USA0 二开版本与官方 Sub2API 的对应关系。发布 tag 按 USA0 自己的版本线命名，官方基线通过本文件、tag message 和 Git 提交记录追踪。
 
+## 官方 v0.2.14 同步（集成分支）
+
+- 集成分支：`codex/merge-upstream-v0.2.14`
+- USA0 合并基线：`usa0/main` / `4bafd9373`（含官方 v0.2.13）
+- 官方目标提交：`0363b8cdba8cec3e2ba4b2dbd49c4481143fa55d`
+- 同步范围：8 个上游提交、25 个变更文件；1 个文本冲突（`VERSION`，保留 USA0 `1.0.24`）；无新增迁移
+- 主要内容：EasyPay 回调伪造漏洞修复（`return_url` 丢弃客户端查询参数、回调验签拒绝非标准参数）、全新安装随机管理员邮箱与密码校验、Codex 远程模型目录补 `api_key_model_discovery`、前端依赖升级
+
 ## 官方 v0.2.13 同步（集成分支）
 
 - 集成分支：`codex/merge-upstream-v0.2.13`
