@@ -1509,6 +1509,7 @@ func newAuthTestRouter(apiKeyService *service.APIKeyService, subscriptionService
 	router.POST("/v1/responses", ok)
 	router.POST("/v1/messages", ok)
 	router.GET("/v1/usage", ok)
+	router.GET("/v1/usage/requests/:request_id", ok)
 	router.GET("/v1/sub2api/billing", ok)
 	return router
 }
@@ -1791,4 +1792,44 @@ func (r *stubUserSubscriptionRepo) IncrementUsage(ctx context.Context, id int64,
 
 func (r *stubUserSubscriptionRepo) BatchUpdateExpiredStatus(ctx context.Context) (int64, error) {
 	return 0, errors.New("not implemented")
+}
+
+func TestAPIKeyAuthUsageRequestReadAllowsExhaustedKey(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	user := &service.User{ID: 7, Role: service.RoleUser, Status: service.StatusActive, Balance: 0, Concurrency: 3}
+	expiredAt := time.Now().Add(-time.Hour)
+	apiKey := &service.APIKey{
+		ID:        100,
+		UserID:    user.ID,
+		Key:       "usage-request-exhausted",
+		Status:    service.StatusAPIKeyQuotaExhausted,
+		User:      user,
+		Quota:     1,
+		QuotaUsed: 1,
+		ExpiresAt: &expiredAt,
+	}
+	apiKeyRepo := &stubApiKeyRepo{
+		getByKey: func(context.Context, string) (*service.APIKey, error) {
+			clone := *apiKey
+			return &clone, nil
+		},
+		updateLastUsed: func(context.Context, int64, time.Time) error { return nil },
+	}
+	cfg := &config.Config{RunMode: config.RunModeStandard}
+	router := newAuthTestRouter(service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg), nil, cfg)
+
+	// 额度耗尽/过期的 Key 仍可查询自己最后一笔扣费。
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/v1/usage/requests/abc", nil)
+	req.Header.Set("x-api-key", apiKey.Key)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// 模型调用接口仍被计费检查拦截。
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	req.Header.Set("x-api-key", apiKey.Key)
+	router.ServeHTTP(w, req)
+	require.NotEqual(t, http.StatusOK, w.Code)
 }

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
+
 	dbaccount "github.com/Wei-Shaw/sub2api/ent/account"
 	dbapikey "github.com/Wei-Shaw/sub2api/ent/apikey"
 	dbgroup "github.com/Wei-Shaw/sub2api/ent/group"
@@ -30,6 +32,39 @@ func (r *usageLogRepository) GetByID(ctx context.Context, id int64) (log *servic
 	defer func() {
 		// 保持主错误优先；仅在无错误时回传 Close 失败。
 		// 同时清空返回值，避免误用不完整结果。
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			log = nil
+		}
+	}()
+	if !rows.Next() {
+		if err = rows.Err(); err != nil {
+			return nil, err
+		}
+		return nil, service.ErrUsageLogNotFound
+	}
+	log, err = scanUsageLog(rows)
+	if err != nil {
+		return nil, err
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return log, nil
+}
+
+// GetByRequestIDForAPIKey 按 (api_key_id, request_id 候选集) 点查用量记录。
+// 命中 usage_logs 的 (request_id, api_key_id) 唯一索引；候选集用于兼容 client:/local: 前缀形式。
+func (r *usageLogRepository) GetByRequestIDForAPIKey(ctx context.Context, apiKeyID int64, requestIDs []string) (log *service.UsageLog, err error) {
+	if len(requestIDs) == 0 {
+		return nil, service.ErrUsageLogNotFound
+	}
+	query := "SELECT " + usageLogSelectColumns + " FROM usage_logs WHERE api_key_id = $1 AND request_id = ANY($2) ORDER BY id LIMIT 1"
+	rows, err := r.sql.QueryContext(ctx, query, apiKeyID, pq.Array(requestIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			log = nil

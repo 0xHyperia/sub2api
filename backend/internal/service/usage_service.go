@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -153,6 +154,33 @@ func (s *UsageService) GetByID(ctx context.Context, id int64) (*UsageLog, error)
 	log, err := s.usageRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get usage log: %w", err)
+	}
+	return log, nil
+}
+
+// usageLogRequestLookupRepo 是可选的按请求 ID 点查能力；不并入 UsageLogRepository，避免破坏既有实现与桩。
+type usageLogRequestLookupRepo interface {
+	GetByRequestIDForAPIKey(ctx context.Context, apiKeyID int64, requestIDs []string) (*UsageLog, error)
+}
+
+// GetByRequestIDForAPIKey 按下游可见的请求 ID 查询某个 API Key 自己的用量记录。
+// 用量记录的 request_id 通常是 "client:<X-Client-Request-ID>"，也兼容 "local:" 前缀与原样 ID。
+func (s *UsageService) GetByRequestIDForAPIKey(ctx context.Context, apiKeyID int64, requestID string) (*UsageLog, error) {
+	requestID = strings.TrimSpace(requestID)
+	if requestID == "" {
+		return nil, ErrUsageLogNotFound
+	}
+	lookup, ok := s.usageRepo.(usageLogRequestLookupRepo)
+	if !ok {
+		return nil, errors.New("usage log repository does not support request id lookup")
+	}
+	candidates := []string{"client:" + requestID, "local:" + requestID, requestID}
+	log, err := lookup.GetByRequestIDForAPIKey(ctx, apiKeyID, candidates)
+	if err != nil {
+		if errors.Is(err, ErrUsageLogNotFound) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("get usage log by request id: %w", err)
 	}
 	return log, nil
 }
